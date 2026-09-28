@@ -1,0 +1,101 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repository.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/specimens/data/http_specimen_repository.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
+
+import '../../helpers/helpers.dart';
+
+void main() {
+  test('repositórios HTTP quando USE_FAKE_API=false', () {
+    final container = createContainer(
+      overrides: [
+        envProvider.overrideWithValue(
+          const Env(apiBaseUrl: 'http://x/api', useFakeApi: false),
+        ),
+      ],
+    );
+    expect(
+      container.read(personalDexRepositoryProvider),
+      isA<HttpPersonalDexRepository>(),
+    );
+    expect(
+      container.read(specimenRepositoryProvider),
+      isA<HttpSpecimenRepository>(),
+    );
+  });
+
+  group('SlotActions', () {
+    late FakeBackend backend;
+
+    setUp(() => backend = FakeBackend.seeded());
+
+    test('deposit/withdraw atualizam as contagens em cache', () async {
+      final container = createContainer(
+        overrides: [
+          envProvider.overrideWithValue(fakeEnv),
+          fakeBackendProvider.overrideWithValue(backend),
+        ],
+      );
+      const key = (dexId: 1, boxId: 1);
+      final listSub = container.listen(dexListProvider, (_, _) {});
+      final dexSub = container.listen(dexProvider(1), (_, _) {});
+      final boxesSub = container.listen(boxesProvider(1), (_, _) {});
+      final slotsSub = container.listen(slotsProvider(key), (_, _) {});
+      addTearDown(() {
+        listSub.close();
+        dexSub.close();
+        boxesSub.close();
+        slotsSub.close();
+      });
+
+      final before = await container.read(dexProvider(1).future);
+      final slot = (await container.read(slotsProvider(key).future))[2];
+      final saur = (await backend.fetchAvailable(3)).single;
+
+      final actions = container.read(slotActionsProvider);
+      final updated = await actions.deposit(slot, specimenId: saur.id);
+      expect(updated.isRegistered, true);
+      expect(
+        (await container.read(dexProvider(1).future)).registered,
+        before.registered + 1,
+      );
+      expect(
+        (await container.read(dexListProvider.future)).first.registered,
+        before.registered + 1,
+      );
+      expect(
+        (await container.read(boxesProvider(1).future)).first.registered,
+        21,
+      );
+      expect(
+        (await container.read(slotsProvider(key).future))[2].isRegistered,
+        true,
+      );
+
+      await actions.withdraw(updated);
+      expect(
+        (await container.read(dexProvider(1).future)).registered,
+        before.registered,
+      );
+    });
+
+    test('slot sem personal_dex só invalida a lista', () async {
+      final container = createContainer(
+        overrides: [
+          envProvider.overrideWithValue(fakeEnv),
+          fakeBackendProvider.overrideWithValue(backend),
+        ],
+      );
+      final slot = (await backend.fetchSlots(
+        dexId: 1,
+        boxId: 1,
+      ))[2].copyWith(personalDex: null);
+      final result = await container.read(slotActionsProvider).withdraw(slot);
+      expect(result, isA<Slot>());
+    });
+  });
+}

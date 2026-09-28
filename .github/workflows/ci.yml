@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.47.2
+
+jobs:
+  test:
+    name: Análise, testes e cobertura
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: dart format --set-exit-if-changed lib test tool integration_test test_driver
+      - run: flutter analyze
+      - run: flutter test --coverage
+      - run: dart run tool/check_coverage.dart
+      - run: flutter build web --release
+
+  integration-web:
+    name: Teste de integração (Chrome)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+
+      # O runner do Ubuntu já traz Chrome e um chromedriver compatível.
+      - name: Iniciar chromedriver
+        run: $CHROMEWEBDRIVER/chromedriver --port=4444 &
+
+      - run: >-
+          flutter drive
+          --driver=test_driver/integration_test.dart
+          --target=integration_test/app_test.dart
+          -d web-server --browser-name=chrome --headless

@@ -1,0 +1,358 @@
+# Conceitos de Flutter usados no projeto
+
+Este guia explica, com exemplos do próprio código, os conceitos que você
+precisa para ler e modificar o app. Não é um curso completo de Flutter. Para
+cada tema há um link para a documentação oficial.
+
+- [1. Tudo é widget](#1-tudo-é-widget)
+- [2. Layout: Row, Column, Expanded e amigos](#2-layout-row-column-expanded-e-amigos)
+- [3. Responsividade](#3-responsividade)
+- [4. Código assíncrono: Future, async e await](#4-código-assíncrono-future-async-e-await)
+- [5. Estado com Riverpod](#5-estado-com-riverpod)
+- [6. Modelos imutáveis com freezed](#6-modelos-imutáveis-com-freezed)
+- [7. Navegação com go_router](#7-navegação-com-go_router)
+- [8. HTTP com Dio](#8-http-com-dio)
+- [9. Material e Cupertino](#9-material-e-cupertino)
+- [10. Dart: recursos modernos que aparecem no código](#10-dart-recursos-modernos-que-aparecem-no-código)
+
+---
+
+## 1. Tudo é widget
+
+Em Flutter, a interface é uma **árvore de widgets**. Um widget é uma descrição
+imutável de um pedaço da tela: um texto, um botão, um espaçamento, uma tela
+inteira. O método `build` devolve essa descrição, e o Flutter decide o que
+redesenhar.
+
+Há dois tipos básicos:
+
+| Tipo | Quando usar | Exemplo no projeto |
+| --- | --- | --- |
+| `StatelessWidget` | Só depende dos parâmetros recebidos | [`ProgressBadge`](../lib/core/widgets/progress_badge.dart), [`SlotTile`](../lib/features/personal_dex/presentation/widgets/slot_tile.dart) |
+| `StatefulWidget` | Guarda estado local que muda com o tempo (seleção, texto digitado) | [`DexDetailPage`](../lib/features/personal_dex/presentation/dex_detail_page.dart) guarda a box e o slot selecionados |
+
+```dart
+// lib/core/widgets/progress_badge.dart (simplificado)
+class ProgressBadge extends StatelessWidget {
+  const ProgressBadge({required this.registered, required this.total, super.key});
+
+  final int registered;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      LinearProgressIndicator(value: registered / total),
+      Text('$registered/$total'),
+    ]);
+  }
+}
+```
+
+Em um `StatefulWidget`, o estado mora numa classe `State` separada. Para mudar o
+estado, chame `setState`, que avisa o Flutter para rodar `build` de novo:
+
+```dart
+// lib/features/personal_dex/presentation/dex_detail_page.dart
+void _selectBox(int index) => setState(() {
+  _boxIndex = index;
+  _selectedSlotId = null;
+});
+```
+
+**`BuildContext`** é a "posição" do widget na árvore. Ele serve para buscar
+coisas herdadas de cima, como o tema (`Theme.of(context)`), o tamanho da tela
+(`MediaQuery.sizeOf(context)`) e o navegador (`Navigator.of(context)`).
+
+**`const`**: widgets criados com `const` são reaproveitados pelo Flutter sem
+reconstrução. O lint do projeto pede `const` sempre que possível.
+
+**`key`**: identifica um widget entre reconstruções. Aqui usamos `ValueKey`
+principalmente para os testes encontrarem elementos, por exemplo
+`ValueKey('slot-3')` em [`SlotTile`](../lib/features/personal_dex/presentation/widgets/slot_tile.dart).
+
+📚 [Introdução a widgets](https://docs.flutter.dev/ui/widgets-intro)
+
+## 2. Layout: Row, Column, Expanded e amigos
+
+| Widget | O que faz |
+| --- | --- |
+| `Row` / `Column` | Coloca filhos lado a lado / um embaixo do outro |
+| `Expanded` | Faz um filho de `Row`/`Column` ocupar o espaço que sobra |
+| `SizedBox` | Tamanho fixo, ou espaçamento vazio (`SizedBox(height: 8)`) |
+| `Padding` | Espaço interno |
+| `Center` | Centraliza |
+| `Stack` + `Positioned` | Sobrepõe widgets (sprite + pokébola no canto do slot) |
+| `ListView` / `GridView` | Listas e grades roláveis, que constroem só o que está visível |
+| `LayoutBuilder` | Dá acesso ao espaço disponível para decidir o layout |
+| `ConstrainedBox` | Limita tamanho (ex.: formulário com largura máxima de 560) |
+
+O grid de uma box ([`BoxGrid`](../lib/features/personal_dex/presentation/widgets/box_grid.dart))
+usa `LayoutBuilder` para calcular o tamanho de cada célula, de modo que as 6×5
+células caibam no espaço disponível, seja um celular ou um monitor grande:
+
+```dart
+LayoutBuilder(builder: (context, constraints) {
+  final cell = min(
+    (constraints.maxWidth - gaps) / 6,
+    (constraints.maxHeight - gaps) / 5,
+  );
+  // ... Column de 5 Rows com 6 SizedBox.square(dimension: cell)
+});
+```
+
+📚 [Layouts no Flutter](https://docs.flutter.dev/ui/layout)
+
+## 3. Responsividade
+
+O app usa as três classes de largura do Material 3, definidas em
+[`breakpoints.dart`](../lib/core/responsive/breakpoints.dart):
+
+| Classe | Largura | Navegação | Página do dex |
+| --- | --- | --- | --- |
+| `compact` | < 600 | `NavigationBar` embaixo | Swipe entre boxes (`PageView`); detalhe em *bottom sheet* |
+| `medium` | 600–1023 | `NavigationRail` à esquerda | Grade + painel de detalhe |
+| `expanded` | ≥ 1024 | `NavigationRail` estendido | Lista de boxes + grade + detalhe |
+
+Os widgets só perguntam `WindowSize.of(context)` e escolhem o layout:
+
+```dart
+final size = WindowSize.of(context);
+if (size.isCompact) return _buildCompact(boxes, index);
+```
+
+Como `WindowSize.of` depende do `MediaQuery`, ao redimensionar a janela o
+Flutter reconstrói tudo com o layout novo automaticamente.
+
+📚 [Apps adaptativos e responsivos](https://docs.flutter.dev/ui/adaptive-responsive)
+
+## 4. Código assíncrono: Future, async e await
+
+Chamadas de rede demoram, então retornam um **`Future<T>`**, uma promessa de um
+valor `T` no futuro. Com `async`/`await` você escreve código assíncrono como se
+fosse sequencial:
+
+```dart
+// lib/features/personal_dex/data/http_personal_dex_repository.dart
+Future<PersonalDex> fetchDex(int dexId) => guardRequest(() async {
+  final response = await _dio.get<Map<String, dynamic>>('personal-dexes/$dexId/');
+  return PersonalDex.fromJson(response.data!);
+});
+```
+
+Erros de um `Future` são capturados com `try/catch` quando você usa `await`.
+O projeto converte todo erro HTTP numa [`AppFailure`](../lib/core/network/app_failure.dart)
+com mensagem em português. É ela que as telas mostram.
+
+📚 [Programação assíncrona em Dart](https://dart.dev/libraries/async/async-await)
+
+## 5. Estado com Riverpod
+
+Estado local (qual slot está selecionado) fica no `State` do widget. Já o
+estado **compartilhado ou vindo da API** (lista de dexes, token de login) fica
+em **providers** do [Riverpod](https://riverpod.dev).
+
+Pense num provider como uma "variável global inteligente":
+
+- ela é criada sob demanda, na primeira leitura;
+- ela é cacheada;
+- quem a observa é reconstruído quando ela muda;
+- ela pode ser substituída nos testes (*override*).
+
+### 5.1 Tipos de provider usados
+
+| Provider | Para quê | Exemplo |
+| --- | --- | --- |
+| `Provider<T>` | Um objeto que não muda sozinho (serviços, repositórios) | `personalDexRepositoryProvider` |
+| `FutureProvider<T>` | Resultado de uma chamada assíncrona | `dexListProvider` |
+| `.family` | Provider com parâmetro (um cache por parâmetro) | `slotsProvider((dexId: 1, boxId: 2))` |
+| `.autoDispose` | Descarta o cache quando nenhuma tela usa mais | todas as listagens |
+| `AsyncNotifierProvider` | Estado assíncrono com métodos que o alteram | `authControllerProvider` (login/logout) |
+
+```dart
+// lib/features/personal_dex/personal_dex_providers.dart
+final dexListProvider = FutureProvider.autoDispose<List<PersonalDex>>(
+  (ref) => ref.watch(personalDexRepositoryProvider).fetchDexes(),
+);
+```
+
+### 5.2 Lendo providers na tela
+
+Troque `StatelessWidget` por `ConsumerWidget` (ou `StatefulWidget` por
+`ConsumerStatefulWidget`) para ganhar um `ref`:
+
+```dart
+// lib/features/personal_dex/presentation/dex_list_page.dart
+class DexListPage extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dexes = ref.watch(dexListProvider);   // AsyncValue<List<PersonalDex>>
+    return dexes.when(
+      data: (items) => /* grade de cards */,
+      loading: () => const LoadingView(),
+      error: (error, _) => ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(dexListProvider),
+      ),
+    );
+  }
+}
+```
+
+- **`ref.watch(p)`**: lê e **observa**. Quando `p` mudar, o widget é reconstruído. Use dentro do `build`.
+- **`ref.read(p)`**: lê uma vez, sem observar. Use em callbacks (`onPressed`).
+- **`ref.invalidate(p)`**: joga o cache fora. Quem observa o provider busca de novo.
+- **`AsyncValue`**: o valor de um provider assíncrono. É `AsyncLoading`, `AsyncData` ou `AsyncError`, e `.when(...)` trata os três casos.
+
+### 5.3 Atualizando a tela depois de uma ação
+
+Depois de depositar, várias contagens mudam (slot, box, dex, lista). A classe
+[`SlotActions`](../lib/features/personal_dex/personal_dex_providers.dart)
+chama a API e em seguida **invalida** os providers afetados. Como as telas os
+observam com `watch`, elas se atualizam sozinhas:
+
+```dart
+// (simplificado)
+Future<Slot> deposit(Slot slot, {required int specimenId}) async {
+  final updated = await _repository.deposit(slotId: slot.id, specimenId: specimenId);
+  _ref
+    ..invalidate(slotsProvider((dexId: dexId, boxId: slot.box.id)))
+    ..invalidate(boxesProvider(dexId))
+    ..invalidate(dexProvider(dexId))
+    ..invalidate(dexListProvider);
+  return updated;
+}
+```
+
+### 5.4 O `ProviderScope`
+
+Todo app Riverpod tem um `ProviderScope` na raiz ([main.dart](../lib/main.dart)),
+que guarda os valores dos providers. Nos testes, criamos um `ProviderScope` com
+`overrides` para trocar o repositório real por um fake. Veja
+[03-testes.md](03-testes.md).
+
+O projeto desliga o *retry* automático do Riverpod 3 (`retry: noRetry`), porque
+as telas já oferecem o botão "Tentar novamente".
+
+📚 [Documentação do Riverpod](https://riverpod.dev/docs/introduction/getting_started)
+
+## 6. Modelos imutáveis com freezed
+
+Os dados da API viram classes Dart **imutáveis**: você não altera um objeto,
+cria uma cópia modificada com `copyWith`. Escrever `==`, `hashCode`,
+`copyWith`, `toString` e `fromJson` à mão para cada classe seria muito código
+repetitivo, então usamos **geração de código**:
+
+```dart
+// lib/features/personal_dex/domain/models.dart
+part 'models.freezed.dart';   // gerado pelo freezed
+part 'models.g.dart';         // gerado pelo json_serializable
+
+@freezed
+abstract class PersonalDex with _$PersonalDex {
+  const factory PersonalDex({
+    required int id,
+    required String name,
+    required int total,
+    required int registered,
+    @Default(false) bool isShinyDex,
+  }) = _PersonalDex;
+
+  const PersonalDex._();   // permite adicionar getters próprios
+
+  factory PersonalDex.fromJson(Map<String, dynamic> json) => _$PersonalDexFromJson(json);
+
+  int get missing => total - registered;
+}
+```
+
+- `@freezed` gera `copyWith`, igualdade por valor e `toString`.
+- `fromJson` converte o JSON da API. O [`build.yaml`](../build.yaml) configura
+  `field_rename: snake`, então `isShinyDex` no Dart corresponde a `is_shiny_dex`
+  no JSON.
+- `@Default(false)` define o valor quando o campo não vem no JSON.
+
+**Sempre que alterar um modelo**, rode `dart run build_runner build -d`, ou
+deixe `dart run build_runner watch -d` rodando. Se aparecer erro como
+`_$PersonalDex isn't defined`, é só isso que falta.
+
+📚 [freezed](https://pub.dev/packages/freezed) · [json_serializable](https://pub.dev/packages/json_serializable)
+
+## 7. Navegação com go_router
+
+As rotas são URLs, o que na web significa que o botão voltar do navegador e os
+links diretos funcionam. Elas ficam em [`app_router.dart`](../lib/core/router/app_router.dart):
+
+| URL | Tela |
+| --- | --- |
+| `/splash` | Carregando o token salvo |
+| `/login` | [`LoginPage`](../lib/features/auth/presentation/login_page.dart) |
+| `/dexes` | [`DexListPage`](../lib/features/personal_dex/presentation/dex_list_page.dart) |
+| `/dexes/:dexId` | [`DexDetailPage`](../lib/features/personal_dex/presentation/dex_detail_page.dart) |
+| `/settings` | [`SettingsPage`](../lib/features/settings/presentation/settings_page.dart) |
+
+Conceitos:
+
+- **`context.go('/dexes/1')`** navega para uma URL.
+- **`StatefulShellRoute.indexedStack`** mantém a "casca" com a barra de
+  navegação ([`AdaptiveShell`](../lib/core/responsive/adaptive_shell.dart)) e
+  preserva o estado de cada aba ao alternar entre elas.
+- **`redirect`** é chamado a cada navegação e decide se o usuário pode estar
+  ali. A função pura [`authRedirect`](../lib/core/router/app_router.dart)
+  implementa as regras: sem token vai para `/login`; com token, sai do
+  `/login`.
+- **`refreshListenable`** faz o router reavaliar o `redirect` quando o estado
+  de login muda. Por isso, ao fazer logout (ou quando a API responde 401), o
+  app volta sozinho para o login.
+
+Para diálogos e *bottom sheets* usamos o `Navigator` "clássico"
+(`showDialog`, `showModalBottomSheet`, `Navigator.of(context).push/pop`).
+Eles são temporários e não precisam de URL.
+
+📚 [go_router](https://pub.dev/documentation/go_router/latest/)
+
+## 8. HTTP com Dio
+
+O [Dio](https://pub.dev/packages/dio) é o cliente HTTP. Ele é configurado uma
+vez em [`api_client.dart`](../lib/core/network/api_client.dart) com um
+**interceptor**, um código que roda em toda requisição:
+
+- antes de enviar, adiciona `Authorization: Token <token>`;
+- se a resposta for **401**, chama `onUnauthorized`, que faz logout.
+
+Os **repositórios** (`HttpPersonalDexRepository`, `HttpSpecimenRepository`)
+são as únicas classes que conhecem URLs e JSON. As telas só conhecem a
+**interface** (`PersonalDexRepository`). Por isso dá para trocar a API real
+pelo [`FakeBackend`](../lib/fake/fake_backend.dart) com uma flag, sem mexer
+em nenhuma tela.
+
+## 9. Material e Cupertino
+
+- **Material** é a biblioteca de componentes do Google (usada no app todo).
+- **Cupertino** é a biblioteca com visual de iOS.
+
+Para ter a **mesma aparência na web e no iPhone**, a base é Material 3 com o
+tema de [`app_theme.dart`](../lib/core/theme/app_theme.dart). Onde a
+experiência iOS é claramente melhor, usamos variantes **adaptativas**, que
+viram Cupertino no iOS:
+
+| Onde | Adaptativo |
+| --- | --- |
+| Transição entre telas | `CupertinoPageTransitionsBuilder` no iOS (deslizar da borda para voltar) |
+| Diálogos de confirmação | `AlertDialog.adaptive` + `CupertinoDialogAction` ([confirm_dialog.dart](../lib/core/widgets/confirm_dialog.dart)) |
+| Switches | `SwitchListTile.adaptive` |
+| Carregamento | `CircularProgressIndicator.adaptive` |
+
+## 10. Dart: recursos modernos que aparecem no código
+
+| Recurso | Exemplo | Significado |
+| --- | --- | --- |
+| Null safety | `String?`, `slot!.id`, `a ?? b` | `?` pode ser nulo; `!` afirma que não é; `??` dá um valor padrão |
+| Records | `({int dexId, int boxId})` | Tupla com nomes; usada como chave do `slotsProvider` |
+| Pattern matching | `switch ((a, b, c)) { (AsyncData(), ...) => ... }` | Decide conforme o formato dos valores ([specimen_form_page.dart](../lib/features/specimens/presentation/specimen_form_page.dart)) |
+| Collection `if`/`for` | `[if (x) Widget(), for (final d in list) Tile(d)]` | Monta listas de widgets condicionalmente |
+| Cascade `..` | `ref..invalidate(a)..invalidate(b)` | Várias chamadas no mesmo objeto |
+| `sealed class` | `sealed class AppFailure` | Hierarquia fechada: o compilador conhece todos os subtipos |
+| Tear-off | `Provider(SlotActions.new)` | Passa o construtor como função |
+
+📚 [Tour da linguagem Dart](https://dart.dev/language)
