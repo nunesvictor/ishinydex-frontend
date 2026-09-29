@@ -13,6 +13,9 @@ int percentOf(int done, int total) =>
 const shinyEmoji = '✨';
 const alphaEmoji = '💢';
 
+/// Espécime vindo do Pokémon GO, como no admin.
+const goEmoji = '📱';
+
 const _diacritics = {
   'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', //
   'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',

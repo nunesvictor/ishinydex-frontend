@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
@@ -76,6 +77,21 @@ void main() {
       expect(specimenTile(shinyBulba.id), findsNothing);
       expect(specimenTile(saur.id), findsOneWidget);
       await tester.tap(find.text('Todos'));
+      await tester.pumpAndSettle();
+
+      // Alfa e GO: só os que têm cada marca (seed: 💢 nas formas 1, 6, 11…;
+      // 📱 nas múltiplas de 7).
+      await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
+      await tester.pumpAndSettle();
+      expect(specimenTile(saur.id), findsNothing); // Saur não é alfa
+      expect(find.text(alphaEmoji), findsWidgets);
+      await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilterChip, 'GO'));
+      await tester.pumpAndSettle();
+      expect(specimenTile(shinyBulba.id), findsNothing);
+      expect(find.text(goEmoji), findsWidgets);
+      await tester.tap(find.widgetWithText(FilterChip, 'GO'));
       await tester.pumpAndSettle();
 
       await search(tester, 'pidgeotto');

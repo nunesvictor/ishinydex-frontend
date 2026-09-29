@@ -21,6 +21,7 @@ import '../../helpers/mocks.dart';
 final _specimen = Specimen.fromJson({
   ...specimenJson,
   'observation': 'Pego no safári',
+  'is_from_go': true,
 });
 
 void main() {
@@ -82,7 +83,8 @@ void main() {
         expect(find.text('Pego no safári'), findsOneWidget);
         expect(find.text('Bulbasaur · #0001'), findsOneWidget);
         // Selo shiny junto do nome, como no admin.
-        expect(find.text('Bulbasaur $shinyEmoji'), findsOneWidget);
+        expect(find.text('Bulbasaur $shinyEmoji $goEmoji'), findsOneWidget);
+        expect(find.text('Pokémon GO'), findsOneWidget);
       });
     }
 
