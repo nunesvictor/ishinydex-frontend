@@ -50,7 +50,7 @@ void main() {
           .widgetList<Chip>(find.byType(Chip))
           .map((c) => (c.label as Text).data)
           .toList();
-      expect(labels, ['Planta', 'Venenoso', 'Shiny-lock', 'Só distribuição']);
+      expect(labels, ['Grass', 'Poison', 'Shiny-lock', 'Só distribuição']);
       // Só o tipo com sprite_url ganha o ícone no chip.
       final sprites = tester
           .widgetList<PokemonSprite>(find.byType(PokemonSprite))
@@ -91,6 +91,6 @@ void main() {
     );
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
-    expect(find.text('Planta'), findsOneWidget);
+    expect(find.text('Grass'), findsOneWidget);
   });
 }

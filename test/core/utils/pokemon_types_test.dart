@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/utils/pokemon_types.dart';
 
 void main() {
-  test('nomes em pt-BR e fallback', () {
-    expect(typeLabel('grass'), 'Planta');
-    expect(typeLabel('psychic'), 'Psíquico');
+  test('nomes em inglês, formatados', () {
+    expect(typeLabel('grass'), 'Grass');
+    expect(typeLabel('psychic'), 'Psychic');
     expect(typeLabel('shadow-type'), 'Shadow Type');
   });
 

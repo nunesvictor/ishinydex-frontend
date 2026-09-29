@@ -240,3 +240,4 @@ Exemplo: uma tela que lista **todos os specimens**.
 | `Image.network` em vez de pacote de cache | O navegador já faz cache HTTP. `webHtmlElementStrategy.fallback` usa `<img>` se o CORS falhar. |
 | Retry automático do Riverpod desligado | Erros de validação não devem ser repetidos; as telas têm "Tentar novamente". |
 | Arquivos gerados fora do git | Diffs limpos. O CI e o README mandam rodar o `build_runner`. |
+| Nomes de tipos (e, no futuro, golpes) em inglês | Seguem os dados da API (`language: en`). A interface continua em pt-BR; só esses nomes de jogo ficam como no original. |
