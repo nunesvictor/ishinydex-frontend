@@ -9,6 +9,11 @@ ver as boxes (no mesmo layout do Pokémon HOME), acompanhar o progresso e
 - 📱 **iPhone**: pelo navegador; no futuro como **PWA** (HTTPS) ou app nativo via `.ipa` gerado no GitHub Actions.
 - ✅ **100% de cobertura de testes** (unitários, de widget e de integração no navegador).
 
+> **Rodar o app completo (backend + frontend):** use o repositório
+> [**ishinydex**](https://github.com/nunesvictor/ishinydex), que junta os dois
+> como submodules e sobe tudo com um `docker compose up -d --build`. Este
+> repositório é o código do frontend e o ambiente de desenvolvimento dele.
+
 ## Início rápido
 
 Pré-requisitos: [Flutter](https://docs.flutter.dev/get-started/install) 3.47+ e um

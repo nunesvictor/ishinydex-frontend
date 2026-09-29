@@ -8,7 +8,8 @@ O usuário está aprendendo Flutter: explique decisões e mantenha `docs/` atual
 - `flutter analyze` e `dart format lib test tool integration_test test_driver` — o CI verifica ambos
 - `flutter test --coverage && dart run tool/check_coverage.dart` — gate de 100% de linhas (exclui *.g.dart, *.freezed.dart, main.dart)
 - `flutter run -d chrome --dart-define=USE_FAKE_API=true` — demo sem backend
-- Deploy local: `docker compose up -d --build` → nginx em `:8090` servindo o app e repassando /api /media /static /admin para o backend `prod` (`:8080`); guia em `docs/06-deploy-local.md`
+- App completo: repositório `../ishinydex` (submodules + compose unificado, `:8090`); o compose daqui é para desenvolvimento
+- Deploy local deste repo: `docker compose up -d --build` → nginx em `:8090` servindo o app e repassando /api /media /static /admin para o backend `prod` (`:8080`); guia em `docs/06-deploy-local.md`
 - Backend local: `http://localhost:8008/api` (contrato em `../ishinydex-backend/docs/plans/frontend-api.md`)
 
 ## Convenções
