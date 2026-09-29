@@ -294,6 +294,30 @@ class FakeBackend
     return _dexWithCounts(dexId);
   }
 
+  /// Como a API: slots com forma agrupados pela geração, na ordem da
+  /// primeira box. No fake, a geração sai do número da Pokédex (pokeapiId).
+  @override
+  Future<List<GenerationProgress>> fetchGenerations(int dexId) async {
+    await _delay();
+    final byGeneration = <String, List<_SlotRecord>>{};
+    for (final slot in _slots.values) {
+      final formId = slot.formId;
+      if (slot.dexId != dexId || formId == null) continue;
+      final generation = _generationOf(_forms[formId]!.pokeapiId);
+      byGeneration.putIfAbsent(generation, () => []).add(slot);
+    }
+    return [
+      for (final MapEntry(key: generation, value: slots)
+          in byGeneration.entries)
+        GenerationProgress(
+          generation: generation,
+          total: slots.length,
+          registered: slots.where((s) => s.specimenId != null).length,
+          firstBox: slots.first.box,
+        ),
+    ];
+  }
+
   @override
   Future<List<BoxSummary>> fetchBoxes(int dexId) async {
     await _delay();
@@ -592,6 +616,17 @@ class FakeBackend
       total: slots.length,
       registered: slots.where((s) => s.specimenId != null).length,
     );
+  }
+
+  /// Último número da Pokédex nacional de cada geração.
+  static const _generationEnds = [151, 251, 386, 493, 649, 721, 809, 905];
+  static const _romans = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii'];
+
+  static String _generationOf(int dexNumber) {
+    for (final (i, end) in _generationEnds.indexed) {
+      if (dexNumber <= end) return 'generation-${_romans[i]}';
+    }
+    return 'generation-ix';
   }
 
   void _validateAbility(FormDetail form, String? ability) {

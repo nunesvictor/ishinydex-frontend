@@ -123,3 +123,29 @@ abstract class BoxSummary with _$BoxSummary {
 
   bool get isComplete => total > 0 && registered >= total;
 }
+
+/// Progresso do dex numa geração (`GET /personal-dexes/{id}/generations/`).
+@freezed
+abstract class GenerationProgress with _$GenerationProgress {
+  const factory GenerationProgress({
+    /// Slug da API (`"generation-iv"`); `null` = formas sem pokémon.
+    required String? generation,
+    required int total,
+    required int registered,
+    required BoxRef firstBox,
+  }) = _GenerationProgress;
+
+  const GenerationProgress._();
+
+  factory GenerationProgress.fromJson(Map<String, dynamic> json) =>
+      _$GenerationProgressFromJson(json);
+
+  /// `"generation-iv"` → `"Geração IV"`.
+  String get label {
+    final gen = generation;
+    if (gen == null) return 'Outras formas';
+    return 'Geração ${gen.replaceFirst('generation-', '').toUpperCase()}';
+  }
+
+  int get missing => total - registered;
+}

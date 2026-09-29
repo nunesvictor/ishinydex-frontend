@@ -26,6 +26,9 @@ class _FlakyRepository implements PersonalDexRepository {
   int boxFailures = 0;
   int slotFailures = 0;
 
+  /// Quando definido, substitui as gerações do fake.
+  List<GenerationProgress>? generations;
+
   @override
   Future<List<PersonalDex>> fetchDexes() => inner.fetchDexes();
 
@@ -49,6 +52,10 @@ class _FlakyRepository implements PersonalDexRepository {
     if (slotFailures-- > 0) throw const NetworkFailure();
     return await inner.fetchSlots(dexId: dexId, boxId: boxId);
   }
+
+  @override
+  Future<List<GenerationProgress>> fetchGenerations(int dexId) async =>
+      generations ?? await inner.fetchGenerations(dexId);
 
   @override
   Future<Slot> fetchSlot(int slotId) => inner.fetchSlot(slotId);
@@ -331,6 +338,68 @@ void main() {
         expect(find.text('Living Dex'), findsOneWidget);
       });
     }
+  });
+
+  group('progresso por geração', () {
+    /// Dex com as gerações I (HOME A) e II (HOME B).
+    FakeBackend twoGenerations() {
+      final backend = FakeBackend()
+        ..addForm(id: 1, name: 'bulbasaur')
+        ..addForm(id: 152, name: 'chikorita');
+      final dex = backend.addDex(name: 'Dex');
+      backend
+        ..addBox(dexId: dex, name: 'HOME A', formIds: const [1])
+        ..addBox(dexId: dex, name: 'HOME B', formIds: const [152]);
+      return backend;
+    }
+
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('tocar numa geração leva à primeira box dela '
+          '(${size.width.toInt()}px)', (tester) async {
+        await pumpFullApp(tester, size: size, backend: twoGenerations());
+        await tester.tap(find.text('Dex'));
+        await tester.pumpAndSettle();
+        expect(find.text('HOME A · 0/1'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Progresso por geração'));
+        await tester.pumpAndSettle();
+        expect(find.text('Geração I'), findsOneWidget);
+        await tester.tap(find.text('Geração II'));
+        await tester.pumpAndSettle();
+        expect(find.text('HOME B · 0/1'), findsOneWidget);
+
+        // Fechar sem escolher mantém a box.
+        await tester.tap(find.byTooltip('Progresso por geração'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(CloseButton));
+        await tester.pumpAndSettle();
+        expect(find.text('HOME B · 0/1'), findsOneWidget);
+      });
+    }
+
+    testWidgets('box que não está na lista é ignorada', (tester) async {
+      final repository = _FlakyRepository(FakeBackend.seeded())
+        ..generations = const [
+          GenerationProgress(
+            generation: 'generation-i',
+            total: 1,
+            registered: 0,
+            firstBox: BoxRef(id: 999, name: 'Sumiu', position: 999),
+          ),
+        ];
+      await pumpFullApp(
+        tester,
+        overrides: [
+          personalDexRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      await openShinyDex(tester);
+      await tester.tap(find.byTooltip('Progresso por geração'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Geração I'));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 1 · 20/30'), findsOneWidget);
+    });
   });
 
   group('busca no dex', () {

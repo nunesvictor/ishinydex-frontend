@@ -7,6 +7,9 @@ abstract interface class PersonalDexRepository {
 
   Future<List<BoxSummary>> fetchBoxes(int dexId);
 
+  /// Progresso por geração, na ordem em que as gerações aparecem nas boxes.
+  Future<List<GenerationProgress>> fetchGenerations(int dexId);
+
   /// Os 30 slots de [boxId] pertencentes a [dexId].
   Future<List<Slot>> fetchSlots({required int dexId, required int boxId});
 

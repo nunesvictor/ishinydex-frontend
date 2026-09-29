@@ -12,6 +12,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_pa
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigator.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_view.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/generation_progress.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -79,6 +80,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
           title: dex.value?.name ?? 'PersonalDex',
         ),
         actions: [
+          IconButton(
+            tooltip: 'Progresso por geração',
+            onPressed: _openGenerations,
+            icon: const Icon(Icons.bar_chart),
+          ),
           IconButton(
             tooltip: 'Buscar no dex',
             onPressed: _openSearch,
@@ -219,6 +225,17 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     if (controller == null) return;
     controller.jumpToPage(_boxIndex);
     unawaited(_showSlotSheet(boxes[_boxIndex]));
+  }
+
+  /// Progresso por geração; tocar numa geração leva à primeira box dela.
+  Future<void> _openGenerations() async {
+    final boxId = await showGenerationProgress(context, dexId: _dexId);
+    if (boxId == null || !mounted) return;
+    final boxes = ref.read(boxesProvider(_dexId)).value ?? const [];
+    final index = boxes.indexWhere((b) => b.id == boxId);
+    if (index < 0) return;
+    _selectBox(index);
+    _pageController?.jumpToPage(index);
   }
 
   void _selectBox(int index) => setState(() {

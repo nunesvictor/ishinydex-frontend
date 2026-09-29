@@ -34,6 +34,18 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
   });
 
   @override
+  Future<List<GenerationProgress>> fetchGenerations(int dexId) =>
+      guardRequest(() async {
+        final response = await _dio.get<List<dynamic>>(
+          'personal-dexes/$dexId/generations/',
+        );
+        return [
+          for (final item in response.data!)
+            GenerationProgress.fromJson(item as Map<String, dynamic>),
+        ];
+      });
+
+  @override
   Future<List<BoxSummary>> fetchBoxes(int dexId) => guardRequest(() async {
     final response = await _dio.get<List<dynamic>>(
       'personal-dexes/$dexId/boxes/',

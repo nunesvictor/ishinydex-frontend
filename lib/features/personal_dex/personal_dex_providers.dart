@@ -36,6 +36,12 @@ final FutureProviderFamily<List<BoxSummary>, int> boxesProvider = FutureProvider
           ref.watch(personalDexRepositoryProvider).fetchBoxes(dexId),
     );
 
+final FutureProviderFamily<List<GenerationProgress>, int> generationsProvider =
+    FutureProvider.autoDispose.family<List<GenerationProgress>, int>(
+      (ref, dexId) =>
+          ref.watch(personalDexRepositoryProvider).fetchGenerations(dexId),
+    );
+
 typedef BoxKey = ({int dexId, int boxId});
 
 final FutureProviderFamily<List<Slot>, BoxKey> slotsProvider = FutureProvider
@@ -97,6 +103,7 @@ class SlotActions {
     ..invalidate(dexListProvider)
     ..invalidate(dexProvider)
     ..invalidate(boxesProvider)
+    ..invalidate(generationsProvider)
     ..invalidate(slotsProvider);
 
   /// Liberta um specimen pelo id (inventário), esteja depositado ou não.
@@ -115,6 +122,7 @@ class SlotActions {
     _ref
       ..invalidate(slotsProvider((dexId: dexId, boxId: slot.box.id)))
       ..invalidate(boxesProvider(dexId))
+      ..invalidate(generationsProvider(dexId))
       ..invalidate(dexProvider(dexId));
   }
 }
