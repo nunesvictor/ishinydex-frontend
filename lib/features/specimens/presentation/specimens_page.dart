@@ -78,6 +78,8 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Espécimes')),
       floatingActionButton: FloatingActionButton.extended(
+        // As abas ficam vivas juntas: cada botão precisa da sua hero tag.
+        heroTag: 'new-specimen',
         onPressed: _create,
         icon: const Icon(Icons.add),
         label: const Text('Novo espécime'),

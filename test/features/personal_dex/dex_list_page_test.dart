@@ -33,7 +33,10 @@ void main() {
 
   testWidgets('estado vazio', (tester) async {
     await pumpFullApp(tester, backend: FakeBackend());
-    expect(find.text('Nenhum PersonalDex cadastrado.'), findsOneWidget);
+    expect(
+      find.textContaining('Nenhum PersonalDex cadastrado.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('erro e tentar novamente', (tester) async {

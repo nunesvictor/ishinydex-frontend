@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/progress_badge.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/new_dex_page.dart';
 
 /// Lista de PersonalDex com o progresso de cada um.
 class DexListPage extends ConsumerWidget {
@@ -16,13 +18,25 @@ class DexListPage extends ConsumerWidget {
     final dexes = ref.watch(dexListProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('PersonalDex')),
+      floatingActionButton: FloatingActionButton.extended(
+        // As abas ficam vivas juntas: cada botão precisa da sua hero tag.
+        heroTag: 'new-dex',
+        onPressed: () => _createDex(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Novo PersonalDex'),
+      ),
       body: dexes.when(
         data: (items) => items.isEmpty
-            ? const EmptyView(message: 'Nenhum PersonalDex cadastrado.')
+            ? const EmptyView(
+                message:
+                    'Nenhum PersonalDex cadastrado. Crie o primeiro em '
+                    '"Novo PersonalDex".',
+              )
             : RefreshIndicator.adaptive(
                 onRefresh: () => ref.refresh(dexListProvider.future),
                 child: GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  // Espaço embaixo para o botão "Novo PersonalDex".
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 420,
                     mainAxisExtent: 132,
@@ -41,6 +55,18 @@ class DexListPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Abre o cadastro e, se um dex for criado, vai direto para ele.
+Future<void> _createDex(BuildContext context) async {
+  final dex = await Navigator.of(context, rootNavigator: true)
+      .push<PersonalDex>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => const NewDexPage(),
+        ),
+      );
+  if (dex != null && context.mounted) context.go(Routes.dex(dex.id));
 }
 
 class _DexCard extends StatelessWidget {

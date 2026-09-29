@@ -271,6 +271,65 @@ void main() {
       ]);
     });
 
+    test('novo dex: simulação, criação e erros', () async {
+      final preview = await backend.previewNewDex(forceNewBox: false);
+      // 58 formas em 2 boxes; livres: HOME 4–6.
+      expect(preview.forms, 58);
+      expect(preview.boxesNeeded, 2);
+      expect(preview.largestFreeRun, 3);
+      expect(preview.firstBox!.name, 'HOME 4');
+
+      final dex = await backend.createDex(
+        name: 'Nova',
+        isShinyDex: true,
+        forceNewBox: false,
+      );
+      expect(dex.total, 58);
+      expect(dex.registered, 0);
+      expect(dex.isShinyDex, true);
+      expect((await backend.fetchBoxes(dex.id)).map((b) => b.name), [
+        'HOME 4',
+        'HOME 5',
+      ]);
+
+      expect(
+        backend.createDex(name: 'Nova', isShinyDex: false, forceNewBox: false),
+        _validation('name'),
+      );
+      expect(
+        backend.createDex(name: ' ', isShinyDex: false, forceNewBox: false),
+        _validation('name'),
+      );
+      // Sobrou 1 box livre (HOME 6): não cabe outro.
+      final full = await backend.previewNewDex(forceNewBox: false);
+      expect(full.enoughSpace, false);
+      expect(full.firstBox, isNull);
+      expect(
+        backend.createDex(name: 'Outra', isShinyDex: false, forceNewBox: false),
+        _validation(ValidationFailure.nonFieldKey),
+      );
+    });
+
+    test('nova box a cada geração começa a geração no 1º slot', () async {
+      final gens = FakeBackend()
+        ..addForm(id: 1, name: 'bulbasaur')
+        ..addForm(id: 2, name: 'ivysaur')
+        ..addForm(id: 152, name: 'chikorita')
+        ..addFreeBox('A')
+        ..addFreeBox('B');
+      expect((await gens.previewNewDex(forceNewBox: false)).boxesNeeded, 1);
+      expect((await gens.previewNewDex(forceNewBox: true)).boxesNeeded, 2);
+      final dex = await gens.createDex(
+        name: 'Por geração',
+        isShinyDex: false,
+        forceNewBox: true,
+      );
+      expect(dex.forceNewBox, true);
+      final second = await gens.fetchSlots(dexId: dex.id, boxId: 2);
+      expect(second.single.form!.name, 'chikorita');
+      expect(second.single.row, 0);
+    });
+
     test('searchForms e fetchSlot', () async {
       expect((await backend.searchForms('PIDGE')).map((f) => f.name), [
         'pidgey',

@@ -45,8 +45,9 @@ class _SlotRecord {
   final int col;
 
   /// `null` nos slots livres, como no backend (`personal_dex = NULL`).
-  final int? dexId;
-  final int? formId;
+  /// Mutáveis: criar um dex instala o esquema em slots livres.
+  int? dexId;
+  int? formId;
   int? specimenId;
 }
 
@@ -91,6 +92,10 @@ class FakeBackend
       slot.specimenId = specimen;
     }
     backend.addSpecimen(formId: 3, nickname: 'Saur');
+    // Boxes livres: dá para criar um dex novo na demonstração.
+    for (var i = 4; i <= 6; i++) {
+      backend.addFreeBox('HOME $i');
+    }
     return backend;
   }
 
@@ -238,6 +243,11 @@ class FakeBackend
     return id;
   }
 
+  /// Box de 30 slots sem forma nem dex (como as criadas por
+  /// `create_home_boxes` no backend).
+  int addFreeBox(String name) =>
+      addBox(dexId: 0, name: name, formIds: const []);
+
   int addSpecimen({
     required int formId,
     bool isShiny = false,
@@ -285,6 +295,114 @@ class FakeBackend
   Future<List<PersonalDex>> fetchDexes() async {
     await _delay();
     return [for (final id in _dexes.keys) _dexWithCounts(id)];
+  }
+
+  /// No fake, o "conjunto padrão" são todas as formas cadastradas.
+  List<FormDetail> get _defaultForms =>
+      _forms.values.toList()..sort((a, b) => a.id.compareTo(b.id));
+
+  /// Mesmas regras do backend (`home/services.py`): simula o esquema e acha a
+  /// 1ª sequência de boxes livres que comporte todas as formas.
+  ({int needed, int largest, List<BoxRef>? boxes}) _planDex(bool forceNewBox) {
+    final forms = _defaultForms;
+    var needed = 0;
+    for (var index = 0; index < forms.length;) {
+      needed++;
+      for (
+        var position = 0;
+        position < 30 && index < forms.length;
+        position++
+      ) {
+        if (forceNewBox && position > 0 && _startsGeneration(forms[index])) {
+          break;
+        }
+        index++;
+      }
+    }
+    final runs = <List<BoxRef>>[[]];
+    for (final box
+        in _boxes.values.toList()
+          ..sort((a, b) => a.position.compareTo(b.position))) {
+      final used = _slots.values.any(
+        (s) => s.box.id == box.id && (s.dexId != null || s.formId != null),
+      );
+      if (used) {
+        if (runs.last.isNotEmpty) runs.add([]);
+      } else {
+        runs.last.add(box);
+      }
+    }
+    final fitting = runs.where((r) => r.length >= needed).firstOrNull;
+    return (
+      needed: needed,
+      largest: runs.map((r) => r.length).fold(0, (a, b) => a > b ? a : b),
+      boxes: fitting?.sublist(0, needed),
+    );
+  }
+
+  static bool _startsGeneration(FormDetail form) => const [
+    'chikorita', 'treecko', 'turtwig', 'victini', //
+    'chespin', 'rowlet', 'grookey', 'sprigatito',
+  ].contains(form.name);
+
+  @override
+  Future<DexPreview> previewNewDex({required bool forceNewBox}) async {
+    await _delay();
+    final plan = _planDex(forceNewBox);
+    return DexPreview(
+      forms: _defaultForms.length,
+      boxesNeeded: plan.needed,
+      largestFreeRun: plan.largest,
+      enoughSpace: plan.boxes != null,
+      firstBox: plan.boxes?.first,
+    );
+  }
+
+  @override
+  Future<PersonalDex> createDex({
+    required String name,
+    required bool isShinyDex,
+    required bool forceNewBox,
+  }) async {
+    await _delay();
+    if (name.trim().isEmpty) {
+      throw ValidationFailure({
+        'name': ['Este campo não pode ser em branco.'],
+      });
+    }
+    if (_dexes.values.any((d) => d.name == name)) {
+      throw ValidationFailure({
+        'name': ['personal dex com este name já existe.'],
+      });
+    }
+    final plan = _planDex(forceNewBox);
+    final boxes = plan.boxes;
+    if (boxes == null) {
+      final message =
+          'Não há boxes livres seguidas suficientes para este PersonalDex: '
+          'ele precisa de ${plan.needed}, e a maior sequência livre tem '
+          '${plan.largest}.';
+      throw ValidationFailure({
+        ValidationFailure.nonFieldKey: [message],
+      });
+    }
+    final id = addDex(name: name, isShinyDex: isShinyDex);
+    _dexes[id] = _dexes[id]!.copyWith(forceNewBox: forceNewBox);
+    final forms = _defaultForms;
+    var index = 0;
+    for (final box in boxes) {
+      final slots = _slots.values.where((s) => s.box.id == box.id).toList();
+      for (final (position, slot) in slots.indexed) {
+        if (index >= forms.length) break;
+        if (forceNewBox && position > 0 && _startsGeneration(forms[index])) {
+          break;
+        }
+        slot
+          ..dexId = id
+          ..formId = forms[index++].id;
+      }
+    }
+    return _dexWithCounts(id);
   }
 
   @override
