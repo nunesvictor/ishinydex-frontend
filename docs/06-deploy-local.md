@@ -1,5 +1,12 @@
 # Deploy local (Docker)
 
+> **Forma recomendada:** o repositório
+> [ishinydex](https://github.com/nunesvictor/ishinydex) sobe backend e frontend
+> juntos, com um `docker compose` só. O nginx fala com o backend pela rede
+> interna do compose, sem `host.docker.internal`. O que este guia descreve (um
+> compose por repositório) continua valendo para **desenvolvimento**, quando se
+> quer reconstruir só o frontend.
+
 Este guia coloca o app para rodar **permanentemente** na sua máquina, acessível
 pelo navegador do PC e de qualquer celular na mesma rede Wi-Fi:
 
