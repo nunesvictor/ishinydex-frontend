@@ -93,7 +93,7 @@ void main() {
       expect(same.isRegistered, true);
     });
 
-    test('depositar, trocar e retirar', () async {
+    test('depositar e trocar', () async {
       // Forma 3 só tem o "Saur" (não shiny) disponível.
       final saur = (await backend.fetchAvailable(3)).single;
       expect(saur.nickname, 'Saur');
@@ -105,11 +105,48 @@ void main() {
       final other = await backend.create(const SpecimenDraft(form: 3));
       await backend.deposit(slotId: 3, specimenId: other.id);
       expect((await backend.fetchAvailable(3)).single.id, saur.id);
+    });
+  });
 
-      final withdrawn = await backend.withdraw(3);
-      expect(withdrawn.isMissing, true);
-      expect(withdrawn.isShinyDisplay, true);
-      expect(backend.withdraw(999), throwsA(isA<NotFoundFailure>()));
+  group('editar e libertar', () {
+    test('fetchSpecimen informa o slot', () async {
+      // Specimen 1 está no slot 1 (forma 1).
+      expect((await backend.fetchSpecimen(1)).slot, 1);
+      expect(backend.fetchSpecimen(999), throwsA(isA<NotFoundFailure>()));
+    });
+
+    test('update edita, mas não troca a forma', () async {
+      final specimen = await backend.fetchSpecimen(1);
+      final draft = SpecimenDraft.fromSpecimen(specimen);
+      final updated = await backend.update(
+        1,
+        draft.copyWith(nickname: 'Bulba', pokeball: 'beast-ball'),
+      );
+      expect(updated.nickname, 'Bulba');
+      expect(updated.pokeballSpriteUrl, contains('beast-ball'));
+      expect(updated.slot, 1);
+      final slot = (await backend.fetchSlots(dexId: 1, boxId: 1)).first;
+      expect(slot.specimen!.nickname, 'Bulba');
+
+      expect(backend.update(1, draft.copyWith(form: 2)), _validation('form'));
+      expect(
+        backend.update(1, draft.copyWith(ability: 'x')),
+        _validation('ability'),
+      );
+      expect(backend.update(999, draft), throwsA(isA<NotFoundFailure>()));
+    });
+
+    test('release apaga o specimen e o slot fica faltante', () async {
+      await backend.release(1);
+      final slot = (await backend.fetchSlots(dexId: 1, boxId: 1)).first;
+      expect(slot.isMissing, true);
+      expect(slot.isShinyDisplay, true);
+      expect(backend.fetchSpecimen(1), throwsA(isA<NotFoundFailure>()));
+      expect(backend.release(1), throwsA(isA<NotFoundFailure>()));
+      // Specimen disponível (fora de slot) também pode ser libertado.
+      final saur = (await backend.fetchAvailable(3)).single;
+      await backend.release(saur.id);
+      expect(await backend.fetchAvailable(3), isEmpty);
     });
   });
 

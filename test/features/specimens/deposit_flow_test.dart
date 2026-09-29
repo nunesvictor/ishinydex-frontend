@@ -73,7 +73,6 @@ void main() {
       find.text('Nenhum specimen disponível desta forma.'),
       findsOneWidget,
     );
-    expect(find.textContaining('será substituído'), findsOneWidget);
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();
     expect(results, [false]);

@@ -45,7 +45,8 @@ abstract class Specimen with _$Specimen {
   bool get isDeposited => slot != null;
 }
 
-/// Dados para criar um specimen (`POST /specimens/`).
+/// Dados para criar (`POST /specimens/`) ou editar
+/// (`PATCH /specimens/{id}/`) um specimen.
 @freezed
 abstract class SpecimenDraft with _$SpecimenDraft {
   const factory SpecimenDraft({
@@ -66,6 +67,23 @@ abstract class SpecimenDraft with _$SpecimenDraft {
 
   const SpecimenDraft._();
 
+  /// Rascunho preenchido com os dados atuais, para o formulário de edição.
+  factory SpecimenDraft.fromSpecimen(Specimen specimen) => SpecimenDraft(
+    form: specimen.form,
+    nickname: specimen.nickname,
+    ability: specimen.ability,
+    language: specimen.language,
+    gender: specimen.gender,
+    nature: specimen.nature,
+    isAlpha: specimen.isAlpha,
+    isShiny: specimen.isShiny,
+    isFromGo: specimen.isFromGo,
+    capturedAt: specimen.capturedAt,
+    pokeball: specimen.pokeball,
+    observation: specimen.observation,
+    ot: specimen.ot,
+  );
+
   static final _dateFormat = DateFormat('yyyy-MM-dd');
 
   /// Omite campos vazios; `captured_at` vai como data (`yyyy-MM-dd`).
@@ -85,7 +103,27 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     if (ot != null) 'ot': ot,
   };
 
+  /// Para o PATCH: envia todos os campos, com `null` nos vazios, para que
+  /// apagar um valor (ex.: o apelido) também chegue ao backend. `form` fica
+  /// de fora porque não pode mudar depois da criação.
+  Map<String, dynamic> toUpdateJson() => {
+    'nickname': _orNull(nickname),
+    'ability': _orNull(ability),
+    'language': _orNull(language),
+    'gender': _orNull(gender),
+    'nature': _orNull(nature),
+    'is_alpha': isAlpha,
+    'is_shiny': isShiny,
+    'is_from_go': isFromGo,
+    'captured_at': capturedAt == null ? null : _dateFormat.format(capturedAt!),
+    'pokeball': _orNull(pokeball),
+    'observation': _orNull(observation),
+    'ot': ot,
+  };
+
   static bool _filled(String? value) => value != null && value.isNotEmpty;
+
+  static String? _orNull(String? value) => _filled(value) ? value : null;
 }
 
 @freezed

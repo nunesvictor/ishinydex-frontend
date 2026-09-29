@@ -19,6 +19,29 @@ class HttpSpecimenRepository implements SpecimenRepository {
   });
 
   @override
+  Future<Specimen> fetchSpecimen(int specimenId) => guardRequest(() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'specimens/$specimenId/',
+    );
+    return Specimen.fromJson(response.data!);
+  });
+
+  @override
+  Future<Specimen> update(int specimenId, SpecimenDraft draft) =>
+      guardRequest(() async {
+        final response = await _dio.patch<Map<String, dynamic>>(
+          'specimens/$specimenId/',
+          data: draft.toUpdateJson(),
+        );
+        return Specimen.fromJson(response.data!);
+      });
+
+  @override
+  Future<void> release(int specimenId) => guardRequest(() async {
+    await _dio.delete<void>('specimens/$specimenId/');
+  });
+
+  @override
   Future<Specimen> create(SpecimenDraft draft) => guardRequest(() async {
     final response = await _dio.post<Map<String, dynamic>>(
       'specimens/',

@@ -67,7 +67,7 @@ void main() {
     expect(slots.map((s) => s.isRegistered), [true, false]);
   });
 
-  test('deposit, erro de validação e withdraw', () async {
+  test('deposit e erro de validação', () async {
     adapter
       ..onPost(
         'slots/20/deposit/',
@@ -80,10 +80,6 @@ void main() {
           'specimen_id': ['Forma diferente.'],
         }),
         data: {'specimen_id': 6},
-      )
-      ..onPost(
-        'slots/1/withdraw/',
-        (server) => server.reply(200, missingSlotJson),
       );
     expect(
       (await repository.deposit(slotId: 20, specimenId: 5)).isRegistered,
@@ -99,6 +95,5 @@ void main() {
         ),
       ),
     );
-    expect((await repository.withdraw(1)).isMissing, true);
   });
 }

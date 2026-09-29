@@ -72,7 +72,7 @@ lib/
   core/               # peças compartilhadas (rede, tema, rotas, responsividade, widgets)
   features/
     auth/             # login por token
-    personal_dex/     # dexes, boxes, slots (visualizar/depositar/retirar)
+    personal_dex/     # dexes, boxes, slots (visualizar/depositar/editar/libertar)
     specimens/        # escolher e cadastrar specimens
     settings/         # ajustes e logout
   fake/               # backend em memória (testes e demo)

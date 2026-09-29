@@ -329,15 +329,6 @@ class FakeBackend
     return _toSlot(slot);
   }
 
-  @override
-  Future<Slot> withdraw(int slotId) async {
-    await _delay();
-    final slot = _slots[slotId];
-    if (slot == null) throw const NotFoundFailure();
-    slot.specimenId = null;
-    return _toSlot(slot);
-  }
-
   // ---- SpecimenRepository ----
 
   @override
@@ -359,14 +350,7 @@ class FakeBackend
         'form': ['Forma inválida.'],
       });
     }
-    final ability = draft.ability;
-    if (ability != null &&
-        ability.isNotEmpty &&
-        !form.abilities.any((a) => a.ability == ability)) {
-      throw ValidationFailure({
-        'ability': ['Habilidade inválida para esta forma.'],
-      });
-    }
+    _validateAbility(form, draft.ability);
     final id = _nextSpecimenId++;
     final specimen = Specimen(
       id: id,
@@ -389,6 +373,53 @@ class FakeBackend
     );
     _specimens[id] = specimen;
     return specimen;
+  }
+
+  @override
+  Future<Specimen> fetchSpecimen(int specimenId) async {
+    await _delay();
+    final specimen = _specimens[specimenId];
+    if (specimen == null) throw const NotFoundFailure();
+    return specimen.copyWith(slot: _slotHolding(specimenId)?.id);
+  }
+
+  @override
+  Future<Specimen> update(int specimenId, SpecimenDraft draft) async {
+    await _delay();
+    final specimen = _specimens[specimenId];
+    if (specimen == null) throw const NotFoundFailure();
+    if (draft.form != specimen.form) {
+      throw ValidationFailure({
+        'form': ['a forma de um espécime não pode ser alterada.'],
+      });
+    }
+    _validateAbility(_forms[specimen.form]!, draft.ability);
+    final updated = specimen.copyWith(
+      nickname: draft.nickname,
+      ability: draft.ability,
+      language: draft.language,
+      gender: draft.gender,
+      nature: draft.nature,
+      isAlpha: draft.isAlpha,
+      isShiny: draft.isShiny,
+      isFromGo: draft.isFromGo,
+      capturedAt: draft.capturedAt,
+      pokeball: draft.pokeball,
+      pokeballSpriteUrl: _ballSprite(draft.pokeball),
+      observation: draft.observation,
+      ot: draft.ot,
+      slot: _slotHolding(specimenId)?.id,
+    );
+    _specimens[specimenId] = updated;
+    return updated;
+  }
+
+  /// Como no backend (`Slot.specimen` com `SET_NULL`): o slot fica faltante.
+  @override
+  Future<void> release(int specimenId) async {
+    await _delay();
+    if (_specimens.remove(specimenId) == null) throw const NotFoundFailure();
+    _slotHolding(specimenId)?.specimenId = null;
   }
 
   @override
@@ -425,6 +456,16 @@ class FakeBackend
       total: slots.length,
       registered: slots.where((s) => s.specimenId != null).length,
     );
+  }
+
+  void _validateAbility(FormDetail form, String? ability) {
+    if (ability != null &&
+        ability.isNotEmpty &&
+        !form.abilities.any((a) => a.ability == ability)) {
+      throw ValidationFailure({
+        'ability': ['Habilidade inválida para esta forma.'],
+      });
+    }
   }
 
   _SlotRecord? _slotHolding(int specimenId) {

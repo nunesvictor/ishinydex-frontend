@@ -66,12 +66,4 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
         );
         return Slot.fromJson(response.data!);
       });
-
-  @override
-  Future<Slot> withdraw(int slotId) => guardRequest(() async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      'slots/$slotId/withdraw/',
-    );
-    return Slot.fromJson(response.data!);
-  });
 }
