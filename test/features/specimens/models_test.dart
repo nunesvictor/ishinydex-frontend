@@ -111,6 +111,99 @@ void main() {
     expect(query.copyWith(fromGoOnly: true).fromGoOnly, true);
   });
 
+  test('SpecimenQuery: igualdade por valor, inclusive das listas', () {
+    // Chave de provider: duas consultas iguais precisam ser a mesma chave.
+    expect(
+      const SpecimenQuery(pokeballs: ['dive-ball']),
+      SpecimenQuery(pokeballs: ['dive-ball'].toList()),
+    );
+  });
+
+  test('SpecimenQuery.toQueryParameters envia só os filtros usados', () {
+    expect(emptySpecimenQuery.toQueryParameters(), isEmpty);
+    expect(
+      emptySpecimenQuery.copyWith(search: '  ').toQueryParameters(),
+      isEmpty,
+    );
+    final full = SpecimenQuery(
+      search: ' bulba ',
+      status: SpecimenStatus.available,
+      shinyOnly: true,
+      alphaOnly: true,
+      fromGoOnly: true,
+      pokeballs: const ['dive-ball', 'dusk-ball'],
+      withoutPokeball: true,
+      types: const ['water', 'flying'],
+      ots: const [1, 3],
+      withoutOt: true,
+      generations: const ['generation-i', 'generation-iv'],
+      genders: const ['female'],
+      natures: const ['jolly'],
+      languages: const ['ja'],
+      ability: ' levi ',
+      capturedAfter: DateTime(2026, 1, 2),
+      capturedBefore: DateTime(2026, 12, 31),
+      ordering: SpecimenOrdering.capturedDesc,
+    );
+    expect(full.toQueryParameters(), {
+      'search': 'bulba',
+      'available': true,
+      'is_shiny': true,
+      'is_alpha': true,
+      'is_from_go': true,
+      'pokeball': 'dive-ball,dusk-ball,none',
+      'type': 'water,flying',
+      'ot': '1,3,none',
+      'generation': 'generation-i,generation-iv',
+      'gender': 'female',
+      'nature': 'jolly',
+      'language': 'ja',
+      'ability': 'levi',
+      'captured_after': '2026-01-02',
+      'captured_before': '2026-12-31',
+      'ordering': '-captured_at',
+    });
+    // Só "sem": a lista vai com o valor especial sozinho.
+    expect(const SpecimenQuery(withoutOt: true).toQueryParameters(), {
+      'ot': 'none',
+    });
+    expect(full.advancedCount, 10);
+
+    final cleared = full.clearAdvanced();
+    expect(cleared.advancedCount, 0);
+    expect(cleared.toQueryParameters(), {
+      'search': 'bulba',
+      'available': true,
+      'is_shiny': true,
+      'is_alpha': true,
+      'is_from_go': true,
+    });
+  });
+
+  test('SpecimenQuery.advancedCount conta grupos, não valores', () {
+    expect(emptySpecimenQuery.advancedCount, 0);
+    // Filtros rápidos não contam.
+    expect(const SpecimenQuery(search: 'x', shinyOnly: true).advancedCount, 0);
+    expect(
+      const SpecimenQuery(
+        pokeballs: ['a', 'b'],
+        withoutPokeball: true,
+      ).advancedCount,
+      1,
+    );
+    expect(const SpecimenQuery(ability: '  ').advancedCount, 0);
+    expect(SpecimenQuery(capturedBefore: DateTime(2026)).advancedCount, 1);
+  });
+
+  test('SpecimenOrdering → ordering da API', () {
+    expect(SpecimenOrdering.values.map((o) => o.param), [
+      'dex',
+      '-captured_at',
+      'captured_at',
+      '-created_at',
+    ]);
+  });
+
   test('SpecimenStatus → filtro available da API', () {
     expect(SpecimenStatus.all.availableParam, isNull);
     expect(SpecimenStatus.available.availableParam, true);

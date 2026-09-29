@@ -254,5 +254,49 @@ void main() {
       expect(find.byType(SpecimensPage), findsOneWidget);
       expect(specimenTile(saur.id), findsNothing);
     });
+
+    testWidgets('filtros avançados: badge, chips e remoção', (tester) async {
+      final backend = await pumpFullApp(tester, size: compactSize);
+      final saur = (await allSpecimens(backend))
+          .firstWhere((s) => s.nickname == 'Saur');
+      await openSpecimensTab(tester);
+      // Sem filtro avançado: sem badge e sem linha de chips.
+      expect(tester.widget<Badge>(find.byType(Badge)).isLabelVisible, false);
+      expect(find.byType(InputChip), findsNothing);
+
+      // Fechar a folha sem aplicar não muda a lista.
+      await tester.tap(find.byTooltip('Filtros'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pokébola'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Sem pokébola'));
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('Filtros').last, const Offset(0, 800));
+      await tester.pumpAndSettle();
+      expect(find.byType(InputChip), findsNothing);
+
+      // Aplicar: só os sem pokébola (entre eles, o Saur).
+      await tester.tap(find.byTooltip('Filtros'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pokébola'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Sem pokébola'));
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mostrar resultados'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(Badge, '1'), findsOneWidget);
+      expect(find.widgetWithText(InputChip, 'Sem pokébola'), findsOneWidget);
+      expect(specimenTile(saur.id), findsOneWidget);
+      // O subtítulo mostra a pokébola ("Dream Ball"...): nenhum tem.
+      expect(find.textContaining('Ball'), findsNothing);
+
+      // O X do chip remove o filtro.
+      await tester.tap(find.byTooltip('Remover filtro'));
+      await tester.pumpAndSettle();
+      expect(find.byType(InputChip), findsNothing);
+      expect(find.textContaining('Ball'), findsWidgets);
+    });
   });
 }

@@ -13,6 +13,7 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Inventário: todos os specimens, com busca e filtros.
@@ -120,6 +121,9 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
   }
 }
 
+/// Barra de filtros pensada para o celular: busca + botão Filtros numa
+/// linha; filtros rápidos numa linha rolável (altura fixa); e, só quando há
+/// filtros avançados ativos, uma linha com os chips removíveis deles.
 class _Filters extends StatelessWidget {
   const _Filters({
     required this.query,
@@ -132,65 +136,97 @@ class _Filters extends StatelessWidget {
   final ValueChanged<SpecimenQuery> onChanged;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-    child: Column(
-      spacing: 8,
+  Widget build(BuildContext context) {
+    final count = query.advancedCount;
+    final quick = <Widget>[
+      SegmentedButton<SpecimenStatus>(
+        showSelectedIcon: false,
+        segments: const [
+          ButtonSegment(value: SpecimenStatus.all, label: Text('Todos')),
+          ButtonSegment(
+            value: SpecimenStatus.available,
+            label: Text('Disponíveis'),
+          ),
+          ButtonSegment(
+            value: SpecimenStatus.deposited,
+            label: Text('Depositados'),
+          ),
+        ],
+        selected: {query.status},
+        onSelectionChanged: (s) => onChanged(query.copyWith(status: s.single)),
+      ),
+      FilterChip(
+        avatar: const Text(shinyEmoji),
+        label: const Text('Shiny'),
+        selected: query.shinyOnly,
+        onSelected: (v) => onChanged(query.copyWith(shinyOnly: v)),
+      ),
+      FilterChip(
+        avatar: const Text(alphaEmoji),
+        label: const Text('Alfa'),
+        selected: query.alphaOnly,
+        onSelected: (v) => onChanged(query.copyWith(alphaOnly: v)),
+      ),
+      FilterChip(
+        avatar: const Text(goEmoji),
+        label: const Text('GO'),
+        tooltip: 'Veio do Pokémon GO',
+        selected: query.fromGoOnly,
+        onSelected: (v) => onChanged(query.copyWith(fromGoOnly: v)),
+      ),
+    ];
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          decoration: const InputDecoration(
-            hintText: 'Buscar por apelido ou forma',
-            prefixIcon: Icon(Icons.search),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          child: Row(
+            spacing: 4,
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar por apelido ou forma',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: onSearchChanged,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Filtros',
+                onPressed: () async {
+                  final applied = await showSpecimenFilters(context, query);
+                  if (applied != null) onChanged(applied);
+                },
+                icon: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  child: const Icon(Icons.tune),
+                ),
+              ),
+            ],
           ),
-          onChanged: onSearchChanged,
         ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SegmentedButton<SpecimenStatus>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: SpecimenStatus.all, label: Text('Todos')),
-                ButtonSegment(
-                  value: SpecimenStatus.available,
-                  label: Text('Disponíveis'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          // No celular, uma linha rolável (altura fixa); nos demais tamanhos
+          // não falta espaço vertical, então os chips quebram linha.
+          child: WindowSize.of(context).isCompact
+              ? SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(spacing: 8, children: quick),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: quick,
                 ),
-                ButtonSegment(
-                  value: SpecimenStatus.deposited,
-                  label: Text('Depositados'),
-                ),
-              ],
-              selected: {query.status},
-              onSelectionChanged: (s) =>
-                  onChanged(query.copyWith(status: s.single)),
-            ),
-            FilterChip(
-              avatar: const Text(shinyEmoji),
-              label: const Text('Shiny'),
-              selected: query.shinyOnly,
-              onSelected: (v) => onChanged(query.copyWith(shinyOnly: v)),
-            ),
-            FilterChip(
-              avatar: const Text(alphaEmoji),
-              label: const Text('Alfa'),
-              selected: query.alphaOnly,
-              onSelected: (v) => onChanged(query.copyWith(alphaOnly: v)),
-            ),
-            FilterChip(
-              avatar: const Text(goEmoji),
-              label: const Text('GO'),
-              tooltip: 'Veio do Pokémon GO',
-              selected: query.fromGoOnly,
-              onSelected: (v) => onChanged(query.copyWith(fromGoOnly: v)),
-            ),
-          ],
         ),
+        ActiveFilterChips(query: query, onChanged: onChanged),
       ],
-    ),
-  );
+    );
+  }
 }
 
 /// Lista paginada: o total vem da 1ª página e cada item observa só a página

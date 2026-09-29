@@ -14,6 +14,24 @@ final fakeBackendProvider = Provider<FakeBackend>(
 const _spriteBase =
     'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites';
 
+/// Ícones pequenos de tipo, como em `/specimens/options/`.
+const _typeBase = '$_spriteBase/types/generation-viii/sword-shield/small';
+
+/// Tipos das formas da demonstração (as demais são "normal").
+const _seedTypes = {
+  4: ['fire'],
+  5: ['fire'],
+  6: ['fire', 'flying'],
+  7: ['water'],
+  8: ['water'],
+  9: ['water'],
+  16: ['normal', 'flying'],
+  17: ['normal', 'flying'],
+  18: ['normal', 'flying'],
+  21: ['normal', 'flying'],
+  22: ['normal', 'flying'],
+};
+
 const _speciesNames = [
   'bulbasaur', 'ivysaur', 'venusaur', 'charmander', 'charmeleon', //
   'charizard', 'squirtle', 'wartortle', 'blastoise', 'caterpie',
@@ -60,7 +78,11 @@ class FakeBackend
   factory FakeBackend.seeded({Duration latency = Duration.zero}) {
     final backend = FakeBackend(latency: latency);
     for (final (index, name) in _speciesNames.indexed) {
-      backend.addForm(id: index + 1, name: name);
+      backend.addForm(
+        id: index + 1,
+        name: name,
+        types: _seedTypes[index + 1] ?? const ['normal'],
+      );
     }
     backend
       ..addTrainer(name: 'Ash', trainerId: '123456', version: 'scarlet')
@@ -89,6 +111,8 @@ class FakeBackend
         isAlpha: formId % 5 == 1,
         isFromGo: formId % 7 == 0,
         pokeball: formId.isEven ? 'dream-ball' : 'poke-ball',
+        ot: formId % 4 == 0 ? 1 : null,
+        capturedAt: formId.isEven ? DateTime(2026, 1, formId) : null,
       );
       slot.specimenId = specimen;
     }
@@ -156,6 +180,16 @@ class FakeBackend
       Choice(value: 'modest', label: 'Modest'),
       Choice(value: 'timid', label: 'Timid'),
     ],
+    type: [
+      Choice(value: 'normal', label: 'Normal', spriteUrl: '$_typeBase/1.png'),
+      Choice(value: 'fire', label: 'Fogo', spriteUrl: '$_typeBase/10.png'),
+      Choice(value: 'water', label: 'Água', spriteUrl: '$_typeBase/11.png'),
+      Choice(value: 'flying', label: 'Voador', spriteUrl: '$_typeBase/3.png'),
+    ],
+    generation: [
+      Choice(value: 'generation-i', label: 'Geração I'),
+      Choice(value: 'generation-ii', label: 'Geração II'),
+    ],
     pokeball: [
       Choice(
         value: 'poke-ball',
@@ -177,14 +211,21 @@ class FakeBackend
 
   // ---- Seed helpers ----
 
-  void addForm({required int id, required String name}) {
+  void addForm({
+    required int id,
+    required String name,
+    List<String> types = const ['normal'],
+  }) {
     _forms[id] = FormDetail(
       id: id,
       name: name,
       pokeapiId: id,
       spriteUrl: '$_spriteBase/pokemon/other/home/$id.png',
       shinySpriteUrl: '$_spriteBase/pokemon/other/home/shiny/$id.png',
-      types: const [FormType(slot: 1, type: 'normal')],
+      types: [
+        for (final (i, type) in types.indexed)
+          FormType(slot: i + 1, type: type),
+      ],
       abilities: const [
         FormAbility(slot: 1, ability: 'run-away'),
         FormAbility(slot: 3, ability: 'keen-eye', isHidden: true),
@@ -256,6 +297,8 @@ class FakeBackend
     bool isFromGo = false,
     String? nickname,
     String? pokeball,
+    int? ot,
+    DateTime? capturedAt,
   }) {
     final id = _nextSpecimenId++;
     final form = _forms[formId]!;
@@ -270,6 +313,8 @@ class FakeBackend
       isFromGo: isFromGo,
       pokeball: pokeball,
       pokeballSpriteUrl: _ballSprite(pokeball),
+      ot: ot,
+      capturedAt: capturedAt,
     );
     return id;
   }
@@ -586,8 +631,9 @@ class FakeBackend
     return specimen.copyWith(slot: _slotHolding(specimenId)?.id);
   }
 
-  /// Como a API: busca em apelido ou nome da forma; ordem por forma e id;
-  /// página fora do intervalo → 404.
+  /// Como a API: busca em apelido ou nome da forma; listas por vírgula (OU,
+  /// exceto tipos, que exigem todos); ordem por forma e id, ou pela
+  /// [SpecimenOrdering]; página fora do intervalo → 404.
   @override
   Future<Paginated<Specimen>> fetchSpecimens(
     SpecimenQuery query, {
@@ -595,19 +641,10 @@ class FakeBackend
     required int pageSize,
   }) async {
     await _delay();
-    final search = query.search.trim().toLowerCase();
-    final available = query.status.availableParam;
     final matches = [
       for (final s in _specimens.values)
-        if ((search.isEmpty ||
-                (s.nickname ?? '').toLowerCase().contains(search) ||
-                (s.formName ?? '').toLowerCase().contains(search)) &&
-            (available == null || (_slotHolding(s.id) == null) == available) &&
-            (!query.shinyOnly || s.isShiny) &&
-            (!query.alphaOnly || s.isAlpha) &&
-            (!query.fromGoOnly || s.isFromGo))
-          s.copyWith(slot: _slotHolding(s.id)?.id),
-    ]..sort((a, b) => a.form != b.form ? a.form - b.form : a.id - b.id);
+        if (_matches(s, query)) s.copyWith(slot: _slotHolding(s.id)?.id),
+    ]..sort(_ordering(query.ordering));
     final start = (page - 1) * pageSize;
     if (page < 1 || (start >= matches.length && page > 1)) {
       throw const NotFoundFailure();
@@ -739,6 +776,71 @@ class FakeBackend
       total: slots.length,
       registered: slots.where((s) => s.specimenId != null).length,
     );
+  }
+
+  bool _matches(Specimen s, SpecimenQuery query) {
+    final search = query.search.trim().toLowerCase();
+    final ability = query.ability.trim().toLowerCase();
+    final available = query.status.availableParam;
+    final form = _forms[s.form]!;
+    final formTypes = {for (final t in form.types) t.type};
+    final captured = s.capturedAt;
+    bool inList<T>(List<T> values, T? value) =>
+        values.isEmpty || values.contains(value);
+    return (search.isEmpty ||
+            (s.nickname ?? '').toLowerCase().contains(search) ||
+            (s.formName ?? '').toLowerCase().contains(search)) &&
+        (available == null || (_slotHolding(s.id) == null) == available) &&
+        (!query.shinyOnly || s.isShiny) &&
+        (!query.alphaOnly || s.isAlpha) &&
+        (!query.fromGoOnly || s.isFromGo) &&
+        (!query.hasPokeballFilter ||
+            query.pokeballs.contains(s.pokeball) ||
+            (query.withoutPokeball && s.pokeball == null)) &&
+        (!query.hasOtFilter ||
+            query.ots.contains(s.ot) ||
+            (query.withoutOt && s.ot == null)) &&
+        query.types.every(formTypes.contains) &&
+        inList(query.generations, _generationOf(form.pokeapiId)) &&
+        inList(query.genders, s.gender) &&
+        inList(query.natures, s.nature) &&
+        inList(query.languages, s.language) &&
+        (ability.isEmpty || (s.ability ?? '').contains(ability)) &&
+        (query.capturedAfter == null ||
+            (captured != null && !captured.isBefore(query.capturedAfter!))) &&
+        (query.capturedBefore == null ||
+            (captured != null && !captured.isAfter(query.capturedBefore!)));
+  }
+
+  /// Mesmas ordens da API; o id faz as vezes do `created_at` e desempata.
+  static Comparator<Specimen> _ordering(SpecimenOrdering ordering) =>
+      switch (ordering) {
+        SpecimenOrdering.dex => (
+          a,
+          b,
+        ) => a.form != b.form ? a.form - b.form : a.id - b.id,
+        SpecimenOrdering.capturedAsc => (a, b) => _byCapture(
+          a,
+          b,
+          descending: false,
+        ),
+        SpecimenOrdering.capturedDesc => (a, b) => _byCapture(
+          a,
+          b,
+          descending: true,
+        ),
+        SpecimenOrdering.createdDesc => (a, b) => b.id - a.id,
+      };
+
+  /// Pela data de captura; sem data sempre no fim, nas duas direções.
+  static int _byCapture(Specimen a, Specimen b, {required bool descending}) {
+    final tieBreak = descending ? b.id - a.id : a.id - b.id;
+    final (x, y) = (a.capturedAt, b.capturedAt);
+    if (x == null && y == null) return tieBreak;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    final byDate = descending ? y.compareTo(x) : x.compareTo(y);
+    return byDate != 0 ? byDate : tieBreak;
   }
 
   /// Último número da Pokédex nacional de cada geração.

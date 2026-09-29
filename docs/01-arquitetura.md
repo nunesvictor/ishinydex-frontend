@@ -204,9 +204,13 @@ registrados/total e "Faltam N". Tocar numa geração leva à primeira box dela. 
 
 A terceira aba lista **todos** os espécimes, depositados ou não:
 
-- **Filtros:** busca por apelido ou forma, Todos/Disponíveis/Depositados e
-  Shiny, montados num `SpecimenQuery` e enviados a `GET /specimens/`.
-  Paginação por página (ver [02-conceitos-flutter.md](02-conceitos-flutter.md), 5.5).
+- **Filtros rápidos** na barra: busca por apelido ou forma,
+  Todos/Disponíveis/Depositados, Shiny, Alfa e GO.
+- **Filtros avançados** na folha "Filtros": ordem, pokébola (e "sem"), OT
+  (e "sem"), natureza, idioma, tipo (até 2, exige os dois), geração, gênero,
+  habilidade e intervalo de captura. Tudo vai num `SpecimenQuery`
+  (`toQueryParameters()`) para `GET /specimens/`. Paginação por página e
+  decisões de layout em [02-conceitos-flutter.md](02-conceitos-flutter.md), 5.5.
 - **Detalhe** ([`SpecimenDetailView`](../lib/features/specimens/presentation/specimen_detail.dart)):
   tela própria no compacto (`/specimens/:id`) e painel ao lado da lista nos
   demais. Ações:
