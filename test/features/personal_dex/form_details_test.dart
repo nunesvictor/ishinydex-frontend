@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -32,7 +33,11 @@ void main() {
           // Fora de ordem de propósito: a tela ordena pelo slot.
           'types': [
             {'slot': 2, 'type': 'poison'},
-            {'slot': 1, 'type': 'grass'},
+            {
+              'slot': 1,
+              'type': 'grass',
+              'sprite_url': 'http://x/types/small/12.png',
+            },
           ],
           'is_shinylocked': true,
           'is_distro_only': true,
@@ -46,6 +51,11 @@ void main() {
           .map((c) => (c.label as Text).data)
           .toList();
       expect(labels, ['Planta', 'Venenoso', 'Shiny-lock', 'Só distribuição']);
+      // Só o tipo com sprite_url ganha o ícone no chip.
+      final sprites = tester
+          .widgetList<PokemonSprite>(find.byType(PokemonSprite))
+          .map((s) => s.url);
+      expect(sprites, ['http://x/types/small/12.png']);
       expect(
         find.text('Habilidades: Overgrow · Chlorophyll (oculta)'),
         findsOneWidget,

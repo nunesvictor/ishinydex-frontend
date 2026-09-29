@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/pokemon_types.dart';
+import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -64,6 +65,9 @@ class _Details extends StatelessWidget {
           children: [
             for (final t in types)
               Chip(
+                avatar: t.spriteUrl == null
+                    ? null
+                    : PokemonSprite(url: t.spriteUrl, size: 20),
                 label: Text(typeLabel(t.type)),
                 backgroundColor: typeColor(t.type),
                 labelStyle: TextStyle(
