@@ -159,37 +159,54 @@ void main() {
       // Ordem da API: forma, depois id.
       expect(everything.first.form, 1);
       expect(everything.first.slot, 1);
-      final deposited = await all((
-        search: '',
-        status: SpecimenStatus.deposited,
-        shinyOnly: false,
-      ));
-      final available = await all((
-        search: '',
-        status: SpecimenStatus.available,
-        shinyOnly: false,
-      ));
+      final deposited = await all(
+        emptySpecimenQuery.copyWith(
+          search: '',
+          status: SpecimenStatus.deposited,
+          shinyOnly: false,
+        ),
+      );
+      final available = await all(
+        emptySpecimenQuery.copyWith(
+          search: '',
+          status: SpecimenStatus.available,
+          shinyOnly: false,
+        ),
+      );
       expect(deposited.length + available.length, everything.length);
       expect(deposited.every((s) => s.slot != null), true);
       expect(available.every((s) => s.slot == null), true);
-      final shiny = await all((
-        search: '',
-        status: SpecimenStatus.all,
-        shinyOnly: true,
-      ));
+      final shiny = await all(
+        emptySpecimenQuery.copyWith(
+          search: '',
+          status: SpecimenStatus.all,
+          shinyOnly: true,
+        ),
+      );
       expect(shiny.every((s) => s.isShiny), true);
       // Busca em apelido ou nome da forma, sem diferenciar maiúsculas.
-      final saur = await all((
-        search: ' SAUR ',
-        status: SpecimenStatus.all,
-        shinyOnly: false,
-      ));
+      final saur = await all(
+        emptySpecimenQuery.copyWith(
+          search: ' SAUR ',
+          status: SpecimenStatus.all,
+          shinyOnly: false,
+        ),
+      );
       expect(saur.map((s) => s.formName).toSet(), {
         'bulbasaur',
         'ivysaur',
         'venusaur',
       });
       expect(saur.any((s) => s.nickname == 'Saur'), true);
+    });
+
+    test('filtros de alfa e GO', () async {
+      final alpha = await all(emptySpecimenQuery.copyWith(alphaOnly: true));
+      final go = await all(emptySpecimenQuery.copyWith(fromGoOnly: true));
+      expect(alpha, isNotEmpty);
+      expect(alpha.every((s) => s.isAlpha), true);
+      expect(go, isNotEmpty);
+      expect(go.every((s) => s.isFromGo), true);
     });
 
     test('paginação e página inválida', () async {
@@ -221,7 +238,11 @@ void main() {
       );
       // Sem resultados, a página 1 existe (vazia).
       final none = await backend.fetchSpecimens(
-        (search: 'zzz', status: SpecimenStatus.all, shinyOnly: false),
+        emptySpecimenQuery.copyWith(
+          search: 'zzz',
+          status: SpecimenStatus.all,
+          shinyOnly: false,
+        ),
         page: 1,
         pageSize: 20,
       );

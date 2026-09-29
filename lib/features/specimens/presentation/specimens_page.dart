@@ -42,13 +42,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     _debounce?.cancel();
     _debounce = Timer(
       const Duration(milliseconds: 350),
-      () => setState(
-        () => _query = (
-          search: text.trim(),
-          status: _query.status,
-          shinyOnly: _query.shinyOnly,
-        ),
-      ),
+      () => setState(() => _query = _query.copyWith(search: text.trim())),
     );
   }
 
@@ -170,21 +164,27 @@ class _Filters extends StatelessWidget {
                 ),
               ],
               selected: {query.status},
-              onSelectionChanged: (s) => onChanged((
-                search: query.search,
-                status: s.single,
-                shinyOnly: query.shinyOnly,
-              )),
+              onSelectionChanged: (s) =>
+                  onChanged(query.copyWith(status: s.single)),
             ),
             FilterChip(
               avatar: const Text(shinyEmoji),
               label: const Text('Shiny'),
               selected: query.shinyOnly,
-              onSelected: (v) => onChanged((
-                search: query.search,
-                status: query.status,
-                shinyOnly: v,
-              )),
+              onSelected: (v) => onChanged(query.copyWith(shinyOnly: v)),
+            ),
+            FilterChip(
+              avatar: const Text(alphaEmoji),
+              label: const Text('Alfa'),
+              selected: query.alphaOnly,
+              onSelected: (v) => onChanged(query.copyWith(alphaOnly: v)),
+            ),
+            FilterChip(
+              avatar: const Text(goEmoji),
+              label: const Text('GO'),
+              tooltip: 'Veio do Pokémon GO',
+              selected: query.fromGoOnly,
+              onSelected: (v) => onChanged(query.copyWith(fromGoOnly: v)),
             ),
           ],
         ),
@@ -314,6 +314,8 @@ class SpecimenListTile extends StatelessWidget {
             child: Text(specimen.displayName, overflow: TextOverflow.ellipsis),
           ),
           if (specimen.isShiny) const Text(shinyEmoji, semanticsLabel: 'Shiny'),
+          if (specimen.isFromGo)
+            const Text(goEmoji, semanticsLabel: 'Pokémon GO'),
         ],
       ),
       subtitle: Text(details.join(' · ')),

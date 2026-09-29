@@ -149,6 +149,8 @@ void main() {
           'search': 'bulba',
           'available': false,
           'is_shiny': true,
+          'is_alpha': true,
+          'is_from_go': true,
         },
       );
     expect(
@@ -160,7 +162,13 @@ void main() {
       1,
     );
     final filtered = await repository.fetchSpecimens(
-      (search: ' bulba ', status: SpecimenStatus.deposited, shinyOnly: true),
+      emptySpecimenQuery.copyWith(
+        search: ' bulba ',
+        status: SpecimenStatus.deposited,
+        shinyOnly: true,
+        alphaOnly: true,
+        fromGoOnly: true,
+      ),
       page: 2,
       pageSize: 20,
     );

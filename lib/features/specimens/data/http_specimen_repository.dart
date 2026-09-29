@@ -42,6 +42,8 @@ class HttpSpecimenRepository implements SpecimenRepository {
         if (search.isNotEmpty) 'search': search,
         'available': ?query.status.availableParam,
         if (query.shinyOnly) 'is_shiny': true,
+        if (query.alphaOnly) 'is_alpha': true,
+        if (query.fromGoOnly) 'is_from_go': true,
       },
     );
     return Paginated.fromJson(response.data!, Specimen.fromJson);

@@ -113,6 +113,7 @@ class _Details extends ConsumerWidget {
               specimen.displayName,
               if (specimen.isShiny) shinyEmoji,
               if (specimen.isAlpha) alphaEmoji,
+              if (specimen.isFromGo) goEmoji,
             ].join(' '),
             style: theme.textTheme.titleLarge,
             textAlign: TextAlign.center,
@@ -144,7 +145,8 @@ class _Details extends ConsumerWidget {
                 const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
               if (specimen.isAlpha)
                 const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
-              if (specimen.isFromGo) const Chip(label: Text('Pokémon GO')),
+              if (specimen.isFromGo)
+                const Chip(avatar: Text(goEmoji), label: Text('Pokémon GO')),
               if (specimen.pokeball != null)
                 Chip(
                   avatar: PokemonSprite(

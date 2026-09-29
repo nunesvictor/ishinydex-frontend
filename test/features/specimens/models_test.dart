@@ -103,6 +103,14 @@ void main() {
     expect(trainer.copyWith(version: null).label, 'Ash (123456)');
   });
 
+  test('SpecimenQuery.copyWith muda só o pedido', () {
+    final query = emptySpecimenQuery.copyWith(alphaOnly: true);
+    expect(query.alphaOnly, true);
+    expect(query.fromGoOnly, false);
+    expect(query.copyWith(search: 'x').alphaOnly, true);
+    expect(query.copyWith(fromGoOnly: true).fromGoOnly, true);
+  });
+
   test('SpecimenStatus → filtro available da API', () {
     expect(SpecimenStatus.all.availableParam, isNull);
     expect(SpecimenStatus.available.availableParam, true);

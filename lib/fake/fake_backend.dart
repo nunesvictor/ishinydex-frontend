@@ -87,6 +87,7 @@ class FakeBackend
         formId: formId,
         isShiny: shiny,
         isAlpha: formId % 5 == 1,
+        isFromGo: formId % 7 == 0,
         pokeball: formId.isEven ? 'dream-ball' : 'poke-ball',
       );
       slot.specimenId = specimen;
@@ -252,6 +253,7 @@ class FakeBackend
     required int formId,
     bool isShiny = false,
     bool isAlpha = false,
+    bool isFromGo = false,
     String? nickname,
     String? pokeball,
   }) {
@@ -265,6 +267,7 @@ class FakeBackend
       nickname: nickname,
       isShiny: isShiny,
       isAlpha: isAlpha,
+      isFromGo: isFromGo,
       pokeball: pokeball,
       pokeballSpriteUrl: _ballSprite(pokeball),
     );
@@ -600,7 +603,9 @@ class FakeBackend
                 (s.nickname ?? '').toLowerCase().contains(search) ||
                 (s.formName ?? '').toLowerCase().contains(search)) &&
             (available == null || (_slotHolding(s.id) == null) == available) &&
-            (!query.shinyOnly || s.isShiny))
+            (!query.shinyOnly || s.isShiny) &&
+            (!query.alphaOnly || s.isAlpha) &&
+            (!query.fromGoOnly || s.isFromGo))
           s.copyWith(slot: _slotHolding(s.id)?.id),
     ]..sort((a, b) => a.form != b.form ? a.form - b.form : a.id - b.id);
     final start = (page - 1) * pageSize;

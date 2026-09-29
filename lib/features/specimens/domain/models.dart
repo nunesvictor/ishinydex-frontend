@@ -254,10 +254,32 @@ typedef SpecimenQuery = ({
   String search,
   SpecimenStatus status,
   bool shinyOnly,
+  bool alphaOnly,
+  bool fromGoOnly,
 });
 
 const SpecimenQuery emptySpecimenQuery = (
   search: '',
   status: SpecimenStatus.all,
   shinyOnly: false,
+  alphaOnly: false,
+  fromGoOnly: false,
 );
+
+/// Records não têm `copyWith`; esta extensão evita repetir todos os campos
+/// a cada filtro que muda.
+extension SpecimenQueryCopy on SpecimenQuery {
+  SpecimenQuery copyWith({
+    String? search,
+    SpecimenStatus? status,
+    bool? shinyOnly,
+    bool? alphaOnly,
+    bool? fromGoOnly,
+  }) => (
+    search: search ?? this.search,
+    status: status ?? this.status,
+    shinyOnly: shinyOnly ?? this.shinyOnly,
+    alphaOnly: alphaOnly ?? this.alphaOnly,
+    fromGoOnly: fromGoOnly ?? this.fromGoOnly,
+  );
+}
