@@ -164,6 +164,15 @@ resultado leva à box do slot e o seleciona; no compacto, também abre o bottom
 sheet. O `PageView` ignora o `onPageChanged` da página atual, para o pulo
 programático não limpar a seleção.
 
+## Progresso por geração
+
+O ícone de gráfico no AppBar do dex abre o
+[`GenerationProgressView`](../lib/features/personal_dex/presentation/widgets/generation_progress.dart)
+(`GET /personal-dexes/{id}/generations/`): uma linha por geração com
+registrados/total e "Faltam N". Tocar numa geração leva à primeira box dela. O
+`generationsProvider` é invalidado junto com as outras contagens em
+`SlotActions`.
+
 ## Inventário (aba Espécimes)
 
 A terceira aba lista **todos** os espécimes, depositados ou não:

@@ -243,6 +243,34 @@ void main() {
       expect(await backend.searchSlots(dexId: 2, search: '40'), isEmpty);
     });
 
+    test('fetchGenerations: agrupa pela geração do número', () async {
+      final gens = await backend.fetchGenerations(1);
+      expect(gens.single.generation, 'generation-i');
+      expect(gens.single.total, 58);
+      expect(gens.single.registered, 39);
+      expect(gens.single.firstBox.name, 'HOME 1');
+
+      // Um número em cada faixa, inclusive depois da última (IX).
+      const numbers = [1, 152, 252, 387, 494, 650, 722, 810, 906];
+      final many = FakeBackend();
+      for (final n in numbers) {
+        many.addForm(id: n, name: 'f$n');
+      }
+      final dex = many.addDex(name: 'Todas');
+      many.addBox(dexId: dex, name: 'B', formIds: numbers);
+      expect((await many.fetchGenerations(dex)).map((g) => g.label), [
+        'Geração I',
+        'Geração II',
+        'Geração III',
+        'Geração IV',
+        'Geração V',
+        'Geração VI',
+        'Geração VII',
+        'Geração VIII',
+        'Geração IX',
+      ]);
+    });
+
     test('searchForms e fetchSlot', () async {
       expect((await backend.searchForms('PIDGE')).map((f) => f.name), [
         'pidgey',

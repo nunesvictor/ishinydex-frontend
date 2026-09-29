@@ -121,4 +121,21 @@ void main() {
       1,
     );
   });
+
+  test('fetchGenerations', () async {
+    adapter.onGet(
+      'personal-dexes/1/generations/',
+      (server) => server.reply(200, [
+        {
+          'generation': 'generation-i',
+          'total': 151,
+          'registered': 140,
+          'first_box': {'id': 1, 'name': 'HOME 1', 'position': 1},
+        },
+      ]),
+    );
+    final gens = await repository.fetchGenerations(1);
+    expect(gens.single.label, 'Geração I');
+    expect(gens.single.firstBox.name, 'HOME 1');
+  });
 }

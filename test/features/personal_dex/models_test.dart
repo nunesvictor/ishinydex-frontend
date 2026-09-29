@@ -65,4 +65,17 @@ void main() {
       false,
     );
   });
+
+  test('GenerationProgress: rótulo e faltantes', () {
+    const box = BoxRef(id: 1, name: 'HOME 1', position: 1);
+    const gen = GenerationProgress(
+      generation: 'generation-iv',
+      total: 10,
+      registered: 7,
+      firstBox: box,
+    );
+    expect(gen.label, 'Geração IV');
+    expect(gen.missing, 3);
+    expect(gen.copyWith(generation: null).label, 'Outras formas');
+  });
 }

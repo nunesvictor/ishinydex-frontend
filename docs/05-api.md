@@ -13,6 +13,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/personal-dexes/?page=&page_size=100` | `fetchDexes` (percorre todas as páginas) |
 | GET | `/api/personal-dexes/{id}/` | `fetchDex` |
 | GET | `/api/personal-dexes/{id}/boxes/` | `fetchBoxes` (lista simples, sem paginação) |
+| GET | `/api/personal-dexes/{id}/generations/` | `fetchGenerations` (progresso por geração, com a primeira box de cada uma) |
 | GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |
 | GET | `/api/specimens/?form_id=&available=true&page_size=100` | `fetchAvailable` |
