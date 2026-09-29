@@ -128,7 +128,13 @@ abstract class SpecimenDraft with _$SpecimenDraft {
 
 @freezed
 abstract class FormType with _$FormType {
-  const factory FormType({required int slot, required String type}) = _FormType;
+  const factory FormType({
+    required int slot,
+    required String type,
+
+    /// Ícone 60×60 do tipo; `null` se o backend não tiver o arquivo.
+    String? spriteUrl,
+  }) = _FormType;
 
   factory FormType.fromJson(Map<String, dynamic> json) =>
       _$FormTypeFromJson(json);

@@ -3,6 +3,7 @@ import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
 
 /// Detalhes do slot selecionado com as ações: depositar (slot faltante) ou
 /// editar/libertar o specimen (slot registrado).
@@ -66,6 +67,8 @@ class SlotDetailPanel extends StatelessWidget {
             style: theme.textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 12),
+          FormDetails(formId: form.id),
           const SizedBox(height: 16),
           if (specimen == null)
             const Chip(
