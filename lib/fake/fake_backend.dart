@@ -327,6 +327,27 @@ class FakeBackend
     ];
   }
 
+  /// Como a API: nome da forma ou número (no fake, o número da Pokédex é o
+  /// próprio `pokeapiId`); só slots com forma, na ordem das boxes.
+  @override
+  Future<List<Slot>> searchSlots({
+    required int dexId,
+    required String search,
+  }) async {
+    await _delay();
+    final text = search.trim().toLowerCase();
+    final number = int.tryParse(text);
+    bool matches(FormDetail form) =>
+        number == null ? form.name.contains(text) : form.pokeapiId == number;
+    return [
+      for (final slot in _slots.values)
+        if (slot.dexId == dexId &&
+            slot.formId != null &&
+            matches(_forms[slot.formId]!))
+          _toSlot(slot),
+    ].take(30).toList();
+  }
+
   @override
   Future<Slot> fetchSlot(int slotId) async {
     await _delay();

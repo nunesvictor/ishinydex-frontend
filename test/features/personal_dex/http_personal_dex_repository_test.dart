@@ -104,4 +104,21 @@ void main() {
     );
     expect((await repository.fetchSlot(1)).isRegistered, true);
   });
+
+  test('searchSlots', () async {
+    adapter.onGet(
+      'slots/',
+      (server) => server.reply(200, {
+        'count': 1,
+        'next': null,
+        'previous': null,
+        'results': [registeredSlotJson],
+      }),
+      queryParameters: {'personal_dex': 1, 'search': 'bulba', 'page_size': 30},
+    );
+    expect(
+      (await repository.searchSlots(dexId: 1, search: ' bulba ')).single.id,
+      1,
+    );
+  });
 }

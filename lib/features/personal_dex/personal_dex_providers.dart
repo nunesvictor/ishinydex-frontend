@@ -46,6 +46,16 @@ final FutureProviderFamily<List<Slot>, BoxKey> slotsProvider = FutureProvider
           .fetchSlots(dexId: key.dexId, boxId: key.boxId),
     );
 
+typedef SlotSearchKey = ({int dexId, String search});
+
+/// Resultados da busca no dex (nome ou número da forma).
+final FutureProviderFamily<List<Slot>, SlotSearchKey> slotSearchProvider =
+    FutureProvider.autoDispose.family<List<Slot>, SlotSearchKey>(
+      (ref, key) => ref
+          .watch(personalDexRepositoryProvider)
+          .searchSlots(dexId: key.dexId, search: key.search),
+    );
+
 final slotActionsProvider = Provider<SlotActions>(SlotActions.new);
 
 /// Depositar, libertar e editar specimens de um slot, invalidando o que a

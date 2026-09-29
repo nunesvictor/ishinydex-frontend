@@ -12,5 +12,10 @@ abstract interface class PersonalDexRepository {
 
   Future<Slot> fetchSlot(int slotId);
 
+  /// Slots de [dexId] cuja forma casa com [search]: nome ou número (Pokédex
+  /// nacional ou o número mostrado no app). Primeiros resultados, na ordem
+  /// das boxes.
+  Future<List<Slot>> searchSlots({required int dexId, required String search});
+
   Future<Slot> deposit({required int slotId, required int specimenId});
 }

@@ -54,6 +54,12 @@ class _FlakyRepository implements PersonalDexRepository {
   Future<Slot> fetchSlot(int slotId) => inner.fetchSlot(slotId);
 
   @override
+  Future<List<Slot>> searchSlots({
+    required int dexId,
+    required String search,
+  }) => inner.searchSlots(dexId: dexId, search: search);
+
+  @override
   Future<Slot> deposit({required int slotId, required int specimenId}) =>
       inner.deposit(slotId: slotId, specimenId: specimenId);
 }
@@ -325,6 +331,59 @@ void main() {
         expect(find.text('Living Dex'), findsOneWidget);
       });
     }
+  });
+
+  group('busca no dex', () {
+    Future<void> searchFor(WidgetTester tester, String text) async {
+      await tester.tap(find.byTooltip('Buscar no dex'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Nome ou número'),
+        text,
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('expandido: leva à box e seleciona o slot', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await searchFor(tester, 'wiggly');
+      // Wigglytuff = forma 40, slot 40 (HOME 2, linha 2, coluna 4).
+      expect(find.text('#0040 · HOME 2 · linha 2, coluna 4'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('search-slot-40')));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 2 · 19/28'), findsOneWidget);
+      expect(find.text('Wigglytuff'), findsWidgets);
+    });
+
+    testWidgets('compacto: por número, abre o detalhe no bottom sheet', (
+      tester,
+    ) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      await searchFor(tester, '40');
+      await tester.tap(find.byKey(const ValueKey('search-slot-40')));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('HOME 2 · 19/28'), findsOneWidget);
+      // A seleção sobreviveu ao pulo de página.
+      expect(find.text('HOME 2 · linha 2, coluna 4'), findsOneWidget);
+    });
+
+    testWidgets('fechar sem escolher não muda nada', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await tester.tap(find.byTooltip('Buscar no dex'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 1 · 20/30'), findsOneWidget);
+      expect(
+        find.text('Selecione um slot para ver os detalhes.'),
+        findsOneWidget,
+      );
+    });
   });
 
   group('link direto (?box=&slot=)', () {

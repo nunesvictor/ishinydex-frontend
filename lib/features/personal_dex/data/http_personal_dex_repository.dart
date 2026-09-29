@@ -58,6 +58,22 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
       });
 
   @override
+  Future<List<Slot>> searchSlots({
+    required int dexId,
+    required String search,
+  }) => guardRequest(() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'slots/',
+      queryParameters: {
+        'personal_dex': dexId,
+        'search': search.trim(),
+        'page_size': 30,
+      },
+    );
+    return Paginated.fromJson(response.data!, Slot.fromJson).results;
+  });
+
+  @override
   Future<Slot> fetchSlot(int slotId) => guardRequest(() async {
     final response = await _dio.get<Map<String, dynamic>>('slots/$slotId/');
     return Slot.fromJson(response.data!);
