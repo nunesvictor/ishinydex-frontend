@@ -141,7 +141,11 @@ const optionsJson = <String, dynamic>{
     {'value': 'adamant', 'label': 'Adamant'},
   ],
   'pokeball': [
-    {'value': 'poke-ball', 'label': 'Poké Ball'},
+    {
+      'value': 'poke-ball',
+      'label': 'Poké Ball',
+      'sprite_url': 'http://localhost:8008/media/sprites/items/poke-ball.png',
+    },
   ],
 };
 

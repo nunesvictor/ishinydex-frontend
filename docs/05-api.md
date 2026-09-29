@@ -13,12 +13,12 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/personal-dexes/?page=&page_size=100` | `fetchDexes` (percorre todas as páginas) |
 | GET | `/api/personal-dexes/{id}/` | `fetchDex` |
 | GET | `/api/personal-dexes/{id}/boxes/` | `fetchBoxes` (lista simples, sem paginação) |
-| GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os 30 slots, sem paginação) |
+| GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |
 | POST | `/api/slots/{id}/withdraw/` | `withdraw` |
 | GET | `/api/specimens/?form_id=&available=true&page_size=100` | `fetchAvailable` |
 | POST | `/api/specimens/` | `create` |
-| GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas) |
+| GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas; cada pokébola traz `sprite_url`) |
 | GET | `/api/forms/{id}/` | `fetchForm` (habilidades da forma) |
 | GET | `/api/trainers/?page_size=100` | `fetchTrainers` |
 
@@ -26,6 +26,14 @@ As implementações ficam em
 [http_personal_dex_repository.dart](../lib/features/personal_dex/data/http_personal_dex_repository.dart),
 [http_specimen_repository.dart](../lib/features/specimens/data/http_specimen_repository.dart) e
 [auth_repository.dart](../lib/features/auth/data/auth_repository.dart).
+
+### Slots livres
+
+As boxes são as mesmas do Pokémon HOME para todos os dexes. Os slots que
+sobram no fim da última box de cada geração (dexes com `force_new_box`) ficam
+no banco com `form` e `personal_dex` nulos, então o filtro `personal_dex=`
+não os devolve e uma box pode vir com menos de 30 slots. O `BoxGrid` desenha
+essas posições como `EmptySlotTile`, e o `FakeBackend` segue a mesma regra.
 
 ## Erros
 

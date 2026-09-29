@@ -21,3 +21,17 @@ enum WindowSize {
   bool get isCompact => this == WindowSize.compact;
   bool get isExpanded => this == WindowSize.expanded;
 }
+
+/// Desktop (mouse e teclado físico) × mobile (toque).
+///
+/// Depende da plataforma, não da largura: um navegador desktop estreito
+/// continua tendo teclado. Na web, `Theme.of(context).platform` reflete o
+/// sistema do navegador (o Safari do iPhone é [TargetPlatform.iOS]).
+bool isDesktopPlatform(TargetPlatform platform) => switch (platform) {
+  TargetPlatform.linux ||
+  TargetPlatform.macOS ||
+  TargetPlatform.windows => true,
+  TargetPlatform.android ||
+  TargetPlatform.iOS ||
+  TargetPlatform.fuchsia => false,
+};

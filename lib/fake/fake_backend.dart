@@ -122,9 +122,21 @@ class FakeBackend
       Choice(value: 'timid', label: 'Timid'),
     ],
     pokeball: [
-      Choice(value: 'poke-ball', label: 'Poké Ball'),
-      Choice(value: 'dream-ball', label: 'Dream Ball'),
-      Choice(value: 'beast-ball', label: 'Beast Ball'),
+      Choice(
+        value: 'poke-ball',
+        label: 'Poké Ball',
+        spriteUrl: '$_spriteBase/items/poke-ball.png',
+      ),
+      Choice(
+        value: 'dream-ball',
+        label: 'Dream Ball',
+        spriteUrl: '$_spriteBase/items/dream-ball.png',
+      ),
+      Choice(
+        value: 'beast-ball',
+        label: 'Beast Ball',
+        spriteUrl: '$_spriteBase/items/beast-ball.png',
+      ),
     ],
   );
 

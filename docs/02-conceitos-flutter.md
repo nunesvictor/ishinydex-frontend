@@ -124,6 +124,14 @@ if (size.isCompact) return _buildCompact(boxes, index);
 Como `WindowSize.of` depende do `MediaQuery`, ao redimensionar a janela o
 Flutter reconstrói tudo com o layout novo automaticamente.
 
+**Largura × plataforma.** A largura decide o *layout*; já o *modo de
+interação* (teclado físico e mouse × toque) depende da plataforma. Por isso
+os selects do formulário usam `isDesktopPlatform(Theme.of(context).platform)`,
+também em `breakpoints.dart`: uma janela estreita no desktop continua tendo
+teclado. Na web, `Theme.of(context).platform` vem do sistema do navegador,
+então o Safari do iPhone conta como iOS. Nos testes, `pumpWidgetApp(...,
+platform: TargetPlatform.linux)` simula o desktop.
+
 📚 [Apps adaptativos e responsivos](https://docs.flutter.dev/ui/adaptive-responsive)
 
 ## 4. Código assíncrono: Future, async e await
@@ -342,6 +350,25 @@ viram Cupertino no iOS:
 | Diálogos de confirmação | `AlertDialog.adaptive` + `CupertinoDialogAction` ([confirm_dialog.dart](../lib/core/widgets/confirm_dialog.dart)) |
 | Switches | `SwitchListTile.adaptive` |
 | Carregamento | `CircularProgressIndicator.adaptive` |
+
+### Selects: `DropdownMenu`
+
+Os campos de escolha do cadastro de specimen usam o
+[`ChoiceSelect`](../lib/features/specimens/presentation/widgets/choice_select.dart),
+feito sobre o `DropdownMenu` do Material 3, e não sobre o antigo
+`DropdownButtonFormField`. O `DropdownMenu` tem um `TextField` por dentro, o
+que permite:
+
+- **Digitar para filtrar** (`enableFilter`) e destacar a primeira opção que
+  casa (`searchCallback`); Enter escolhe a opção destacada. O
+  `filterCallback` usa `foldForSearch` (em `format.dart`) para ignorar
+  acentos: "poke" encontra "Poké Ball".
+- **Ícones** por item (`DropdownMenuEntry.leadingIcon`) e no campo
+  (`leadingIcon`), usados para o sprite das pokébolas, como o select2 do
+  admin.
+
+No mobile, `requestFocusOnTap: false` deixa o campo só para toque: o teclado
+virtual não abre e não cobre a lista.
 
 ## 10. Dart: recursos modernos que aparecem no código
 

@@ -6,6 +6,7 @@ import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Cadastro de um specimen da forma [form]. Retorna o [Specimen] criado.
@@ -248,19 +249,12 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     required ValueChanged<String?> onChanged,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
-    child: DropdownButtonFormField<String>(
+    child: ChoiceSelect(
       key: ValueKey('field-$field'),
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: label,
-        errorText: _validation?.errorFor(field),
-      ),
-      items: [
-        const DropdownMenuItem(child: Text('—')),
-        for (final c in choices)
-          DropdownMenuItem(value: c.value, child: Text(c.label)),
-      ],
+      label: label,
+      value: value,
+      choices: choices,
+      errorText: _validation?.errorFor(field),
       onChanged: (v) => setState(() => onChanged(v)),
     ),
   );

@@ -68,6 +68,8 @@ void main() {
     expect(form.types.first.type, 'grass');
     final options = SpecimenOptions.fromJson(optionsJson);
     expect(options.pokeball.single.label, 'Poké Ball');
+    expect(options.pokeball.single.spriteUrl, endsWith('/poke-ball.png'));
+    expect(options.nature.single.spriteUrl, isNull);
     final trainer = Trainer.fromJson(
       (trainerPageJson['results']! as List).first as Map<String, dynamic>,
     );

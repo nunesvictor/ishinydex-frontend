@@ -29,4 +29,12 @@ void main() {
     );
     expect(size, WindowSize.medium);
   });
+
+  test('isDesktopPlatform: só Linux, macOS e Windows', () {
+    expect(TargetPlatform.values.where(isDesktopPlatform), [
+      TargetPlatform.linux,
+      TargetPlatform.macOS,
+      TargetPlatform.windows,
+    ]);
+  });
 }

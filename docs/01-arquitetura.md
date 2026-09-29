@@ -41,7 +41,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação |
 | [lib/features/auth/](../lib/features/auth/) | Login por token, armazenamento seguro do token, `AuthController` |
 | [lib/features/personal_dex/](../lib/features/personal_dex/) | Dexes, boxes, slots; depositar/retirar (`SlotActions`) |
-| [lib/features/specimens/](../lib/features/specimens/) | Seletor de specimens para depósito e formulário de cadastro |
+| [lib/features/specimens/](../lib/features/specimens/) | Seletor de specimens para depósito e formulário de cadastro (`ChoiceSelect`: select digitável com sprites) |
 | [lib/features/settings/](../lib/features/settings/) | Servidor atual e logout |
 | [lib/fake/fake_backend.dart](../lib/fake/fake_backend.dart) | Backend em memória que segue as mesmas regras da API real |
 

@@ -127,10 +127,14 @@ abstract class FormDetail with _$FormDetail {
       _$FormDetailFromJson(json);
 }
 
+/// Opção de um select. Pokébolas trazem também o [spriteUrl].
 @freezed
 abstract class Choice with _$Choice {
-  const factory Choice({required String value, required String label}) =
-      _Choice;
+  const factory Choice({
+    required String value,
+    required String label,
+    String? spriteUrl,
+  }) = _Choice;
 
   factory Choice.fromJson(Map<String, dynamic> json) => _$ChoiceFromJson(json);
 }
