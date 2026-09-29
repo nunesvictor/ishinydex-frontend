@@ -151,6 +151,8 @@ void main() {
           'is_shiny': true,
           'is_alpha': true,
           'is_from_go': true,
+          'pokeball': 'dive-ball',
+          'ordering': '-created_at',
         },
       );
     expect(
@@ -168,6 +170,8 @@ void main() {
         shinyOnly: true,
         alphaOnly: true,
         fromGoOnly: true,
+        pokeballs: const ['dive-ball'],
+        ordering: SpecimenOrdering.createdDesc,
       ),
       page: 2,
       pageSize: 20,

@@ -272,14 +272,42 @@ final specimenPageProvider = FutureProvider.autoDispose
 - Para recarregar tudo, `ref.invalidate(specimenPageProvider)` invalida
   **todas** as páginas da família de uma vez.
 
-**Record como chave.** `SpecimenQuery` é um *record*
-(`({String search, SpecimenStatus status, bool shinyOnly})`). Records têm
-igualdade por valor: dois records com os mesmos campos são "iguais". Por isso
-servem de parâmetro de `family`: a mesma busca reaproveita o mesmo provider.
+**A chave precisa ter igualdade por valor.** O parâmetro de `family`
+identifica o provider: a mesma consulta precisa cair no **mesmo** provider,
+senão cada rebuild pediria a página de novo. `SpecimenPageKey` é um *record*,
+e records comparam campo a campo. Mas essa comparação usa o `==` de cada
+campo, e o `==` de `List` em Dart é **identidade**: `['a'] == ['a']` é
+`false`. Por isso o `SpecimenQuery` começou como record (só tinha texto,
+enum e booleanos) e virou uma **classe freezed** quando ganhou listas
+(pokébolas, tipos, gerações...): o freezed gera um `==` que compara listas
+pelo conteúdo. O teste "igualdade por valor, inclusive das listas" em
+`models_test.dart` protege essa regra.
 
 **Debounce.** A busca espera 350 ms sem digitação antes de mudar o filtro
 (`Timer` cancelado a cada tecla). Sem isso, digitar "pidgeotto" dispararia
 nove requisições.
+
+**Filtros mobile first.** A barra do inventário tem altura fixa no celular:
+busca + botão **Filtros** (com `Badge` contando os grupos ativos) numa
+linha; filtros rápidos numa linha rolável (`SingleChildScrollView`
+horizontal, em vez de `Wrap`, que quebraria em várias linhas); e os filtros
+avançados ativos como `InputChip`s removíveis, numa linha que só existe
+quando há algum. Os filtros avançados ficam numa folha
+([specimen_filters.dart](../lib/features/specimens/presentation/widgets/specimen_filters.dart)):
+*bottom sheet* no compacto, `Dialog` nos demais (mesmo padrão do
+`showDepositFlow`). Dentro dela, conjuntos pequenos (tipo, geração, gênero)
+são chips; conjuntos grandes (39 pokébolas, 25 naturezas, OTs, idiomas) e a
+ordem são uma linha compacta que abre um seletor, para a folha não virar um
+paredão de chips.
+
+A folha edita um **rascunho** (`_draft`) e só devolve a consulta ao tocar
+em "Mostrar resultados": fechar a folha descarta as mudanças, e a lista não
+recarrega a cada toque num chip.
+
+A data de captura usa `showDateRangePicker` com
+`DatePickerEntryMode.calendarOnly`: a digitação do Material segue o formato
+do locale (`dd/mm`), mas o app mostra datas no formato escolhido nos Ajustes
+(padrão `mm/dd`, como no HOME). Só com toques não há formato para confundir.
 
 📚 [Documentação do Riverpod](https://riverpod.dev/docs/introduction/getting_started)
 

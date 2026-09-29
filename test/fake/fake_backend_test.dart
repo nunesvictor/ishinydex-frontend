@@ -209,6 +209,144 @@ void main() {
       expect(go.every((s) => s.isFromGo), true);
     });
 
+    test('filtros avançados como na API', () async {
+      Future<Set<int>> ids(SpecimenQuery query) async => {
+        for (final s in await all(query)) s.id,
+      };
+      final jolly = await backend.create(
+        SpecimenDraft(
+          form: 7,
+          gender: 'female',
+          nature: 'jolly',
+          language: 'ja',
+          ability: 'keen-eye',
+          capturedAt: DateTime(2025, 6, 15),
+        ),
+      );
+      final everything = await all(emptySpecimenQuery);
+
+      // Pokébola: OU entre as escolhidas; "sem" soma os sem pokébola.
+      final dream = await all(const SpecimenQuery(pokeballs: ['dream-ball']));
+      expect(dream, isNotEmpty);
+      expect(dream.every((s) => s.pokeball == 'dream-ball'), true);
+      final noBall = await all(const SpecimenQuery(withoutPokeball: true));
+      expect(noBall.every((s) => s.pokeball == null), true);
+      expect(
+        await ids(
+          const SpecimenQuery(pokeballs: ['dream-ball'], withoutPokeball: true),
+        ),
+        {...dream.map((s) => s.id), ...noBall.map((s) => s.id)},
+      );
+
+      // OT: seed com o treinador 1 nas formas múltiplas de 4.
+      final byAsh = await all(const SpecimenQuery(ots: [1]));
+      expect(byAsh, isNotEmpty);
+      expect(byAsh.every((s) => s.ot == 1), true);
+      final noOt = await all(const SpecimenQuery(withoutOt: true));
+      expect(byAsh.length + noOt.length, everything.length);
+
+      // Tipo: com dois, a forma precisa ter os dois (charizard: fogo/voador).
+      final flying = await all(const SpecimenQuery(types: ['flying']));
+      expect(
+        flying.map((s) => s.formName).toSet(),
+        containsAll(['charizard', 'pidgey']),
+      );
+      final fireFlying = await all(
+        const SpecimenQuery(types: ['fire', 'flying']),
+      );
+      expect(fireFlying.map((s) => s.formName).toSet(), {'charizard'});
+
+      expect(
+        (await all(const SpecimenQuery(generations: ['generation-i']))).length,
+        everything.length,
+      );
+      expect(
+        await all(const SpecimenQuery(generations: ['generation-ii'])),
+        isEmpty,
+      );
+      expect(await ids(const SpecimenQuery(genders: ['female'])), {jolly.id});
+      expect(await ids(const SpecimenQuery(natures: ['jolly'])), {jolly.id});
+      expect(await ids(const SpecimenQuery(languages: ['ja'])), {jolly.id});
+      expect(await ids(const SpecimenQuery(ability: ' KEEN ')), {jolly.id});
+    });
+
+    test('intervalo de captura e ordenação', () async {
+      // Seed: formas pares capturadas em 2026-01-<forma>; ímpares sem data.
+      final january = await all(
+        SpecimenQuery(
+          capturedAfter: DateTime(2026, 1, 10),
+          capturedBefore: DateTime(2026, 1, 14),
+        ),
+      );
+      // 12 é múltiplo de 3: no seed, faltante (sem specimen com data).
+      expect(january.map((s) => s.capturedAt!.day).toSet(), {10, 14});
+      expect(
+        (await all(SpecimenQuery(capturedBefore: DateTime(2026, 1, 2))))
+            .map((s) => s.form)
+            .toSet(),
+        {2},
+      );
+
+      final everything = await all(emptySpecimenQuery);
+      final dated = everything.where((s) => s.capturedAt != null).length;
+      final recent = await all(
+        const SpecimenQuery(ordering: SpecimenOrdering.capturedDesc),
+      );
+      final oldest = await all(
+        const SpecimenQuery(ordering: SpecimenOrdering.capturedAsc),
+      );
+      final created = await all(
+        const SpecimenQuery(ordering: SpecimenOrdering.createdDesc),
+      );
+      final dexOrder = await all(
+        emptySpecimenQuery.copyWith(ordering: SpecimenOrdering.dex),
+      );
+      expect(dexOrder.map((s) => s.id), everything.map((s) => s.id));
+      // Sem data vão para o fim nas duas direções.
+      for (final list in [recent, oldest]) {
+        expect(list.take(dated).every((s) => s.capturedAt != null), true);
+        expect(list.skip(dated).every((s) => s.capturedAt == null), true);
+      }
+      expect(
+        recent.first.capturedAt!.isAfter(recent[dated - 1].capturedAt!),
+        true,
+      );
+      expect(
+        oldest.first.capturedAt!.isBefore(oldest[dated - 1].capturedAt!),
+        true,
+      );
+      // Mesma data (ou sem data): desempata pelo id, na direção da ordem.
+      final undatedRecent = [for (final s in recent.skip(dated)) s.id];
+      final undatedOldest = [for (final s in oldest.skip(dated)) s.id];
+      expect(undatedRecent, [...undatedOldest.reversed]);
+      expect(created.map((s) => s.id), [
+        ...everything.map((s) => s.id).toList()..sort((a, b) => b - a),
+      ]);
+    });
+
+    test('mesma data de captura: desempate pelo id', () async {
+      final a = await backend.create(
+        SpecimenDraft(form: 1, capturedAt: DateTime(2030)),
+      );
+      final b = await backend.create(
+        SpecimenDraft(form: 2, capturedAt: DateTime(2030)),
+      );
+      final recent = await all(
+        const SpecimenQuery(ordering: SpecimenOrdering.capturedDesc),
+      );
+      final oldest = await all(
+        const SpecimenQuery(ordering: SpecimenOrdering.capturedAsc),
+      );
+      expect(recent.take(2).map((s) => s.id), [b.id, a.id]);
+      expect(
+        oldest.reversed
+            .where((s) => s.capturedAt != null)
+            .take(2)
+            .map((s) => s.id),
+        [b.id, a.id],
+      );
+    });
+
     test('paginação e página inválida', () async {
       final first = await backend.fetchSpecimens(
         emptySpecimenQuery,

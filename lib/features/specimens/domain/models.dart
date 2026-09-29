@@ -171,7 +171,7 @@ abstract class FormDetail with _$FormDetail {
       _$FormDetailFromJson(json);
 }
 
-/// Opção de um select. Pokébolas trazem também o [spriteUrl].
+/// Opção de um select. Pokébolas e tipos trazem também o [spriteUrl].
 @freezed
 abstract class Choice with _$Choice {
   const factory Choice({
@@ -190,6 +190,8 @@ abstract class SpecimenOptions with _$SpecimenOptions {
     @Default(<Choice>[]) List<Choice> gender,
     @Default(<Choice>[]) List<Choice> nature,
     @Default(<Choice>[]) List<Choice> pokeball,
+    @Default(<Choice>[]) List<Choice> type,
+    @Default(<Choice>[]) List<Choice> generation,
   }) = _SpecimenOptions;
 
   factory SpecimenOptions.fromJson(Map<String, dynamic> json) =>
@@ -248,38 +250,117 @@ enum SpecimenStatus {
   };
 }
 
-/// Filtros do inventário. Record: igualdade por valor, serve de chave de
-/// provider.
-typedef SpecimenQuery = ({
-  String search,
-  SpecimenStatus status,
-  bool shinyOnly,
-  bool alphaOnly,
-  bool fromGoOnly,
-});
+/// Ordem do inventário; [param] é o valor de `ordering` na API.
+enum SpecimenOrdering {
+  dex('dex', 'Nº da Pokédex'),
+  capturedDesc('-captured_at', 'Capturados recentemente'),
+  capturedAsc('captured_at', 'Capturados há mais tempo'),
+  createdDesc('-created_at', 'Cadastrados recentemente');
 
-const SpecimenQuery emptySpecimenQuery = (
-  search: '',
-  status: SpecimenStatus.all,
-  shinyOnly: false,
-  alphaOnly: false,
-  fromGoOnly: false,
-);
+  SpecimenOrdering(this.param, this.label);
 
-/// Records não têm `copyWith`; esta extensão evita repetir todos os campos
-/// a cada filtro que muda.
-extension SpecimenQueryCopy on SpecimenQuery {
-  SpecimenQuery copyWith({
-    String? search,
-    SpecimenStatus? status,
-    bool? shinyOnly,
-    bool? alphaOnly,
-    bool? fromGoOnly,
-  }) => (
-    search: search ?? this.search,
-    status: status ?? this.status,
-    shinyOnly: shinyOnly ?? this.shinyOnly,
-    alphaOnly: alphaOnly ?? this.alphaOnly,
-    fromGoOnly: fromGoOnly ?? this.fromGoOnly,
-  );
+  final String param;
+  final String label;
 }
+
+/// Filtros do inventário.
+///
+/// Classe freezed, e não record: serve de chave de provider e tem listas.
+/// Records comparam listas por identidade (duas listas iguais seriam chaves
+/// diferentes); o freezed compara pelo conteúdo.
+///
+/// Os filtros "rápidos" (busca, status, ✨, 💢, GO) ficam sempre na barra;
+/// os demais ("avançados") ficam na folha de filtros.
+@freezed
+abstract class SpecimenQuery with _$SpecimenQuery {
+  const factory SpecimenQuery({
+    @Default('') String search,
+    @Default(SpecimenStatus.all) SpecimenStatus status,
+    @Default(false) bool shinyOnly,
+    @Default(false) bool alphaOnly,
+    @Default(false) bool fromGoOnly,
+    @Default(<String>[]) List<String> pokeballs,
+    @Default(false) bool withoutPokeball,
+
+    /// Até 2 tipos; a forma precisa ter todos.
+    @Default(<String>[]) List<String> types,
+    @Default(<int>[]) List<int> ots,
+    @Default(false) bool withoutOt,
+    @Default(<String>[]) List<String> generations,
+    @Default(<String>[]) List<String> genders,
+    @Default(<String>[]) List<String> natures,
+    @Default(<String>[]) List<String> languages,
+    @Default('') String ability,
+    DateTime? capturedAfter,
+    DateTime? capturedBefore,
+    @Default(SpecimenOrdering.dex) SpecimenOrdering ordering,
+  }) = _SpecimenQuery;
+
+  const SpecimenQuery._();
+
+  /// Máximo de tipos (Pokémon têm no máximo dois).
+  static const maxTypes = 2;
+
+  /// Valor que a API entende como "sem" (pokébola, OT).
+  static const noneParam = 'none';
+
+  static final _dateFormat = DateFormat('yyyy-MM-dd');
+
+  bool get hasPokeballFilter => pokeballs.isNotEmpty || withoutPokeball;
+  bool get hasOtFilter => ots.isNotEmpty || withoutOt;
+  bool get hasCaptureFilter => capturedAfter != null || capturedBefore != null;
+
+  /// Quantos grupos de filtros avançados estão ativos (o número do badge do
+  /// botão Filtros). A ordem conta quando não é a padrão.
+  int get advancedCount => [
+    hasPokeballFilter,
+    types.isNotEmpty,
+    hasOtFilter,
+    generations.isNotEmpty,
+    genders.isNotEmpty,
+    natures.isNotEmpty,
+    languages.isNotEmpty,
+    ability.trim().isNotEmpty,
+    hasCaptureFilter,
+    ordering != SpecimenOrdering.dex,
+  ].where((active) => active).length;
+
+  /// Limpa os filtros avançados, mantendo os rápidos.
+  SpecimenQuery clearAdvanced() => SpecimenQuery(
+    search: search,
+    status: status,
+    shinyOnly: shinyOnly,
+    alphaOnly: alphaOnly,
+    fromGoOnly: fromGoOnly,
+  );
+
+  /// Parâmetros de `GET /specimens/`: só os filtros em uso.
+  Map<String, dynamic> toQueryParameters() {
+    String join(Iterable<Object> values) => values.join(',');
+    final search = this.search.trim();
+    final ability = this.ability.trim();
+    return {
+      if (search.isNotEmpty) 'search': search,
+      'available': ?status.availableParam,
+      if (shinyOnly) 'is_shiny': true,
+      if (alphaOnly) 'is_alpha': true,
+      if (fromGoOnly) 'is_from_go': true,
+      if (hasPokeballFilter)
+        'pokeball': join([...pokeballs, if (withoutPokeball) noneParam]),
+      if (types.isNotEmpty) 'type': join(types),
+      if (hasOtFilter) 'ot': join([...ots, if (withoutOt) noneParam]),
+      if (generations.isNotEmpty) 'generation': join(generations),
+      if (genders.isNotEmpty) 'gender': join(genders),
+      if (natures.isNotEmpty) 'nature': join(natures),
+      if (languages.isNotEmpty) 'language': join(languages),
+      if (ability.isNotEmpty) 'ability': ability,
+      if (capturedAfter != null)
+        'captured_after': _dateFormat.format(capturedAfter!),
+      if (capturedBefore != null)
+        'captured_before': _dateFormat.format(capturedBefore!),
+      if (ordering != SpecimenOrdering.dex) 'ordering': ordering.param,
+    };
+  }
+}
+
+const emptySpecimenQuery = SpecimenQuery();

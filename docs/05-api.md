@@ -19,7 +19,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |
 | GET | `/api/specimens/?form_id=&available=true&page_size=100` | `fetchAvailable` |
-| GET | `/api/specimens/?page=&page_size=20&search=&available=&is_shiny=` | `fetchSpecimens` (inventário; só os filtros usados vão na URL) |
+| GET | `/api/specimens/?page=&page_size=20&search=&available=&is_shiny=&pokeball=&type=&ot=&generation=&ordering=...` | `fetchSpecimens` (inventário; só os filtros usados vão na URL, listas separadas por vírgula; ver `SpecimenQuery.toQueryParameters`) |
 | GET | `/api/forms/?search=&page_size=30` | `searchForms` (seletor de forma do cadastro avulso) |
 | GET | `/api/slots/{id}/` | `fetchSlot` ("Ver no dex": descobre dex e box do slot) |
 | GET | `/api/slots/?personal_dex=&search=&page_size=30` | `searchSlots` (busca no dex: nome da forma ou número, na ordem das boxes) |
@@ -27,7 +27,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/specimens/{id}/` | `fetchSpecimen` (formulário de edição) |
 | PATCH | `/api/specimens/{id}/` | `update` (todos os campos menos `form`, que é imutável; vazios vão como `null`) |
 | DELETE | `/api/specimens/{id}/` | `release` (libertar: apaga o specimen, mesmo depositado; o slot fica faltante) |
-| GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas; cada pokébola traz `sprite_url`) |
+| GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas, tipos e gerações; pokébolas e tipos trazem `sprite_url`) |
 | GET | `/api/forms/{id}/` | `fetchForm` (habilidades da forma) |
 | GET | `/api/trainers/?page_size=100` | `fetchTrainers` |
 | POST | `/api/trainers/` | `createTrainer` (`{name, trainer_id, version?}`; nome + ID únicos) |
