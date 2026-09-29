@@ -14,6 +14,8 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/personal-dexes/{id}/` | `fetchDex` |
 | GET | `/api/personal-dexes/{id}/boxes/` | `fetchBoxes` (lista simples, sem paginação) |
 | GET | `/api/personal-dexes/{id}/generations/` | `fetchGenerations` (progresso por geração, com a primeira box de cada uma) |
+| GET | `/api/personal-dexes/preview/?force_new_box=` | `previewNewDex` (simula o dex padrão: formas, boxes, onde começa, se há espaço) |
+| POST | `/api/personal-dexes/` | `createDex` (`{name, is_shiny_dex, force_new_box}`; conjunto padrão nas primeiras boxes livres) |
 | GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |
 | GET | `/api/specimens/?form_id=&available=true&page_size=100` | `fetchAvailable` |

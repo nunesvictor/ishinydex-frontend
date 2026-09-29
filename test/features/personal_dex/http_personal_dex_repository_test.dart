@@ -138,4 +138,40 @@ void main() {
     expect(gens.single.label, 'Geração I');
     expect(gens.single.firstBox.name, 'HOME 1');
   });
+
+  test('previewNewDex e createDex', () async {
+    adapter
+      ..onGet(
+        'personal-dexes/preview/',
+        (server) => server.reply(200, {
+          'forms': 1227,
+          'boxes_needed': 45,
+          'largest_free_run': 150,
+          'enough_space': true,
+          'first_box': {'id': 50, 'name': 'HOME 50', 'position': 50},
+        }),
+        queryParameters: {'force_new_box': true},
+      )
+      ..onPost(
+        'personal-dexes/',
+        (server) => server.reply(201, {
+          'id': 3,
+          'name': 'Living',
+          'is_shiny_dex': false,
+          'force_new_box': true,
+          'total': 1227,
+          'registered': 0,
+        }),
+        data: {'name': 'Living', 'is_shiny_dex': false, 'force_new_box': true},
+      );
+    final preview = await repository.previewNewDex(forceNewBox: true);
+    expect(preview.boxesNeeded, 45);
+    expect(preview.firstBox!.name, 'HOME 50');
+    final dex = await repository.createDex(
+      name: 'Living',
+      isShinyDex: false,
+      forceNewBox: true,
+    );
+    expect(dex.total, 1227);
+  });
 }

@@ -149,3 +149,20 @@ abstract class GenerationProgress with _$GenerationProgress {
 
   int get missing => total - registered;
 }
+
+/// Simulação de um dex padrão (`GET /personal-dexes/preview/`).
+@freezed
+abstract class DexPreview with _$DexPreview {
+  const factory DexPreview({
+    required int forms,
+    required int boxesNeeded,
+    required int largestFreeRun,
+    required bool enoughSpace,
+
+    /// Onde o esquema começaria; `null` sem espaço.
+    BoxRef? firstBox,
+  }) = _DexPreview;
+
+  factory DexPreview.fromJson(Map<String, dynamic> json) =>
+      _$DexPreviewFromJson(json);
+}

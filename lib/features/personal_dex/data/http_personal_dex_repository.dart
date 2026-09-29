@@ -26,6 +26,33 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
   });
 
   @override
+  Future<DexPreview> previewNewDex({required bool forceNewBox}) =>
+      guardRequest(() async {
+        final response = await _dio.get<Map<String, dynamic>>(
+          'personal-dexes/preview/',
+          queryParameters: {'force_new_box': forceNewBox},
+        );
+        return DexPreview.fromJson(response.data!);
+      });
+
+  @override
+  Future<PersonalDex> createDex({
+    required String name,
+    required bool isShinyDex,
+    required bool forceNewBox,
+  }) => guardRequest(() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      'personal-dexes/',
+      data: {
+        'name': name,
+        'is_shiny_dex': isShinyDex,
+        'force_new_box': forceNewBox,
+      },
+    );
+    return PersonalDex.fromJson(response.data!);
+  });
+
+  @override
   Future<PersonalDex> fetchDex(int dexId) => guardRequest(() async {
     final response = await _dio.get<Map<String, dynamic>>(
       'personal-dexes/$dexId/',

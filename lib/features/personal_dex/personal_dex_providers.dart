@@ -42,6 +42,15 @@ final FutureProviderFamily<List<GenerationProgress>, int> generationsProvider =
           ref.watch(personalDexRepositoryProvider).fetchGenerations(dexId),
     );
 
+/// Simulação do dex padrão, por opção de "nova box a cada geração".
+final FutureProviderFamily<DexPreview, bool> dexPreviewProvider = FutureProvider
+    .autoDispose
+    .family<DexPreview, bool>(
+      (ref, forceNewBox) => ref
+          .watch(personalDexRepositoryProvider)
+          .previewNewDex(forceNewBox: forceNewBox),
+    );
+
 typedef BoxKey = ({int dexId, int boxId});
 
 final FutureProviderFamily<List<Slot>, BoxKey> slotsProvider = FutureProvider

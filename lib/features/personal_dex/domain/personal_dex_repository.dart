@@ -5,6 +5,16 @@ abstract interface class PersonalDexRepository {
 
   Future<PersonalDex> fetchDex(int dexId);
 
+  /// Simula um dex com o conjunto padrão de formas, sem criar nada.
+  Future<DexPreview> previewNewDex({required bool forceNewBox});
+
+  /// Cria um dex com o conjunto padrão de formas nas primeiras boxes livres.
+  Future<PersonalDex> createDex({
+    required String name,
+    required bool isShinyDex,
+    required bool forceNewBox,
+  });
+
   Future<List<BoxSummary>> fetchBoxes(int dexId);
 
   /// Progresso por geração, na ordem em que as gerações aparecem nas boxes.

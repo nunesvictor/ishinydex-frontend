@@ -135,8 +135,19 @@ Não existe mais "retirar" (desvincular sem apagar) no app. O endpoint
 
 ## Escolha do PersonalDex
 
-Um usuário pode ter vários dexes (por enquanto criados só pelo backend, com
-`create_personal_dex`).
+Um usuário pode ter vários dexes.
+
+- **Criar pelo app:** "Novo PersonalDex" na lista abre o
+  [`NewDexPage`](../lib/features/personal_dex/presentation/new_dex_page.dart).
+  - **Padrão:** o mesmo conjunto de formas do comando `create_personal_dex`,
+    com as regras explicadas na tela. Tem as opções "Dex shiny" e "Nova box a
+    cada geração".
+  - **Resumo antes de criar:** `GET /personal-dexes/preview/` diz quantas formas,
+    quantas boxes e a partir de qual box. Sem espaço, o botão fica desabilitado.
+  - **Criação:** `POST /personal-dexes/` instala o esquema na primeira sequência
+    de boxes livres, e o app abre o dex novo.
+  - **Personalizado:** aparece como "em breve". Chama `openCustomDexFlow`, que
+    hoje só avisa e é o ponto a substituir quando esse fluxo for definido.
 
 - **Último dex lembrado:** ao abrir um dex, a `DexDetailPage` grava o id num
   `LastDexStorage`

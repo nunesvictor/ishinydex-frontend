@@ -61,6 +61,21 @@ class _FlakyRepository implements PersonalDexRepository {
   Future<Slot> fetchSlot(int slotId) => inner.fetchSlot(slotId);
 
   @override
+  Future<DexPreview> previewNewDex({required bool forceNewBox}) =>
+      inner.previewNewDex(forceNewBox: forceNewBox);
+
+  @override
+  Future<PersonalDex> createDex({
+    required String name,
+    required bool isShinyDex,
+    required bool forceNewBox,
+  }) => inner.createDex(
+    name: name,
+    isShinyDex: isShinyDex,
+    forceNewBox: forceNewBox,
+  );
+
+  @override
   Future<List<Slot>> searchSlots({
     required int dexId,
     required String search,
