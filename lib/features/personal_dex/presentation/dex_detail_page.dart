@@ -50,6 +50,12 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   /// A box pedida na URL só é aplicada uma vez, quando as boxes carregam.
   bool _initialBoxApplied = false;
   bool _onlyMissing = false;
+
+  /// Lista de boxes ao lado da grade (expandido e maior). `null` = padrão do
+  /// tamanho: aberta só em telas largas, para a grade crescer no PC.
+  bool? _boxListOpen;
+
+  bool _isBoxListOpen(WindowSize size) => _boxListOpen ?? size.isLarge;
   PageController? _pageController;
 
   int get _dexId => widget.dexId;
@@ -80,6 +86,18 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
           title: dex.value?.name ?? 'PersonalDex',
         ),
         actions: [
+          if (WindowSize.of(context).isExpanded)
+            IconButton(
+              tooltip: _isBoxListOpen(WindowSize.of(context))
+                  ? 'Ocultar lista de boxes'
+                  : 'Mostrar lista de boxes',
+              isSelected: _isBoxListOpen(WindowSize.of(context)),
+              onPressed: () => setState(
+                () => _boxListOpen = !_isBoxListOpen(WindowSize.of(context)),
+              ),
+              icon: const Icon(Icons.view_sidebar_outlined),
+              selectedIcon: const Icon(Icons.view_sidebar),
+            ),
           IconButton(
             tooltip: 'Progresso por geração',
             onPressed: _openGenerations,
@@ -144,7 +162,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     );
     return Row(
       children: [
-        if (size.isExpanded) ...[
+        if (size.isExpanded && _isBoxListOpen(size)) ...[
           SizedBox(
             width: 220,
             child: BoxListPanel(

@@ -15,6 +15,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 const compactSize = Size(400, 800);
 const mediumSize = Size(800, 900);
 const expandedSize = Size(1400, 900);
+const largeSize = Size(1600, 1000);
 
 const fakeEnv = Env(apiBaseUrl: 'http://test/api', useFakeApi: true);
 

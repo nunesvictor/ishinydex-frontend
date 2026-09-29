@@ -94,10 +94,15 @@ void main() {
     expect(find.text('Ok'), findsOneWidget);
   });
 
-  testWidgets('rail estendido no layout expandido', (tester) async {
+  testWidgets('rail estendido só em telas largas', (tester) async {
     await pumpFullApp(tester);
-    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-    expect(rail.extended, true);
+    NavigationRail rail() =>
+        tester.widget<NavigationRail>(find.byType(NavigationRail));
+    // Até 1440px o rail fica compacto: a largura vai para a grade.
+    expect(rail().extended, false);
+    await setScreenSize(tester, largeSize);
+    await tester.pumpAndSettle();
+    expect(rail().extended, true);
   });
 
   testWidgets('dexId inválido mostra erro', (tester) async {

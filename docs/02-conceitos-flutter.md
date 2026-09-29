@@ -112,7 +112,13 @@ O app usa as três classes de largura do Material 3, definidas em
 | --- | --- | --- | --- |
 | `compact` | < 600 | `NavigationBar` embaixo | Swipe entre boxes (`PageView`); detalhe em *bottom sheet* |
 | `medium` | 600–1023 | `NavigationRail` à esquerda | Grade + painel de detalhe |
-| `expanded` | ≥ 1024 | `NavigationRail` estendido | Lista de boxes + grade + detalhe |
+| `expanded` | 1024–1439 | `NavigationRail` compacto | Grade + detalhe; lista de boxes recolhível (começa oculta) |
+| `large` | ≥ 1440 | `NavigationRail` estendido | Lista de boxes + grade + detalhe (lista recolhível, começa aberta) |
+
+A célula da box cresce até 200px (`maxCellSize` em `box_grid.dart`), com
+folga interna proporcional. Os selos ✨ e 💢 ficam juntos no canto superior
+esquerdo: lado a lado a partir de 64px de célula, empilhados abaixo disso, e
+só o ✨ em células menores que 40px.
 
 Os widgets só perguntam `WindowSize.of(context)` e escolhem o layout:
 

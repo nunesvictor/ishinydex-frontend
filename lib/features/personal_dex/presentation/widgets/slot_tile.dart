@@ -27,6 +27,12 @@ class SlotTile extends StatelessWidget {
     super.key,
   });
 
+  /// A partir deste tamanho, ✨ e 💢 ficam lado a lado; abaixo, empilhados.
+  static const badgesInRowMinSize = 64.0;
+
+  /// Abaixo deste tamanho não cabe o segundo selo: fica só o ✨.
+  static const alphaMinSize = 40.0;
+
   final Slot slot;
   final bool selected;
   final bool dimmed;
@@ -58,6 +64,17 @@ class SlotTile extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final size = constraints.biggest.shortestSide;
+              // Folga interna proporcional: os selos nunca encostam na borda.
+              final inset = size * 0.06;
+              final badgeStyle = TextStyle(fontSize: size * 0.16);
+              final badges = [
+                if (specimen != null && specimen.isShiny)
+                  Text(shinyEmoji, semanticsLabel: 'Shiny', style: badgeStyle),
+                if (specimen != null &&
+                    specimen.isAlpha &&
+                    size >= SlotTile.alphaMinSize)
+                  Text(alphaEmoji, semanticsLabel: 'Alfa', style: badgeStyle),
+              ];
               return Stack(
                 fit: StackFit.expand,
                 children: [
@@ -66,36 +83,35 @@ class SlotTile extends StatelessWidget {
                       opacity: slot.isMissing ? 0.35 : 1,
                       child: PokemonSprite(
                         url: slot.spriteUrl,
-                        size: size * 0.85,
+                        size: size * 0.8,
                         semanticLabel: form.displayName,
                       ),
                     ),
                   ),
+                  // Canto superior esquerdo: selos juntos (✨ e 💢). Os cantos
+                  // livres (topo-direito, base-esquerda) ficam para ícones
+                  // futuros, como a geração.
+                  if (badges.isNotEmpty)
+                    Positioned(
+                      left: inset,
+                      top: inset,
+                      child: size >= SlotTile.badgesInRowMinSize
+                          ? Row(
+                              key: const ValueKey('badges-row'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: badges,
+                            )
+                          : Column(
+                              key: const ValueKey('badges-column'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: badges,
+                            ),
+                    ),
                   if (ballUrl != null)
                     Positioned(
-                      right: 2,
-                      bottom: 2,
-                      child: PokemonSprite(url: ballUrl, size: size * 0.3),
-                    ),
-                  if (specimen != null && specimen.isShiny)
-                    Positioned(
-                      left: 2,
-                      top: 2,
-                      child: Text(
-                        shinyEmoji,
-                        semanticsLabel: 'Shiny',
-                        style: TextStyle(fontSize: size * 0.16),
-                      ),
-                    ),
-                  if (specimen != null && specimen.isAlpha)
-                    Positioned(
-                      right: 2,
-                      top: 2,
-                      child: Text(
-                        alphaEmoji,
-                        semanticsLabel: 'Alfa',
-                        style: TextStyle(fontSize: size * 0.16),
-                      ),
+                      right: inset,
+                      bottom: inset,
+                      child: PokemonSprite(url: ballUrl, size: size * 0.28),
                     ),
                 ],
               );

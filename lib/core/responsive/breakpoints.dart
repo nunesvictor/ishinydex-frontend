@@ -4,12 +4,18 @@ import 'package:flutter/widgets.dart';
 enum WindowSize {
   compact,
   medium,
-  expanded;
+  expanded,
+
+  /// Monitores largos (PC): cabem rail estendido e lista de boxes sem
+  /// apertar a grade.
+  large;
 
   static const mediumMin = 600.0;
   static const expandedMin = 1024.0;
+  static const largeMin = 1440.0;
 
   static WindowSize fromWidth(double width) {
+    if (width >= largeMin) return WindowSize.large;
     if (width >= expandedMin) return WindowSize.expanded;
     if (width >= mediumMin) return WindowSize.medium;
     return WindowSize.compact;
@@ -19,7 +25,10 @@ enum WindowSize {
       fromWidth(MediaQuery.sizeOf(context).width);
 
   bool get isCompact => this == WindowSize.compact;
-  bool get isExpanded => this == WindowSize.expanded;
+
+  /// Expandido ou maior (layouts de PC).
+  bool get isExpanded => index >= WindowSize.expanded.index;
+  bool get isLarge => this == WindowSize.large;
 }
 
 /// Desktop (mouse e teclado físico) × mobile (toque).
