@@ -19,4 +19,14 @@ abstract interface class SpecimenRepository {
   Future<SpecimenOptions> fetchOptions();
 
   Future<List<Trainer>> fetchTrainers();
+
+  /// Cria um treinador original; [version] é o `name` de uma [GameVersion].
+  Future<Trainer> createTrainer({
+    required String name,
+    required String trainerId,
+    String? version,
+  });
+
+  /// Versões de jogo em ordem de lançamento.
+  Future<List<GameVersion>> fetchVersions();
 }

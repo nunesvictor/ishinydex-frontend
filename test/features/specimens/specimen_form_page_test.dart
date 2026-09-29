@@ -123,6 +123,46 @@ void main() {
     expect(results.single!.id, 99);
   });
 
+  testWidgets('novo treinador fica selecionado e vai no cadastro', (
+    tester,
+  ) async {
+    when(repository.fetchVersions).thenAnswer((_) async => const []);
+    when(() => repository.createTrainer(name: 'Red', trainerId: '1996'))
+        .thenAnswer(
+          (_) async => const Trainer(id: 13, name: 'Red', trainerId: '1996'),
+        );
+    when(() => repository.create(any()))
+        .thenAnswer((invocation) async => const Specimen(id: 1, form: 1));
+    await pumpForm(tester);
+    await tester.pumpAndSettle();
+
+    // Cancelar não muda nada.
+    await tester.tap(find.byTooltip('Novo treinador'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Red (1996)'), findsNothing);
+
+    await tester.tap(find.byTooltip('Novo treinador'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Nome'), 'Red');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'ID do treinador'),
+      '1996',
+    );
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    // O select de OT já mostra o treinador criado.
+    expect(find.text('Red (1996)'), findsOneWidget);
+
+    await tester.tap(find.text('Salvar e depositar'));
+    await tester.pumpAndSettle();
+    final draft =
+        verify(() => repository.create(captureAny())).captured.single
+            as SpecimenDraft;
+    expect(draft.ot, 13);
+  });
+
   testWidgets('erro de validação aparece no campo', (tester) async {
     when(() => repository.create(any())).thenThrow(
       ValidationFailure({

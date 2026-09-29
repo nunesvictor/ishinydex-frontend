@@ -105,6 +105,34 @@ class FakeBackend
   int _nextSlotId = 1;
   int _nextSpecimenId = 1;
 
+  final versions = const [
+    GameVersion(
+      name: 'red',
+      versionGroup: 'red-blue',
+      generation: 'generation-i',
+    ),
+    GameVersion(
+      name: 'gold',
+      versionGroup: 'gold-silver',
+      generation: 'generation-ii',
+    ),
+    GameVersion(
+      name: 'sword',
+      versionGroup: 'sword-shield',
+      generation: 'generation-viii',
+    ),
+    GameVersion(
+      name: 'scarlet',
+      versionGroup: 'scarlet-violet',
+      generation: 'generation-ix',
+    ),
+    GameVersion(
+      name: 'violet',
+      versionGroup: 'scarlet-violet',
+      generation: 'generation-ix',
+    ),
+  ];
+
   final options = const SpecimenOptions(
     language: [
       Choice(value: 'pt-br', label: 'Português brasileiro'),
@@ -440,6 +468,42 @@ class FakeBackend
   Future<List<Trainer>> fetchTrainers() async {
     await _delay();
     return _trainers.values.toList();
+  }
+
+  /// Mesmas regras do backend: nome e ID obrigatórios, par (nome, ID) único
+  /// e versão existente.
+  @override
+  Future<Trainer> createTrainer({
+    required String name,
+    required String trainerId,
+    String? version,
+  }) async {
+    await _delay();
+    const blank = ['Este campo não pode ser em branco.'];
+    final errors = <String, List<String>>{
+      if (name.trim().isEmpty) 'name': blank,
+      if (trainerId.trim().isEmpty) 'trainer_id': blank,
+      if (version != null && !versions.any((v) => v.name == version))
+        'version': ['Objeto com name=$version não existe.'],
+    };
+    if (errors.isNotEmpty) throw ValidationFailure(errors);
+    if (_trainers.values.any(
+      (t) => t.name == name && t.trainerId == trainerId,
+    )) {
+      throw ValidationFailure({
+        ValidationFailure.nonFieldKey: [
+          'Os campos name, trainer_id devem criar um set único.',
+        ],
+      });
+    }
+    final id = addTrainer(name: name, trainerId: trainerId, version: version);
+    return _trainers[id]!;
+  }
+
+  @override
+  Future<List<GameVersion>> fetchVersions() async {
+    await _delay();
+    return versions;
   }
 
   // ---- Internos ----

@@ -70,4 +70,26 @@ class HttpSpecimenRepository implements SpecimenRepository {
     );
     return Paginated.fromJson(response.data!, Trainer.fromJson).results;
   });
+
+  @override
+  Future<Trainer> createTrainer({
+    required String name,
+    required String trainerId,
+    String? version,
+  }) => guardRequest(() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      'trainers/',
+      data: {'name': name, 'trainer_id': trainerId, 'version': ?version},
+    );
+    return Trainer.fromJson(response.data!);
+  });
+
+  @override
+  Future<List<GameVersion>> fetchVersions() => guardRequest(() async {
+    final response = await _dio.get<List<dynamic>>('versions/');
+    return [
+      for (final item in response.data!)
+        GameVersion.fromJson(item as Map<String, dynamic>),
+    ];
+  });
 }

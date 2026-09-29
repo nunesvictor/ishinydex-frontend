@@ -150,6 +150,33 @@ void main() {
     });
   });
 
+  test('createTrainer segue as regras do backend e fetchVersions', () async {
+    expect((await backend.fetchVersions()).first.name, 'red');
+    expect(
+      backend.createTrainer(name: ' ', trainerId: ''),
+      throwsA(
+        isA<ValidationFailure>()
+            .having((f) => f.errorFor('name'), 'name', isNotNull)
+            .having((f) => f.errorFor('trainer_id'), 'trainer_id', isNotNull),
+      ),
+    );
+    expect(
+      backend.createTrainer(name: 'Red', trainerId: '1', version: 'nope'),
+      _validation('version'),
+    );
+    final red = await backend.createTrainer(
+      name: 'Red',
+      trainerId: '1996',
+      version: 'red',
+    );
+    expect((await backend.fetchTrainers()).last, red);
+    // Par (nome, ID) repetido.
+    expect(
+      backend.createTrainer(name: 'Red', trainerId: '1996'),
+      _validation(ValidationFailure.nonFieldKey),
+    );
+  });
+
   test('create valida forma e ability', () async {
     expect(backend.create(const SpecimenDraft(form: 999)), _validation('form'));
     expect(
