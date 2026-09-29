@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -35,6 +36,8 @@ void main() {
     WidgetTester tester, {
     int? specimenId,
     Size size = const Size(600, 1600),
+    TargetPlatform platform = TargetPlatform.android,
+    CaptureDateFormat? dateFormat,
   }) async {
     final results = <Specimen?>[];
     await pumpWidgetApp(
@@ -56,6 +59,8 @@ void main() {
         ),
       ),
       size: size,
+      platform: platform,
+      dateFormat: InMemoryDateFormatStorage(dateFormat),
       overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
     );
     await tester.tap(find.text('abrir'));
@@ -272,6 +277,103 @@ void main() {
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.text('Bulba'), findsOneWidget);
+    });
+  });
+
+  group('data de captura', () {
+    Finder dateField() => find.byKey(const ValueKey('field-captured-at'));
+
+    Future<SpecimenDraft> save(WidgetTester tester) async {
+      await tester.tap(find.text('Salvar e depositar'));
+      await tester.pumpAndSettle();
+      return verify(() => repository.create(captureAny())).captured.single
+          as SpecimenDraft;
+    }
+
+    setUp(() {
+      when(() => repository.create(any()))
+          .thenAnswer((_) async => const Specimen(id: 1, form: 1));
+    });
+
+    testWidgets('PC: digitável no formato HOME (padrão)', (tester) async {
+      await pumpForm(tester, platform: TargetPlatform.linux);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: dateField(), matching: find.text('mm/dd/aaaa')),
+        findsOneWidget,
+      );
+      await tester.enterText(dateField(), '09/23/2024');
+      await tester.pump();
+      expect((await save(tester)).capturedAt, DateTime(2024, 9, 23));
+    });
+
+    testWidgets('PC: data inválida ou no futuro não deixa salvar', (
+      tester,
+    ) async {
+      await pumpForm(tester, platform: TargetPlatform.linux);
+      await tester.pumpAndSettle();
+      await tester.enterText(dateField(), '23/09/2024');
+      await tester.pump();
+      expect(find.textContaining('Data inválida'), findsOneWidget);
+      await tester.enterText(dateField(), '01/01/2100');
+      await tester.pump();
+      expect(find.text('Data no futuro'), findsOneWidget);
+
+      await tester.tap(find.text('Salvar e depositar'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Corrija a data de captura antes de salvar.'),
+        findsOneWidget,
+      );
+      verifyNever(() => repository.create(any()));
+    });
+
+    testWidgets('PC: calendário preenche o campo; formato da localização', (
+      tester,
+    ) async {
+      await pumpForm(
+        tester,
+        platform: TargetPlatform.linux,
+        dateFormat: CaptureDateFormat.locale,
+      );
+      await tester.pumpAndSettle();
+      // Inválida primeiro: escolher no calendário limpa o erro.
+      await tester.enterText(dateField(), '99/99/9999');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Escolher no calendário'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Data inválida'), findsNothing);
+      final text = tester
+          .widget<TextField>(
+            find.descendant(of: dateField(), matching: find.byType(TextField)),
+          )
+          .controller!
+          .text;
+      // dd/mm/aaaa: dia primeiro.
+      final now = DateTime.now();
+      expect(text, startsWith(now.day.toString().padLeft(2, '0')));
+      await tester.enterText(dateField(), '');
+      await tester.pump();
+      expect((await save(tester)).capturedAt, isNull);
+    });
+
+    testWidgets('celular: calendário, exibido no formato escolhido', (
+      tester,
+    ) async {
+      await pumpForm(tester);
+      await tester.pumpAndSettle();
+      expect(dateField(), findsNothing);
+      await tester.tap(find.text('Data de captura'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      final now = DateTime.now();
+      final home =
+          '${now.month.toString().padLeft(2, '0')}/'
+          '${now.day.toString().padLeft(2, '0')}/${now.year}';
+      expect(find.text(home), findsOneWidget);
     });
   });
 }

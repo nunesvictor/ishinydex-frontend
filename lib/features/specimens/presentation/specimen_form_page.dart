@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/settings/data/date_format_storage.dart';
+import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/capture_date_field.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -116,6 +120,9 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
   /// para não perder o que já foi preenchido.
   late final List<Trainer> _trainers = [...widget.trainers];
   bool _saving = false;
+
+  /// Erro do campo de data digitável; enquanto houver, não dá para salvar.
+  String? _dateError;
   ValidationFailure? _validation;
   String? _error;
 
@@ -235,18 +242,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                 ),
               ],
             ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event),
-              title: const Text('Data de captura'),
-              subtitle: Text(
-                _draft.capturedAt == null
-                    ? 'Não informada'
-                    : MaterialLocalizations.of(context)
-                          .formatCompactDate(_draft.capturedAt!),
-              ),
-              onTap: _pickDate,
-            ),
+            _captureDate(),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               title: const Text('Shiny'),
@@ -316,6 +312,40 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     ),
   );
 
+  /// No PC a data é digitável; no celular, tocar abre o calendário. Nos
+  /// dois casos, no formato escolhido nos Ajustes.
+  Widget _captureDate() {
+    final format =
+        ref.watch(captureDateFormatProvider).value ?? CaptureDateFormat.home;
+    final pattern = CaptureDatePattern(
+      format,
+      Localizations.localeOf(context).toString(),
+    );
+    if (isDesktopPlatform(Theme.of(context).platform)) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: CaptureDateField(
+          key: const ValueKey('field-captured-at'),
+          value: _draft.capturedAt,
+          pattern: pattern,
+          onChanged: (date, error) {
+            _draft = _draft.copyWith(capturedAt: date);
+            _dateError = error;
+          },
+          onPickFromCalendar: _pickDate,
+        ),
+      );
+    }
+    final date = _draft.capturedAt;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.event),
+      title: const Text('Data de captura'),
+      subtitle: Text(date == null ? 'Não informada' : pattern.format(date)),
+      onTap: _pickDate,
+    );
+  }
+
   Future<void> _newTrainer() async {
     final created = await showNewTrainerDialog(context);
     if (created == null || !mounted) return;
@@ -334,11 +364,18 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       lastDate: now,
     );
     if (picked != null) {
-      setState(() => _draft = _draft.copyWith(capturedAt: picked));
+      setState(() {
+        _draft = _draft.copyWith(capturedAt: picked);
+        _dateError = null;
+      });
     }
   }
 
   Future<void> _submit() async {
+    if (_dateError != null) {
+      setState(() => _error = 'Corrija a data de captura antes de salvar.');
+      return;
+    }
     setState(() {
       _saving = true;
       _validation = null;
