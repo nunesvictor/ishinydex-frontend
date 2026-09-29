@@ -57,3 +57,16 @@ jobs:
           --driver=test_driver/integration_test.dart
           --target=integration_test/app_test.dart
           -d web-server --browser-name=chrome --headless
+
+  docker:
+    name: Imagem Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

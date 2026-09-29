@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/network/api_client.dart';
@@ -7,7 +8,7 @@ import 'package:ishinydex/features/auth/data/auth_repository.dart';
 import 'package:ishinydex/features/auth/data/token_storage.dart';
 
 final tokenStorageProvider = Provider<TokenStorage>(
-  (ref) => SecureTokenStorage(),
+  (ref) => createTokenStorage(isWeb: kIsWeb),
 );
 
 final dioProvider = Provider<Dio>((ref) {

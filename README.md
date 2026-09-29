@@ -5,7 +5,8 @@ ver as boxes (no mesmo layout do Pokémon HOME), acompanhar o progresso e
 **depositar** specimens nos slots.
 
 - 🌐 **Web responsiva**: desktop (3 painéis), tablet (2 painéis) e celular (swipe entre boxes).
-- 📱 **iPhone**: instalável como **PWA** pelo Safari, ou como app nativo via `.ipa` gerado no GitHub Actions.
+- 🐳 **Deploy local em Docker**: nginx servindo o app e repassando a API; acesso por `http://<ip-do-pc>:8090` no PC e no celular.
+- 📱 **iPhone**: pelo navegador; no futuro como **PWA** (HTTPS) ou app nativo via `.ipa` gerado no GitHub Actions.
 - ✅ **100% de cobertura de testes** (unitários, de widget e de integração no navegador).
 
 ## Início rápido
@@ -42,12 +43,13 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 | Testes + cobertura | `flutter test --coverage && dart run tool/check_coverage.dart` |
 | Teste de integração (web) | veja [docs/03-testes.md](docs/03-testes.md#teste-de-integração-no-navegador) |
 | Build web | `flutter build web --dart-define=API_BASE_URL=https://.../api` |
+| Deploy local (Docker) | `docker compose up -d --build` → `http://<ip-do-pc>:8090` (veja [docs/06-deploy-local.md](docs/06-deploy-local.md)) |
 
 ### Configuração (`--dart-define`)
 
 | Variável | Padrão | Uso |
 | --- | --- | --- |
-| `API_BASE_URL` | `http://localhost:8008/api` | Endereço da API do backend |
+| `API_BASE_URL` | `http://localhost:8008/api` | Endereço da API do backend. Aceita URL relativa (`/api`), resolvida contra o endereço da página. |
 | `USE_FAKE_API` | `false` | `true` usa o backend fake em memória ([lib/fake/fake_backend.dart](lib/fake/fake_backend.dart)) |
 
 ## Documentação
@@ -59,6 +61,7 @@ Leia nesta ordem se você está começando com Flutter:
 3. [**Testes**](docs/03-testes.md): tipos de teste, helpers, mocks e o gate de 100% de cobertura.
 4. [**iPhone: PWA e .ipa**](docs/04-ios-e-pwa.md): como instalar no iPhone e como o CI gera o `.ipa`.
 5. [**API**](docs/05-api.md): endpoints consumidos e como integrar um novo.
+6. [**Deploy local**](docs/06-deploy-local.md): Docker + nginx, acesso pela rede, dia a dia e problemas comuns.
 
 ## Estrutura resumida
 
@@ -76,5 +79,8 @@ lib/
 test/                 # espelha lib/
 integration_test/     # fluxo completo no navegador
 tool/                 # scripts (verificação de cobertura)
+deploy/nginx/         # configuração do nginx do deploy local
+Dockerfile            # build multi-stage (Flutter → nginx)
+docker-compose.yml    # deploy local
 .github/workflows/    # CI (testes) e iOS (.ipa)
 ```

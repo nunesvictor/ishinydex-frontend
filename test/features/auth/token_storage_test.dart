@@ -2,6 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/features/auth/data/token_storage.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockSecureStorage extends Mock implements FlutterSecureStorage;
 
@@ -44,5 +45,20 @@ void main() {
     test('construtor padrão', () {
       expect(SecureTokenStorage(), isA<TokenStorage>());
     });
+  });
+
+  test('PrefsTokenStorage usa o localStorage (shared_preferences)', () async {
+    SharedPreferences.setMockInitialValues({'auth_token': 'salvo'});
+    final storage = PrefsTokenStorage();
+    expect(await storage.read(), 'salvo');
+    await storage.write('novo');
+    expect(await storage.read(), 'novo');
+    await storage.delete();
+    expect(await storage.read(), isNull);
+  });
+
+  test('createTokenStorage escolhe pela plataforma', () {
+    expect(createTokenStorage(isWeb: true), isA<PrefsTokenStorage>());
+    expect(createTokenStorage(isWeb: false), isA<SecureTokenStorage>());
   });
 }

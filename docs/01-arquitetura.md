@@ -33,7 +33,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | --- | --- |
 | [lib/main.dart](../lib/main.dart) | Cria o `ProviderScope` e sobe o app |
 | [lib/app.dart](../lib/app.dart) | `MaterialApp.router`: tema claro/escuro, idioma pt-BR, rotas |
-| [lib/core/config/env.dart](../lib/core/config/env.dart) | Lê `API_BASE_URL` e `USE_FAKE_API` do `--dart-define` |
+| [lib/core/config/env.dart](../lib/core/config/env.dart) | Lê `API_BASE_URL` (absoluta ou relativa, ex.: `/api`) e `USE_FAKE_API` do `--dart-define` |
 | [lib/core/network/](../lib/core/network/) | `createDio` + `AuthInterceptor`, `AppFailure` (erros do DRF → mensagens), `Paginated<T>` |
 | [lib/core/router/app_router.dart](../lib/core/router/app_router.dart) | Rotas e redirecionamento de login |
 | [lib/core/responsive/](../lib/core/responsive/) | `WindowSize` (breakpoints) e `AdaptiveShell` (NavigationBar/Rail) |
@@ -107,9 +107,13 @@ Regras de negócio que vêm do backend e que o app trata:
 
 - [`AuthController`](../lib/features/auth/auth_providers.dart) é um
   `AsyncNotifier<String?>`: o valor é o token, ou `null` se deslogado.
-- O token é salvo com `flutter_secure_storage`
-  ([token_storage.dart](../lib/features/auth/data/token_storage.dart)). Na
-  web, ele usa WebCrypto + localStorage, o que exige HTTPS ou `localhost`.
+- O token é salvo por um `TokenStorage`
+  ([token_storage.dart](../lib/features/auth/data/token_storage.dart)),
+  escolhido por `createTokenStorage`:
+  - **web**: `PrefsTokenStorage` (`localStorage`). O `flutter_secure_storage`
+    da web depende de WebCrypto, que não existe em HTTP fora de `localhost`, e
+    o app é acessado pelo IP da rede ([06-deploy-local.md](06-deploy-local.md));
+  - **iOS**: `SecureTokenStorage` (Keychain).
 - O `dioProvider` lê o token do `AuthController` a cada requisição.
 
 ## Como adicionar uma feature (receita)

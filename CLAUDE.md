@@ -8,6 +8,7 @@ O usuário está aprendendo Flutter: explique decisões e mantenha `docs/` atual
 - `flutter analyze` e `dart format lib test tool integration_test test_driver` — o CI verifica ambos
 - `flutter test --coverage && dart run tool/check_coverage.dart` — gate de 100% de linhas (exclui *.g.dart, *.freezed.dart, main.dart)
 - `flutter run -d chrome --dart-define=USE_FAKE_API=true` — demo sem backend
+- Deploy local: `docker compose up -d --build` → nginx em `:8090` servindo o app e repassando /api /media /static /admin para o backend `prod` (`:8080`); guia em `docs/06-deploy-local.md`
 - Backend local: `http://localhost:8008/api` (contrato em `../ishinydex-backend/docs/plans/frontend-api.md`)
 
 ## Convenções
@@ -16,3 +17,4 @@ O usuário está aprendendo Flutter: explique decisões e mantenha `docs/` atual
 - Toda regra da API deve existir também em `lib/fake/fake_backend.dart`
 - Testes espelham `lib/` em `test/`; telas testadas em `compactSize` e `expandedSize` (helpers em `test/helpers/`)
 - Textos da UI em pt-BR
+- Web usa `PrefsTokenStorage` (localStorage): WebCrypto não existe em HTTP fora de localhost; não voltar para secure storage na web

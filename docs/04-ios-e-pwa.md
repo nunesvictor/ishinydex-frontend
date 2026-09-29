@@ -13,6 +13,10 @@ Há dois jeitos de ter o app no iPhone:
 A web já é requisito do projeto, então o **PWA sai de graça** e é o caminho
 principal. O `.ipa` fica como alternativa.
 
+> **Hoje:** o app roda no Docker local e é acessado pelo Safari em
+> `http://<ip-do-pc>:8090` ([06-deploy-local.md](06-deploy-local.md)). O PWA
+> abaixo é o próximo passo, e depende de HTTPS.
+
 ---
 
 ## PWA
@@ -23,8 +27,9 @@ principal. O `.ipa` fica como alternativa.
 flutter build web --release --dart-define=API_BASE_URL=https://SEU-HOST/api
 ```
 
-O resultado é uma pasta estática em `build/web/`. Qualquer servidor HTTP serve
-(nginx, Caddy, o próprio Django, GitHub Pages...).
+O resultado é uma pasta estática em `build/web/`. Qualquer servidor HTTP serve.
+O [deploy local em Docker](06-deploy-local.md) já faz isso com nginx e
+`API_BASE_URL=/api`; para o PWA, basta colocar HTTPS na frente dele.
 
 ### 2. Hospedar com HTTPS
 
