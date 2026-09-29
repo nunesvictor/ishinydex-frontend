@@ -17,6 +17,10 @@ const _spriteBase =
 /// Ícones pequenos de tipo, como em `/specimens/options/`.
 const _typeBase = '$_spriteBase/types/generation-viii/sword-shield/small';
 
+/// `gender_rate` das espécies da demonstração (as demais: 4, macho ou
+/// fêmea). Nidoran♀ só fêmea; Nidoran♂ só macho.
+const _seedGenderRates = {29: 8, 30: 8, 31: 8, 32: 0, 33: 0, 34: 0};
+
 /// Tipos das formas da demonstração (as demais são "normal").
 const _seedTypes = {
   4: ['fire'],
@@ -82,6 +86,7 @@ class FakeBackend
         id: index + 1,
         name: name,
         types: _seedTypes[index + 1] ?? const ['normal'],
+        genderRate: _seedGenderRates[index + 1] ?? 4,
       );
     }
     backend
@@ -132,6 +137,10 @@ class FakeBackend
   final _slots = <int, _SlotRecord>{};
   final _specimens = <int, Specimen>{};
   final _trainers = <int, Trainer>{};
+
+  /// `gender_rate` da espécie de cada forma (a API não expõe; a regra do
+  /// lote usa).
+  final _genderRates = <int, int>{};
 
   int _nextSlotId = 1;
   int _nextSpecimenId = 1;
@@ -215,7 +224,9 @@ class FakeBackend
     required int id,
     required String name,
     List<String> types = const ['normal'],
+    int genderRate = 4,
   }) {
+    _genderRates[id] = genderRate;
     _forms[id] = FormDetail(
       id: id,
       name: name,
@@ -658,6 +669,80 @@ class FakeBackend
   }
 
   @override
+  Future<List<int>> fetchSpecimenIds(SpecimenQuery query) async {
+    await _delay();
+    return [
+      for (final s
+          in _specimens.values.where((s) => _matches(s, query)).toList()
+            ..sort(_ordering(query.ordering)))
+        s.id,
+    ];
+  }
+
+  /// Como a API: tudo ou nada; id inexistente → 400; gênero validado pela
+  /// forma (`-male`/`-female`) ou pelo `gender_rate` da espécie.
+  @override
+  Future<int> bulkUpdate({
+    required List<int> ids,
+    required SpecimenChanges changes,
+  }) async {
+    await _delay();
+    final unique = ids.toSet();
+    if (unique.isEmpty || changes.isEmpty) {
+      throw ValidationFailure({
+        ValidationFailure.nonFieldKey: ['Nada para alterar.'],
+      });
+    }
+    final missing = unique.where((id) => !_specimens.containsKey(id));
+    if (missing.isNotEmpty) {
+      throw ValidationFailure({
+        'ids': ['espécimes não encontrados: ${missing.join(', ')}'],
+      });
+    }
+    if (changes.gender case SetTo(value: final String gender)) {
+      final conflicts = [
+        for (final id in unique.toList()..sort())
+          if (!allowedGenders(
+            _forms[_specimens[id]!.form]!,
+            _genderRates,
+          ).contains(gender))
+            (id: id, formName: _specimens[id]!.formName!),
+      ];
+      if (conflicts.isNotEmpty) {
+        throw GenderConflictFailure(
+          conflicts,
+          message:
+              'este gênero não é possível para ${conflicts.length} espécime(s).',
+        );
+      }
+    }
+    for (final id in unique) {
+      _specimens[id] = _applyChanges(_specimens[id]!, changes);
+    }
+    return unique.length;
+  }
+
+  Specimen _applyChanges(Specimen s, SpecimenChanges c) {
+    T? pick<T>(FieldEdit<T> edit, T? current) => switch (edit) {
+      Keep() => current,
+      SetTo(:final value) => value,
+    };
+    final pokeball = pick(c.pokeball, s.pokeball);
+    return s.copyWith(
+      pokeball: pokeball,
+      pokeballSpriteUrl: _ballSprite(pokeball),
+      ot: pick(c.ot, s.ot),
+      language: pick(c.language, s.language),
+      gender: pick(c.gender, s.gender),
+      nature: pick(c.nature, s.nature),
+      capturedAt: pick(c.capturedAt, s.capturedAt),
+      isShiny: pick(c.isShiny, s.isShiny) ?? s.isShiny,
+      isAlpha: pick(c.isAlpha, s.isAlpha) ?? s.isAlpha,
+      isFromGo: pick(c.isFromGo, s.isFromGo) ?? s.isFromGo,
+    );
+  }
+
+  @override
   Future<List<FormRef>> searchForms(String search) async {
     await _delay();
     final text = search.trim().toLowerCase();
@@ -912,4 +997,17 @@ class FakeBackend
 
   String? _ballSprite(String? ball) =>
       ball == null ? null : '$_spriteBase/items/$ball.png';
+}
+
+/// Gêneros possíveis para a forma (mesma regra do backend,
+/// `home.services.allowed_genders`).
+Set<String> allowedGenders(FormDetail form, Map<int, int> genderRates) {
+  if (form.name.endsWith('-female')) return {'female'};
+  if (form.name.endsWith('-male')) return {'male'};
+  return switch (genderRates[form.id] ?? 4) {
+    -1 => {'genderless'},
+    0 => {'male'},
+    8 => {'female'},
+    _ => {'male', 'female'},
+  };
 }

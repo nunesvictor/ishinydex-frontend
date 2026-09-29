@@ -15,6 +15,17 @@ abstract interface class SpecimenRepository {
     required int pageSize,
   });
 
+  /// Ids de todos os specimens do filtro, na ordem da lista (para
+  /// "selecionar todos os resultados").
+  Future<List<int>> fetchSpecimenIds(SpecimenQuery query);
+
+  /// Aplica [changes] a todos os [ids], tudo ou nada. Devolve quantos foram
+  /// atualizados. Gênero impossível para algum → [GenderConflictFailure].
+  Future<int> bulkUpdate({
+    required List<int> ids,
+    required SpecimenChanges changes,
+  });
+
   /// Formas cujo nome contém [search] (primeiros resultados).
   Future<List<FormRef>> searchForms(String search);
 

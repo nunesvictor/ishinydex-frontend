@@ -179,6 +179,103 @@ void main() {
     expect(filtered.results.single.id, 1);
   });
 
+  test('fetchSpecimenIds envia os filtros', () async {
+    adapter.onGet(
+      'specimens/ids/',
+      (server) => server.reply(200, [3, 1]),
+      queryParameters: {'pokeball': 'none'},
+    );
+    expect(
+      await repository.fetchSpecimenIds(
+        const SpecimenQuery(withoutPokeball: true),
+      ),
+      [3, 1],
+    );
+  });
+
+  group('bulkUpdate', () {
+    const changes = SpecimenChanges(pokeball: SetTo('dive-ball'));
+
+    test('envia ids e só as alterações', () async {
+      adapter.onPatch(
+        'specimens/bulk/',
+        (server) => server.reply(200, {'updated': 2}),
+        data: {
+          'ids': [1, 2],
+          'changes': {'pokeball': 'dive-ball'},
+        },
+      );
+      expect(await repository.bulkUpdate(ids: [1, 2], changes: changes), 2);
+    });
+
+    test('conflito de gênero vira GenderConflictFailure', () async {
+      adapter.onPatch(
+        'specimens/bulk/',
+        (server) => server.reply(400, {
+          'gender': ['este gênero não é possível para 1 espécime(s).'],
+          'conflicts': [
+            {'id': 7, 'form_name': 'latias'},
+          ],
+        }),
+        data: {
+          'ids': [7],
+          'changes': {'gender': 'male'},
+        },
+      );
+      await expectLater(
+        repository.bulkUpdate(
+          ids: [7],
+          changes: const SpecimenChanges(gender: SetTo('male')),
+        ),
+        throwsA(
+          isA<GenderConflictFailure>()
+              .having((f) => f.conflicts, 'conflicts', [
+                (id: 7, formName: 'latias'),
+              ])
+              .having(
+                (f) => f.message,
+                'message',
+                'este gênero não é possível para 1 espécime(s).',
+              ),
+        ),
+      );
+    });
+
+    test('outros erros seguem o mapeamento padrão', () async {
+      adapter
+        ..onPatch(
+          'specimens/bulk/',
+          (server) => server.reply(400, {
+            'ids': ['espécimes não encontrados: 9'],
+          }),
+          data: {
+            'ids': [9],
+            'changes': {'pokeball': 'dive-ball'},
+          },
+        )
+        ..onPatch(
+          'specimens/bulk/',
+          (server) => server.reply(500, null),
+          data: {
+            'ids': [1],
+            'changes': {'pokeball': 'dive-ball'},
+          },
+        );
+      await expectLater(
+        repository.bulkUpdate(ids: [9], changes: changes),
+        throwsA(
+          isA<ValidationFailure>()
+              .having((f) => f is GenderConflictFailure, 'gênero', false)
+              .having((f) => f.errorFor('ids'), 'ids', isNotNull),
+        ),
+      );
+      await expectLater(
+        repository.bulkUpdate(ids: [1], changes: changes),
+        throwsA(isA<ServerFailure>()),
+      );
+    });
+  });
+
   test('searchForms', () async {
     adapter.onGet(
       'forms/',

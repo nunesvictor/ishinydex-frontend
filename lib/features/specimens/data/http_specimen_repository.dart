@@ -45,6 +45,47 @@ class HttpSpecimenRepository implements SpecimenRepository {
   });
 
   @override
+  Future<List<int>> fetchSpecimenIds(SpecimenQuery query) =>
+      guardRequest(() async {
+        final response = await _dio.get<List<dynamic>>(
+          'specimens/ids/',
+          queryParameters: query.toQueryParameters(),
+        );
+        return [for (final id in response.data!) id as int];
+      });
+
+  @override
+  Future<int> bulkUpdate({
+    required List<int> ids,
+    required SpecimenChanges changes,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        'specimens/bulk/',
+        data: {'ids': ids, 'changes': changes.toJson()},
+      );
+      return response.data!['updated'] as int;
+    } on DioException catch (error) {
+      throw _genderConflict(error.response?.data) ?? mapDioException(error);
+    }
+  }
+
+  /// `{"gender": [...], "conflicts": [{"id", "form_name"}]}` →
+  /// [GenderConflictFailure]; qualquer outra resposta → `null`.
+  static GenderConflictFailure? _genderConflict(Object? data) {
+    if (data case {
+      'gender': [final String message, ...],
+      'conflicts': final List<dynamic> conflicts,
+    }) {
+      return GenderConflictFailure(message: message, [
+        for (final c in conflicts.cast<Map<String, dynamic>>())
+          (id: c['id'] as int, formName: c['form_name'] as String),
+      ]);
+    }
+    return null;
+  }
+
+  @override
   Future<List<FormRef>> searchForms(String search) => guardRequest(() async {
     final response = await _dio.get<Map<String, dynamic>>(
       'forms/',
