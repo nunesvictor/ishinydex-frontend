@@ -31,6 +31,7 @@ abstract class SpecimenSummary with _$SpecimenSummary {
     required int id,
     String? nickname,
     String? formName,
+    String? ability,
     @Default(false) bool isShiny,
     @Default(false) bool isAlpha,
     String? pokeball,

@@ -787,6 +787,7 @@ class FakeBackend
               id: specimen.id,
               nickname: specimen.nickname,
               formName: specimen.formName,
+              ability: specimen.ability,
               isShiny: specimen.isShiny,
               isAlpha: specimen.isAlpha,
               pokeball: specimen.pokeball,

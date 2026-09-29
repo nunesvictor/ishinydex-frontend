@@ -11,6 +11,7 @@ import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.d
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -209,6 +210,25 @@ void main() {
       expect(find.text('HOME 1 · 19/30'), findsOneWidget);
       // O cadastro foi apagado, não só desvinculado.
       expect(await backend.fetchAvailable(1), isEmpty);
+    });
+
+    testWidgets('painel do slot destaca a habilidade do espécime', (
+      tester,
+    ) async {
+      final backend = FakeBackend.seeded();
+      final specimen = await backend.fetchSpecimen(1);
+      await backend.update(
+        1,
+        SpecimenDraft.fromSpecimen(specimen).copyWith(ability: 'keen-eye'),
+      );
+      await pumpFullApp(tester, backend: backend);
+      await openShinyDex(tester);
+      await tester.tap(slot(1));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Habilidades: Run Away · ✓ Keen Eye (oculta)'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('editar espécime pelo formulário', (tester) async {

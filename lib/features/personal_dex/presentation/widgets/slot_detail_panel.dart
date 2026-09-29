@@ -67,7 +67,10 @@ class SlotDetailPanel extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-          FormDetails(formId: form.id),
+          FormDetails(
+            formId: form.id,
+            highlightAbility: current.specimen?.ability,
+          ),
           const SizedBox(height: 16),
           if (specimen == null)
             const Chip(

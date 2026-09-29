@@ -12,14 +12,20 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// Carregamento e erro ficam contidos aqui: o resto do painel do slot (e
 /// as ações) continua funcionando.
 class FormDetails extends ConsumerWidget {
-  const FormDetails({required this.formId, super.key});
+  const FormDetails({required this.formId, this.highlightAbility, super.key});
 
   final int formId;
+
+  /// Habilidade do espécime depositado, destacada na lista (✓ e negrito).
+  final String? highlightAbility;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) =>
       switch (ref.watch(formDetailProvider(formId))) {
-        AsyncData(:final value) => _Details(form: value),
+        AsyncData(:final value) => _Details(
+          form: value,
+          highlightAbility: highlightAbility,
+        ),
         AsyncError() => Column(
           children: [
             Text(
@@ -41,20 +47,21 @@ class FormDetails extends ConsumerWidget {
 }
 
 class _Details extends StatelessWidget {
-  const _Details({required this.form});
+  const _Details({required this.form, this.highlightAbility});
 
   final FormDetail form;
+  final String? highlightAbility;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final types = [...form.types]..sort((a, b) => a.slot.compareTo(b.slot));
-    final abilities = [
-      for (final a in [
-        ...form.abilities,
-      ]..sort((a, b) => a.slot.compareTo(b.slot)))
-        '${prettifyName(a.ability)}${a.isHidden ? ' (oculta)' : ''}',
-    ];
+    final abilities = [...form.abilities]
+      ..sort((a, b) => a.slot.compareTo(b.slot));
+    final highlight = TextStyle(
+      fontWeight: FontWeight.bold,
+      color: theme.colorScheme.primary,
+    );
     return Column(
       spacing: 8,
       children: [
@@ -92,12 +99,26 @@ class _Details extends StatelessWidget {
           ],
         ),
         if (abilities.isNotEmpty)
-          Text(
-            'Habilidades: ${abilities.join(' · ')}',
+          Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(text: 'Habilidades: '),
+                for (final (i, a) in abilities.indexed) ...[
+                  if (i > 0) const TextSpan(text: ' · '),
+                  if (a.ability == highlightAbility)
+                    TextSpan(text: '✓ ${_abilityName(a)}', style: highlight)
+                  else
+                    TextSpan(text: _abilityName(a)),
+                ],
+              ],
+            ),
             style: theme.textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),
       ],
     );
   }
+
+  static String _abilityName(FormAbility a) =>
+      '${prettifyName(a.ability)}${a.isHidden ? ' (oculta)' : ''}';
 }
