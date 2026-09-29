@@ -10,6 +10,8 @@ import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/auth/data/token_storage.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/settings/data/date_format_storage.dart';
+import 'package:ishinydex/features/settings/settings_providers.dart';
 
 /// Tamanhos de tela usados nos testes responsivos.
 const compactSize = Size(400, 800);
@@ -39,12 +41,18 @@ Future<void> pumpWidgetApp(
   List<Override> overrides = const [],
   Size size = compactSize,
   TargetPlatform platform = TargetPlatform.android,
+  DateFormatStorage? dateFormat,
 }) async {
   await setScreenSize(tester, size);
   await tester.pumpWidget(
     ProviderScope(
       retry: noRetry,
-      overrides: overrides,
+      overrides: [
+        dateFormatStorageProvider.overrideWithValue(
+          dateFormat ?? InMemoryDateFormatStorage(),
+        ),
+        ...overrides,
+      ],
       child: MaterialApp(
         theme: ThemeData(platform: platform),
         locale: const Locale('pt', 'BR'),
@@ -63,6 +71,7 @@ Future<FakeBackend> pumpFullApp(
   String? token = 'token',
   FakeBackend? backend,
   LastDexStorage? lastDex,
+  DateFormatStorage? dateFormat,
   List<Override> overrides = const [],
 }) async {
   final fake = backend ?? FakeBackend.seeded();
@@ -76,6 +85,9 @@ Future<FakeBackend> pumpFullApp(
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage(token)),
         lastDexStorageProvider.overrideWithValue(
           lastDex ?? InMemoryLastDexStorage(),
+        ),
+        dateFormatStorageProvider.overrideWithValue(
+          dateFormat ?? InMemoryDateFormatStorage(),
         ),
         ...overrides,
       ],

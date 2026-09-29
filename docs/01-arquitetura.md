@@ -120,6 +120,22 @@ O slot registrado tem só duas ações, como no Pokémon HOME:
 Não existe mais "retirar" (desvincular sem apagar) no app. O endpoint
 `/slots/{id}/withdraw/` continua no backend, mas o app não o usa.
 
+## Data de captura
+
+- **Formato:** os Ajustes guardam o formato da data de captura
+  ([`settings_providers.dart`](../lib/features/settings/settings_providers.dart),
+  com `shared_preferences`). As opções são **Pokémon HOME** (`mm/dd/aaaa`,
+  padrão) e **a do idioma do app** (pt-BR: `dd/mm/aaaa`).
+- **PC** (`isDesktopPlatform`): o formulário usa o
+  [`CaptureDateField`](../lib/features/specimens/presentation/widgets/capture_date_field.dart),
+  digitável, com leitura estrita pelo `CaptureDatePattern`.
+  - Erros "Data inválida (formato)" e "Data no futuro"; enquanto houver erro,
+    não dá para salvar.
+  - O botão de calendário também preenche o campo.
+- **Celular:** tocar abre o calendário, e a data aparece no formato escolhido.
+- **Onde vale:** só no formulário. O detalhe e o seletor de depósito
+  continuam em `dd/mm/aaaa`.
+
 ## Autenticação
 
 - [`AuthController`](../lib/features/auth/auth_providers.dart) é um
