@@ -1,29 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ishinydex/core/utils/format.dart';
 
-/// Nomes em pt-BR dos tipos, como nos jogos. A API manda o slug em inglês.
-const _typeLabels = {
-  'normal': 'Normal',
-  'fire': 'Fogo',
-  'water': 'Água',
-  'electric': 'Elétrico',
-  'grass': 'Planta',
-  'ice': 'Gelo',
-  'fighting': 'Lutador',
-  'poison': 'Venenoso',
-  'ground': 'Terrestre',
-  'flying': 'Voador',
-  'psychic': 'Psíquico',
-  'bug': 'Inseto',
-  'rock': 'Pedra',
-  'ghost': 'Fantasma',
-  'dragon': 'Dragão',
-  'dark': 'Sombrio',
-  'steel': 'Aço',
-  'fairy': 'Fada',
-  'stellar': 'Estelar',
-};
-
 /// Cores tradicionais de cada tipo.
 const _typeColors = {
   'normal': Color(0xFFA8A77A),
@@ -47,8 +24,9 @@ const _typeColors = {
   'stellar': Color(0xFF40B5A5),
 };
 
-/// `"grass"` → `"Planta"`; tipo desconhecido cai no nome formatado.
-String typeLabel(String type) => _typeLabels[type] ?? prettifyName(type);
+/// Nome do tipo em inglês, como nos dados da API: `"grass"` → `"Grass"`.
+/// (Decisão do projeto: tipos e, no futuro, golpes ficam em inglês.)
+String typeLabel(String type) => prettifyName(type);
 
 /// Cor do tipo; cinza para tipos desconhecidos.
 Color typeColor(String type) => _typeColors[type] ?? Colors.grey;
