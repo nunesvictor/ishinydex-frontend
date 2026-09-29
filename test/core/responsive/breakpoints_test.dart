@@ -10,9 +10,16 @@ void main() {
     expect(WindowSize.fromWidth(600), WindowSize.medium);
     expect(WindowSize.fromWidth(1023), WindowSize.medium);
     expect(WindowSize.fromWidth(1024), WindowSize.expanded);
+    expect(WindowSize.fromWidth(1439), WindowSize.expanded);
+    expect(WindowSize.fromWidth(1440), WindowSize.large);
     expect(WindowSize.compact.isCompact, true);
     expect(WindowSize.medium.isCompact, false);
+    // "Expandido" inclui o large; "large" só ele.
     expect(WindowSize.expanded.isExpanded, true);
+    expect(WindowSize.large.isExpanded, true);
+    expect(WindowSize.medium.isExpanded, false);
+    expect(WindowSize.large.isLarge, true);
+    expect(WindowSize.expanded.isLarge, false);
   });
 
   testWidgets('of usa a largura da tela', (tester) async {

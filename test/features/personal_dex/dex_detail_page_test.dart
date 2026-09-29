@@ -9,6 +9,7 @@ import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -112,8 +113,10 @@ Future<void> saveSpecimenForm(WidgetTester tester) async {
 
 void main() {
   group('layout expandido', () {
-    testWidgets('lista de boxes, seleção e detalhe', (tester) async {
-      await pumpFullApp(tester);
+    testWidgets('lista de boxes, seleção e detalhe (tela larga)', (
+      tester,
+    ) async {
+      await pumpFullApp(tester, size: largeSize);
       await openShinyDex(tester);
       expect(
         find.text('Selecione um slot para ver os detalhes.'),
@@ -150,6 +153,24 @@ void main() {
       // Fim da geração: a box continua com 30 células, 2 delas vazias.
       expect(find.byType(SlotTile), findsNWidgets(28));
       expect(find.byType(EmptySlotTile), findsNWidgets(2));
+    });
+
+    testWidgets('lista de boxes recolhível', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      // Em 1400px a lista começa oculta; a grade usa a largura.
+      expect(find.byType(BoxListPanel), findsNothing);
+      // Célula maior que o antigo limite de 120px.
+      expect(
+        tester.getSize(find.byType(SlotTile).first).width,
+        greaterThan(120),
+      );
+      await tester.tap(find.byTooltip('Mostrar lista de boxes'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BoxListPanel), findsOneWidget);
+      await tester.tap(find.byTooltip('Ocultar lista de boxes'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BoxListPanel), findsNothing);
     });
 
     testWidgets('libertar exige confirmação e deixa o slot faltante', (

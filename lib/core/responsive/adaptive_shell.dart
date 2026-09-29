@@ -67,10 +67,12 @@ class AdaptiveShell extends StatelessWidget {
       body: Row(
         children: [
           NavigationRail(
-            extended: size.isExpanded,
+            // Estendido só em telas largas: até 1440px, a largura vai para a
+            // grade da box.
+            extended: size.isLarge,
             selectedIndex: navigationShell.currentIndex,
             onDestinationSelected: _goTo,
-            labelType: size.isExpanded
+            labelType: size.isLarge
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.all,
             leading: const Padding(

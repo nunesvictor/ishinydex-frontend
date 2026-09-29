@@ -5,6 +5,10 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.d
 const boxRows = 5;
 const boxCols = 6;
 
+/// Tamanho máximo da célula: em telas grandes a grade ocupa o espaço livre,
+/// até este limite.
+const maxCellSize = 200.0;
+
 /// Grade 5×6 de uma box, no mesmo layout do Pokémon HOME.
 ///
 /// A API só devolve os slots do dex; as posições que sobram (ex.: o fim da
@@ -29,11 +33,12 @@ class BoxGrid extends StatelessWidget {
     final byPosition = {for (final s in slots) (s.row, s.col): s};
     return LayoutBuilder(
       builder: (context, constraints) {
-        const gap = 4.0;
+        // Mais espaço, mais respiro entre as células.
+        final gap = constraints.maxWidth >= 800 ? 8.0 : 4.0;
         final cell = [
           (constraints.maxWidth - gap * (boxCols - 1)) / boxCols,
           (constraints.maxHeight - gap * (boxRows - 1)) / boxRows,
-        ].reduce((a, b) => a < b ? a : b).clamp(24.0, 120.0);
+        ].reduce((a, b) => a < b ? a : b).clamp(24.0, maxCellSize);
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
