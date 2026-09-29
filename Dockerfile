@@ -33,6 +33,15 @@ RUN dart run build_runner build --delete-conflicting-outputs
 ARG API_BASE_URL=/api
 RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
 
+# Cache-busting (issue #5): hash do código e dos assets vira o prefixo v/<hash>/
+# de onde o flutter_bootstrap.js carrega o app (ver web/flutter_bootstrap.js).
+RUN version=$(find build/web/main.dart.js build/web/assets -type f -print0 \
+        | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-12) \
+    && sed -i "s/__BUILD_VERSION__/${version}/" build/web/flutter_bootstrap.js \
+    && grep -q "v/\${buildVersion}/" build/web/flutter_bootstrap.js \
+    && grep -q "'${version}'" build/web/flutter_bootstrap.js \
+    && echo "build version: ${version}"
+
 
 FROM nginx:1.29-alpine AS final
 

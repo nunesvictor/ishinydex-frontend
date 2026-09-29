@@ -41,6 +41,21 @@ Três conceitos que aparecem aqui:
   (`http://ip:8090`). Por isso não existe CORS, e o app é compilado com
   `API_BASE_URL=/api`, uma URL relativa ao endereço da página. O mesmo build
   funciona em `localhost`, no IP da rede ou em qualquer domínio futuro.
+- **Cache com endereço versionado**: o Flutter sempre gera os mesmos nomes
+  (`main.dart.js`, `assets/...`), e um cache longo nesses nomes faria o
+  navegador rodar a versão antiga depois de um deploy (issue #5). Por isso:
+  - no build, o [Dockerfile](../Dockerfile) calcula um hash do código e dos
+    assets e o grava no
+    [`web/flutter_bootstrap.js`](../web/flutter_bootstrap.js), que carrega o
+    app de `/v/<hash>/` (`entrypointBaseUrl` e `assetBase` do loader);
+  - o nginx serve `/v/<hash>/...` com cache de um ano (`immutable`), porque
+    cada versão tem um endereço novo; todo o resto é `no-cache`, com
+    revalidação barata por ETag.
+
+  O `index.html` e o `flutter_bootstrap.js` são sempre revalidados, então o
+  navegador passa a pedir os endereços novos assim que a versão nova sobe. Fora
+  do Docker (`flutter run`, CI), o marcador `__BUILD_VERSION__` não é trocado e
+  tudo carrega da raiz, como no padrão.
 
 O nginx repassa o cabeçalho `Host` original, então o Django gera as URLs dos
 sprites com o endereço que o navegador usou
@@ -120,7 +135,7 @@ nativo de iOS, o token continua no Keychain.
 | Tela de erro "Erro no servidor" / nginx responde **502** | O backend `prod` está parado. Suba com o comando do passo 1 e veja `docker compose --profile prod logs prod` no backend. |
 | API responde **500** e o log do `prod` mostra `MemoryError` | Limite de memória do uwsgi (`limit-as` em `src/uwsgi/django-pokedex.ini` do backend) curto demais. Em 2026-09 foi preciso subir de 1024 para 2048 MB e fixar `offload-threads = 2`; o padrão `%k` cria uma thread por núcleo. |
 | Celular não abre a página | Celular em outra rede (ex.: 4G), firewall bloqueando a porta 8090, ou IP mudou. |
-| Mudança no código não aparece | Faltou `--build` no `docker compose up`. Depois, recarregue a página. O `index.html` nunca fica em cache. |
+| Mudança no código não aparece | Faltou `--build` no `docker compose up`. Depois, recarregue a página: o `flutter_bootstrap.js` nunca fica em cache e aponta para `/v/<hash>/` da versão nova. Para conferir a versão no ar: `curl -s localhost:8090/flutter_bootstrap.js \| grep buildVersion`. |
 | Sprites sem imagem | Veja se `http://<ip>:8090/media/sprites/pokemon/other/home/1.png` abre. Se não abrir, o volume `sprites` do backend não foi populado. |
 
 ## Próximos passos (fora do escopo por enquanto)

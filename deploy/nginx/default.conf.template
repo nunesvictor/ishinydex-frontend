@@ -28,14 +28,18 @@ server {
     }
 
     # ---- App Flutter ----
-    # Arquivos que mudam a cada deploy: o navegador sempre revalida.
-    location ~ ^/(index\.html|flutter_bootstrap\.js|flutter_service_worker\.js|manifest\.json|version\.json)$ {
-        add_header Cache-Control "no-cache";
-        try_files $uri =404;
+    # Endereços versionados (/v/<hash>/main.dart.js, /v/<hash>/assets/...):
+    # o hash muda a cada build, então o conteúdo de um endereço nunca muda e o
+    # navegador pode guardá-lo por um ano. Apontam para os arquivos da raiz.
+    location ~ ^/v/[0-9a-f]+/(.*)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files /$1 =404;
     }
 
+    # Todo o resto (index.html, flutter_bootstrap.js, ícones...) tem nome
+    # fixo: o navegador revalida sempre (ETag → 304 quando nada mudou).
     location / {
-        add_header Cache-Control "public, max-age=604800";
+        add_header Cache-Control "no-cache";
         try_files $uri $uri/ /index.html;
     }
 }
