@@ -84,7 +84,8 @@ class SlotDetailPanel extends StatelessWidget {
                     avatar: Icon(Icons.auto_awesome, color: AppTheme.shinyGold),
                     label: Text('Shiny'),
                   ),
-                if (specimen.isAlpha) const Chip(label: Text('Alfa')),
+                if (specimen.isAlpha)
+                  const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
                 if (specimen.pokeball != null)
                   Chip(
                     avatar: PokemonSprite(

@@ -204,7 +204,7 @@ class _SpecimenTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = [
       if (specimen.isShiny) 'Shiny',
-      if (specimen.isAlpha) 'Alfa',
+      if (specimen.isAlpha) '$alphaEmoji Alfa',
       if (specimen.pokeball != null) prettifyName(specimen.pokeball!),
       if (specimen.capturedAt != null)
         MaterialLocalizations.of(context)

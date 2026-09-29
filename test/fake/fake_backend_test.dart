@@ -49,9 +49,10 @@ void main() {
     expect(boxes.map((b) => b.name), ['HOME 1', 'HOME 2']);
     expect(boxes[1].total, 28);
 
+    // Os 2 slots livres do fim da HOME 2 não pertencem ao dex.
     final slots = await backend.fetchSlots(dexId: 1, boxId: 2);
-    expect(slots, hasLength(30));
-    expect(slots.last.isFree, true);
+    expect(slots, hasLength(28));
+    expect(slots.any((s) => s.isFree), false);
     expect(slots.first.isShinyDisplay, true);
   });
 

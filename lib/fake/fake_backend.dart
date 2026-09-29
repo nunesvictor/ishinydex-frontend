@@ -34,7 +34,7 @@ class _SlotRecord {
     required this.box,
     required this.row,
     required this.col,
-    required this.dexId,
+    this.dexId,
     this.formId,
   });
 
@@ -42,7 +42,9 @@ class _SlotRecord {
   final BoxRef box;
   final int row;
   final int col;
-  final int dexId;
+
+  /// `null` nos slots livres, como no backend (`personal_dex = NULL`).
+  final int? dexId;
   final int? formId;
   int? specimenId;
 }
@@ -82,6 +84,7 @@ class FakeBackend
       final specimen = backend.addSpecimen(
         formId: formId,
         isShiny: shiny,
+        isAlpha: formId % 5 == 1,
         pokeball: formId.isEven ? 'dream-ball' : 'poke-ball',
       );
       slot.specimenId = specimen;
@@ -169,7 +172,8 @@ class FakeBackend
     return id;
   }
 
-  /// Cria uma box de 30 slots; posições sem forma ficam livres.
+  /// Cria uma box de 30 slots; posições sem forma ficam livres e, como no
+  /// backend, não pertencem a nenhum dex.
   int addBox({
     required int dexId,
     required String name,
@@ -180,13 +184,14 @@ class FakeBackend
     _boxes[id] = box;
     for (var index = 0; index < 30; index++) {
       final slotId = _nextSlotId++;
+      final hasForm = index < formIds.length;
       _slots[slotId] = _SlotRecord(
         id: slotId,
         box: box,
         row: index ~/ 6,
         col: index % 6,
-        dexId: dexId,
-        formId: index < formIds.length ? formIds[index] : null,
+        dexId: hasForm ? dexId : null,
+        formId: hasForm ? formIds[index] : null,
       );
     }
     return id;
@@ -195,6 +200,7 @@ class FakeBackend
   int addSpecimen({
     required int formId,
     bool isShiny = false,
+    bool isAlpha = false,
     String? nickname,
     String? pokeball,
   }) {
@@ -207,6 +213,7 @@ class FakeBackend
       formName: form.name,
       nickname: nickname,
       isShiny: isShiny,
+      isAlpha: isAlpha,
       pokeball: pokeball,
       pokeballSpriteUrl: _ballSprite(pokeball),
     );
@@ -419,7 +426,7 @@ class FakeBackend
     final formId = record.formId;
     final specimenId = record.specimenId;
     final specimen = specimenId == null ? null : _specimens[specimenId];
-    final isShinyDex = _dexes[record.dexId]!.isShinyDex;
+    final isShinyDex = _dexes[record.dexId]?.isShinyDex ?? false;
     return Slot(
       id: record.id,
       box: record.box,

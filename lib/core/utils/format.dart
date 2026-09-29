@@ -8,3 +8,6 @@ String prettifyName(String raw) => raw
 /// Percentual inteiro de [done] sobre [total] (0 quando [total] é 0).
 int percentOf(int done, int total) =>
     total == 0 ? 0 : (done * 100 / total).floor();
+
+/// Emoji de alfa, o mesmo do admin do backend (`Specimen.__str__`).
+const alphaEmoji = '💢';

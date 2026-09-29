@@ -202,6 +202,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
+              secondary: const Text(alphaEmoji, style: TextStyle(fontSize: 20)),
               title: const Text('Alfa'),
               value: _draft.isAlpha,
               onChanged: (v) =>

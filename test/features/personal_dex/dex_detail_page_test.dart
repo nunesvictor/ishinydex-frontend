@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
@@ -77,6 +78,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Registrado'), findsOneWidget);
       expect(find.text('Shiny'), findsOneWidget);
+      expect(find.text('Alfa'), findsOneWidget);
+      // Selo 💢 nos alfas da box (formas 1, 11, 16 e 26) + chip do detalhe.
+      expect(find.text(alphaEmoji), findsNWidgets(5));
       expect(find.text('Poke Ball'), findsOneWidget);
       expect(find.text('Trocar specimen'), findsOneWidget);
 
@@ -87,6 +91,9 @@ void main() {
         find.text('Selecione um slot para ver os detalhes.'),
         findsOneWidget,
       );
+      // Fim da geração: a box continua com 30 células, 2 delas vazias.
+      expect(find.byType(SlotTile), findsNWidgets(28));
+      expect(find.byType(EmptySlotTile), findsNWidgets(2));
     });
 
     testWidgets('retirar com confirmação', (tester) async {

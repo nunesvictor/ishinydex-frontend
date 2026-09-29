@@ -6,6 +6,10 @@ const boxRows = 5;
 const boxCols = 6;
 
 /// Grade 5×6 de uma box, no mesmo layout do Pokémon HOME.
+///
+/// A API só devolve os slots do dex; as posições que sobram (ex.: o fim da
+/// última box de uma geração) viram [EmptySlotTile], para a box ter sempre
+/// 30 células como no HOME.
 class BoxGrid extends StatelessWidget {
   const BoxGrid({
     required this.slots,
@@ -55,7 +59,7 @@ class BoxGrid extends StatelessWidget {
   }
 
   Widget _cell(Slot? slot) {
-    if (slot == null) return const SizedBox.shrink();
+    if (slot == null || slot.isFree) return const EmptySlotTile();
     return SlotTile(
       slot: slot,
       selected: slot.id == selectedSlotId,
