@@ -18,3 +18,8 @@ O usuário está aprendendo Flutter: explique decisões e mantenha `docs/` atual
 - Testes espelham `lib/` em `test/`; telas testadas em `compactSize` e `expandedSize` (helpers em `test/helpers/`)
 - Textos da UI em pt-BR
 - Web usa `PrefsTokenStorage` (localStorage): WebCrypto não existe em HTTP fora de localhost; não voltar para secure storage na web
+
+## Fluxo
+- Toda mudança nasce de uma issue e entra via PR (`Closes #n`); ver `CONTRIBUTING.md`
+- Branch `<número>-<resumo>`; nunca commitar/push direto na `main`
+- Abrir o PR e parar: o dono revisa e faz squash merge; deploy local só depois do merge
