@@ -5,6 +5,8 @@ import 'package:ishinydex/core/responsive/adaptive_shell.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/auth/presentation/login_page.dart';
+import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
+import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
@@ -34,6 +36,21 @@ String? authRedirect(AsyncValue<String?> auth, String location) {
   return null;
 }
 
+/// Ao entrar no app ([authRedirect] mandou para [Routes.dexes]), abre o
+/// último dex usado (ou o único); se não der para decidir, fica na lista.
+Future<String> homeLocation(Ref ref) async {
+  try {
+    final dexId = await resolveHomeDexId(
+      storage: ref.read(lastDexStorageProvider),
+      repository: ref.read(personalDexRepositoryProvider),
+    );
+    return dexId == null ? Routes.dexes : Routes.dex(dexId);
+  } on Object {
+    // A lista mostra o erro com "Tentar novamente".
+    return Routes.dexes;
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref
@@ -43,8 +60,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: Routes.splash,
     refreshListenable: refresh,
-    redirect: (context, state) =>
-        authRedirect(ref.read(authControllerProvider), state.matchedLocation),
+    // Síncrono na maioria das vezes; só consulta a API (Future) ao entrar
+    // no app, para decidir qual dex abrir.
+    redirect: (context, state) {
+      final target = authRedirect(
+        ref.read(authControllerProvider),
+        state.matchedLocation,
+      );
+      return target == Routes.dexes ? homeLocation(ref) : target;
+    },
     routes: [
       GoRoute(
         path: Routes.splash,
@@ -66,9 +90,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: ':dexId',
-                    builder: (context, state) => DexDetailPage(
-                      dexId: int.tryParse(state.pathParameters['dexId']!) ?? 0,
-                    ),
+                    builder: (context, state) {
+                      final dexId =
+                          int.tryParse(state.pathParameters['dexId']!) ?? 0;
+                      // Trocar de dex recria a página (box e seleção zeradas).
+                      return DexDetailPage(key: ValueKey(dexId), dexId: dexId);
+                    },
                   ),
                 ],
               ),

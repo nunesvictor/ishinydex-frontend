@@ -1,0 +1,70 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+
+/// Título do AppBar do dex que abre um menu para trocar de PersonalDex ou
+/// voltar à lista completa.
+class DexSwitcher extends ConsumerWidget {
+  const DexSwitcher({required this.dexId, required this.title, super.key});
+
+  final int dexId;
+  final String title;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dexes = ref.watch(dexListProvider).value ?? const <PersonalDex>[];
+    return MenuAnchor(
+      menuChildren: [
+        for (final dex in dexes)
+          MenuItemButton(
+            key: ValueKey('switch-dex-${dex.id}'),
+            leadingIcon: Icon(dex.id == dexId ? Icons.check : null),
+            trailingIcon: Text('${dex.registered}/${dex.total}'),
+            onPressed: dex.id == dexId
+                ? null
+                : () => context.go(Routes.dex(dex.id)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                Text(dex.name),
+                if (dex.isShinyDex)
+                  const Icon(
+                    Icons.auto_awesome,
+                    size: 16,
+                    color: AppTheme.shinyGold,
+                  ),
+              ],
+            ),
+          ),
+        if (dexes.isNotEmpty) const Divider(),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.view_list),
+          onPressed: () => context.go(Routes.dexes),
+          child: const Text('Ver todos'),
+        ),
+      ],
+      builder: (context, controller, _) => Tooltip(
+        message: 'Trocar PersonalDex',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: controller.isOpen ? controller.close : controller.open,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

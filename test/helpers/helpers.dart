@@ -8,6 +8,8 @@ import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/auth/data/token_storage.dart';
+import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
+import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 
 /// Tamanhos de tela usados nos testes responsivos.
 const compactSize = Size(400, 800);
@@ -59,6 +61,7 @@ Future<FakeBackend> pumpFullApp(
   Size size = expandedSize,
   String? token = 'token',
   FakeBackend? backend,
+  LastDexStorage? lastDex,
   List<Override> overrides = const [],
 }) async {
   final fake = backend ?? FakeBackend.seeded();
@@ -70,6 +73,9 @@ Future<FakeBackend> pumpFullApp(
         envProvider.overrideWithValue(fakeEnv),
         fakeBackendProvider.overrideWithValue(fake),
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage(token)),
+        lastDexStorageProvider.overrideWithValue(
+          lastDex ?? InMemoryLastDexStorage(),
+        ),
         ...overrides,
       ],
       child: const IShinyDexApp(),

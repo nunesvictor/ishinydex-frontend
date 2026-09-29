@@ -11,6 +11,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigator.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_view.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
 import 'package:ishinydex/features/specimens/presentation/deposit_flow.dart';
 
@@ -36,6 +37,12 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
 
   int get _dexId => widget.dexId;
 
+  @override
+  void initState() {
+    super.initState();
+    unawaited(ref.read(lastDexStorageProvider).write(_dexId));
+  }
+
   bool get _preferShiny =>
       ref.read(dexProvider(_dexId)).value?.isShinyDex ?? false;
 
@@ -51,7 +58,10 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final boxes = ref.watch(boxesProvider(_dexId));
     return Scaffold(
       appBar: AppBar(
-        title: Text(dex.value?.name ?? 'PersonalDex'),
+        title: DexSwitcher(
+          dexId: _dexId,
+          title: dex.value?.name ?? 'PersonalDex',
+        ),
         actions: [
           IconButton(
             tooltip: _onlyMissing ? 'Mostrar todos' : 'Destacar faltantes',

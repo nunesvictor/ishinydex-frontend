@@ -4,6 +4,7 @@ import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repository.dart';
+import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 
@@ -11,6 +12,10 @@ final personalDexRepositoryProvider = Provider<PersonalDexRepository>((ref) {
   if (ref.watch(envProvider).useFakeApi) return ref.watch(fakeBackendProvider);
   return HttpPersonalDexRepository(ref.watch(dioProvider));
 });
+
+final lastDexStorageProvider = Provider<LastDexStorage>(
+  (ref) => PrefsLastDexStorage(),
+);
 
 final FutureProvider<List<PersonalDex>> dexListProvider =
     FutureProvider.autoDispose<List<PersonalDex>>(

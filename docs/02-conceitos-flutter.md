@@ -309,6 +309,14 @@ Conceitos:
   ali. A função pura [`authRedirect`](../lib/core/router/app_router.dart)
   implementa as regras: sem token vai para `/login`; com token, sai do
   `/login`.
+- O `redirect` pode devolver um `String?` **ou** um `Future<String?>`
+  (`FutureOr`). O app só usa o `Future` ao entrar (saindo do login/splash):
+  `homeLocation` consulta a API para decidir qual dex abrir. Nas demais
+  navegações ele continua síncrono; se fosse sempre `async`, o splash nem
+  chegaria a ser desenhado enquanto o token é lido.
+- **`ValueKey(dexId)`** na `DexDetailPage`: ao ir de `/dexes/1` para
+  `/dexes/2`, a chave diferente faz o Flutter criar um `State` novo (box e
+  seleção zeradas) em vez de reaproveitar o do dex anterior.
 - **`refreshListenable`** faz o router reavaliar o `redirect` quando o estado
   de login muda. Por isso, ao fazer logout (ou quando a API responde 401), o
   app volta sozinho para o login.

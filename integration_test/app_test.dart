@@ -7,6 +7,8 @@ import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/auth/data/token_storage.dart';
+import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
+import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 
 /// Fluxo completo no navegador, com o backend fake:
 /// login → abrir dex → selecionar slot faltante → depositar.
@@ -23,6 +25,7 @@ void main() {
           ),
           fakeBackendProvider.overrideWithValue(FakeBackend.seeded()),
           tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
+          lastDexStorageProvider.overrideWithValue(InMemoryLastDexStorage()),
         ],
         child: const IShinyDexApp(),
       ),

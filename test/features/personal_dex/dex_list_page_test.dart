@@ -22,9 +22,10 @@ void main() {
     final backend = FakeBackend()
       ..addForm(id: 1, name: 'bulbasaur')
       ..addDex(name: 'Mini')
+      ..addDex(name: 'Outro')
       ..addBox(dexId: 1, name: 'B', formIds: const []);
     await pumpFullApp(tester, backend: backend, size: compactSize);
-    expect(find.text('Completo!'), findsOneWidget);
+    expect(find.text('Completo!'), findsNWidgets(2));
     await tester.fling(find.text('Mini'), const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
     expect(find.text('Mini'), findsOneWidget);
@@ -40,7 +41,8 @@ void main() {
     var calls = 0;
     when(repository.fetchDexes).thenAnswer((_) async {
       calls++;
-      if (calls == 1) throw const NetworkFailure();
+      // 1ª chamada: redirect de entrada (cai na lista); 2ª: a própria lista.
+      if (calls <= 2) throw const NetworkFailure();
       return const [PersonalDex(id: 1, name: 'Ok', total: 1, registered: 0)];
     });
     await pumpFullApp(

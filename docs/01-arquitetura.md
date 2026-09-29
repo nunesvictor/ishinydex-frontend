@@ -116,6 +116,28 @@ Regras de negócio que vêm do backend e que o app trata:
   - **iOS**: `SecureTokenStorage` (Keychain).
 - O `dioProvider` lê o token do `AuthController` a cada requisição.
 
+## Escolha do PersonalDex
+
+Um usuário pode ter vários dexes (por enquanto criados só pelo backend, com
+`create_personal_dex`).
+
+- **Último dex lembrado:** ao abrir um dex, a `DexDetailPage` grava o id num
+  `LastDexStorage`
+  ([last_dex_storage.dart](../lib/features/personal_dex/data/last_dex_storage.dart)),
+  via `shared_preferences`. Não é dado sensível, então web e iOS usam o
+  mesmo storage.
+- **Abertura do app:** ao sair do login/splash, o `redirect` do router chama
+  `homeLocation` → `resolveHomeDexId`: abre o último dex, se ele ainda
+  existir; senão abre o único dex, se só houver um; senão mostra a lista.
+  Se a API falhar, também cai na lista, que mostra o erro com "Tentar
+  novamente".
+- **Troca rápida:** o título do AppBar do dex é um
+  [`DexSwitcher`](../lib/features/personal_dex/presentation/widgets/dex_switcher.dart)
+  (`MenuAnchor`) com os outros dexes e o progresso de cada um, além de "Ver
+  todos", que volta para a lista.
+- A `DexListPage` continua sendo o lugar central dos dexes; é lá que vai
+  entrar a criação de PersonalDex pelo app.
+
 ## Como adicionar uma feature (receita)
 
 Exemplo: uma tela que lista **todos os specimens**.

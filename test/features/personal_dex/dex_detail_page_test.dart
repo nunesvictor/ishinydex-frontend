@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -218,6 +219,46 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(SlotTile), findsNWidgets(30));
     });
+  });
+
+  group('troca de PersonalDex', () {
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('abre o último dex e troca pelo AppBar '
+          '(${size.width.toInt()}px)', (tester) async {
+        final lastDex = InMemoryLastDexStorage(2);
+        await pumpFullApp(tester, size: size, lastDex: lastDex);
+        // Entrou direto no último dex usado.
+        expect(find.text('HOME 3 · 20/30'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Trocar PersonalDex'));
+        await tester.pumpAndSettle();
+        // O dex atual aparece marcado e desabilitado.
+        final current = tester.widget<MenuItemButton>(
+          find.byKey(const ValueKey('switch-dex-2')),
+        );
+        expect(current.onPressed, isNull);
+        expect(find.text('39/58'), findsOneWidget);
+
+        await tester.tap(find.byKey(const ValueKey('switch-dex-1')));
+        await tester.pumpAndSettle();
+        expect(find.text('HOME 1 · 20/30'), findsOneWidget);
+        expect(await lastDex.read(), 1);
+
+        // Tocar de novo no título fecha o menu.
+        await tester.tap(find.byTooltip('Trocar PersonalDex'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Trocar PersonalDex'));
+        await tester.pumpAndSettle();
+        expect(find.text('Ver todos'), findsNothing);
+
+        await tester.tap(find.byTooltip('Trocar PersonalDex'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ver todos'));
+        await tester.pumpAndSettle();
+        expect(find.byType(GridView), findsOneWidget);
+        expect(find.text('Living Dex'), findsOneWidget);
+      });
+    }
   });
 
   group('layout compacto', () {

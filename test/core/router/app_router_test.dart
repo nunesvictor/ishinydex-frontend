@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/helpers.dart';
+import '../../helpers/mocks.dart';
 
 void main() {
   group('authRedirect', () {
@@ -69,6 +74,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Shiny Living Dex'), findsOneWidget);
     expect(find.byType(GridView), findsOneWidget);
+  });
+
+  testWidgets('falha ao decidir o dex inicial cai na lista', (tester) async {
+    final repository = MockPersonalDexRepository();
+    var calls = 0;
+    when(repository.fetchDexes).thenAnswer((_) async {
+      if (calls++ == 0) throw const NetworkFailure();
+      return const [PersonalDex(id: 1, name: 'Ok', total: 1, registered: 0)];
+    });
+    await pumpFullApp(
+      tester,
+      overrides: [personalDexRepositoryProvider.overrideWithValue(repository)],
+    );
+    // Um único dex, mas a 1ª chamada (do redirect) falhou: ficou na lista.
+    expect(find.byType(GridView), findsOneWidget);
+    expect(find.text('Ok'), findsOneWidget);
   });
 
   testWidgets('rail estendido no layout expandido', (tester) async {
