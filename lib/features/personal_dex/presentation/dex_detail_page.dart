@@ -22,10 +22,20 @@ import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dar
 /// - expandido: lista de boxes | grade | detalhe do slot
 /// - médio: grade | detalhe do slot
 /// - compacto: grade com swipe entre boxes; detalhe em bottom sheet
+///
+/// [initialBoxId]/[initialSlotId] (da URL `?box=&slot=`) abrem a página já
+/// numa box com o slot selecionado, ex.: "Ver no dex" do inventário.
 class DexDetailPage extends ConsumerStatefulWidget {
-  const DexDetailPage({required this.dexId, super.key});
+  const DexDetailPage({
+    required this.dexId,
+    this.initialBoxId,
+    this.initialSlotId,
+    super.key,
+  });
 
   final int dexId;
+  final int? initialBoxId;
+  final int? initialSlotId;
 
   @override
   ConsumerState<DexDetailPage> createState() => _DexDetailPageState();
@@ -33,7 +43,10 @@ class DexDetailPage extends ConsumerStatefulWidget {
 
 class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   int _boxIndex = 0;
-  int? _selectedSlotId;
+  late int? _selectedSlotId = widget.initialSlotId;
+
+  /// A box pedida na URL só é aplicada uma vez, quando as boxes carregam.
+  bool _initialBoxApplied = false;
   bool _onlyMissing = false;
   PageController? _pageController;
 
@@ -95,6 +108,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   }
 
   Widget _buildLayout(BuildContext context, List<BoxSummary> boxes) {
+    _applyInitialBox(boxes);
     final index = _boxIndex.clamp(0, boxes.length - 1);
     final box = boxes[index];
     final size = WindowSize.of(context);
@@ -170,6 +184,15 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       if (compact) unawaited(_showSlotSheet(box));
     },
   );
+
+  /// Posiciona na box da URL. Roda dentro do build, antes de o índice ser
+  /// usado, então basta ajustar o campo (sem setState).
+  void _applyInitialBox(List<BoxSummary> boxes) {
+    if (_initialBoxApplied) return;
+    _initialBoxApplied = true;
+    final index = boxes.indexWhere((b) => b.id == widget.initialBoxId);
+    if (index >= 0) _boxIndex = index;
+  }
 
   void _selectBox(int index) => setState(() {
     _boxIndex = index;

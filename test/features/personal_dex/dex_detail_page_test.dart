@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
@@ -47,6 +49,9 @@ class _FlakyRepository implements PersonalDexRepository {
     if (slotFailures-- > 0) throw const NetworkFailure();
     return await inner.fetchSlots(dexId: dexId, boxId: boxId);
   }
+
+  @override
+  Future<Slot> fetchSlot(int slotId) => inner.fetchSlot(slotId);
 
   @override
   Future<Slot> deposit({required int slotId, required int specimenId}) =>
@@ -320,6 +325,38 @@ void main() {
         expect(find.text('Living Dex'), findsOneWidget);
       });
     }
+  });
+
+  group('link direto (?box=&slot=)', () {
+    Future<void> go(WidgetTester tester, String location) async {
+      ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+          .read(routerProvider)
+          .go(location);
+      await tester.pumpAndSettle();
+    }
+
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('abre na box e seleciona o slot (${size.width.toInt()}px)', (
+        tester,
+      ) async {
+        await pumpFullApp(tester, size: size);
+        // Slot 40 = HOME 2, posição 10 (forma 40).
+        await go(tester, Routes.dex(1, boxId: 2, slotId: 40));
+        expect(find.text('HOME 2 · 19/28'), findsOneWidget);
+        if (size == compactSize) {
+          // No compacto o detalhe fica no bottom sheet: toca no slot.
+          await tester.tap(slot(40));
+          await tester.pumpAndSettle();
+        }
+        expect(find.text('Wigglytuff'), findsWidgets);
+      });
+    }
+
+    testWidgets('box inexistente na URL cai na primeira', (tester) async {
+      await pumpFullApp(tester);
+      await go(tester, Routes.dex(1, boxId: 999));
+      expect(find.text('HOME 1 · 20/30'), findsOneWidget);
+    });
   });
 
   group('layout compacto', () {

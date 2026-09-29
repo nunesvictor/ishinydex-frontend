@@ -1,3 +1,5 @@
+import 'package:ishinydex/core/network/paginated.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
 abstract interface class SpecimenRepository {
@@ -5,6 +7,16 @@ abstract interface class SpecimenRepository {
   Future<List<Specimen>> fetchAvailable(int formId);
 
   Future<Specimen> fetchSpecimen(int specimenId);
+
+  /// Página [page] do inventário, filtrada por [query].
+  Future<Paginated<Specimen>> fetchSpecimens(
+    SpecimenQuery query, {
+    required int page,
+    required int pageSize,
+  });
+
+  /// Formas cujo nome contém [search] (primeiros resultados).
+  Future<List<FormRef>> searchForms(String search);
 
   Future<Specimen> create(SpecimenDraft draft);
 

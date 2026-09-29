@@ -103,6 +103,12 @@ void main() {
     expect(trainer.copyWith(version: null).label, 'Ash (123456)');
   });
 
+  test('SpecimenStatus → filtro available da API', () {
+    expect(SpecimenStatus.all.availableParam, isNull);
+    expect(SpecimenStatus.available.availableParam, true);
+    expect(SpecimenStatus.deposited.availableParam, false);
+  });
+
   test('GameVersion.fromJson e label', () {
     final version = GameVersion.fromJson(const {
       'name': 'scarlet',

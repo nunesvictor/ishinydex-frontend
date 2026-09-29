@@ -242,6 +242,39 @@ que guarda os valores dos providers. Nos testes, criamos um `ProviderScope` com
 O projeto desliga o *retry* automático do Riverpod 3 (`retry: noRetry`), porque
 as telas já oferecem o botão "Tentar novamente".
 
+### 5.5 Lista paginada com uma família de providers
+
+O inventário ([specimens_page.dart](../lib/features/specimens/presentation/specimens_page.dart))
+mostra centenas de espécimes, e a API entrega 20 por página. Em vez de um
+controlador que junta páginas numa lista, cada página é um provider:
+
+```dart
+typedef SpecimenPageKey = ({SpecimenQuery query, int page});
+
+final specimenPageProvider = FutureProvider.autoDispose
+    .family<Paginated<Specimen>, SpecimenPageKey>(...);
+```
+
+- A lista lê a **página 1** só para saber o total (`count`) e cria um
+  `ListView.builder` com esse número de itens.
+- O item `i` observa a página `i ~/ 20 + 1`. Como o `ListView.builder` só
+  constrói os itens visíveis, **cada página é pedida quando aparece na tela**:
+  rolagem infinita sem estado extra.
+- Enquanto a página carrega, o item mostra um placeholder. Se ela falha, só o
+  primeiro item da página mostra o erro com "Tentar novamente".
+- Com `autoDispose`, as páginas que saem da tela são descartadas.
+- Para recarregar tudo, `ref.invalidate(specimenPageProvider)` invalida
+  **todas** as páginas da família de uma vez.
+
+**Record como chave.** `SpecimenQuery` é um *record*
+(`({String search, SpecimenStatus status, bool shinyOnly})`). Records têm
+igualdade por valor: dois records com os mesmos campos são "iguais". Por isso
+servem de parâmetro de `family`: a mesma busca reaproveita o mesmo provider.
+
+**Debounce.** A busca espera 350 ms sem digitação antes de mudar o filtro
+(`Timer` cancelado a cada tecla). Sem isso, digitar "pidgeotto" dispararia
+nove requisições.
+
 📚 [Documentação do Riverpod](https://riverpod.dev/docs/introduction/getting_started)
 
 ## 6. Modelos imutáveis com freezed
@@ -296,7 +329,9 @@ links diretos funcionam. Elas ficam em [`app_router.dart`](../lib/core/router/ap
 | `/splash` | Carregando o token salvo |
 | `/login` | [`LoginPage`](../lib/features/auth/presentation/login_page.dart) |
 | `/dexes` | [`DexListPage`](../lib/features/personal_dex/presentation/dex_list_page.dart) |
-| `/dexes/:dexId` | [`DexDetailPage`](../lib/features/personal_dex/presentation/dex_detail_page.dart) |
+| `/dexes/:dexId?box=&slot=` | [`DexDetailPage`](../lib/features/personal_dex/presentation/dex_detail_page.dart) (`box`/`slot` opcionais: abre naquela box com o slot selecionado) |
+| `/specimens` | [`SpecimensPage`](../lib/features/specimens/presentation/specimens_page.dart) (inventário) |
+| `/specimens/:specimenId` | [`SpecimenDetailPage`](../lib/features/specimens/presentation/specimen_detail.dart) (detalhe no compacto) |
 | `/settings` | [`SettingsPage`](../lib/features/settings/presentation/settings_page.dart) |
 
 Conceitos:

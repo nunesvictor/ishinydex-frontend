@@ -10,14 +10,26 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
+import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 
 abstract final class Routes {
   static const splash = '/splash';
   static const login = '/login';
   static const dexes = '/dexes';
+  static const specimens = '/specimens';
   static const settings = '/settings';
 
-  static String dex(int id) => '$dexes/$id';
+  /// Dex [id]; com [boxId]/[slotId], abre naquela box com o slot selecionado.
+  static String dex(int id, {int? boxId, int? slotId}) => Uri(
+    path: '$dexes/$id',
+    queryParameters: {
+      if (boxId != null) 'box': '$boxId',
+      if (slotId != null) 'slot': '$slotId',
+    }.nullIfEmpty,
+  ).toString();
+
+  static String specimen(int id) => '$specimens/$id';
 }
 
 /// Decide para onde ir conforme o estado de autenticação.
@@ -93,9 +105,36 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final dexId =
                           int.tryParse(state.pathParameters['dexId']!) ?? 0;
-                      // Trocar de dex recria a página (box e seleção zeradas).
-                      return DexDetailPage(key: ValueKey(dexId), dexId: dexId);
+                      final query = state.uri.queryParameters;
+                      final boxId = int.tryParse(query['box'] ?? '');
+                      final slotId = int.tryParse(query['slot'] ?? '');
+                      // Trocar de dex (ou de slot pedido na URL) recria a
+                      // página, com box e seleção novas.
+                      return DexDetailPage(
+                        key: ValueKey((dexId, boxId, slotId)),
+                        dexId: dexId,
+                        initialBoxId: boxId,
+                        initialSlotId: slotId,
+                      );
                     },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.specimens,
+                builder: (context, state) => const SpecimensPage(),
+                routes: [
+                  GoRoute(
+                    path: ':specimenId',
+                    builder: (context, state) => SpecimenDetailPage(
+                      specimenId:
+                          int.tryParse(state.pathParameters['specimenId']!) ??
+                          0,
+                    ),
                   ),
                 ],
               ),
@@ -116,3 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+extension on Map<String, String> {
+  Map<String, String>? get nullIfEmpty => isEmpty ? null : this;
+}

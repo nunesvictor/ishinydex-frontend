@@ -80,9 +80,27 @@ class SlotActions {
     _refresh(slot);
   }
 
+  /// Specimen criado, editado ou libertado fora da tela do dex (inventário):
+  /// recarrega tudo que mostra slots e contagens.
+  void specimensChanged() => _ref
+    ..invalidate(specimenPageProvider)
+    ..invalidate(dexListProvider)
+    ..invalidate(dexProvider)
+    ..invalidate(boxesProvider)
+    ..invalidate(slotsProvider);
+
+  /// Liberta um specimen pelo id (inventário), esteja depositado ou não.
+  Future<void> releaseSpecimen(int specimenId) async {
+    await _ref.read(specimenRepositoryProvider).release(specimenId);
+    specimensChanged();
+  }
+
   void _refresh(Slot slot) {
     final dexId = slot.personalDex;
-    _ref.invalidate(dexListProvider);
+    // O inventário (outra aba, viva em segundo plano) mostra a situação.
+    _ref
+      ..invalidate(specimenPageProvider)
+      ..invalidate(dexListProvider);
     if (dexId == null) return;
     _ref
       ..invalidate(slotsProvider((dexId: dexId, boxId: slot.box.id)))

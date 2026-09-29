@@ -150,6 +150,95 @@ void main() {
     });
   });
 
+  group('inventário', () {
+    Future<List<Specimen>> all(SpecimenQuery query) async =>
+        (await backend.fetchSpecimens(query, page: 1, pageSize: 500)).results;
+
+    test('filtros, ordem e slot informado', () async {
+      final everything = await all(emptySpecimenQuery);
+      // Ordem da API: forma, depois id.
+      expect(everything.first.form, 1);
+      expect(everything.first.slot, 1);
+      final deposited = await all((
+        search: '',
+        status: SpecimenStatus.deposited,
+        shinyOnly: false,
+      ));
+      final available = await all((
+        search: '',
+        status: SpecimenStatus.available,
+        shinyOnly: false,
+      ));
+      expect(deposited.length + available.length, everything.length);
+      expect(deposited.every((s) => s.slot != null), true);
+      expect(available.every((s) => s.slot == null), true);
+      final shiny = await all((
+        search: '',
+        status: SpecimenStatus.all,
+        shinyOnly: true,
+      ));
+      expect(shiny.every((s) => s.isShiny), true);
+      // Busca em apelido ou nome da forma, sem diferenciar maiúsculas.
+      final saur = await all((
+        search: ' SAUR ',
+        status: SpecimenStatus.all,
+        shinyOnly: false,
+      ));
+      expect(saur.map((s) => s.formName).toSet(), {
+        'bulbasaur',
+        'ivysaur',
+        'venusaur',
+      });
+      expect(saur.any((s) => s.nickname == 'Saur'), true);
+    });
+
+    test('paginação e página inválida', () async {
+      final first = await backend.fetchSpecimens(
+        emptySpecimenQuery,
+        page: 1,
+        pageSize: 20,
+      );
+      expect(first.results, hasLength(20));
+      expect(first.hasNext, true);
+      final pages = (first.count / 20).ceil();
+      final last = await backend.fetchSpecimens(
+        emptySpecimenQuery,
+        page: pages,
+        pageSize: 20,
+      );
+      expect(last.hasNext, false);
+      expect(
+        backend.fetchSpecimens(
+          emptySpecimenQuery,
+          page: pages + 1,
+          pageSize: 20,
+        ),
+        throwsA(isA<NotFoundFailure>()),
+      );
+      expect(
+        backend.fetchSpecimens(emptySpecimenQuery, page: 0, pageSize: 20),
+        throwsA(isA<NotFoundFailure>()),
+      );
+      // Sem resultados, a página 1 existe (vazia).
+      final none = await backend.fetchSpecimens(
+        (search: 'zzz', status: SpecimenStatus.all, shinyOnly: false),
+        page: 1,
+        pageSize: 20,
+      );
+      expect(none.count, 0);
+    });
+
+    test('searchForms e fetchSlot', () async {
+      expect((await backend.searchForms('PIDGE')).map((f) => f.name), [
+        'pidgey',
+        'pidgeotto',
+        'pidgeot',
+      ]);
+      expect((await backend.fetchSlot(1)).isRegistered, true);
+      expect(backend.fetchSlot(999), throwsA(isA<NotFoundFailure>()));
+    });
+  });
+
   test('createTrainer segue as regras do backend e fetchVersions', () async {
     expect((await backend.fetchVersions()).first.name, 'red');
     expect(

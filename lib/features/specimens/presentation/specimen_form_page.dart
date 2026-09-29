@@ -17,12 +17,16 @@ class SpecimenFormPage extends ConsumerWidget {
     required this.form,
     this.specimenId,
     this.initialShiny = false,
+    this.depositAfterSave = true,
     super.key,
   });
 
   final FormRef form;
   final int? specimenId;
   final bool initialShiny;
+
+  /// `false` no cadastro avulso do inventário: o botão diz só "Salvar".
+  final bool depositAfterSave;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,6 +57,7 @@ class SpecimenFormPage extends ConsumerWidget {
             trainers: t,
             initial: s,
             initialShiny: initialShiny,
+            depositAfterSave: depositAfterSave,
           ),
         (AsyncError(:final error), _, _, _) ||
         (_, AsyncError(:final error), _, _) ||
@@ -80,6 +85,7 @@ class SpecimenForm extends ConsumerStatefulWidget {
     required this.trainers,
     this.initial,
     this.initialShiny = false,
+    this.depositAfterSave = true,
     super.key,
   });
 
@@ -90,6 +96,7 @@ class SpecimenForm extends ConsumerStatefulWidget {
   /// Specimen em edição; `null` no cadastro.
   final Specimen? initial;
   final bool initialShiny;
+  final bool depositAfterSave;
 
   @override
   ConsumerState<SpecimenForm> createState() => _SpecimenFormState();
@@ -236,7 +243,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                 _draft.capturedAt == null
                     ? 'Não informada'
                     : MaterialLocalizations.of(context)
-                          .formatMediumDate(_draft.capturedAt!),
+                          .formatCompactDate(_draft.capturedAt!),
               ),
               onTap: _pickDate,
             ),
@@ -280,7 +287,9 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(
-                      widget.initial == null ? 'Salvar e depositar' : 'Salvar',
+                      widget.initial == null && widget.depositAfterSave
+                          ? 'Salvar e depositar'
+                          : 'Salvar',
                     ),
             ),
           ],
