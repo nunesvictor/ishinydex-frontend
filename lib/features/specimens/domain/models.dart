@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:intl/intl.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
@@ -364,3 +365,94 @@ abstract class SpecimenQuery with _$SpecimenQuery {
 }
 
 const emptySpecimenQuery = SpecimenQuery();
+
+/// Edição de um campo no lote: [Keep] não envia o campo; [SetTo] envia o
+/// valor, e `SetTo(null)` remove (pokébola, OT, data de captura).
+///
+/// *Sealed class*: o compilador sabe que só existem esses dois casos, então
+/// um `switch` sobre `FieldEdit` sem `default` é verificado por completo.
+@immutable
+sealed class FieldEdit<T> {
+  const FieldEdit();
+}
+
+final class Keep<T> extends FieldEdit<T> {
+  const Keep();
+
+  @override
+  bool operator ==(Object other) => other is Keep<T>;
+
+  @override
+  int get hashCode => (Keep<T>).hashCode;
+}
+
+final class SetTo<T> extends FieldEdit<T> {
+  const SetTo(this.value);
+
+  final T? value;
+
+  @override
+  bool operator ==(Object other) => other is SetTo<T> && other.value == value;
+
+  @override
+  int get hashCode => Object.hash(SetTo<T>, value);
+}
+
+/// Alterações da edição em lote (`PATCH /specimens/bulk/`). Todo campo
+/// começa em [Keep].
+@freezed
+abstract class SpecimenChanges with _$SpecimenChanges {
+  const factory SpecimenChanges({
+    @Default(Keep<String>()) FieldEdit<String> pokeball,
+    @Default(Keep<int>()) FieldEdit<int> ot,
+    @Default(Keep<String>()) FieldEdit<String> language,
+    @Default(Keep<String>()) FieldEdit<String> gender,
+    @Default(Keep<String>()) FieldEdit<String> nature,
+    @Default(Keep<DateTime>()) FieldEdit<DateTime> capturedAt,
+    @Default(Keep<bool>()) FieldEdit<bool> isShiny,
+    @Default(Keep<bool>()) FieldEdit<bool> isAlpha,
+    @Default(Keep<bool>()) FieldEdit<bool> isFromGo,
+  }) = _SpecimenChanges;
+
+  const SpecimenChanges._();
+
+  static final _dateFormat = DateFormat('yyyy-MM-dd');
+
+  /// Só os campos alterados, com as chaves da API.
+  Map<String, dynamic> toJson() => {
+    for (final (key, edit) in _edits)
+      if (edit case SetTo(:final value))
+        key: value is DateTime ? _dateFormat.format(value) : value,
+  };
+
+  /// Quantos campos mudam.
+  int get count => toJson().length;
+
+  bool get isEmpty => count == 0;
+
+  List<(String, FieldEdit<Object>)> get _edits => [
+    ('pokeball', pokeball),
+    ('ot', ot),
+    ('language', language),
+    ('gender', gender),
+    ('nature', nature),
+    ('captured_at', capturedAt),
+    ('is_shiny', isShiny),
+    ('is_alpha', isAlpha),
+    ('is_from_go', isFromGo),
+  ];
+}
+
+/// Espécime cujo gênero não combina com a forma (resposta 400 do bulk).
+typedef GenderConflict = ({int id, String formName});
+
+/// O lote pediu um gênero impossível para alguns espécimes; nada foi
+/// gravado.
+class GenderConflictFailure extends ValidationFailure {
+  GenderConflictFailure(this.conflicts, {required String message})
+    : super({
+        'gender': [message],
+      });
+
+  final List<GenderConflict> conflicts;
+}

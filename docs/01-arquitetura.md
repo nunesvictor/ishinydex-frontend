@@ -220,11 +220,22 @@ A terceira aba lista **todos** os espécimes, depositados ou não:
     `/dexes/:id?box=&slot=`.
 - **Novo espécime:** o seletor de forma (`GET /forms/?search=`) e o
   formulário com `depositAfterSave: false` (botão "Salvar").
+- **Edição em lote** ([bulk_edit_sheet.dart](../lib/features/specimens/presentation/widgets/bulk_edit_sheet.dart)):
+  - toque longo entra no modo de seleção (AppBar contextual; tocar marca e
+    desmarca; mudar o filtro descarta a seleção);
+  - "Selecionar todos os resultados" busca os ids do filtro
+    (`GET /specimens/ids/`), inclusive páginas não carregadas;
+  - a folha começa com tudo em "Manter" (`SpecimenChanges` de `FieldEdit`);
+    confirmação com resumo e aviso de que não dá para desfazer;
+  - `PATCH /specimens/bulk/` é tudo ou nada; gênero impossível para algum
+    espécime → `GenderConflictFailure` com a lista, e o diálogo oferece
+    "Desmarcar estes".
 - **Caches entre abas:** o `StatefulShellRoute` mantém as abas vivas, então
   depositar no dex precisa atualizar o inventário e vice-versa. Por isso:
   - `SlotActions` invalida `specimenPageProvider` junto com as contagens;
   - `SlotActions.specimensChanged()` invalida as famílias do dex (`dexProvider`,
-    `boxesProvider`, `slotsProvider`) quando algo muda pelo inventário.
+    `boxesProvider`, `slotsProvider`) e o detalhe (`specimenProvider`) quando
+    algo muda pelo inventário.
 
 ## Como adicionar uma feature (receita)
 

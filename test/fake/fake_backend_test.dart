@@ -347,6 +347,110 @@ void main() {
       );
     });
 
+    test('ids do filtro, na ordem da lista', () async {
+      const query = SpecimenQuery(
+        withoutPokeball: true,
+        ordering: SpecimenOrdering.createdDesc,
+      );
+      expect(await backend.fetchSpecimenIds(query), [
+        for (final s in await all(query)) s.id,
+      ]);
+    });
+
+    group('edição em lote', () {
+      test('aplica só o que muda, em todos os ids', () async {
+        final ids = [
+          for (final s in (await all(emptySpecimenQuery)).take(3)) s.id,
+        ];
+        final updated = await backend.bulkUpdate(
+          ids: [...ids, ids.first],
+          changes: SpecimenChanges(
+            pokeball: const SetTo('beast-ball'),
+            ot: const SetTo(2),
+            nature: const SetTo('timid'),
+            language: const SetTo('ja'),
+            capturedAt: SetTo(DateTime(2026, 5, 5)),
+            isShiny: const SetTo(false),
+            isAlpha: const SetTo(true),
+            isFromGo: const SetTo(true),
+          ),
+        );
+        expect(updated, 3);
+        for (final id in ids) {
+          final s = await backend.fetchSpecimen(id);
+          expect(s.pokeball, 'beast-ball');
+          expect(s.pokeballSpriteUrl, endsWith('beast-ball.png'));
+          expect(s.ot, 2);
+          expect(s.nature, 'timid');
+          expect(s.language, 'ja');
+          expect(s.capturedAt, DateTime(2026, 5, 5));
+          expect((s.isShiny, s.isAlpha, s.isFromGo), (false, true, true));
+        }
+        // Remover (SetTo(null)) e manter (Keep).
+        await backend.bulkUpdate(
+          ids: [ids.first],
+          changes: const SpecimenChanges(
+            pokeball: SetTo(null),
+            capturedAt: SetTo(null),
+          ),
+        );
+        final first = await backend.fetchSpecimen(ids.first);
+        expect(first.pokeball, isNull);
+        expect(first.capturedAt, isNull);
+        expect(first.nature, 'timid');
+      });
+
+      test('pedido inválido não altera nada', () async {
+        const changes = SpecimenChanges(isAlpha: SetTo(true));
+        await expectLater(
+          backend.bulkUpdate(ids: const [], changes: changes),
+          throwsA(isA<ValidationFailure>()),
+        );
+        await expectLater(
+          backend.bulkUpdate(ids: const [1], changes: const SpecimenChanges()),
+          throwsA(isA<ValidationFailure>()),
+        );
+        await expectLater(
+          backend.bulkUpdate(ids: const [1, 9999], changes: changes),
+          throwsA(
+            isA<ValidationFailure>().having(
+              (f) => f.errorFor('ids'),
+              'ids',
+              contains('9999'),
+            ),
+          ),
+        );
+        expect((await backend.fetchSpecimen(1)).isAlpha, true); // seed: forma 1
+      });
+
+      test('gênero validado pela espécie, tudo ou nada', () async {
+        // Seed: Nidoran♀ (29) só fêmea; forma 1 macho ou fêmea.
+        final nidoranF = (await all(
+          emptySpecimenQuery.copyWith(search: 'nidoran-f'),
+        )).first;
+        final bulba = (await all(emptySpecimenQuery)).first;
+        await expectLater(
+          backend.bulkUpdate(
+            ids: [bulba.id, nidoranF.id],
+            changes: const SpecimenChanges(gender: SetTo('male')),
+          ),
+          throwsA(
+            isA<GenderConflictFailure>().having((f) => f.conflicts, 'c', [
+              (id: nidoranF.id, formName: 'nidoran-f'),
+            ]),
+          ),
+        );
+        expect((await backend.fetchSpecimen(bulba.id)).gender, isNull);
+        expect(
+          await backend.bulkUpdate(
+            ids: [bulba.id, nidoranF.id],
+            changes: const SpecimenChanges(gender: SetTo('female')),
+          ),
+          2,
+        );
+      });
+    });
+
     test('paginação e página inválida', () async {
       final first = await backend.fetchSpecimens(
         emptySpecimenQuery,
@@ -549,5 +653,23 @@ void main() {
     expect(backend.fetchForm(999), throwsA(isA<NotFoundFailure>()));
     expect((await backend.fetchOptions()).pokeball, isNotEmpty);
     expect(await backend.fetchTrainers(), hasLength(2));
+  });
+
+  test('allowedGenders: forma por gênero e gender_rate', () {
+    FormDetail form(int id, String name) => FormDetail(
+      id: id,
+      name: name,
+      pokeapiId: id,
+      spriteUrl: '',
+      shinySpriteUrl: '',
+    );
+    const rates = {1: -1, 2: 0, 3: 8, 4: 4, 5: 0};
+    expect(allowedGenders(form(1, 'magnemite'), rates), {'genderless'});
+    expect(allowedGenders(form(2, 'tauros'), rates), {'male'});
+    expect(allowedGenders(form(3, 'chansey'), rates), {'female'});
+    expect(allowedGenders(form(4, 'pikachu'), rates), {'male', 'female'});
+    expect(allowedGenders(form(9, 'sem-taxa'), rates), {'male', 'female'});
+    expect(allowedGenders(form(5, 'oinkologne-female'), rates), {'female'});
+    expect(allowedGenders(form(4, 'meowstic-male'), rates), {'male'});
   });
 }

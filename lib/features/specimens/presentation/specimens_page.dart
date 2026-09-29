@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
@@ -12,6 +13,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/bulk_edit_sheet.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -20,6 +22,8 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 ///
 /// - compacto: lista; tocar abre o detalhe em tela própria
 /// - médio/expandido: lista | detalhe do specimen selecionado
+/// - toque longo: modo de seleção para editar em lote (tocar marca e
+///   desmarca; a AppBar mostra as ações do lote)
 class SpecimensPage extends ConsumerStatefulWidget {
   const SpecimensPage({super.key});
 
@@ -32,6 +36,23 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
   int? _selectedId;
   Timer? _debounce;
 
+  /// Marcados para a edição em lote; vazio = fora do modo de seleção.
+  Set<int> _checked = {};
+
+  bool get _selecting => _checked.isNotEmpty;
+
+  /// A seleção pertence aos resultados atuais: mudar o filtro a descarta.
+  void _setQuery(SpecimenQuery query) => setState(() {
+    _query = query;
+    _checked = {};
+  });
+
+  void _toggle(Specimen specimen) => setState(() {
+    _checked = _checked.contains(specimen.id)
+        ? ({..._checked}..remove(specimen.id))
+        : {..._checked, specimen.id};
+  });
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -43,7 +64,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     _debounce?.cancel();
     _debounce = Timer(
       const Duration(milliseconds: 350),
-      () => setState(() => _query = _query.copyWith(search: text.trim())),
+      () => _setQuery(_query.copyWith(search: text.trim())),
     );
   }
 
@@ -55,13 +76,17 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
         _Filters(
           query: _query,
           onSearchChanged: _onSearchChanged,
-          onChanged: (query) => setState(() => _query = query),
+          onChanged: _setQuery,
         ),
         Expanded(
           child: SpecimenList(
             query: _query,
             selectedId: size.isCompact ? null : _selectedId,
-            onTap: (specimen) => size.isCompact
+            checkedIds: _selecting ? _checked : null,
+            onLongPress: _toggle,
+            onTap: (specimen) => _selecting
+                ? _toggle(specimen)
+                : size.isCompact
                 ? context.go(Routes.specimen(specimen.id))
                 : setState(() => _selectedId = specimen.id),
           ),
@@ -70,14 +95,41 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     );
     final selected = _selectedId;
     return Scaffold(
-      appBar: AppBar(title: const Text('Espécimes')),
-      floatingActionButton: FloatingActionButton.extended(
-        // As abas ficam vivas juntas: cada botão precisa da sua hero tag.
-        heroTag: 'new-specimen',
-        onPressed: _create,
-        icon: const Icon(Icons.add),
-        label: const Text('Novo espécime'),
-      ),
+      appBar: _selecting
+          ? AppBar(
+              leading: IconButton(
+                tooltip: 'Cancelar seleção',
+                onPressed: () => setState(() => _checked = {}),
+                icon: const Icon(Icons.close),
+              ),
+              title: Text(
+                '${_checked.length} '
+                '${_checked.length == 1 ? 'selecionado' : 'selecionados'}',
+              ),
+              actions: [
+                IconButton(
+                  tooltip: 'Selecionar todos os resultados',
+                  onPressed: _selectAll,
+                  icon: const Icon(Icons.select_all),
+                ),
+                IconButton(
+                  tooltip: 'Editar em lote',
+                  onPressed: _bulkEdit,
+                  icon: const Icon(Icons.edit_note),
+                ),
+              ],
+            )
+          : AppBar(title: const Text('Espécimes')),
+      floatingActionButton: _selecting
+          ? null
+          : FloatingActionButton.extended(
+              // As abas ficam vivas juntas: cada botão precisa da sua hero
+              // tag.
+              heroTag: 'new-specimen',
+              onPressed: _create,
+              icon: const Icon(Icons.add),
+              label: const Text('Novo espécime'),
+            ),
       body: size.isCompact
           ? list
           : Row(
@@ -98,6 +150,93 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
               ],
             ),
     );
+  }
+
+  void _showMessage(String message) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
+
+  /// Todos os resultados do filtro, inclusive as páginas não carregadas.
+  Future<void> _selectAll() async {
+    try {
+      final ids = await ref
+          .read(specimenRepositoryProvider)
+          .fetchSpecimenIds(_query);
+      if (mounted) setState(() => _checked = ids.toSet());
+    } on AppFailure catch (failure) {
+      if (mounted) _showMessage(failure.message);
+    }
+  }
+
+  Future<void> _bulkEdit() async {
+    final count = _checked.length;
+    final changes = await showBulkEditSheet(context, count);
+    if (changes == null || !mounted) return;
+    final labels = BulkLabels(
+      context,
+      ref,
+      ref.read(specimenOptionsProvider).value ?? const SpecimenOptions(),
+      ref.read(trainersProvider).value ?? const <Trainer>[],
+    );
+    final confirmed = await confirmBulkEdit(
+      context,
+      count: count,
+      summary: labels.summary(changes),
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      final updated = await ref
+          .read(specimenRepositoryProvider)
+          .bulkUpdate(ids: [..._checked]..sort(), changes: changes);
+      ref.read(slotActionsProvider).specimensChanged();
+      if (!mounted) return;
+      setState(() => _checked = {});
+      _showMessage(
+        '$updated ${updated == 1 ? 'espécime atualizado' : 'espécimes atualizados'}.',
+      );
+    } on GenderConflictFailure catch (failure) {
+      if (mounted) await _showGenderConflicts(failure);
+    } on AppFailure catch (failure) {
+      if (mounted) _showMessage(failure.message);
+    }
+  }
+
+  /// Nada foi gravado; mostra quem impediu e oferece desmarcá-los.
+  Future<void> _showGenderConflicts(GenderConflictFailure failure) async {
+    final uncheck = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Gênero impossível'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              Text('${failure.message} Nenhum espécime foi alterado.'),
+              const SizedBox(height: 4),
+              for (final c in failure.conflicts)
+                Text('• ${prettifyName(c.formName)} (#${c.id})'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Fechar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Desmarcar estes'),
+          ),
+        ],
+      ),
+    );
+    if (uncheck ?? false) {
+      setState(() {
+        _checked = {..._checked}..removeAll(failure.conflicts.map((c) => c.id));
+      });
+    }
   }
 
   /// Cadastro avulso: escolhe a forma e abre o formulário, sem depositar.
@@ -236,12 +375,18 @@ class SpecimenList extends ConsumerWidget {
     required this.query,
     required this.onTap,
     this.selectedId,
+    this.checkedIds,
+    this.onLongPress,
     super.key,
   });
 
   final SpecimenQuery query;
   final int? selectedId;
   final ValueChanged<Specimen> onTap;
+
+  /// Marcados no modo de seleção; `null` = fora dele.
+  final Set<int>? checkedIds;
+  final ValueChanged<Specimen>? onLongPress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -262,7 +407,9 @@ class SpecimenList extends ConsumerWidget {
             query: query,
             index: i,
             selectedId: selectedId,
+            checkedIds: checkedIds,
             onTap: onTap,
+            onLongPress: onLongPress,
           ),
         ),
       ),
@@ -280,13 +427,17 @@ class _SpecimenItem extends ConsumerWidget {
     required this.query,
     required this.index,
     required this.selectedId,
+    required this.checkedIds,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final SpecimenQuery query;
   final int index;
   final int? selectedId;
+  final Set<int>? checkedIds;
   final ValueChanged<Specimen> onTap;
+  final ValueChanged<Specimen>? onLongPress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -297,7 +448,11 @@ class _SpecimenItem extends ConsumerWidget {
         SpecimenListTile(
           specimen: page.results[offset],
           selected: page.results[offset].id == selectedId,
+          checked: checkedIds?.contains(page.results[offset].id),
           onTap: () => onTap(page.results[offset]),
+          onLongPress: onLongPress == null
+              ? null
+              : () => onLongPress!(page.results[offset]),
         ),
       // A lista encolheu entre páginas (ex.: libertado): nada a mostrar.
       AsyncData() => const SizedBox.shrink(),
@@ -324,12 +479,19 @@ class SpecimenListTile extends StatelessWidget {
     required this.specimen,
     required this.onTap,
     this.selected = false,
+    this.checked,
+    this.onLongPress,
     super.key,
   });
 
   final Specimen specimen;
   final bool selected;
   final VoidCallback onTap;
+
+  /// No modo de seleção, se está marcado (mostra a caixa); `null` = fora do
+  /// modo.
+  final bool? checked;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -341,7 +503,7 @@ class SpecimenListTile extends StatelessWidget {
     ];
     return ListTile(
       key: ValueKey('specimen-${specimen.id}'),
-      selected: selected,
+      selected: selected || (checked ?? false),
       leading: PokemonSprite(url: specimen.spriteUrl, size: 48),
       title: Row(
         spacing: 4,
@@ -355,13 +517,16 @@ class SpecimenListTile extends StatelessWidget {
         ],
       ),
       subtitle: Text(details.join(' · ')),
-      trailing: specimen.isDeposited
-          ? const Tooltip(
-              message: 'Depositado',
-              child: Icon(Icons.inventory_2_outlined),
-            )
-          : null,
+      trailing: switch (checked) {
+        final bool value => Checkbox(value: value, onChanged: (_) => onTap()),
+        null when specimen.isDeposited => const Tooltip(
+          message: 'Depositado',
+          child: Icon(Icons.inventory_2_outlined),
+        ),
+        null => null,
+      },
       onTap: onTap,
+      onLongPress: onLongPress,
     );
   }
 }

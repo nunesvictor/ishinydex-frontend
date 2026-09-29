@@ -109,6 +109,7 @@ class SlotActions {
   /// recarrega tudo que mostra slots e contagens.
   void specimensChanged() => _ref
     ..invalidate(specimenPageProvider)
+    ..invalidate(specimenProvider)
     ..invalidate(dexListProvider)
     ..invalidate(dexProvider)
     ..invalidate(boxesProvider)

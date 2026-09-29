@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../fixtures/api_fixtures.dart';
 import '../../helpers/helpers.dart';
+import '../../helpers/mocks.dart';
 
 Finder specimenTile(int id) => find.byKey(ValueKey('specimen-$id'));
 
@@ -297,6 +303,222 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(InputChip), findsNothing);
       expect(find.textContaining('Ball'), findsWidgets);
+    });
+  });
+
+  group('edição em lote', () {
+    Finder checkbox(int id) =>
+        find.descendant(of: specimenTile(id), matching: find.byType(Checkbox));
+
+    Future<void> applyEdit(
+      WidgetTester tester,
+      Future<void> Function() fill,
+    ) async {
+      await tester.tap(find.byTooltip('Editar em lote'));
+      await tester.pumpAndSettle();
+      await fill();
+      await tester.tap(find.textContaining('Revisar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('selecionar, todos os resultados e aplicar', (tester) async {
+      final backend = await pumpFullApp(tester, size: compactSize);
+      final specimens = await allSpecimens(backend);
+      final saur = specimens.firstWhere((s) => s.nickname == 'Saur');
+      await openSpecimensTab(tester);
+      expect(find.byType(Checkbox), findsNothing);
+
+      // Toque longo entra no modo; tocar marca/desmarca; ✕ sai.
+      await tester.longPress(specimenTile(saur.id));
+      await tester.pumpAndSettle();
+      expect(find.text('1 selecionado'), findsOneWidget);
+      expect(find.text('Novo espécime'), findsNothing);
+      expect(tester.widget<Checkbox>(checkbox(saur.id)).value, true);
+      final other = specimens.first;
+      await tester.tap(specimenTile(other.id));
+      await tester.pumpAndSettle();
+      expect(find.text('2 selecionados'), findsOneWidget);
+      await tester.tap(checkbox(other.id));
+      await tester.pumpAndSettle();
+      expect(find.text('1 selecionado'), findsOneWidget);
+      await tester.tap(find.byTooltip('Cancelar seleção'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Checkbox), findsNothing);
+
+      // Mudar o filtro descarta a seleção.
+      await tester.longPress(specimenTile(saur.id));
+      await tester.pumpAndSettle();
+      await search(tester, 'saur');
+      expect(find.byType(Checkbox), findsNothing);
+
+      // "Selecionar todos" pega todos os resultados do filtro.
+      await tester.longPress(specimenTile(saur.id));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Selecionar todos os resultados'));
+      await tester.pumpAndSettle();
+      final matching = specimens
+          .where(
+            (s) => s.nickname == 'Saur' || (s.formName ?? '').contains('saur'),
+          )
+          .length;
+      expect(find.text('$matching selecionados'), findsOneWidget);
+
+      // Cancelar na confirmação não altera nada.
+      await tester.tap(find.byTooltip('Editar em lote'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pokébola'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Beast Ball'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Revisar'));
+      await tester.pumpAndSettle();
+      expect(find.text('• Pokébola → Beast Ball'), findsOneWidget);
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(find.text('$matching selecionados'), findsOneWidget);
+
+      await applyEdit(tester, () async {
+        await tester.tap(find.text('Pokébola'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Beast Ball'));
+        await tester.pumpAndSettle();
+      });
+      expect(find.text('$matching espécimes atualizados.'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNothing);
+      // A lista recarregou com a pokébola nova.
+      expect(find.textContaining('Beast Ball'), findsWidgets);
+      expect((await backend.fetchSpecimen(saur.id)).pokeball, 'beast-ball');
+    });
+
+    testWidgets('conflito de gênero: nada muda; desmarcar e seguir', (
+      tester,
+    ) async {
+      final backend = await pumpFullApp(tester, size: compactSize);
+      await openSpecimensTab(tester);
+      // Nidoran♀ (só fêmea) e Nidoran♂ (só macho).
+      await search(tester, 'nidoran');
+      final nidorans = (await backend.fetchSpecimens(
+        const SpecimenQuery(search: 'nidoran'),
+        page: 1,
+        pageSize: 50,
+      )).results;
+      final females = nidorans.where((s) => s.formName == 'nidoran-f');
+      await tester.longPress(specimenTile(nidorans.first.id));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Selecionar todos os resultados'));
+      await tester.pumpAndSettle();
+
+      Future<void> editMale() => applyEdit(tester, () async {
+        await tester.scrollUntilVisible(
+          find.widgetWithText(ChoiceChip, 'Macho'),
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.tap(find.widgetWithText(ChoiceChip, 'Macho'));
+        await tester.pumpAndSettle();
+      });
+
+      await editMale();
+      expect(find.text('Gênero impossível'), findsOneWidget);
+      expect(find.textContaining('Nenhum espécime foi alterado.'), findsOne);
+      expect(
+        find.textContaining('Nidoran F (#'),
+        findsNWidgets(females.length),
+      );
+      // Fechar mantém a seleção.
+      await tester.tap(find.text('Fechar'));
+      await tester.pumpAndSettle();
+      expect(find.text('${nidorans.length} selecionados'), findsOneWidget);
+
+      await editMale();
+      await tester.tap(find.text('Desmarcar estes'));
+      await tester.pumpAndSettle();
+      final rest = nidorans.length - females.length;
+      expect(
+        find.text(rest == 1 ? '1 selecionado' : '$rest selecionados'),
+        findsOneWidget,
+      );
+      await editMale();
+      expect(
+        find.text(
+          rest == 1 ? '1 espécime atualizado.' : '$rest espécimes atualizados.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('expandido: no modo de seleção, tocar não abre o detalhe', (
+      tester,
+    ) async {
+      final backend = await pumpFullApp(tester);
+      final first = (await allSpecimens(backend)).first;
+      await openSpecimensTab(tester);
+      await tester.longPress(specimenTile(first.id));
+      await tester.pumpAndSettle();
+      expect(find.text('1 selecionado'), findsOneWidget);
+      expect(find.text('Selecione um espécime na lista.'), findsOneWidget);
+      await tester.tap(specimenTile(first.id));
+      await tester.pumpAndSettle();
+      expect(find.byType(Checkbox), findsNothing);
+      expect(find.text('Selecione um espécime na lista.'), findsOneWidget);
+    });
+
+    testWidgets('falhas viram mensagem', (tester) async {
+      final repository = MockSpecimenRepository();
+      final specimen = Specimen.fromJson(specimenJson);
+      final fake = FakeBackend.seeded();
+      registerFallbackValue(emptySpecimenQuery);
+      registerFallbackValue(const SpecimenChanges());
+      when(
+        () => repository.fetchSpecimens(
+          any(),
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+        ),
+      ).thenAnswer((_) async => Paginated(count: 1, results: [specimen]));
+      when(repository.fetchOptions).thenAnswer((_) async => fake.options);
+      when(repository.fetchTrainers).thenAnswer((_) async => const []);
+      when(() => repository.fetchSpecimenIds(any()))
+          .thenThrow(const NetworkFailure());
+      when(
+        () => repository.bulkUpdate(
+          ids: any(named: 'ids'),
+          changes: any(named: 'changes'),
+        ),
+      ).thenThrow(const ServerFailure());
+      await pumpWidgetApp(
+        tester,
+        const SpecimensPage(),
+        overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.longPress(specimenTile(specimen.id));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Selecionar todos os resultados'));
+      await tester.pumpAndSettle();
+      expect(find.text(const NetworkFailure().message), findsOneWidget);
+
+      // Fechar a folha sem alterar não chega na API.
+      await tester.tap(find.byTooltip('Editar em lote'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('Editar 1 espécime'), const Offset(0, 800));
+      await tester.pumpAndSettle();
+
+      await applyEdit(tester, () async {
+        await tester.tap(find.widgetWithText(ChoiceChip, 'Fêmea'));
+        await tester.pumpAndSettle();
+      });
+      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('1 selecionado'), findsOneWidget);
+      verify(
+        () => repository.bulkUpdate(
+          ids: [specimen.id],
+          changes: const SpecimenChanges(gender: SetTo('female')),
+        ),
+      ).called(1);
     });
   });
 }

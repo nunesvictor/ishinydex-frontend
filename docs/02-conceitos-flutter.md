@@ -456,7 +456,24 @@ virtual não abre e não cobre a lista.
 | Pattern matching | `switch ((a, b, c)) { (AsyncData(), ...) => ... }` | Decide conforme o formato dos valores ([specimen_form_page.dart](../lib/features/specimens/presentation/specimen_form_page.dart)) |
 | Collection `if`/`for` | `[if (x) Widget(), for (final d in list) Tile(d)]` | Monta listas de widgets condicionalmente |
 | Cascade `..` | `ref..invalidate(a)..invalidate(b)` | Várias chamadas no mesmo objeto |
-| `sealed class` | `sealed class AppFailure` | Hierarquia fechada: o compilador conhece todos os subtipos |
+| `sealed class` | `sealed class AppFailure`, `sealed class FieldEdit<T>` | Hierarquia fechada: o compilador conhece todos os subtipos (ver abaixo) |
 | Tear-off | `Provider(SlotActions.new)` | Passa o construtor como função |
+
+**Sealed class na prática: "manter" × "remover".** Na edição em lote, cada
+campo pode ficar como está, receber um valor ou ser apagado. Um `String?`
+não distingue "não mexer" de "apagar" (os dois seriam `null`). Por isso
+existe [`FieldEdit<T>`](../lib/features/specimens/domain/models.dart), com
+dois subtipos: `Keep()` e `SetTo(value)`, em que `SetTo(null)` apaga. Como a
+classe é `sealed`, um `switch` sem `default` é verificado por completo: se um
+dia surgir um terceiro caso, o compilador aponta cada `switch` que precisa
+tratá-lo.
+
+```dart
+String pokeball(FieldEdit<String> edit) => switch (edit) {
+  Keep() => 'Manter',
+  SetTo(value: null) => 'Remover',
+  SetTo(:final String value) => labelDe(value),
+};
+```
 
 📚 [Tour da linguagem Dart](https://dart.dev/language)

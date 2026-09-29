@@ -204,6 +204,36 @@ void main() {
     ]);
   });
 
+  test('FieldEdit: igualdade por valor', () {
+    expect(const Keep<String>(), const Keep<String>());
+    expect(const Keep<String>().hashCode, const Keep<String>().hashCode);
+    expect(const SetTo('a'), const SetTo('a'));
+    expect(const SetTo('a').hashCode, const SetTo('a').hashCode);
+    expect(const SetTo('a'), isNot(const SetTo('b')));
+    expect(const SetTo<String>(null), isNot(const Keep<String>()));
+  });
+
+  test('SpecimenChanges.toJson envia só o que muda', () {
+    expect(const SpecimenChanges().toJson(), isEmpty);
+    expect(const SpecimenChanges().isEmpty, true);
+    final changes = SpecimenChanges(
+      pokeball: const SetTo('dive-ball'),
+      ot: const SetTo(null),
+      capturedAt: SetTo(DateTime(2026, 1, 2)),
+      isShiny: const SetTo(false),
+      gender: const SetTo('female'),
+    );
+    expect(changes.toJson(), {
+      'pokeball': 'dive-ball',
+      'ot': null,
+      'gender': 'female',
+      'captured_at': '2026-01-02',
+      'is_shiny': false,
+    });
+    expect(changes.count, 5);
+    expect(changes.isEmpty, false);
+  });
+
   test('SpecimenStatus → filtro available da API', () {
     expect(SpecimenStatus.all.availableParam, isNull);
     expect(SpecimenStatus.available.availableParam, true);
