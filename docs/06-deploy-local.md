@@ -118,6 +118,7 @@ nativo de iOS, o token continua no Keychain.
 | Sintoma | Causa provável |
 | --- | --- |
 | Tela de erro "Erro no servidor" / nginx responde **502** | O backend `prod` está parado. Suba com o comando do passo 1 e veja `docker compose --profile prod logs prod` no backend. |
+| API responde **500** e o log do `prod` mostra `MemoryError` | Limite de memória do uwsgi (`limit-as` em `src/uwsgi/django-pokedex.ini` do backend) curto demais. Em 2026-09 foi preciso subir de 1024 para 2048 MB e fixar `offload-threads = 2`; o padrão `%k` cria uma thread por núcleo. |
 | Celular não abre a página | Celular em outra rede (ex.: 4G), firewall bloqueando a porta 8090, ou IP mudou. |
 | Mudança no código não aparece | Faltou `--build` no `docker compose up`. Depois, recarregue a página. O `index.html` nunca fica em cache. |
 | Sprites sem imagem | Veja se `http://<ip>:8090/media/sprites/pokemon/other/home/1.png` abre. Se não abrir, o volume `sprites` do backend não foi populado. |
