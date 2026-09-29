@@ -98,6 +98,12 @@ void main() {
       expect(find.text(alphaEmoji), findsNWidgets(5));
       expect(find.text('Poke Ball'), findsOneWidget);
       expect(find.text('Editar espécime'), findsOneWidget);
+      // Detalhes da forma (tipos e habilidades do fake).
+      expect(find.text('Normal'), findsOneWidget);
+      expect(
+        find.text('Habilidades: Run Away · Keen Eye (oculta)'),
+        findsOneWidget,
+      );
       expect(find.text('Libertar'), findsOneWidget);
       expect(find.text('Depositar'), findsNothing);
 
