@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 
@@ -32,12 +32,7 @@ class DexSwitcher extends ConsumerWidget {
               spacing: 8,
               children: [
                 Text(dex.name),
-                if (dex.isShinyDex)
-                  const Icon(
-                    Icons.auto_awesome,
-                    size: 16,
-                    color: AppTheme.shinyGold,
-                  ),
+                if (dex.isShinyDex) const Text(shinyEmoji),
               ],
             ),
           ),

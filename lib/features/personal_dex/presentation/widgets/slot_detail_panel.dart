@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -86,10 +85,7 @@ class SlotDetailPanel extends StatelessWidget {
                   label: Text('Registrado'),
                 ),
                 if (specimen.isShiny)
-                  const Chip(
-                    avatar: Icon(Icons.auto_awesome, color: AppTheme.shinyGold),
-                    label: Text('Shiny'),
-                  ),
+                  const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
                 if (specimen.isAlpha)
                   const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
                 if (specimen.pokeball != null)

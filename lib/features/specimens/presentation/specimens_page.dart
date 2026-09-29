@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -178,7 +177,7 @@ class _Filters extends StatelessWidget {
               )),
             ),
             FilterChip(
-              avatar: const Icon(Icons.auto_awesome, color: AppTheme.shinyGold),
+              avatar: const Text(shinyEmoji),
               label: const Text('Shiny'),
               selected: query.shinyOnly,
               onSelected: (v) => onChanged((
@@ -314,13 +313,7 @@ class SpecimenListTile extends StatelessWidget {
           Flexible(
             child: Text(specimen.displayName, overflow: TextOverflow.ellipsis),
           ),
-          if (specimen.isShiny)
-            const Icon(
-              Icons.auto_awesome,
-              size: 16,
-              color: AppTheme.shinyGold,
-              semanticLabel: 'Shiny',
-            ),
+          if (specimen.isShiny) const Text(shinyEmoji, semanticsLabel: 'Shiny'),
         ],
       ),
       subtitle: Text(details.join(' · ')),

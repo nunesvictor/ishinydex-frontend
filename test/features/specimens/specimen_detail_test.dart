@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -80,6 +81,8 @@ void main() {
         expect(find.text('23/09/2024'), findsOneWidget);
         expect(find.text('Pego no safári'), findsOneWidget);
         expect(find.text('Bulbasaur · #0001'), findsOneWidget);
+        // Selo shiny junto do nome, como no admin.
+        expect(find.text('Bulbasaur $shinyEmoji'), findsOneWidget);
       });
     }
 

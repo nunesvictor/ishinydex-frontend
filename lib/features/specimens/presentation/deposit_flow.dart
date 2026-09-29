@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
@@ -207,7 +206,7 @@ class _SpecimenTile extends StatelessWidget {
       title: Text(specimen.displayName),
       subtitle: details.isEmpty ? null : Text(details.join(' · ')),
       trailing: specimen.isShiny
-          ? const Icon(Icons.auto_awesome, color: AppTheme.shinyGold)
+          ? const Text(shinyEmoji, semanticsLabel: 'Shiny')
           : null,
       onTap: onTap,
     );

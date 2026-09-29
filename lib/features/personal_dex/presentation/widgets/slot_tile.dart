@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -82,10 +81,10 @@ class SlotTile extends StatelessWidget {
                     Positioned(
                       left: 2,
                       top: 2,
-                      child: Icon(
-                        Icons.auto_awesome,
-                        size: size * 0.2,
-                        color: AppTheme.shinyGold,
+                      child: Text(
+                        shinyEmoji,
+                        semanticsLabel: 'Shiny',
+                        style: TextStyle(fontSize: size * 0.16),
                       ),
                     ),
                   if (specimen != null && specimen.isAlpha)

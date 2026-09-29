@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
@@ -79,6 +80,9 @@ void main() {
     );
     final results = await pumpForm(tester);
     await tester.pumpAndSettle();
+    // Shiny e alfa com os mesmos emojis do admin.
+    expect(find.text(shinyEmoji), findsOneWidget);
+    expect(find.text(alphaEmoji), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).first, ' Bulba ');
     await choose(tester, 'ability', 'Chlorophyll (oculta)');

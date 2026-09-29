@@ -249,6 +249,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
+              secondary: const Text(shinyEmoji, style: TextStyle(fontSize: 20)),
               title: const Text('Shiny'),
               value: _draft.isShiny,
               onChanged: (v) =>

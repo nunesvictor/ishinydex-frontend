@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -15,7 +15,7 @@ void main() {
     expect(find.text('Shiny Living Dex'), findsOneWidget);
     expect(find.text('Living Dex'), findsOneWidget);
     expect(find.text('Faltam 19'), findsOneWidget);
-    expect(find.byIcon(Icons.auto_awesome), findsWidgets);
+    expect(find.text(shinyEmoji), findsWidgets);
   });
 
   testWidgets('dex completo e pull-to-refresh', (tester) async {

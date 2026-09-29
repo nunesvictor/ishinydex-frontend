@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
@@ -108,8 +107,13 @@ class _Details extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
+          // Selos junto do nome, como no admin ("Bulba ✨💢").
           Text(
-            specimen.displayName,
+            [
+              specimen.displayName,
+              if (specimen.isShiny) shinyEmoji,
+              if (specimen.isAlpha) alphaEmoji,
+            ].join(' '),
             style: theme.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
@@ -137,10 +141,7 @@ class _Details extends ConsumerWidget {
                   label: Text('Disponível'),
                 ),
               if (specimen.isShiny)
-                const Chip(
-                  avatar: Icon(Icons.auto_awesome, color: AppTheme.shinyGold),
-                  label: Text('Shiny'),
-                ),
+                const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
               if (specimen.isAlpha)
                 const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
               if (specimen.isFromGo) const Chip(label: Text('Pokémon GO')),
