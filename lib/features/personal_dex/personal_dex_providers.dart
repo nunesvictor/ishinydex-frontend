@@ -7,6 +7,7 @@ import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repositor
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 final personalDexRepositoryProvider = Provider<PersonalDexRepository>((ref) {
   if (ref.watch(envProvider).useFakeApi) return ref.watch(fakeBackendProvider);
@@ -47,7 +48,8 @@ final FutureProviderFamily<List<Slot>, BoxKey> slotsProvider = FutureProvider
 
 final slotActionsProvider = Provider<SlotActions>(SlotActions.new);
 
-/// Depositar/retirar e invalidar as contagens afetadas.
+/// Depositar, libertar e editar specimens de um slot, invalidando o que a
+/// tela mostra (slots, contagens da box, do dex e da lista).
 class SlotActions {
   SlotActions(this._ref);
 
@@ -65,10 +67,17 @@ class SlotActions {
     return updated;
   }
 
-  Future<Slot> withdraw(Slot slot) async {
-    final updated = await _repository.withdraw(slot.id);
+  /// Liberta (apaga) o specimen do slot; o slot fica faltante.
+  Future<void> release(Slot slot) async {
+    await _ref.read(specimenRepositoryProvider).release(slot.specimen!.id);
     _refresh(slot);
-    return updated;
+  }
+
+  /// O specimen do slot foi editado: apelido, bola e shiny/alfa aparecem na
+  /// box e no painel de detalhe.
+  void specimenEdited(Slot slot) {
+    _ref.invalidate(specimenProvider(slot.specimen!.id));
+    _refresh(slot);
   }
 
   void _refresh(Slot slot) {

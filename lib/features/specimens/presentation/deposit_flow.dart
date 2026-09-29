@@ -72,7 +72,6 @@ class _DepositPickerState extends ConsumerState<DepositPicker> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final available = ref.watch(availableSpecimensProvider(_form.id));
-    final current = widget.slot.specimen;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -83,15 +82,6 @@ class _DepositPickerState extends ConsumerState<DepositPicker> {
             style: theme.textTheme.titleLarge,
           ),
         ),
-        if (current != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              '${current.displayName} será substituído e voltará a ficar '
-              'disponível.',
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.all(16),

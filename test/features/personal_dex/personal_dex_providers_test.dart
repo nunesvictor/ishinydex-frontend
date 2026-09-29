@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repository.dart';
-import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/data/http_specimen_repository.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../../helpers/helpers.dart';
@@ -33,7 +33,7 @@ void main() {
 
     setUp(() => backend = FakeBackend.seeded());
 
-    test('deposit/withdraw atualizam as contagens em cache', () async {
+    test('deposit/release atualizam as contagens em cache', () async {
       final container = createContainer(
         overrides: [
           envProvider.overrideWithValue(fakeEnv),
@@ -76,11 +76,12 @@ void main() {
         true,
       );
 
-      await actions.withdraw(updated);
+      await actions.release(updated);
       expect(
         (await container.read(dexProvider(1).future)).registered,
         before.registered,
       );
+      expect(await backend.fetchAvailable(3), isEmpty);
     });
 
     test('slot sem personal_dex só invalida a lista', () async {
@@ -93,9 +94,45 @@ void main() {
       final slot = (await backend.fetchSlots(
         dexId: 1,
         boxId: 1,
-      ))[2].copyWith(personalDex: null);
-      final result = await container.read(slotActionsProvider).withdraw(slot);
-      expect(result, isA<Slot>());
+      ))[0].copyWith(personalDex: null);
+      await container.read(slotActionsProvider).release(slot);
+      expect((await backend.fetchSlots(dexId: 1, boxId: 1))[0].isMissing, true);
+    });
+
+    test('specimenEdited recarrega o specimen e o slot', () async {
+      final container = createContainer(
+        overrides: [
+          envProvider.overrideWithValue(fakeEnv),
+          fakeBackendProvider.overrideWithValue(backend),
+        ],
+      );
+      const key = (dexId: 1, boxId: 1);
+      final specimenSub = container.listen(specimenProvider(1), (_, _) {});
+      final slotsSub = container.listen(slotsProvider(key), (_, _) {});
+      addTearDown(() {
+        specimenSub.close();
+        slotsSub.close();
+      });
+      final slot = (await container.read(slotsProvider(key).future)).first;
+      await container.read(specimenProvider(1).future);
+      await backend.update(
+        1,
+        SpecimenDraft.fromSpecimen(await backend.fetchSpecimen(1))
+            .copyWith(nickname: 'Bulba'),
+      );
+
+      container.read(slotActionsProvider).specimenEdited(slot);
+      expect(
+        (await container.read(specimenProvider(1).future)).nickname,
+        'Bulba',
+      );
+      expect(
+        (await container.read(slotsProvider(key).future))
+            .first
+            .specimen!
+            .nickname,
+        'Bulba',
+      );
     });
   });
 }

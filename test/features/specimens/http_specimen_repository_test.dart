@@ -52,6 +52,24 @@ void main() {
     );
   });
 
+  test('fetchSpecimen, update (PATCH sem form) e release', () async {
+    final draft = SpecimenDraft.fromSpecimen(Specimen.fromJson(specimenJson))
+        .copyWith(nickname: 'Bulba', observation: '');
+    adapter
+      ..onGet('specimens/1/', (server) => server.reply(200, specimenJson))
+      ..onPatch(
+        'specimens/1/',
+        (server) => server.reply(200, {...specimenJson, 'nickname': 'Bulba'}),
+        data: draft.toUpdateJson(),
+      )
+      ..onDelete('specimens/1/', (server) => server.reply(204, null))
+      ..onDelete('specimens/2/', (server) => server.reply(404, null));
+    expect((await repository.fetchSpecimen(1)).ability, 'overgrow');
+    expect((await repository.update(1, draft)).nickname, 'Bulba');
+    await repository.release(1);
+    expect(repository.release(2), throwsA(isA<NotFoundFailure>()));
+  });
+
   test('fetchForm, fetchOptions e fetchTrainers', () async {
     adapter
       ..onGet('forms/1/', (server) => server.reply(200, formDetailJson))

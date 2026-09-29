@@ -18,6 +18,13 @@ final FutureProviderFamily<List<Specimen>, int> availableSpecimensProvider =
           ref.watch(specimenRepositoryProvider).fetchAvailable(formId),
     );
 
+final FutureProviderFamily<Specimen, int> specimenProvider = FutureProvider
+    .autoDispose
+    .family<Specimen, int>(
+      (ref, specimenId) =>
+          ref.watch(specimenRepositoryProvider).fetchSpecimen(specimenId),
+    );
+
 final FutureProviderFamily<FormDetail, int> formDetailProvider = FutureProvider
     .autoDispose
     .family<FormDetail, int>(

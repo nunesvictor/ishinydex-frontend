@@ -40,7 +40,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/core/theme/app_theme.dart](../lib/core/theme/app_theme.dart) | Tema Material 3 |
 | [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação |
 | [lib/features/auth/](../lib/features/auth/) | Login por token, armazenamento seguro do token, `AuthController` |
-| [lib/features/personal_dex/](../lib/features/personal_dex/) | Dexes, boxes, slots; depositar/retirar (`SlotActions`) |
+| [lib/features/personal_dex/](../lib/features/personal_dex/) | Dexes, boxes, slots; depositar, editar e libertar (`SlotActions`) |
 | [lib/features/specimens/](../lib/features/specimens/) | Seletor de specimens para depósito e formulário de cadastro (`ChoiceSelect`: select digitável com sprites) |
 | [lib/features/settings/](../lib/features/settings/) | Servidor atual e logout |
 | [lib/fake/fake_backend.dart](../lib/fake/fake_backend.dart) | Backend em memória que segue as mesmas regras da API real |
@@ -98,10 +98,27 @@ Regras de negócio que vêm do backend e que o app trata:
   mensagem e recarrega a lista.
 - **Slot sem forma**: 400 com `{"non_field_errors": [...]}`. O app nem oferece
   o botão, porque slots livres não são clicáveis.
-- **Depositar em slot ocupado** substitui o specimen anterior, que volta a
-  ficar disponível. O seletor avisa antes ("será substituído").
+- **Slot registrado** não oferece depósito: as ações são as do próximo
+  tópico.
 - **Token inválido/expirado**: 401 faz o `AuthInterceptor` chamar
   `AuthController.expire()`, e o router leva de volta ao login.
+
+## Editar e libertar
+
+O slot registrado tem só duas ações, como no Pokémon HOME:
+
+- **Editar espécime:** abre o `SpecimenFormPage` com `specimenId`. Ele
+  carrega o specimen (`specimenProvider` → `GET /specimens/{id}/`), preenche
+  o formulário com `SpecimenDraft.fromSpecimen` e salva com
+  `PATCH /specimens/{id}/` (`toUpdateJson`: sem `form`, que o backend não
+  deixa mudar). Depois, `SlotActions.specimenEdited` invalida o specimen e o
+  slot. O formulário abre no navigator raiz, para cobrir a `NavigationBar`.
+- **Libertar:** botão com a cor de erro e ícone de alerta, mais um diálogo
+  destrutivo ("não pode ser desfeita"). `SlotActions.release` chama
+  `DELETE /specimens/{id}/`: o cadastro é apagado e o slot fica faltante.
+
+Não existe mais "retirar" (desvincular sem apagar) no app. O endpoint
+`/slots/{id}/withdraw/` continua no backend, mas o app não o usa.
 
 ## Autenticação
 

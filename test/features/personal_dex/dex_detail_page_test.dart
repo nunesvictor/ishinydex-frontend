@@ -8,8 +8,12 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/helpers.dart';
+import '../../helpers/mocks.dart';
 
 /// Repositório que delega ao fake, mas pode falhar sob demanda.
 class _FlakyRepository implements PersonalDexRepository {
@@ -19,7 +23,6 @@ class _FlakyRepository implements PersonalDexRepository {
   int dexFailures = 0;
   int boxFailures = 0;
   int slotFailures = 0;
-  bool failWithdraw = false;
 
   @override
   Future<List<PersonalDex>> fetchDexes() => inner.fetchDexes();
@@ -48,12 +51,6 @@ class _FlakyRepository implements PersonalDexRepository {
   @override
   Future<Slot> deposit({required int slotId, required int specimenId}) =>
       inner.deposit(slotId: slotId, specimenId: specimenId);
-
-  @override
-  Future<Slot> withdraw(int slotId) async {
-    if (failWithdraw) throw ValidationFailure(const {}, detail: 'Não pode.');
-    return await inner.withdraw(slotId);
-  }
 }
 
 Future<void> openShinyDex(WidgetTester tester) async {
@@ -62,6 +59,23 @@ Future<void> openShinyDex(WidgetTester tester) async {
 }
 
 Finder slot(int id) => find.byKey(ValueKey('slot-$id'));
+
+/// Rola o formulário do specimen até o fim (onde fica o "Salvar") e salva.
+Future<void> saveSpecimenForm(WidgetTester tester) async {
+  // Um campo de texto focado rolaria a lista de volta para mostrar o cursor.
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump();
+  await tester.drag(
+    find.descendant(
+      of: find.byType(SpecimenForm),
+      matching: find.byType(ListView),
+    ),
+    const Offset(0, -2000),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Salvar'));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   group('layout expandido', () {
@@ -83,7 +97,9 @@ void main() {
       // Selo 💢 nos alfas da box (formas 1, 11, 16 e 26) + chip do detalhe.
       expect(find.text(alphaEmoji), findsNWidgets(5));
       expect(find.text('Poke Ball'), findsOneWidget);
-      expect(find.text('Trocar specimen'), findsOneWidget);
+      expect(find.text('Editar espécime'), findsOneWidget);
+      expect(find.text('Libertar'), findsOneWidget);
+      expect(find.text('Depositar'), findsNothing);
 
       await tester.tap(find.text('HOME 2'));
       await tester.pumpAndSettle();
@@ -97,25 +113,64 @@ void main() {
       expect(find.byType(EmptySlotTile), findsNWidgets(2));
     });
 
-    testWidgets('retirar com confirmação', (tester) async {
-      await pumpFullApp(tester);
+    testWidgets('libertar exige confirmação e deixa o slot faltante', (
+      tester,
+    ) async {
+      final backend = await pumpFullApp(tester);
       await openShinyDex(tester);
       await tester.tap(slot(1));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Retirar'));
+      // Botão de atenção: cor de erro do tema.
+      final button = find.widgetWithText(OutlinedButton, 'Libertar');
+      expect(
+        DefaultTextStyle.of(
+          tester.element(
+            find.descendant(of: button, matching: find.text('Libertar')),
+          ),
+        ).style.color,
+        Theme.of(tester.element(button)).colorScheme.error,
+      );
+
+      await tester.tap(button);
       await tester.pumpAndSettle();
+      expect(find.text('Libertar Bulbasaur?'), findsOneWidget);
+      expect(find.textContaining('não pode ser desfeita'), findsOneWidget);
       // Cancelar não faz nada.
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();
       expect(find.text('Registrado'), findsOneWidget);
 
-      await tester.tap(find.text('Retirar'));
+      await tester.tap(button);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Retirar'));
+      await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
       await tester.pumpAndSettle();
-      expect(find.text('Specimen retirado.'), findsOneWidget);
+      expect(find.text('Espécime libertado.'), findsOneWidget);
       expect(find.text('Faltante'), findsOneWidget);
       expect(find.text('HOME 1 · 19/30'), findsOneWidget);
+      // O cadastro foi apagado, não só desvinculado.
+      expect(await backend.fetchAvailable(1), isEmpty);
+    });
+
+    testWidgets('editar espécime pelo formulário', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await tester.tap(slot(1));
+      await tester.pumpAndSettle();
+
+      // Voltar sem salvar não muda nada.
+      await tester.tap(find.text('Editar espécime'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SpecimenForm), findsOneWidget);
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Espécime atualizado.'), findsNothing);
+
+      await tester.tap(find.text('Editar espécime'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Bulba');
+      await saveSpecimenForm(tester);
+      expect(find.text('Espécime atualizado.'), findsOneWidget);
+      expect(find.text('Bulba'), findsOneWidget);
     });
 
     testWidgets('depositar pelo diálogo', (tester) async {
@@ -157,23 +212,23 @@ void main() {
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
-    testWidgets('falha ao retirar mostra a mensagem', (tester) async {
-      final repository = _FlakyRepository(FakeBackend.seeded())
-        ..failWithdraw = true;
+    testWidgets('falha ao libertar mostra a mensagem', (tester) async {
+      final specimens = MockSpecimenRepository();
+      when(() => specimens.release(any()))
+          .thenThrow(ValidationFailure(const {}, detail: 'Não pode.'));
       await pumpFullApp(
         tester,
-        overrides: [
-          personalDexRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [specimenRepositoryProvider.overrideWithValue(specimens)],
       );
       await openShinyDex(tester);
       await tester.tap(slot(1));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Retirar'));
+      await tester.tap(find.text('Libertar'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Retirar'));
+      await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
       await tester.pumpAndSettle();
       expect(find.text('Não pode.'), findsOneWidget);
+      expect(find.text('Registrado'), findsOneWidget);
     });
 
     testWidgets('erros de boxes e slots com retry', (tester) async {
@@ -291,13 +346,23 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
 
+      // Slot registrado: editar e libertar pelo bottom sheet.
       await tester.tap(slot(3));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Retirar'));
+      await tester.tap(find.text('Editar espécime'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Retirar'));
+      await saveSpecimenForm(tester);
+      expect(find.text('Espécime atualizado.'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
-      expect(find.text('Specimen retirado.'), findsOneWidget);
+
+      await tester.tap(slot(3));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Libertar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Espécime libertado.'), findsOneWidget);
     });
 
     testWidgets('trocar de compacto para expandido', (tester) async {

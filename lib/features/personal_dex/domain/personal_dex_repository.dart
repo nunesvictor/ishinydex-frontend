@@ -11,6 +11,4 @@ abstract interface class PersonalDexRepository {
   Future<List<Slot>> fetchSlots({required int dexId, required int boxId});
 
   Future<Slot> deposit({required int slotId, required int specimenId});
-
-  Future<Slot> withdraw(int slotId);
 }

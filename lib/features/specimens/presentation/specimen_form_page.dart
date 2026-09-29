@@ -9,44 +9,62 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-/// Cadastro de um specimen da forma [form]. Retorna o [Specimen] criado.
+/// Cadastro de um specimen da forma [form], ou edição do specimen
+/// [specimenId] quando informado. Retorna o [Specimen] criado/editado.
 class SpecimenFormPage extends ConsumerWidget {
   const SpecimenFormPage({
     required this.form,
+    this.specimenId,
     this.initialShiny = false,
     super.key,
   });
 
   final FormRef form;
+  final int? specimenId;
   final bool initialShiny;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final id = specimenId;
     final detail = ref.watch(formDetailProvider(form.id));
     final options = ref.watch(specimenOptionsProvider);
     final trainers = ref.watch(trainersProvider);
+    // No cadastro não há o que carregar: já começa "pronto" com null.
+    final specimen = id == null
+        ? const AsyncData<Specimen?>(null)
+        : ref.watch(specimenProvider(id)).whenData<Specimen?>((s) => s);
     return Scaffold(
-      appBar: AppBar(title: Text('Novo ${form.displayName}')),
-      body: switch ((detail, options, trainers)) {
+      appBar: AppBar(
+        title: Text(
+          id == null ? 'Novo ${form.displayName}' : 'Editar espécime',
+        ),
+      ),
+      body: switch ((detail, options, trainers, specimen)) {
         (
           AsyncData(value: final d),
           AsyncData(value: final o),
           AsyncData(value: final t),
+          AsyncData(value: final s),
         ) =>
           SpecimenForm(
             form: d,
             options: o,
             trainers: t,
+            initial: s,
             initialShiny: initialShiny,
           ),
-        (AsyncError(:final error), _, _) ||
-        (_, AsyncError(:final error), _) ||
-        (_, _, AsyncError(:final error)) => ErrorView(
+        (AsyncError(:final error), _, _, _) ||
+        (_, AsyncError(:final error), _, _) ||
+        (_, _, AsyncError(:final error), _) ||
+        (_, _, _, AsyncError(:final error)) => ErrorView(
           error: error,
-          onRetry: () => ref
-            ..invalidate(formDetailProvider(form.id))
-            ..invalidate(specimenOptionsProvider)
-            ..invalidate(trainersProvider),
+          onRetry: () {
+            ref
+              ..invalidate(formDetailProvider(form.id))
+              ..invalidate(specimenOptionsProvider)
+              ..invalidate(trainersProvider);
+            if (id != null) ref.invalidate(specimenProvider(id));
+          },
         ),
         _ => const LoadingView(),
       },
@@ -59,6 +77,7 @@ class SpecimenForm extends ConsumerStatefulWidget {
     required this.form,
     required this.options,
     required this.trainers,
+    this.initial,
     this.initialShiny = false,
     super.key,
   });
@@ -66,6 +85,9 @@ class SpecimenForm extends ConsumerStatefulWidget {
   final FormDetail form;
   final SpecimenOptions options;
   final List<Trainer> trainers;
+
+  /// Specimen em edição; `null` no cadastro.
+  final Specimen? initial;
   final bool initialShiny;
 
   @override
@@ -73,12 +95,14 @@ class SpecimenForm extends ConsumerStatefulWidget {
 }
 
 class _SpecimenFormState extends ConsumerState<SpecimenForm> {
-  final _nickname = TextEditingController();
-  final _observation = TextEditingController();
-  late SpecimenDraft _draft = SpecimenDraft(
-    form: widget.form.id,
-    isShiny: widget.initialShiny,
+  late final _nickname = TextEditingController(text: widget.initial?.nickname);
+  late final _observation = TextEditingController(
+    text: widget.initial?.observation,
   );
+  late SpecimenDraft _draft = switch (widget.initial) {
+    final Specimen specimen => SpecimenDraft.fromSpecimen(specimen),
+    null => SpecimenDraft(form: widget.form.id, isShiny: widget.initialShiny),
+  };
   bool _saving = false;
   ValidationFailure? _validation;
   String? _error;
@@ -233,7 +257,9 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                       dimension: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Salvar e depositar'),
+                  : Text(
+                      widget.initial == null ? 'Salvar e depositar' : 'Salvar',
+                    ),
             ),
           ],
         ),
@@ -283,8 +309,12 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       observation: _observation.text.trim(),
     );
     try {
-      final created = await ref.read(specimenRepositoryProvider).create(draft);
-      if (mounted) Navigator.of(context).pop(created);
+      final repository = ref.read(specimenRepositoryProvider);
+      final initial = widget.initial;
+      final saved = initial == null
+          ? await repository.create(draft)
+          : await repository.update(initial.id, draft);
+      if (mounted) Navigator.of(context).pop(saved);
     } on AppFailure catch (failure) {
       setState(() {
         _saving = false;

@@ -7,7 +7,7 @@ gerados e o `main.dart`. O CI falha se a cobertura cair ou se algum arquivo de
 ```bash
 flutter test                                              # roda tudo
 flutter test test/features/personal_dex                   # só uma pasta
-flutter test --plain-name "retirar com confirmação"       # só um teste pelo nome
+flutter test --plain-name "editar espécime pelo formulário" # só um teste pelo nome
 flutter test --coverage && dart run tool/check_coverage.dart
 ```
 

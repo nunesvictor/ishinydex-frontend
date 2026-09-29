@@ -13,7 +13,9 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigat
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_view.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/deposit_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 
 /// Boxes de um PersonalDex.
 ///
@@ -110,7 +112,8 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       child: SlotDetailPanel(
         slot: _selectedSlot(box),
         onDeposit: () => _deposit(_selectedSlot(box)!),
-        onWithdraw: () => _withdraw(_selectedSlot(box)!),
+        onEdit: () => _edit(_selectedSlot(box)!),
+        onRelease: () => _release(_selectedSlot(box)!),
       ),
     );
     return Row(
@@ -210,9 +213,13 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
               Navigator.of(sheetContext).pop();
               unawaited(_deposit(slot!));
             },
-            onWithdraw: () {
+            onEdit: () {
               Navigator.of(sheetContext).pop();
-              unawaited(_withdraw(slot!));
+              unawaited(_edit(slot!));
+            },
+            onRelease: () {
+              Navigator.of(sheetContext).pop();
+              unawaited(_release(slot!));
             },
           ),
         );
@@ -229,20 +236,40 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     if (deposited && mounted) _notify('Specimen depositado.');
   }
 
-  Future<void> _withdraw(Slot slot) async {
+  Future<void> _edit(Slot slot) async {
+    // Navigator raiz: o formulário cobre a casca toda (inclusive a
+    // NavigationBar do compacto), como um diálogo de tela cheia.
+    final edited = await Navigator.of(context, rootNavigator: true)
+        .push<Specimen>(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (_) => SpecimenFormPage(
+              form: slot.form!,
+              specimenId: slot.specimen!.id,
+            ),
+          ),
+        );
+    if (edited == null) return;
+    ref.read(slotActionsProvider).specimenEdited(slot);
+    _notify('Espécime atualizado.');
+  }
+
+  /// Libertar apaga o cadastro do specimen (como o *release* do HOME).
+  Future<void> _release(Slot slot) async {
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Retirar specimen?',
+      icon: Icons.warning_amber_rounded,
+      title: 'Libertar ${slot.specimen!.displayName}?',
       message:
-          '${slot.specimen?.displayName ?? 'O specimen'} voltará a ficar '
-          'disponível e o slot ficará faltante.',
-      confirmLabel: 'Retirar',
+          'O cadastro deste espécime será apagado e o slot ficará faltante. '
+          'Esta ação não pode ser desfeita.',
+      confirmLabel: 'Libertar',
       destructive: true,
     );
     if (!confirmed) return;
     try {
-      await ref.read(slotActionsProvider).withdraw(slot);
-      _notify('Specimen retirado.');
+      await ref.read(slotActionsProvider).release(slot);
+      _notify('Espécime libertado.');
     } on AppFailure catch (failure) {
       _notify(failure.message);
     }

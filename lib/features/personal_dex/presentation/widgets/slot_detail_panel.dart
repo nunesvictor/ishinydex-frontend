@@ -4,18 +4,21 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
-/// Detalhes do slot selecionado com as ações de depositar/trocar/retirar.
+/// Detalhes do slot selecionado com as ações: depositar (slot faltante) ou
+/// editar/libertar o specimen (slot registrado).
 class SlotDetailPanel extends StatelessWidget {
   const SlotDetailPanel({
     required this.slot,
     required this.onDeposit,
-    required this.onWithdraw,
+    required this.onEdit,
+    required this.onRelease,
     super.key,
   });
 
   final Slot? slot;
   final VoidCallback onDeposit;
-  final VoidCallback onWithdraw;
+  final VoidCallback onEdit;
+  final VoidCallback onRelease;
 
   @override
   Widget build(BuildContext context) {
@@ -104,19 +107,28 @@ class SlotDetailPanel extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onDeposit,
-            icon: Icon(
-              specimen == null ? Icons.move_to_inbox : Icons.swap_horiz,
+          if (specimen == null)
+            FilledButton.icon(
+              onPressed: onDeposit,
+              icon: const Icon(Icons.move_to_inbox),
+              label: const Text('Depositar'),
+            )
+          else ...[
+            FilledButton.icon(
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit),
+              label: const Text('Editar espécime'),
             ),
-            label: Text(specimen == null ? 'Depositar' : 'Trocar specimen'),
-          ),
-          if (specimen != null) ...[
             const SizedBox(height: 8),
+            // Ação destrutiva: cor de erro do tema e ícone de alerta.
             OutlinedButton.icon(
-              onPressed: onWithdraw,
-              icon: const Icon(Icons.outbox),
-              label: const Text('Retirar'),
+              onPressed: onRelease,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.colorScheme.error,
+                side: BorderSide(color: theme.colorScheme.error),
+              ),
+              icon: const Icon(Icons.warning_amber_rounded),
+              label: const Text('Libertar'),
             ),
           ],
         ],

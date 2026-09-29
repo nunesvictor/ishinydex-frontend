@@ -73,6 +73,7 @@ void main() {
               title: 'Título',
               message: 'Mensagem',
               destructive: true,
+              icon: Icons.warning_amber_rounded,
             ),
             child: const Text('abrir'),
           ),
@@ -88,6 +89,13 @@ void main() {
     testWidgets('confirmar (Material)', (tester) async {
       await open(tester, TargetPlatform.android);
       expect(find.byType(TextButton), findsWidgets);
+      // Destrutivo: confirmação na cor de erro e ícone de alerta.
+      final context = tester.element(find.text('Confirmar'));
+      expect(
+        DefaultTextStyle.of(context).style.color,
+        Theme.of(context).colorScheme.error,
+      );
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       await tester.tap(find.text('Confirmar'));
       await tester.pumpAndSettle();
       expect(find.text('Mensagem'), findsNothing);

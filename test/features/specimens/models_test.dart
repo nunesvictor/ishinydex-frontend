@@ -62,6 +62,32 @@ void main() {
     );
   });
 
+  test('SpecimenDraft.fromSpecimen e toUpdateJson (null nos vazios)', () {
+    final draft = SpecimenDraft.fromSpecimen(Specimen.fromJson(specimenJson));
+    expect(draft.form, 1);
+    expect(draft.ability, 'overgrow');
+    expect(draft.isShiny, true);
+    expect(draft.capturedAt, DateTime(2024, 9, 23));
+    expect(draft.toUpdateJson(), {
+      'nickname': null,
+      'ability': 'overgrow',
+      'language': 'en',
+      'gender': 'male',
+      'nature': 'naughty',
+      'is_alpha': false,
+      'is_shiny': true,
+      'is_from_go': false,
+      'captured_at': '2024-09-23',
+      'pokeball': null,
+      'observation': null,
+      'ot': 7,
+    });
+    expect(
+      const SpecimenDraft(form: 1).toUpdateJson(),
+      containsPair('captured_at', null),
+    );
+  });
+
   test('FormDetail, opções e treinadores', () {
     final form = FormDetail.fromJson(formDetailJson);
     expect(form.abilities.last.isHidden, true);

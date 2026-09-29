@@ -31,7 +31,11 @@ void main() {
     );
   });
 
-  Future<List<Specimen?>> pumpForm(WidgetTester tester) async {
+  Future<List<Specimen?>> pumpForm(
+    WidgetTester tester, {
+    int? specimenId,
+    Size size = const Size(600, 1600),
+  }) async {
     final results = <Specimen?>[];
     await pumpWidgetApp(
       tester,
@@ -40,15 +44,18 @@ void main() {
           onPressed: () async => results.add(
             await Navigator.of(context).push<Specimen>(
               MaterialPageRoute(
-                builder: (_) =>
-                    SpecimenFormPage(form: _form, initialShiny: true),
+                builder: (_) => SpecimenFormPage(
+                  form: _form,
+                  specimenId: specimenId,
+                  initialShiny: true,
+                ),
               ),
             ),
           ),
           child: const Text('abrir'),
         ),
       ),
-      size: const Size(600, 1600),
+      size: size,
       overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
     );
     await tester.tap(find.text('abrir'));
@@ -169,5 +176,62 @@ void main() {
     await pumpForm(tester);
     await tester.pumpAndSettle();
     expect(find.text('Tentar novamente'), findsOneWidget);
+  });
+
+  group('edição', () {
+    final existing = Specimen.fromJson({
+      ...specimenJson,
+      'nickname': 'Bulba',
+      'observation': 'obs antiga',
+    });
+
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('vem preenchido e salva com update '
+          '(${size.width.toInt()}px)', (tester) async {
+        when(() => repository.fetchSpecimen(1))
+            .thenAnswer((_) async => existing);
+        when(() => repository.update(1, any())).thenAnswer(
+          (invocation) async => existing.copyWith(nickname: 'Saura'),
+        );
+        final results = await pumpForm(tester, specimenId: 1, size: size);
+        await tester.pumpAndSettle();
+        expect(find.text('Editar espécime'), findsOneWidget);
+        expect(find.text('Bulba'), findsOneWidget);
+        expect(find.text('Overgrow'), findsOneWidget);
+
+        await tester.enterText(find.byType(TextField).first, 'Saura');
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
+        await tester.drag(find.byType(ListView), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        expect(find.text('obs antiga'), findsOneWidget);
+        await tester.tap(find.text('Salvar'));
+        await tester.pumpAndSettle();
+
+        final draft =
+            verify(() => repository.update(1, captureAny())).captured.single
+                as SpecimenDraft;
+        expect(draft.nickname, 'Saura');
+        expect(draft.form, 1);
+        expect(draft.ability, 'overgrow');
+        expect(draft.ot, 7);
+        verifyNever(() => repository.create(any()));
+        expect(results.single!.nickname, 'Saura');
+      });
+    }
+
+    testWidgets('erro ao carregar o specimen com retry', (tester) async {
+      var calls = 0;
+      when(() => repository.fetchSpecimen(1)).thenAnswer((_) async {
+        if (calls++ == 0) throw const NotFoundFailure();
+        return existing;
+      });
+      await pumpForm(tester, specimenId: 1);
+      await tester.pumpAndSettle();
+      expect(find.text(const NotFoundFailure().message), findsOneWidget);
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bulba'), findsOneWidget);
+    });
   });
 }
