@@ -38,7 +38,7 @@ RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
 RUN version=$(find build/web/main.dart.js build/web/assets -type f -print0 \
         | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-12) \
     && sed -i "s/__BUILD_VERSION__/${version}/" build/web/flutter_bootstrap.js \
-    && grep -q "v/\${buildVersion}" build/web/flutter_bootstrap.js \
+    && grep -q "v/\${buildVersion}/" build/web/flutter_bootstrap.js \
     && grep -q "'${version}'" build/web/flutter_bootstrap.js \
     && echo "build version: ${version}"
 
