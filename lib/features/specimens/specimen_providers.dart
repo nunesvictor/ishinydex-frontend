@@ -40,6 +40,11 @@ final FutureProvider<List<Trainer>> trainersProvider =
       (ref) => ref.watch(specimenRepositoryProvider).fetchTrainers(),
     );
 
+/// Versões de jogo: mudam só com um novo jogo, então ficam em cache.
+final versionsProvider = FutureProvider<List<GameVersion>>(
+  (ref) => ref.watch(specimenRepositoryProvider).fetchVersions(),
+);
+
 /// Ordena candidatos ao depósito: primeiro os que batem com [preferShiny].
 List<Specimen> sortForDeposit(
   List<Specimen> specimens, {

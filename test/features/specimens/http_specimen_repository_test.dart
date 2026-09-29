@@ -83,4 +83,47 @@ void main() {
     expect((await repository.fetchOptions()).gender.single.value, 'male');
     expect((await repository.fetchTrainers()).single.trainerId, '123456');
   });
+
+  test('createTrainer (com e sem versão) e fetchVersions', () async {
+    adapter
+      ..onPost(
+        'trainers/',
+        (server) => server.reply(201, {
+          'id': 3,
+          'name': 'Red',
+          'trainer_id': '1996',
+          'version': 'red',
+        }),
+        data: {'name': 'Red', 'trainer_id': '1996', 'version': 'red'},
+      )
+      ..onPost(
+        'trainers/',
+        (server) => server.reply(400, {
+          'name': ['Este campo não pode ser em branco.'],
+        }),
+        data: {'name': '', 'trainer_id': '1'},
+      )
+      ..onGet(
+        'versions/',
+        (server) => server.reply(200, [
+          {
+            'name': 'red',
+            'version_group': 'red-blue',
+            'generation': 'generation-i',
+          },
+        ]),
+      );
+    final red = await repository.createTrainer(
+      name: 'Red',
+      trainerId: '1996',
+      version: 'red',
+    );
+    expect(red.label, 'Red (1996) · Red');
+    // Sem versão, o campo nem vai no corpo.
+    expect(
+      repository.createTrainer(name: '', trainerId: '1'),
+      throwsA(isA<ValidationFailure>()),
+    );
+    expect((await repository.fetchVersions()).single.label, 'Red');
+  });
 }

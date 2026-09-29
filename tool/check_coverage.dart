@@ -66,7 +66,10 @@ void main(List<String> args) {
 }
 
 /// Interfaces (`abstract interface class`) não têm linhas executáveis.
+///
+/// Um corpo de método aparece como `) {` ou `) async {`. Parâmetros nomeados
+/// (`metodo({`) não contam: vêm depois de `(`, não de `)`.
 bool _isInterfaceOnly(String source) =>
     source.contains('abstract interface class') &&
     !source.contains('=>') &&
-    !source.contains('{\n    ');
+    !RegExp(r'\)\s*(async\s*)?\{').hasMatch(source);

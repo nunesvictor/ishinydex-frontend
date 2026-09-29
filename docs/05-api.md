@@ -23,6 +23,8 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas; cada pokébola traz `sprite_url`) |
 | GET | `/api/forms/{id}/` | `fetchForm` (habilidades da forma) |
 | GET | `/api/trainers/?page_size=100` | `fetchTrainers` |
+| POST | `/api/trainers/` | `createTrainer` (`{name, trainer_id, version?}`; nome + ID únicos) |
+| GET | `/api/versions/` | `fetchVersions` (versões de jogo em ordem de lançamento, sem paginação) |
 
 As implementações ficam em
 [http_personal_dex_repository.dart](../lib/features/personal_dex/data/http_personal_dex_repository.dart),

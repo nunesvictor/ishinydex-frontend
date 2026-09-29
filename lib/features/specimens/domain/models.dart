@@ -210,5 +210,26 @@ abstract class Trainer with _$Trainer {
   factory Trainer.fromJson(Map<String, dynamic> json) =>
       _$TrainerFromJson(json);
 
-  String get label => '$name ($trainerId)';
+  String get label {
+    final v = version;
+    return '$name ($trainerId)${v == null ? '' : ' · ${prettifyName(v)}'}';
+  }
+}
+
+/// Versão de jogo (`GET /versions/`), usada no cadastro de treinador.
+@freezed
+abstract class GameVersion with _$GameVersion {
+  const factory GameVersion({
+    required String name,
+    required String versionGroup,
+    required String generation,
+  }) = _GameVersion;
+
+  const GameVersion._();
+
+  factory GameVersion.fromJson(Map<String, dynamic> json) =>
+      _$GameVersionFromJson(json);
+
+  /// `"lets-go-pikachu"` → `"Lets Go Pikachu"`.
+  String get label => prettifyName(name);
 }

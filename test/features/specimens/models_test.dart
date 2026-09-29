@@ -99,7 +99,18 @@ void main() {
     final trainer = Trainer.fromJson(
       (trainerPageJson['results']! as List).first as Map<String, dynamic>,
     );
-    expect(trainer.label, 'Ash (123456)');
+    expect(trainer.label, 'Ash (123456) · Ultra Moon');
+    expect(trainer.copyWith(version: null).label, 'Ash (123456)');
+  });
+
+  test('GameVersion.fromJson e label', () {
+    final version = GameVersion.fromJson(const {
+      'name': 'scarlet',
+      'version_group': 'scarlet-violet',
+      'generation': 'generation-ix',
+    });
+    expect(version.versionGroup, 'scarlet-violet');
+    expect(version.label, 'Scarlet');
   });
 
   test('sortForDeposit prioriza a shininess do dex', () {

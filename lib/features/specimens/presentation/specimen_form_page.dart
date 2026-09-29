@@ -7,6 +7,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Cadastro de um specimen da forma [form], ou edição do specimen
@@ -103,6 +104,10 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     final Specimen specimen => SpecimenDraft.fromSpecimen(specimen),
     null => SpecimenDraft(form: widget.form.id, isShiny: widget.initialShiny),
   };
+
+  /// Treinadores do select; os criados aqui entram sem recarregar a tela,
+  /// para não perder o que já foi preenchido.
+  late final List<Trainer> _trainers = [...widget.trainers];
   bool _saving = false;
   ValidationFailure? _validation;
   String? _error;
@@ -195,16 +200,33 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               choices: options.pokeball,
               onChanged: (v) => _draft = _draft.copyWith(pokeball: v),
             ),
-            _dropdown(
-              label: 'Treinador original (OT)',
-              field: 'ot',
-              value: _draft.ot?.toString(),
-              choices: [
-                for (final t in widget.trainers)
-                  Choice(value: '${t.id}', label: t.label),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 8,
+              children: [
+                Expanded(
+                  child: _dropdown(
+                    label: 'Treinador original (OT)',
+                    field: 'ot',
+                    value: _draft.ot?.toString(),
+                    choices: [
+                      for (final t in _trainers)
+                        Choice(value: '${t.id}', label: t.label),
+                    ],
+                    onChanged: (v) => _draft = _draft.copyWith(
+                      ot: v == null ? null : int.parse(v),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: IconButton.filledTonal(
+                    tooltip: 'Novo treinador',
+                    onPressed: _newTrainer,
+                    icon: const Icon(Icons.person_add_alt_1),
+                  ),
+                ),
               ],
-              onChanged: (v) =>
-                  _draft = _draft.copyWith(ot: v == null ? null : int.parse(v)),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -284,6 +306,15 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       onChanged: (v) => setState(() => onChanged(v)),
     ),
   );
+
+  Future<void> _newTrainer() async {
+    final created = await showNewTrainerDialog(context);
+    if (created == null || !mounted) return;
+    setState(() {
+      _trainers.add(created);
+      _draft = _draft.copyWith(ot: created.id);
+    });
+  }
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
