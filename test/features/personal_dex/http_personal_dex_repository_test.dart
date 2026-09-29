@@ -96,4 +96,12 @@ void main() {
       ),
     );
   });
+
+  test('fetchSlot', () async {
+    adapter.onGet(
+      'slots/1/',
+      (server) => server.reply(200, registeredSlotJson),
+    );
+    expect((await repository.fetchSlot(1)).isRegistered, true);
+  });
 }

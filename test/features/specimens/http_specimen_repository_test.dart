@@ -126,4 +126,58 @@ void main() {
     );
     expect((await repository.fetchVersions()).single.label, 'Red');
   });
+
+  test('fetchSpecimens envia só os filtros usados', () async {
+    final page = {
+      'count': 1,
+      'next': null,
+      'previous': null,
+      'results': [specimenJson],
+    };
+    adapter
+      ..onGet(
+        'specimens/',
+        (server) => server.reply(200, page),
+        queryParameters: {'page': 1, 'page_size': 20},
+      )
+      ..onGet(
+        'specimens/',
+        (server) => server.reply(200, page),
+        queryParameters: {
+          'page': 2,
+          'page_size': 20,
+          'search': 'bulba',
+          'available': false,
+          'is_shiny': true,
+        },
+      );
+    expect(
+      (await repository.fetchSpecimens(
+        emptySpecimenQuery,
+        page: 1,
+        pageSize: 20,
+      )).count,
+      1,
+    );
+    final filtered = await repository.fetchSpecimens(
+      (search: ' bulba ', status: SpecimenStatus.deposited, shinyOnly: true),
+      page: 2,
+      pageSize: 20,
+    );
+    expect(filtered.results.single.id, 1);
+  });
+
+  test('searchForms', () async {
+    adapter.onGet(
+      'forms/',
+      (server) => server.reply(200, {
+        'count': 1,
+        'next': null,
+        'previous': null,
+        'results': [registeredSlotJson['form']],
+      }),
+      queryParameters: {'search': 'bulba', 'page_size': 30},
+    );
+    expect((await repository.searchForms(' bulba ')).single.name, 'bulbasaur');
+  });
 }

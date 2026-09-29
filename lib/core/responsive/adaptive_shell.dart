@@ -21,6 +21,11 @@ const shellDestinations = [
     selectedIcon: Icons.catching_pokemon,
   ),
   ShellDestination(
+    label: 'Espécimes',
+    icon: Icons.inventory_2_outlined,
+    selectedIcon: Icons.inventory_2,
+  ),
+  ShellDestination(
     label: 'Ajustes',
     icon: Icons.settings_outlined,
     selectedIcon: Icons.settings,

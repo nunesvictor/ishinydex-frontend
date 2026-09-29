@@ -233,3 +233,31 @@ abstract class GameVersion with _$GameVersion {
   /// `"lets-go-pikachu"` → `"Lets Go Pikachu"`.
   String get label => prettifyName(name);
 }
+
+/// Situação do specimen no inventário.
+enum SpecimenStatus {
+  all,
+  available,
+  deposited;
+
+  /// Valor do filtro `available` da API (`null` = sem filtro).
+  bool? get availableParam => switch (this) {
+    SpecimenStatus.all => null,
+    SpecimenStatus.available => true,
+    SpecimenStatus.deposited => false,
+  };
+}
+
+/// Filtros do inventário. Record: igualdade por valor, serve de chave de
+/// provider.
+typedef SpecimenQuery = ({
+  String search,
+  SpecimenStatus status,
+  bool shinyOnly,
+});
+
+const SpecimenQuery emptySpecimenQuery = (
+  search: '',
+  status: SpecimenStatus.all,
+  shinyOnly: false,
+);

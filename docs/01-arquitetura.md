@@ -41,7 +41,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação |
 | [lib/features/auth/](../lib/features/auth/) | Login por token, armazenamento seguro do token, `AuthController` |
 | [lib/features/personal_dex/](../lib/features/personal_dex/) | Dexes, boxes, slots; depositar, editar e libertar (`SlotActions`) |
-| [lib/features/specimens/](../lib/features/specimens/) | Seletor de specimens para depósito e formulário de cadastro (`ChoiceSelect`: select digitável com sprites) |
+| [lib/features/specimens/](../lib/features/specimens/) | Inventário (aba Espécimes), seletor de specimens para depósito, formulário de cadastro/edição (`ChoiceSelect`: select digitável com sprites), cadastro de treinador |
 | [lib/features/settings/](../lib/features/settings/) | Servidor atual e logout |
 | [lib/fake/fake_backend.dart](../lib/fake/fake_backend.dart) | Backend em memória que segue as mesmas regras da API real |
 
@@ -154,6 +154,28 @@ Um usuário pode ter vários dexes (por enquanto criados só pelo backend, com
   todos", que volta para a lista.
 - A `DexListPage` continua sendo o lugar central dos dexes; é lá que vai
   entrar a criação de PersonalDex pelo app.
+
+## Inventário (aba Espécimes)
+
+A terceira aba lista **todos** os espécimes, depositados ou não:
+
+- **Filtros:** busca por apelido ou forma, Todos/Disponíveis/Depositados e
+  Shiny, montados num `SpecimenQuery` e enviados a `GET /specimens/`.
+  Paginação por página (ver [02-conceitos-flutter.md](02-conceitos-flutter.md), 5.5).
+- **Detalhe** ([`SpecimenDetailView`](../lib/features/specimens/presentation/specimen_detail.dart)):
+  tela própria no compacto (`/specimens/:id`) e painel ao lado da lista nos
+  demais. Ações:
+  - Editar (o `SpecimenFormPage` de sempre);
+  - Libertar (`SlotActions.releaseSpecimen`);
+  - Ver no dex: `GET /slots/{id}/` descobre dex e box, e o app navega para
+    `/dexes/:id?box=&slot=`.
+- **Novo espécime:** o seletor de forma (`GET /forms/?search=`) e o
+  formulário com `depositAfterSave: false` (botão "Salvar").
+- **Caches entre abas:** o `StatefulShellRoute` mantém as abas vivas, então
+  depositar no dex precisa atualizar o inventário e vice-versa. Por isso:
+  - `SlotActions` invalida `specimenPageProvider` junto com as contagens;
+  - `SlotActions.specimensChanged()` invalida as famílias do dex (`dexProvider`,
+    `boxesProvider`, `slotsProvider`) quando algo muda pelo inventário.
 
 ## Como adicionar uma feature (receita)
 

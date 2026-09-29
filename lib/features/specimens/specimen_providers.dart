@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/data/http_specimen_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
@@ -23,6 +25,31 @@ final FutureProviderFamily<Specimen, int> specimenProvider = FutureProvider
     .family<Specimen, int>(
       (ref, specimenId) =>
           ref.watch(specimenRepositoryProvider).fetchSpecimen(specimenId),
+    );
+
+const specimenPageSize = 20;
+
+typedef SpecimenPageKey = ({SpecimenQuery query, int page});
+
+/// Uma página do inventário. A lista observa só as páginas dos itens que
+/// aparecem na tela: rolagem infinita sem estado extra.
+final FutureProviderFamily<Paginated<Specimen>, SpecimenPageKey>
+specimenPageProvider = FutureProvider.autoDispose
+    .family<Paginated<Specimen>, SpecimenPageKey>(
+      (ref, key) => ref
+          .watch(specimenRepositoryProvider)
+          .fetchSpecimens(
+            key.query,
+            page: key.page,
+            pageSize: specimenPageSize,
+          ),
+    );
+
+/// Formas cujo nome contém o texto (seletor de forma do cadastro avulso).
+final FutureProviderFamily<List<FormRef>, String> formSearchProvider =
+    FutureProvider.autoDispose.family<List<FormRef>, String>(
+      (ref, search) =>
+          ref.watch(specimenRepositoryProvider).searchForms(search),
     );
 
 final FutureProviderFamily<FormDetail, int> formDetailProvider = FutureProvider

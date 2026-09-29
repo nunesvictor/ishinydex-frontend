@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/features/auth/data/auth_repository.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
@@ -327,6 +328,14 @@ class FakeBackend
   }
 
   @override
+  Future<Slot> fetchSlot(int slotId) async {
+    await _delay();
+    final slot = _slots[slotId];
+    if (slot == null) throw const NotFoundFailure();
+    return _toSlot(slot);
+  }
+
+  @override
   Future<Slot> deposit({required int slotId, required int specimenId}) async {
     await _delay();
     final slot = _slots[slotId];
@@ -409,6 +418,48 @@ class FakeBackend
     final specimen = _specimens[specimenId];
     if (specimen == null) throw const NotFoundFailure();
     return specimen.copyWith(slot: _slotHolding(specimenId)?.id);
+  }
+
+  /// Como a API: busca em apelido ou nome da forma; ordem por forma e id;
+  /// página fora do intervalo → 404.
+  @override
+  Future<Paginated<Specimen>> fetchSpecimens(
+    SpecimenQuery query, {
+    required int page,
+    required int pageSize,
+  }) async {
+    await _delay();
+    final search = query.search.trim().toLowerCase();
+    final available = query.status.availableParam;
+    final matches = [
+      for (final s in _specimens.values)
+        if ((search.isEmpty ||
+                (s.nickname ?? '').toLowerCase().contains(search) ||
+                (s.formName ?? '').toLowerCase().contains(search)) &&
+            (available == null || (_slotHolding(s.id) == null) == available) &&
+            (!query.shinyOnly || s.isShiny))
+          s.copyWith(slot: _slotHolding(s.id)?.id),
+    ]..sort((a, b) => a.form != b.form ? a.form - b.form : a.id - b.id);
+    final start = (page - 1) * pageSize;
+    if (page < 1 || (start >= matches.length && page > 1)) {
+      throw const NotFoundFailure();
+    }
+    final end = start + pageSize;
+    return Paginated(
+      count: matches.length,
+      next: end < matches.length ? 'page=${page + 1}' : null,
+      results: matches.sublist(start, end.clamp(0, matches.length)),
+    );
+  }
+
+  @override
+  Future<List<FormRef>> searchForms(String search) async {
+    await _delay();
+    final text = search.trim().toLowerCase();
+    return [
+      for (final form in _forms.values)
+        if (form.name.contains(text)) _formRef(form),
+    ].take(30).toList();
   }
 
   @override

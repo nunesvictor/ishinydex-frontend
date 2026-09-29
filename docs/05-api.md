@@ -16,6 +16,9 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |
 | GET | `/api/specimens/?form_id=&available=true&page_size=100` | `fetchAvailable` |
+| GET | `/api/specimens/?page=&page_size=20&search=&available=&is_shiny=` | `fetchSpecimens` (inventário; só os filtros usados vão na URL) |
+| GET | `/api/forms/?search=&page_size=30` | `searchForms` (seletor de forma do cadastro avulso) |
+| GET | `/api/slots/{id}/` | `fetchSlot` ("Ver no dex": descobre dex e box do slot) |
 | POST | `/api/specimens/` | `create` |
 | GET | `/api/specimens/{id}/` | `fetchSpecimen` (formulário de edição) |
 | PATCH | `/api/specimens/{id}/` | `update` (todos os campos menos `form`, que é imutável; vazios vão como `null`) |

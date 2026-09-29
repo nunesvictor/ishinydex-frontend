@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
 
@@ -24,6 +25,35 @@ class HttpSpecimenRepository implements SpecimenRepository {
       'specimens/$specimenId/',
     );
     return Specimen.fromJson(response.data!);
+  });
+
+  @override
+  Future<Paginated<Specimen>> fetchSpecimens(
+    SpecimenQuery query, {
+    required int page,
+    required int pageSize,
+  }) => guardRequest(() async {
+    final search = query.search.trim();
+    final response = await _dio.get<Map<String, dynamic>>(
+      'specimens/',
+      queryParameters: {
+        'page': page,
+        'page_size': pageSize,
+        if (search.isNotEmpty) 'search': search,
+        'available': ?query.status.availableParam,
+        if (query.shinyOnly) 'is_shiny': true,
+      },
+    );
+    return Paginated.fromJson(response.data!, Specimen.fromJson);
+  });
+
+  @override
+  Future<List<FormRef>> searchForms(String search) => guardRequest(() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'forms/',
+      queryParameters: {'search': search.trim(), 'page_size': 30},
+    );
+    return Paginated.fromJson(response.data!, FormRef.fromJson).results;
   });
 
   @override

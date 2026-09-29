@@ -35,6 +35,8 @@ void main() {
       expect(authRedirect(const AsyncData('t'), Routes.splash), Routes.dexes);
       expect(authRedirect(const AsyncData('t'), '/dexes/1'), isNull);
       expect(Routes.dex(3), '/dexes/3');
+      expect(Routes.dex(3, boxId: 2, slotId: 40), '/dexes/3?box=2&slot=40');
+      expect(Routes.specimen(7), '/specimens/7');
     });
   });
 

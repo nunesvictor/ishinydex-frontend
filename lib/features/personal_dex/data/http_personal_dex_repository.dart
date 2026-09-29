@@ -58,6 +58,12 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
       });
 
   @override
+  Future<Slot> fetchSlot(int slotId) => guardRequest(() async {
+    final response = await _dio.get<Map<String, dynamic>>('slots/$slotId/');
+    return Slot.fromJson(response.data!);
+  });
+
+  @override
   Future<Slot> deposit({required int slotId, required int specimenId}) =>
       guardRequest(() async {
         final response = await _dio.post<Map<String, dynamic>>(
