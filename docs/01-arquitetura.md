@@ -155,6 +155,15 @@ Um usuário pode ter vários dexes (por enquanto criados só pelo backend, com
 - A `DexListPage` continua sendo o lugar central dos dexes; é lá que vai
   entrar a criação de PersonalDex pelo app.
 
+## Busca no dex
+
+O ícone de lupa no AppBar do dex abre o
+[`SlotSearch`](../lib/features/personal_dex/presentation/widgets/slot_search.dart)
+(`GET /slots/?personal_dex=&search=`), que aceita nome ou número. Escolher um
+resultado leva à box do slot e o seleciona; no compacto, também abre o bottom
+sheet. O `PageView` ignora o `onPageChanged` da página atual, para o pulo
+programático não limpar a seleção.
+
 ## Inventário (aba Espécimes)
 
 A terceira aba lista **todos** os espécimes, depositados ou não:

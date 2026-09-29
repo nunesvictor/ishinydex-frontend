@@ -13,6 +13,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigat
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_view.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/deposit_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
@@ -78,6 +79,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
           title: dex.value?.name ?? 'PersonalDex',
         ),
         actions: [
+          IconButton(
+            tooltip: 'Buscar no dex',
+            onPressed: _openSearch,
+            icon: const Icon(Icons.search),
+          ),
           IconButton(
             tooltip: _onlyMissing ? 'Mostrar todos' : 'Destacar faltantes',
             isSelected: _onlyMissing,
@@ -166,7 +172,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
           child: PageView.builder(
             controller: controller,
             itemCount: boxes.length,
-            onPageChanged: _selectBox,
+            // Ignora a página atual: pular para a box de um slot buscado
+            // não pode limpar a seleção.
+            onPageChanged: (i) {
+              if (i != _boxIndex) _selectBox(i);
+            },
             itemBuilder: (context, i) => _boxView(boxes[i], compact: true),
           ),
         ),
@@ -194,14 +204,35 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     if (index >= 0) _boxIndex = index;
   }
 
+  /// Busca por nome/número e leva até a box, com o slot selecionado (no
+  /// compacto, já abre o detalhe no bottom sheet).
+  Future<void> _openSearch() async {
+    final slot = await showSlotSearch(context, dexId: _dexId);
+    if (slot == null || !mounted) return;
+    final boxes = ref.read(boxesProvider(_dexId)).value ?? const [];
+    final index = boxes.indexWhere((b) => b.id == slot.box.id);
+    setState(() {
+      _boxIndex = index < 0 ? _boxIndex : index;
+      _selectedSlotId = slot.id;
+    });
+    final controller = _pageController;
+    if (controller == null) return;
+    controller.jumpToPage(_boxIndex);
+    unawaited(_showSlotSheet(boxes[_boxIndex]));
+  }
+
   void _selectBox(int index) => setState(() {
     _boxIndex = index;
     _selectedSlotId = null;
   });
 
   /// Slot selecionado, sempre na versão mais recente vinda da API.
-  Slot? _selectedSlot(BoxSummary box) {
-    final slots = ref
+  ///
+  /// [watcher] é o `ref` de quem vai se reconstruir quando os slots mudarem.
+  /// O bottom sheet passa o do próprio `Consumer`: com o `ref` da página, o
+  /// sheet não se atualizaria quando os slots terminassem de carregar.
+  Slot? _selectedSlot(BoxSummary box, [WidgetRef? watcher]) {
+    final slots = (watcher ?? ref)
         .watch(slotsProvider((dexId: _dexId, boxId: box.id)))
         .value;
     if (slots == null) return null;
@@ -224,8 +255,8 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     useSafeArea: true,
     isScrollControlled: true,
     builder: (sheetContext) => Consumer(
-      builder: (context, ref, _) {
-        final slot = _selectedSlot(box);
+      builder: (context, sheetRef, _) {
+        final slot = _selectedSlot(box, sheetRef);
         return ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.sizeOf(context).height * 0.8,

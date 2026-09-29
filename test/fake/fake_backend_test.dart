@@ -228,6 +228,21 @@ void main() {
       expect(none.count, 0);
     });
 
+    test('searchSlots: nome ou número, só do dex e com forma', () async {
+      final byName = await backend.searchSlots(dexId: 1, search: 'PIDGE');
+      expect(byName.map((s) => s.form!.name), [
+        'pidgey',
+        'pidgeotto',
+        'pidgeot',
+      ]);
+      expect(byName.every((s) => s.personalDex == 1), true);
+      final byNumber = await backend.searchSlots(dexId: 2, search: '16');
+      expect(byNumber.single.form!.name, 'pidgey');
+      expect(byNumber.single.personalDex, 2);
+      // Forma 40 não está no dex 2 (só 1–30).
+      expect(await backend.searchSlots(dexId: 2, search: '40'), isEmpty);
+    });
+
     test('searchForms e fetchSlot', () async {
       expect((await backend.searchForms('PIDGE')).map((f) => f.name), [
         'pidgey',
