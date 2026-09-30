@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Detalhes do slot selecionado com as ações: depositar (slot faltante) ou
 /// editar/libertar o specimen (slot registrado).
-class SlotDetailPanel extends StatelessWidget {
+///
+/// O slot traz só o resumo do specimen (`SpecimenSummary`); gênero,
+/// natureza e Pokémon GO vêm do specimen completo (`GET /specimens/{id}/`),
+/// carregado à parte. Enquanto ele não chega (ou se falhar), o painel mostra
+/// o resumo e as ações normalmente.
+class SlotDetailPanel extends ConsumerWidget {
   const SlotDetailPanel({
     required this.slot,
     required this.onDeposit,
@@ -21,7 +29,7 @@ class SlotDetailPanel extends StatelessWidget {
   final VoidCallback onRelease;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final current = slot;
     final form = current?.form;
     if (current == null || form == null) {
@@ -37,6 +45,14 @@ class SlotDetailPanel extends StatelessWidget {
     }
     final theme = Theme.of(context);
     final specimen = current.specimen;
+    final full = specimen == null
+        ? null
+        : ref.watch(specimenProvider(specimen.id)).value;
+    final nature = choiceLabel(
+      ref.watch(specimenOptionsProvider).value?.nature,
+      full?.nature,
+    );
+    final gender = _genderIcon(full?.gender);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -91,6 +107,8 @@ class SlotDetailPanel extends StatelessWidget {
                   const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
                 if (specimen.isAlpha)
                   const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
+                if (full?.isFromGo ?? false)
+                  const Chip(avatar: Text(goEmoji), label: Text('Pokémon GO')),
                 if (specimen.pokeball != null)
                   Chip(
                     avatar: PokemonSprite(
@@ -99,13 +117,32 @@ class SlotDetailPanel extends StatelessWidget {
                     ),
                     label: Text(prettifyName(specimen.pokeball!)),
                   ),
+                if (nature != null)
+                  // O ícone sozinho não diz o que é: o tooltip explica
+                  // ("Natureza") no hover/toque longo e no leitor de tela.
+                  Tooltip(
+                    message: 'Natureza',
+                    child: Chip(
+                      avatar: const Icon(Icons.psychology_outlined),
+                      label: Text(nature),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              specimen.displayName,
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center,
+            // Gênero como ícone ao lado do nome: não ocupa linha nova.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    specimen.displayName,
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                if (gender != null) ...[const SizedBox(width: 4), gender],
+              ],
             ),
           ],
           const SizedBox(height: 16),
@@ -138,3 +175,21 @@ class SlotDetailPanel extends StatelessWidget {
     );
   }
 }
+
+/// ♂/♀ com rótulo para o leitor de tela; sem ícone para `genderless` (e
+/// quando o gênero não foi informado).
+Widget? _genderIcon(String? gender) => switch (gender) {
+  'male' => const Icon(
+    Icons.male,
+    size: 20,
+    color: Colors.blue,
+    semanticLabel: 'Macho',
+  ),
+  'female' => const Icon(
+    Icons.female,
+    size: 20,
+    color: Colors.pink,
+    semanticLabel: 'Fêmea',
+  ),
+  _ => null,
+};
