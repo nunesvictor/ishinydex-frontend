@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
+import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -49,6 +51,10 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
 
   /// A box pedida na URL só é aplicada uma vez, quando as boxes carregam.
   bool _initialBoxApplied = false;
+
+  /// No compacto, o slot pedido na URL (caçadas, "Ver no dex") já abre no
+  /// bottom sheet, uma vez só; nos demais tamanhos o painel já fica ao lado.
+  late bool _openInitialSheet = widget.initialSlotId != null;
   bool _onlyMissing = false;
 
   /// Lista de boxes ao lado da grade (expandido e maior). `null` = padrão do
@@ -98,6 +104,12 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
               icon: const Icon(Icons.view_sidebar_outlined),
               selectedIcon: const Icon(Icons.view_sidebar),
             ),
+          if (dex.value?.isShinyDex ?? false)
+            IconButton(
+              tooltip: 'Caçadas',
+              onPressed: () => context.push(Routes.hunts(_dexId)),
+              icon: const Icon(Icons.track_changes),
+            ),
           IconButton(
             tooltip: 'Progresso por geração',
             onPressed: _openGenerations,
@@ -142,7 +154,17 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final index = _boxIndex.clamp(0, boxes.length - 1);
     final box = boxes[index];
     final size = WindowSize.of(context);
-    if (size.isCompact) return _buildCompact(boxes, index);
+    final openSheet = _openInitialSheet;
+    _openInitialSheet = false;
+    if (size.isCompact) {
+      if (openSheet) {
+        // Depois do frame: não dá para abrir um sheet no meio do build.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_showSlotSheet(box));
+        });
+      }
+      return _buildCompact(boxes, index);
+    }
     _releasePageController();
 
     final grid = Column(

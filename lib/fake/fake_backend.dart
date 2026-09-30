@@ -154,6 +154,10 @@ class FakeBackend
   /// lote usa).
   final _genderRates = <int, int>{};
 
+  /// Categoria da espécie de cada forma (no backend, vem dos campos da
+  /// espécie e da habilidade Beast Boost).
+  final _categories = <int, HuntCategory>{};
+
   int _nextSlotId = 1;
   int _nextSpecimenId = 1;
 
@@ -237,9 +241,14 @@ class FakeBackend
     required String name,
     List<String> types = const ['normal'],
     int genderRate = 4,
+    HuntCategory category = HuntCategory.regular,
+    ShinyLock? shinyLock,
   }) {
     _genderRates[id] = genderRate;
+    _categories[id] = category;
     _forms[id] = FormDetail(
+      isShinylocked: shinyLock == ShinyLock.unobtainable,
+      isDistroOnly: shinyLock == ShinyLock.distroOnly,
       id: id,
       name: name,
       pokeapiId: id,
@@ -602,6 +611,84 @@ class FakeBackend
     }
     slot.specimenId = specimenId;
     return _toSlot(slot);
+  }
+
+  /// Como a API: só shiny dex (senão 400); motivos somados (OU), escopo
+  /// combinado (E), tipos "qualquer um", shiny impossível fora por padrão;
+  /// cada item traz todos os seus motivos. Página fora do intervalo → 404.
+  @override
+  Future<Paginated<Hunt>> fetchHunts(
+    int dexId,
+    HuntQuery query, {
+    required int page,
+    required int pageSize,
+  }) async {
+    await _delay();
+    final dex = _dexes[dexId];
+    if (dex == null) throw const NotFoundFailure();
+    if (!dex.isShinyDex) {
+      throw ValidationFailure({
+        ValidationFailure.nonFieldKey: [
+          'A lista de caçadas só existe para shiny dex.',
+        ],
+      });
+    }
+    final search = query.search.trim().toLowerCase();
+    final number = int.tryParse(search);
+    final hunts = <Hunt>[];
+    for (final slot in _slots.values) {
+      final formId = slot.formId;
+      if (slot.dexId != dexId || formId == null) continue;
+      final form = _forms[formId]!;
+      final lock = form.isShinylocked
+          ? ShinyLock.unobtainable
+          : form.isDistroOnly
+          ? ShinyLock.distroOnly
+          : null;
+      final reasons = _huntReasons(slot, query.acceptedBalls);
+      final category = _categories[formId] ?? HuntCategory.regular;
+      final matches =
+          reasons.any(query.reasons.contains) &&
+          (query.includeLocked || lock != ShinyLock.unobtainable) &&
+          (query.generations.isEmpty ||
+              query.generations.contains(_generationOf(form.pokeapiId))) &&
+          (query.types.isEmpty ||
+              form.types.any((t) => query.types.contains(t.type))) &&
+          (query.categories.isEmpty || query.categories.contains(category)) &&
+          (search.isEmpty ||
+              (number == null
+                  ? form.name.contains(search)
+                  : form.pokeapiId == number));
+      if (matches) {
+        hunts.add(Hunt(slot: _toSlot(slot), reasons: reasons, shinyLock: lock));
+      }
+    }
+    final start = (page - 1) * pageSize;
+    if (page < 1 || (start >= hunts.length && page > 1)) {
+      throw const NotFoundFailure();
+    }
+    final end = start + pageSize;
+    return Paginated(
+      count: hunts.length,
+      next: end < hunts.length ? 'page=${page + 1}' : null,
+      results: hunts.sublist(start, end.clamp(0, hunts.length)),
+    );
+  }
+
+  /// Motivos de caçada do slot; `pokeball` só com bolas aceitas, e bola não
+  /// informada não conta.
+  List<HuntReason> _huntReasons(_SlotRecord slot, List<String> acceptedBalls) {
+    final id = slot.specimenId;
+    final specimen = id == null ? null : _specimens[id];
+    if (specimen == null || !specimen.isShiny) return [HuntReason.noShiny];
+    final ball = specimen.pokeball;
+    return [
+      if (specimen.isFromGo) HuntReason.fromGo,
+      if (acceptedBalls.isNotEmpty &&
+          ball != null &&
+          !acceptedBalls.contains(ball))
+        HuntReason.pokeball,
+    ];
   }
 
   // ---- SpecimenRepository ----

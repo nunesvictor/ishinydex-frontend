@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
 import '../helpers/helpers.dart';
@@ -676,5 +677,193 @@ void main() {
     expect(allowedGenders(form(9, 'sem-taxa'), rates), {'male', 'female'});
     expect(allowedGenders(form(5, 'oinkologne-female'), rates), {'female'});
     expect(allowedGenders(form(4, 'meowstic-male'), rates), {'male'});
+  });
+
+  group('caçadas', () {
+    Future<List<String>> names(
+      HuntQuery query, {
+      FakeBackend? on,
+      int dexId = 1,
+    }) async => [
+      for (final hunt in (await (on ?? backend).fetchHunts(
+        dexId,
+        query,
+        page: 1,
+        pageSize: 100,
+      )).results)
+        hunt.slot.form!.name,
+    ];
+
+    test('padrão: slots sem shiny, na ordem das boxes', () async {
+      final page = await backend.fetchHunts(
+        1,
+        const HuntQuery(),
+        page: 1,
+        pageSize: 100,
+      );
+      // Formas múltiplas de 3 ficaram sem espécime no shiny dex.
+      expect(page.count, 19);
+      expect(page.results.first.slot.form!.name, 'venusaur');
+      expect(page.results.first.reasons, [HuntReason.noShiny]);
+    });
+
+    test('espécime não shiny também é caçada', () async {
+      final fake = FakeBackend()..addForm(id: 1, name: 'bulbasaur');
+      final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
+      fake.addBox(dexId: dex, name: 'HOME 1', formIds: [1]);
+      await fake.deposit(slotId: 1, specimenId: fake.addSpecimen(formId: 1));
+      final hunt = (await fake.fetchHunts(
+        dex,
+        const HuntQuery(),
+        page: 1,
+        pageSize: 10,
+      )).results.single;
+      expect(hunt.reasons, [HuntReason.noShiny]);
+      expect(hunt.slot.specimen, isNotNull);
+    });
+
+    test(
+      'motivos: GO, pokébola (bola nula não conta) e todos os motivos',
+      () async {
+        final go = await backend.fetchHunts(
+          1,
+          const HuntQuery(reasons: [HuntReason.fromGo]),
+          page: 1,
+          pageSize: 100,
+        );
+        expect(go.count, 6);
+        expect(
+          go.results.every((h) => h.reasons.contains(HuntReason.fromGo)),
+          true,
+        );
+
+        const balls = HuntQuery(
+          reasons: [HuntReason.pokeball],
+          acceptedBalls: ['poke-ball'],
+        );
+        final wrongBall = await backend.fetchHunts(
+          1,
+          balls,
+          page: 1,
+          pageSize: 100,
+        );
+        expect(wrongBall.count, 20); // shinies em Dream Ball
+        // O item traz todos os motivos: Dream Ball e do GO (forma 14).
+        final both = wrongBall.results.firstWhere((h) => h.slot.form!.id == 14);
+        expect(both.reasons, [HuntReason.fromGo, HuntReason.pokeball]);
+
+        // Sem bolas aceitas, o motivo "pokébola" não lista nada.
+        expect(
+          await names(const HuntQuery(reasons: [HuntReason.pokeball])),
+          isEmpty,
+        );
+
+        // Bola não informada não conta como bola errada.
+        final fake = FakeBackend()..addForm(id: 1, name: 'bulbasaur');
+        final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
+        fake.addBox(dexId: dex, name: 'HOME 1', formIds: [1]);
+        await fake.deposit(
+          slotId: 1,
+          specimenId: fake.addSpecimen(formId: 1, isShiny: true),
+        );
+        expect(await names(balls, on: fake, dexId: dex), isEmpty);
+      },
+    );
+
+    test('escopo: geração, tipo (qualquer um), categoria e busca', () async {
+      final fake = FakeBackend()
+        ..addForm(id: 1, name: 'bulbasaur', types: ['grass'])
+        ..addForm(
+          id: 150,
+          name: 'mewtwo',
+          types: ['psychic'],
+          category: HuntCategory.legendary,
+        )
+        ..addForm(
+          id: 793,
+          name: 'nihilego',
+          types: ['rock', 'poison'],
+          category: HuntCategory.ultraBeast,
+        );
+      final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
+      fake.addBox(dexId: dex, name: 'HOME 1', formIds: [1, 150, 793]);
+      Future<List<String>> run(HuntQuery q) => names(q, on: fake, dexId: dex);
+
+      expect(await run(const HuntQuery(generations: ['generation-vii'])), [
+        'nihilego',
+      ]);
+      expect(await run(const HuntQuery(types: ['grass', 'poison'])), [
+        'bulbasaur',
+        'nihilego',
+      ]);
+      expect(
+        await run(
+          const HuntQuery(
+            categories: [HuntCategory.legendary, HuntCategory.ultraBeast],
+          ),
+        ),
+        ['mewtwo', 'nihilego'],
+      );
+      expect(await run(const HuntQuery(categories: [HuntCategory.regular])), [
+        'bulbasaur',
+      ]);
+      expect(await run(const HuntQuery(search: ' MEW')), ['mewtwo']);
+      expect(await run(const HuntQuery(search: '793')), ['nihilego']);
+    });
+
+    test('shiny lock: impossível só com includeLocked', () async {
+      final fake = FakeBackend()
+        ..addForm(id: 1, name: 'victini', shinyLock: ShinyLock.unobtainable)
+        ..addForm(id: 2, name: 'keldeo', shinyLock: ShinyLock.distroOnly);
+      final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
+      fake.addBox(dexId: dex, name: 'HOME 1', formIds: [1, 2]);
+      final page = await fake.fetchHunts(
+        dex,
+        const HuntQuery(),
+        page: 1,
+        pageSize: 10,
+      );
+      expect([for (final h in page.results) h.slot.form!.name], ['keldeo']);
+      expect(page.results.single.shinyLock, ShinyLock.distroOnly);
+      final all = await fake.fetchHunts(
+        dex,
+        const HuntQuery(includeLocked: true),
+        page: 1,
+        pageSize: 10,
+      );
+      expect(all.results.first.shinyLock, ShinyLock.unobtainable);
+      expect((await fake.fetchForm(1)).isShinylocked, true);
+    });
+
+    test('paginação, dex normal e inexistente', () async {
+      final first = await backend.fetchHunts(
+        1,
+        const HuntQuery(),
+        page: 1,
+        pageSize: 10,
+      );
+      expect(first.results, hasLength(10));
+      expect(first.hasNext, true);
+      final last = await backend.fetchHunts(
+        1,
+        const HuntQuery(),
+        page: 2,
+        pageSize: 10,
+      );
+      expect(last.results, hasLength(9));
+      expect(last.hasNext, false);
+      expect(
+        backend.fetchHunts(1, const HuntQuery(), page: 3, pageSize: 10),
+        throwsA(isA<NotFoundFailure>()),
+      );
+      expect(
+        backend.fetchHunts(2, const HuntQuery(), page: 1, pageSize: 10),
+        throwsA(isA<ValidationFailure>()),
+      );
+      expect(
+        backend.fetchHunts(9, const HuntQuery(), page: 1, pageSize: 10),
+        throwsA(isA<NotFoundFailure>()),
+      );
+    });
   });
 }

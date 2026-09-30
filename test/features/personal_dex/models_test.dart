@@ -78,4 +78,69 @@ void main() {
     expect(gen.missing, 3);
     expect(gen.copyWith(generation: null).label, 'Outras formas');
   });
+
+  group('caçadas', () {
+    test('Hunt.parse: slot achatado, motivos e shiny lock', () {
+      final hunt = Hunt.parse({
+        ...missingSlotJson,
+        'reasons': ['no_shiny', 'foo', 'pokeball'],
+        'shiny_lock': 'distro-only',
+      });
+      expect(hunt.slot.id, 20);
+      expect(hunt.slot.isMissing, true);
+      expect(hunt.reasons, [HuntReason.noShiny, HuntReason.pokeball]);
+      expect(hunt.shinyLock, ShinyLock.distroOnly);
+      final plain = Hunt.parse({
+        ...missingSlotJson,
+        'reasons': <String>[],
+        'shiny_lock': null,
+      });
+      expect(plain.shinyLock, isNull);
+    });
+
+    test('HuntQuery: padrão manda só os motivos', () {
+      expect(const HuntQuery().toQueryParameters(), {'reasons': 'no_shiny'});
+      expect(const HuntQuery().scopeCount, 0);
+    });
+
+    test('HuntQuery: todos os filtros', () {
+      const query = HuntQuery(
+        reasons: [HuntReason.noShiny, HuntReason.fromGo, HuntReason.pokeball],
+        acceptedBalls: ['poke-ball', 'premier-ball'],
+        generations: ['generation-vii'],
+        types: ['water', 'flying'],
+        categories: [HuntCategory.legendary, HuntCategory.ultraBeast],
+        search: ' tapu ',
+        includeLocked: true,
+      );
+      expect(query.toQueryParameters(), {
+        'reasons': 'no_shiny,from_go,pokeball',
+        'accepted_balls': 'poke-ball,premier-ball',
+        'generation': 'generation-vii',
+        'type': 'water,flying',
+        'category': 'legendary,ultra-beast',
+        'search': 'tapu',
+        'include_locked': true,
+      });
+      expect(query.scopeCount, 4);
+      expect(
+        query.clearScope(),
+        const HuntQuery(
+          reasons: [HuntReason.noShiny, HuntReason.fromGo, HuntReason.pokeball],
+          acceptedBalls: ['poke-ball', 'premier-ball'],
+          search: ' tapu ',
+        ),
+      );
+    });
+
+    test('rótulos e parâmetros dos enums', () {
+      expect(HuntReason.fromParam('from_go'), HuntReason.fromGo);
+      expect(HuntReason.fromParam('foo'), isNull);
+      expect(ShinyLock.fromParam('unobtainable'), ShinyLock.unobtainable);
+      expect(ShinyLock.fromParam(null), isNull);
+      expect(HuntCategory.ultraBeast.param, 'ultra-beast');
+      expect(HuntCategory.regular.label, 'Comum');
+      expect(ShinyLock.unobtainable.label, 'Shiny impossível');
+    });
+  });
 }

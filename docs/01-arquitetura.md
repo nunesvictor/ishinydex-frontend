@@ -200,6 +200,31 @@ registrados/total e "Faltam N". Tocar numa geração leva à primeira box dela. 
 `generationsProvider` é invalidado junto com as outras contagens em
 `SlotActions`.
 
+## Caçadas (shiny dex)
+
+Num shiny dex, o ícone de alvo no AppBar abre a
+[`HuntsPage`](../lib/features/personal_dex/presentation/hunts_page.dart)
+(rota `/dexes/{id}/hunts`, `GET /personal-dexes/{id}/hunts/`): o que ainda
+falta caçar, na ordem das boxes. Dois grupos de filtros no
+[`HuntQuery`](../lib/features/personal_dex/domain/models.dart):
+
+- **Motivos** (somados com OU), sempre à vista em chips: sem shiny (vazio ou
+  espécime não shiny), shiny do GO e pokébola fora das escolhidas. O último
+  motivo marcado não pode sair, porque sem motivo a lista fica vazia.
+- **Escopo** (combinado com E), na folha "Filtros": categoria (lendário,
+  mítico, Ultra Beast, bebê, comum), geração, tipo (qualquer um) e "incluir
+  shiny impossível".
+
+Por que dentro de `personal_dex` e não numa feature própria: a lista é uma
+visão do dex, e o `SlotActions` (depositar, editar, libertar) precisa
+invalidar o `huntPageProvider`. Numa feature separada, uma importaria a outra.
+
+Tocar num item **empilha** (`context.push`) a página do dex já na box e no
+slot, com o painel aberto (no compacto, o bottom sheet abre sozinho quando a
+URL traz `?slot=`). Com `push`, e não `go`, o voltar retorna à lista com os
+filtros como estavam. Na API, cada item é um slot "achatado" com `reasons` e
+`shiny_lock` ao lado, por isso o `Hunt.parse` é escrito à mão.
+
 ## Inventário (aba Espécimes)
 
 A terceira aba lista **todos** os espécimes, depositados ou não:

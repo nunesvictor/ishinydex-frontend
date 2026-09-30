@@ -9,6 +9,7 @@ import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart';
+import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
@@ -28,6 +29,9 @@ abstract final class Routes {
       if (slotId != null) 'slot': '$slotId',
     }.nullIfEmpty,
   ).toString();
+
+  /// Caçadas do shiny dex [dexId].
+  static String hunts(int dexId) => '$dexes/$dexId/hunts';
 
   static String specimen(int id) => '$specimens/$id';
 }
@@ -117,6 +121,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                         initialSlotId: slotId,
                       );
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'hunts',
+                        builder: (context, state) => HuntsPage(
+                          dexId:
+                              int.tryParse(state.pathParameters['dexId']!) ?? 0,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
