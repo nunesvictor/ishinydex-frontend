@@ -447,6 +447,26 @@ que permite:
 No mobile, `requestFocusOnTap: false` deixa o campo só para toque: o teclado
 virtual não abre e não cobre a lista.
 
+### Imagens do próprio app: assets
+
+Sprites de Pokémon e pokébolas vêm do backend (`Image.network`, dentro do
+`PokemonSprite`). Já os ícones das **marcas de origem** vão junto com o app:
+são **assets**.
+
+1. Os arquivos ficam numa pasta do projeto (`assets/origin_marks/`).
+2. O `pubspec.yaml` declara a pasta em `flutter: assets:`. Só o que está
+   declarado entra no bundle (web, iOS...). Uma pasta declarada inclui os
+   arquivos dela, mas não as subpastas.
+3. Na tela, `Image.asset('assets/origin_marks/paldea.png')` carrega pelo
+   caminho.
+
+Os ícones do HOME são **glifos brancos** com fundo transparente. O
+`OriginMarkIcon` ([origin_mark_chip.dart](../lib/core/widgets/origin_mark_chip.dart))
+passa `color` + `colorBlendMode: BlendMode.srcIn`: a imagem vira uma
+"máscara", e o Flutter pinta os pixels visíveis com a cor do `IconTheme` (a
+mesma dos ícones do chip). Por isso o mesmo PNG funciona no tema claro e no
+escuro.
+
 ## 10. Dart: recursos modernos que aparecem no código
 
 | Recurso | Exemplo | Significado |

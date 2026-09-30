@@ -12,6 +12,12 @@ void main() {
     expect(specimen.capturedAt, DateTime(2024, 9, 23));
     expect(specimen.spriteUrl, contains('/shiny/1.png'));
     expect(specimen.displayName, 'Bulbasaur');
+    expect(specimen.originVersion, 'scarlet');
+    expect(specimen.originMark, 'paldea');
+    expect(
+      SpecimenOptions.fromJson(optionsJson).originMark.map((c) => c.value),
+      ['paldea', 'go', 'none'],
+    );
   });
 
   test('Specimen.displayName', () {
@@ -137,6 +143,7 @@ void main() {
       ots: const [1, 3],
       withoutOt: true,
       generations: const ['generation-i', 'generation-iv'],
+      originMarks: const ['paldea', 'none'],
       genders: const ['female'],
       natures: const ['jolly'],
       languages: const ['ja'],
@@ -155,6 +162,7 @@ void main() {
       'type': 'water,flying',
       'ot': '1,3,none',
       'generation': 'generation-i,generation-iv',
+      'origin_mark': 'paldea,none',
       'gender': 'female',
       'nature': 'jolly',
       'language': 'ja',
@@ -167,7 +175,7 @@ void main() {
     expect(const SpecimenQuery(withoutOt: true).toQueryParameters(), {
       'ot': 'none',
     });
-    expect(full.advancedCount, 10);
+    expect(full.advancedCount, 11);
 
     final cleared = full.clearAdvanced();
     expect(cleared.advancedCount, 0);

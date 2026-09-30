@@ -100,7 +100,10 @@ class FakeBackend
     }
     backend
       ..addTrainer(name: 'Ash', trainerId: '123456', version: 'scarlet')
-      ..addTrainer(name: 'Ash', trainerId: '654321');
+      ..addTrainer(name: 'Ash', trainerId: '654321')
+      // Outras origens, para a demonstração mostrar várias marcas.
+      ..addTrainer(name: 'Rei', trainerId: '111111', version: 'legends-arceus')
+      ..addTrainer(name: 'Ash', trainerId: '222222', version: 'legends-za');
     final shinyDex = backend.addDex(name: 'Shiny Living Dex', isShinyDex: true);
     final livingDex = backend.addDex(name: 'Living Dex');
     final forms = [for (var id = 1; id <= _speciesNames.length; id++) id];
@@ -128,7 +131,12 @@ class FakeBackend
         // Alguns sem natureza, como cadastros antigos.
         nature: formId % 4 == 0 ? null : _seedNatures[formId % 3],
         pokeball: formId.isEven ? 'dream-ball' : 'poke-ball',
-        ot: formId % 4 == 0 ? 1 : null,
+        ot: switch (formId % 4) {
+          0 => 1,
+          2 when formId % 3 == 1 => 3,
+          2 when formId % 3 == 2 => 4,
+          _ => null,
+        },
         capturedAt: formId.isEven ? DateTime(2026, 1, formId) : null,
       );
       slot.specimenId = specimen;
@@ -161,7 +169,14 @@ class FakeBackend
   int _nextSlotId = 1;
   int _nextSpecimenId = 1;
 
-  final versions = const [
+  /// Grupo de versão de cada versão (a marca de origem depende dele).
+  static final Map<String, String> versionGroups = {
+    for (final v in gameVersions) v.name: v.versionGroup,
+  };
+
+  List<GameVersion> get versions => gameVersions;
+
+  static const gameVersions = [
     GameVersion(
       name: 'red',
       versionGroup: 'red-blue',
@@ -173,8 +188,28 @@ class FakeBackend
       generation: 'generation-ii',
     ),
     GameVersion(
+      name: 'emerald',
+      versionGroup: 'emerald',
+      generation: 'generation-iii',
+    ),
+    GameVersion(
+      name: 'sun',
+      versionGroup: 'sun-moon',
+      generation: 'generation-vii',
+    ),
+    GameVersion(
+      name: 'lets-go-pikachu',
+      versionGroup: 'lets-go-pikachu-lets-go-eevee',
+      generation: 'generation-vii',
+    ),
+    GameVersion(
       name: 'sword',
       versionGroup: 'sword-shield',
+      generation: 'generation-viii',
+    ),
+    GameVersion(
+      name: 'legends-arceus',
+      versionGroup: 'legends-arceus',
       generation: 'generation-viii',
     ),
     GameVersion(
@@ -185,6 +220,11 @@ class FakeBackend
     GameVersion(
       name: 'violet',
       versionGroup: 'scarlet-violet',
+      generation: 'generation-ix',
+    ),
+    GameVersion(
+      name: 'legends-za',
+      versionGroup: 'legends-za',
       generation: 'generation-ix',
     ),
   ];
@@ -214,6 +254,18 @@ class FakeBackend
     generation: [
       Choice(value: 'generation-i', label: 'Geração I'),
       Choice(value: 'generation-ii', label: 'Geração II'),
+    ],
+    // Mesma ordem do backend: marcas, GO e "sem marca".
+    originMark: [
+      Choice(value: 'game-boy', label: 'Game Boy'),
+      Choice(value: 'alola', label: 'Trevo preto'),
+      Choice(value: 'lets-go', label: "Let's Go"),
+      Choice(value: 'galar', label: 'Galar'),
+      Choice(value: 'hisui', label: 'Legends: Arceus'),
+      Choice(value: 'paldea', label: 'Scarlet e Violet'),
+      Choice(value: 'lumiose', label: 'Legends: Z-A'),
+      Choice(value: 'go', label: 'Pokémon GO'),
+      Choice(value: 'none', label: 'Sem marca de origem'),
     ],
     pokeball: [
       Choice(
@@ -351,7 +403,7 @@ class FakeBackend
       pokeballSpriteUrl: _ballSprite(pokeball),
       ot: ot,
       capturedAt: capturedAt,
-    );
+    ).withOrigin(_otVersion(ot));
     return id;
   }
 
@@ -732,7 +784,7 @@ class FakeBackend
       pokeballSpriteUrl: _ballSprite(draft.pokeball),
       observation: draft.observation,
       ot: draft.ot,
-    );
+    ).withOrigin(_otVersion(draft.ot));
     _specimens[id] = specimen;
     return specimen;
   }
@@ -831,7 +883,7 @@ class FakeBackend
       SetTo(:final value) => value,
     };
     final pokeball = pick(c.pokeball, s.pokeball);
-    return s.copyWith(
+    final changed = s.copyWith(
       pokeball: pokeball,
       pokeballSpriteUrl: _ballSprite(pokeball),
       ot: pick(c.ot, s.ot),
@@ -843,6 +895,10 @@ class FakeBackend
       isAlpha: pick(c.isAlpha, s.isAlpha) ?? s.isAlpha,
       isFromGo: pick(c.isFromGo, s.isFromGo) ?? s.isFromGo,
     );
+    return changed.withOrigin(switch (c.ot) {
+      Keep() => s.originVersion,
+      SetTo(:final value) => _otVersion(value),
+    });
   }
 
   @override
@@ -866,7 +922,7 @@ class FakeBackend
       });
     }
     _validateAbility(_forms[specimen.form]!, draft.ability);
-    final updated = specimen.copyWith(
+    final edited = specimen.copyWith(
       nickname: draft.nickname,
       ability: draft.ability,
       language: draft.language,
@@ -882,6 +938,10 @@ class FakeBackend
       ot: draft.ot,
       slot: _slotHolding(specimenId)?.id,
     );
+    // O jogo de origem só muda quando o OT muda (como no backend).
+    final updated = draft.ot == specimen.ot
+        ? edited.withOrigin(specimen.originVersion)
+        : edited.withOrigin(_otVersion(draft.ot));
     _specimens[specimenId] = updated;
     return updated;
   }
@@ -952,6 +1012,10 @@ class FakeBackend
 
   // ---- Internos ----
 
+  /// Versão do OT (`null` sem OT ou OT sem versão): o jogo de origem de um
+  /// espécime novo ou que trocou de OT, como no backend.
+  String? _otVersion(int? ot) => _trainers[ot]?.version;
+
   Future<void> _delay() async {
     if (latency > Duration.zero) await Future<void>.delayed(latency);
   }
@@ -990,6 +1054,7 @@ class FakeBackend
             (query.withoutOt && s.ot == null)) &&
         query.types.every(formTypes.contains) &&
         inList(query.generations, _generationOf(form.pokeapiId)) &&
+        inList(query.originMarks, s.originMark ?? SpecimenQuery.noneParam) &&
         inList(query.genders, s.gender) &&
         inList(query.natures, s.nature) &&
         inList(query.languages, s.language) &&
@@ -1113,4 +1178,41 @@ Set<String> allowedGenders(FormDetail form, Map<int, int> genderRates) {
     8 => {'female'},
     _ => {'male', 'female'},
   };
+}
+
+/// Marca de origem por grupo de versão (espelho de `home/origin_marks.py`).
+const _originMarkByVersionGroup = {
+  'red-green-japan': 'game-boy',
+  'blue-japan': 'game-boy',
+  'red-blue': 'game-boy',
+  'yellow': 'game-boy',
+  'gold-silver': 'game-boy',
+  'crystal': 'game-boy',
+  'x-y': 'kalos',
+  'omega-ruby-alpha-sapphire': 'kalos',
+  'sun-moon': 'alola',
+  'ultra-sun-ultra-moon': 'alola',
+  'lets-go-pikachu-lets-go-eevee': 'lets-go',
+  'sword-shield': 'galar',
+  'the-isle-of-armor': 'galar',
+  'the-crown-tundra': 'galar',
+  'brilliant-diamond-shining-pearl': 'bdsp',
+  'legends-arceus': 'hisui',
+  'scarlet-violet': 'paldea',
+  'the-teal-mask': 'paldea',
+  'the-indigo-disk': 'paldea',
+  'legends-za': 'lumiose',
+  'mega-dimension': 'lumiose',
+};
+
+extension on Specimen {
+  /// Com o jogo de origem [version] e a marca calculada como no backend:
+  /// GO tem prioridade; senão, a marca do grupo da versão; senão nenhuma.
+  Specimen withOrigin(String? version) {
+    final group = FakeBackend.versionGroups[version];
+    return copyWith(
+      originVersion: version,
+      originMark: isFromGo ? 'go' : _originMarkByVersionGroup[group],
+    );
+  }
 }

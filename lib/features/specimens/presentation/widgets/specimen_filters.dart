@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
+import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
@@ -42,8 +44,8 @@ Future<SpecimenQuery?> showSpecimenFilters(
 /// Conteúdo da folha de filtros. Edita um rascunho da consulta; só o botão
 /// "Mostrar resultados" devolve o rascunho para a tela.
 ///
-/// Para caber no celular: conjuntos pequenos (tipo, geração, gênero) viram
-/// chips; a ordem e os conjuntos grandes (pokébolas, OTs, naturezas,
+/// Para caber no celular: conjuntos pequenos (tipo, geração, marca de
+/// origem, gênero) viram chips; a ordem e os conjuntos grandes (pokébolas, OTs, naturezas,
 /// idiomas) viram uma linha compacta que abre um seletor.
 class SpecimenFiltersPanel extends ConsumerStatefulWidget {
   const SpecimenFiltersPanel({required this.initial, super.key});
@@ -171,6 +173,29 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                           generations: _toggle(
                             _draft.generations,
                             generation.value,
+                            on,
+                          ),
+                        ),
+                      ),
+                    ),
+                ]),
+              ),
+              _Section(
+                title: 'Marca de origem',
+                child: _chips([
+                  for (final choice in options.originMark)
+                    FilterChip(
+                      avatar: switch (OriginMark.fromSlug(choice.value)) {
+                        final mark? => OriginMarkIcon(mark, size: 18),
+                        null => null,
+                      },
+                      label: Text(choice.label),
+                      selected: _draft.originMarks.contains(choice.value),
+                      onSelected: (on) => _update(
+                        _draft.copyWith(
+                          originMarks: _toggle(
+                            _draft.originMarks,
+                            choice.value,
                             on,
                           ),
                         ),
@@ -578,6 +603,11 @@ class ActiveFilterChips extends ConsumerWidget {
         (
           'Geração ${q.generations.map(generationNumber).join(', ')}',
           q.copyWith(generations: const []),
+        ),
+      if (q.originMarks.isNotEmpty)
+        (
+          'Origem: ${summarize(labelsOf(q.originMarks, options.originMark))}',
+          q.copyWith(originMarks: const []),
         ),
       if (q.genders.isNotEmpty)
         (

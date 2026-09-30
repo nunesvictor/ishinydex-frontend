@@ -22,6 +22,7 @@ final _specimen = Specimen.fromJson({
   ...specimenJson,
   'observation': 'Pego no safári',
   'is_from_go': true,
+  'origin_mark': 'go',
 });
 
 void main() {
@@ -84,7 +85,9 @@ void main() {
         expect(find.text('Bulbasaur · #0001'), findsOneWidget);
         // Selo shiny junto do nome, como no admin.
         expect(find.text('Bulbasaur $shinyEmoji $goEmoji'), findsOneWidget);
+        // Marca de origem: GO tem prioridade (o backend manda "go").
         expect(find.text('Pokémon GO'), findsOneWidget);
+        expect(find.byTooltip('Marca de origem'), findsOneWidget);
       });
     }
 

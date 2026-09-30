@@ -28,6 +28,12 @@ abstract class Specimen with _$Specimen {
     String? observation,
     int? ot,
     int? slot,
+
+    /// Jogo de origem (nome da versão), derivado do OT pelo backend.
+    String? originVersion,
+
+    /// Marca de origem (`paldea`, `go`...); `null` = sem marca.
+    String? originMark,
   }) = _Specimen;
 
   const Specimen._();
@@ -204,6 +210,7 @@ abstract class SpecimenOptions with _$SpecimenOptions {
     @Default(<Choice>[]) List<Choice> pokeball,
     @Default(<Choice>[]) List<Choice> type,
     @Default(<Choice>[]) List<Choice> generation,
+    @Default(<Choice>[]) List<Choice> originMark,
   }) = _SpecimenOptions;
 
   factory SpecimenOptions.fromJson(Map<String, dynamic> json) =>
@@ -299,6 +306,9 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     @Default(<int>[]) List<int> ots,
     @Default(false) bool withoutOt,
     @Default(<String>[]) List<String> generations,
+
+    /// Marcas de origem (`paldea`, `go`, `none` = sem marca).
+    @Default(<String>[]) List<String> originMarks,
     @Default(<String>[]) List<String> genders,
     @Default(<String>[]) List<String> natures,
     @Default(<String>[]) List<String> languages,
@@ -329,6 +339,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     types.isNotEmpty,
     hasOtFilter,
     generations.isNotEmpty,
+    originMarks.isNotEmpty,
     genders.isNotEmpty,
     natures.isNotEmpty,
     languages.isNotEmpty,
@@ -362,6 +373,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
       if (types.isNotEmpty) 'type': join(types),
       if (hasOtFilter) 'ot': join([...ots, if (withoutOt) noneParam]),
       if (generations.isNotEmpty) 'generation': join(generations),
+      if (originMarks.isNotEmpty) 'origin_mark': join(originMarks),
       if (genders.isNotEmpty) 'gender': join(genders),
       if (natures.isNotEmpty) 'nature': join(natures),
       if (languages.isNotEmpty) 'language': join(languages),

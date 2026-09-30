@@ -38,7 +38,9 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/core/router/app_router.dart](../lib/core/router/app_router.dart) | Rotas e redirecionamento de login |
 | [lib/core/responsive/](../lib/core/responsive/) | `WindowSize` (breakpoints) e `AdaptiveShell` (NavigationBar/Rail) |
 | [lib/core/theme/app_theme.dart](../lib/core/theme/app_theme.dart) | Tema Material 3 |
-| [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação |
+| [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação, `OriginMarkChip`/`OriginMarkIcon` (marca de origem) |
+| [lib/core/utils/origin_mark.dart](../lib/core/utils/origin_mark.dart) | `OriginMark`: slug da API → nome e ícone da marca de origem (a regra fica no backend) |
+| [assets/](../assets/) | Arquivos empacotados no app (`pubspec.yaml` → `flutter: assets:`); hoje, os ícones das marcas de origem (fonte em `assets/README.md`) |
 | [lib/features/auth/](../lib/features/auth/) | Login por token, armazenamento seguro do token, `AuthController` |
 | [lib/features/personal_dex/](../lib/features/personal_dex/) | Dexes, boxes, slots; depositar, editar e libertar (`SlotActions`) |
 | [lib/features/specimens/](../lib/features/specimens/) | Inventário (aba Espécimes), seletor de specimens para depósito, formulário de cadastro/edição (`ChoiceSelect`: select digitável com sprites), cadastro de treinador |

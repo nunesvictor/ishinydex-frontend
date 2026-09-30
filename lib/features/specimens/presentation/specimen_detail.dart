@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
+import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -137,8 +139,8 @@ class _Details extends ConsumerWidget {
                 const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
               if (specimen.isAlpha)
                 const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
-              if (specimen.isFromGo)
-                const Chip(avatar: Text(goEmoji), label: Text('Pokémon GO')),
+              if (OriginMark.fromSlug(specimen.originMark) case final mark?)
+                OriginMarkChip(mark),
               if (specimen.pokeball != null)
                 Chip(
                   avatar: PokemonSprite(

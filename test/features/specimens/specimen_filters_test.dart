@@ -122,6 +122,21 @@ void main() {
       await tapInSheet(tester, find.widgetWithText(FilterChip, 'Voador'));
 
       await tapInSheet(tester, find.widgetWithText(FilterChip, 'I'));
+      // Marca de origem: chip com o ícone da marca; "sem marca", sem ícone.
+      final paldea = find.widgetWithText(FilterChip, 'Scarlet e Violet');
+      await tapInSheet(tester, paldea);
+      expect(
+        find.descendant(of: paldea, matching: find.byType(Image)),
+        findsOneWidget,
+      );
+      final noMark = find.widgetWithText(FilterChip, 'Sem marca de origem');
+      await tapInSheet(tester, noMark);
+      expect(
+        find.descendant(of: noMark, matching: find.byType(Image)),
+        findsNothing,
+      );
+      await tapInSheet(tester, find.widgetWithText(FilterChip, 'Pokémon GO'));
+      await tapInSheet(tester, find.widgetWithText(FilterChip, 'Pokémon GO'));
       await tapInSheet(tester, find.widgetWithText(FilterChip, 'Fêmea'));
 
       await tester.scrollUntilVisible(
@@ -166,6 +181,7 @@ void main() {
           languages: ['ja'],
           types: ['fire', 'flying'],
           generations: ['generation-i'],
+          originMarks: ['paldea', 'none'],
           genders: ['female'],
           ability: 'keen',
         ),
@@ -313,6 +329,7 @@ void main() {
         types: const ['fire', 'flying'],
         ots: const [2, 99],
         generations: const ['generation-i', 'generation-iv'],
+        originMarks: const ['go', 'none'],
         genders: const ['female'],
         natures: const ['modest', 'timid'],
         languages: const ['ja'],
@@ -328,6 +345,7 @@ void main() {
         'Fogo / Voador': query.copyWith(types: const []),
         'OT: Ash +1': query.copyWith(ots: const []),
         'Geração I, IV': query.copyWith(generations: const []),
+        'Origem: Pokémon GO +1': query.copyWith(originMarks: const []),
         'Fêmea': query.copyWith(genders: const []),
         'Modest +1': query.copyWith(natures: const []),
         'Japonês': query.copyWith(languages: const []),
@@ -341,6 +359,9 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
+        // Chip inteiro na tela: o X de um chip largo pode ficar de fora.
+        await tester.ensureVisible(chip);
+        await tester.pumpAndSettle();
         await tester.tap(
           find.descendant(of: chip, matching: find.byIcon(Icons.clear)),
         );

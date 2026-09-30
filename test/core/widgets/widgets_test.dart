@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
+import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/progress_badge.dart';
 
@@ -22,6 +24,38 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.catching_pokemon), findsOneWidget);
+    });
+  });
+
+  group('marca de origem', () {
+    testWidgets('chip com ícone, nome e tooltip', (tester) async {
+      await pumpWidgetApp(
+        tester,
+        const Scaffold(body: OriginMarkChip(OriginMark.paldea)),
+      );
+
+      expect(find.text('Scarlet e Violet'), findsOneWidget);
+      expect(find.byTooltip('Marca de origem'), findsOneWidget);
+      final image = tester.widget<Image>(find.byType(Image));
+      expect((image.image as AssetImage).assetName, OriginMark.paldea.asset);
+      // Glifo branco pintado com a cor do tema.
+      expect(image.color, isNotNull);
+      expect(image.colorBlendMode, BlendMode.srcIn);
+    });
+
+    testWidgets('ícone usa a cor do IconTheme ao redor', (tester) async {
+      await pumpWidgetApp(
+        tester,
+        const IconTheme(
+          data: IconThemeData(color: Colors.pink),
+          child: OriginMarkIcon(OriginMark.go, size: 18),
+        ),
+      );
+      final image = tester.widget<Image>(find.byType(Image));
+
+      expect(image.width, 18);
+      expect(image.color, Colors.pink);
+      expect(find.bySemanticsLabel('Pokémon GO'), findsOneWidget);
     });
   });
 

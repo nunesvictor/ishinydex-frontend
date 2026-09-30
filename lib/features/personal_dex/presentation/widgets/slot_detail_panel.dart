@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
+import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
@@ -107,8 +109,8 @@ class SlotDetailPanel extends ConsumerWidget {
                   const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
                 if (specimen.isAlpha)
                   const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
-                if (full?.isFromGo ?? false)
-                  const Chip(avatar: Text(goEmoji), label: Text('Pokémon GO')),
+                if (OriginMark.fromSlug(full?.originMark) case final mark?)
+                  OriginMarkChip(mark),
                 if (specimen.pokeball != null)
                   Chip(
                     avatar: PokemonSprite(

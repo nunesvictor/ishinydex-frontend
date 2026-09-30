@@ -239,12 +239,15 @@ void main() {
         {...dream.map((s) => s.id), ...noBall.map((s) => s.id)},
       );
 
-      // OT: seed com o treinador 1 nas formas múltiplas de 4.
+      // OT: seed com o treinador 1 nas formas múltiplas de 4 (e os
+      // treinadores 3 e 4 em algumas outras, para variar a origem).
       final byAsh = await all(const SpecimenQuery(ots: [1]));
       expect(byAsh, isNotEmpty);
       expect(byAsh.every((s) => s.ot == 1), true);
       final noOt = await all(const SpecimenQuery(withoutOt: true));
-      expect(byAsh.length + noOt.length, everything.length);
+      final others = await all(const SpecimenQuery(ots: [2, 3, 4]));
+      expect(others, isNotEmpty);
+      expect(byAsh.length + noOt.length + others.length, everything.length);
 
       // Tipo: com dois, a forma precisa ter os dois (charizard: fogo/voador).
       final flying = await all(const SpecimenQuery(types: ['flying']));
@@ -351,6 +354,86 @@ void main() {
             .map((s) => s.id),
         [b.id, a.id],
       );
+    });
+
+    test('marca de origem: derivada do OT e filtro como na API', () async {
+      final everything = await all(emptySpecimenQuery);
+      Future<Set<String?>> marks(List<String> filter) async => {
+        for (final s in await all(SpecimenQuery(originMarks: filter)))
+          s.originMark,
+      };
+      // Seed: OT 1 (scarlet), 3 (legends-arceus), 4 (legends-za).
+      for (final s in everything) {
+        final expected = s.isFromGo
+            ? 'go'
+            : switch (s.ot) {
+                1 => 'paldea',
+                3 => 'hisui',
+                4 => 'lumiose',
+                _ => null,
+              };
+        expect(s.originMark, expected, reason: 'specimen ${s.id}');
+      }
+      expect(await marks(['paldea']), {'paldea'});
+      expect(await marks(['hisui', 'go']), {'hisui', 'go'});
+      expect(await marks([SpecimenQuery.noneParam]), {null});
+      final byMark = [
+        for (final m in ['paldea', 'hisui', 'lumiose', 'go', 'none'])
+          ...await all(SpecimenQuery(originMarks: [m])),
+      ];
+      expect(byMark.length, everything.length);
+      expect(await all(const SpecimenQuery(originMarks: ['kalos'])), isEmpty);
+    });
+
+    test('jogo de origem: criar, trocar OT, editar e lote', () async {
+      final za = backend.addTrainer(
+        name: 'Ash',
+        trainerId: '9',
+        version: 'lets-go-pikachu',
+      );
+      final emerald = backend.addTrainer(
+        name: 'Brendan',
+        trainerId: '3',
+        version: 'emerald',
+      );
+      final created = await backend.create(
+        SpecimenDraft(form: 1, ability: 'run-away', ot: za),
+      );
+      expect(
+        (created.originVersion, created.originMark),
+        ('lets-go-pikachu', 'lets-go'),
+      );
+
+      // Editar sem trocar o OT mantém o jogo; trocar deriva de novo.
+      final kept = await backend.update(
+        created.id,
+        SpecimenDraft.fromSpecimen(created).copyWith(nickname: 'Pika'),
+      );
+      expect(kept.originMark, 'lets-go');
+      final gen3 = await backend.update(
+        created.id,
+        SpecimenDraft.fromSpecimen(created).copyWith(ot: emerald),
+      );
+      expect((gen3.originVersion, gen3.originMark), ('emerald', null));
+
+      // Lote: trocar o OT deriva; outras mudanças mantêm; GO tem prioridade.
+      await backend.bulkUpdate(
+        ids: [created.id],
+        changes: const SpecimenChanges(ot: SetTo(1)),
+      );
+      expect((await backend.fetchSpecimen(created.id)).originMark, 'paldea');
+      await backend.bulkUpdate(
+        ids: [created.id],
+        changes: const SpecimenChanges(isFromGo: SetTo(true)),
+      );
+      final go = await backend.fetchSpecimen(created.id);
+      expect((go.originVersion, go.originMark), ('scarlet', 'go'));
+      await backend.bulkUpdate(
+        ids: [created.id],
+        changes: const SpecimenChanges(ot: SetTo(null), isFromGo: SetTo(false)),
+      );
+      final none = await backend.fetchSpecimen(created.id);
+      expect((none.originVersion, none.originMark), (null, null));
     });
 
     test('ids do filtro, na ordem da lista', () async {
@@ -658,7 +741,11 @@ void main() {
     expect((await backend.fetchForm(1)).name, 'bulbasaur');
     expect(backend.fetchForm(999), throwsA(isA<NotFoundFailure>()));
     expect((await backend.fetchOptions()).pokeball, isNotEmpty);
-    expect(await backend.fetchTrainers(), hasLength(2));
+    expect(await backend.fetchTrainers(), hasLength(4));
+    expect(
+      (await backend.fetchOptions()).originMark.map((c) => c.value),
+      containsAllInOrder(['paldea', 'go', 'none']),
+    );
   });
 
   test('allowedGenders: forma por gênero e gender_rate', () {
