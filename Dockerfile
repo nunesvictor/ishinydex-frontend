@@ -51,4 +51,6 @@ COPY deploy/nginx/default.conf.template /etc/nginx/templates/default.conf.templa
 COPY --from=build /app/build/web /usr/share/nginx/html
 
 ENV BACKEND_URL=http://host.docker.internal:8080
+# Expõe o DNS do container em ${NGINX_LOCAL_RESOLVERS} para o template.
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 EXPOSE 80
