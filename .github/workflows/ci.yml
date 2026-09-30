@@ -26,7 +26,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: dart run build_runner build
       - run: dart format --set-exit-if-changed lib test tool integration_test test_driver
       - run: flutter analyze
       - run: flutter test --coverage
@@ -46,7 +46,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: dart run build_runner build
 
       # O runner do Ubuntu já traz Chrome e um chromedriver compatível.
       - name: Iniciar chromedriver

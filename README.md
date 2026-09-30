@@ -21,7 +21,7 @@ navegador Chromium (Chrome, Brave, Edge).
 
 ```bash
 flutter pub get
-dart run build_runner build -d       # gera os arquivos *.g.dart e *.freezed.dart
+dart run build_runner build  # gera os arquivos *.g.dart e *.freezed.dart
 
 # Sem backend (dados de demonstração em memória, qualquer usuário/senha entra):
 flutter run -d chrome --dart-define=USE_FAKE_API=true
@@ -40,8 +40,8 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 | O que | Comando |
 | --- | --- |
 | Rodar no navegador | `flutter run -d chrome --dart-define=USE_FAKE_API=true` |
-| Gerar código (uma vez) | `dart run build_runner build -d` |
-| Gerar código (observando mudanças) | `dart run build_runner watch -d` |
+| Gerar código (uma vez) | `dart run build_runner build` |
+| Gerar código (observando mudanças) | `dart run build_runner watch` |
 | Analisar (lints) | `flutter analyze` |
 | Formatar | `dart format lib test tool integration_test test_driver` |
 | Testes | `flutter test` |

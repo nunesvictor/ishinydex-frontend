@@ -243,7 +243,7 @@ Exemplo: uma tela que lista **todos os specimens**.
 
 1. **Modelo** (se precisar de um novo): em `features/<feature>/domain/models.dart`,
    crie a classe `@freezed` com `fromJson` e rode
-   `dart run build_runner build -d`.
+   `dart run build_runner build`.
 2. **Repositório**: adicione o método na interface
    (`specimens/domain/specimen_repository.dart`) e implemente em:
    - `HttpSpecimenRepository` (chamada Dio dentro de `guardRequest`);

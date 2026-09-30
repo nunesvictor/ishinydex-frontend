@@ -22,7 +22,7 @@ Toda mudança entra na `main` por pull request, a partir de uma issue.
 ## Antes de abrir o PR
 
 ```sh
-dart run build_runner build -d
+dart run build_runner build
 dart format lib test tool integration_test test_driver
 flutter analyze
 flutter test --coverage && dart run tool/check_coverage.dart

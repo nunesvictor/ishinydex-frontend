@@ -29,7 +29,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: dart run build_runner build
 
       # Prioridade: input manual > secret API_BASE_URL.
       # O secret é mascarado nos logs (o repositório é público).
