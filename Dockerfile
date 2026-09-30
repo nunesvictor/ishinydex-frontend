@@ -27,7 +27,7 @@ COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
 COPY . .
-RUN dart run build_runner build --delete-conflicting-outputs
+RUN dart run build_runner build
 
 # API_BASE_URL relativa: o nginx atende app e API na mesma origem.
 ARG API_BASE_URL=/api

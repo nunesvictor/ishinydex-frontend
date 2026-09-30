@@ -347,8 +347,8 @@ abstract class PersonalDex with _$PersonalDex {
   no JSON.
 - `@Default(false)` define o valor quando o campo não vem no JSON.
 
-**Sempre que alterar um modelo**, rode `dart run build_runner build -d`, ou
-deixe `dart run build_runner watch -d` rodando. Se aparecer erro como
+**Sempre que alterar um modelo**, rode `dart run build_runner build`, ou
+deixe `dart run build_runner watch` rodando. Se aparecer erro como
 `_$PersonalDex isn't defined`, é só isso que falta.
 
 📚 [freezed](https://pub.dev/packages/freezed) · [json_serializable](https://pub.dev/packages/json_serializable)

@@ -47,7 +47,7 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Código gerado pelo build_runner (rode: dart run build_runner build -d)
+# Código gerado pelo build_runner (rode: dart run build_runner build)
 *.g.dart
 *.freezed.dart
 

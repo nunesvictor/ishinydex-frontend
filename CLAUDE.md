@@ -4,7 +4,7 @@ Frontend Flutter (web responsiva + iOS) do `../ishinydex-backend`. Foco: Persona
 O usuário está aprendendo Flutter: explique decisões e mantenha `docs/` atualizado quando mudar arquitetura.
 
 ## Comandos
-- `dart run build_runner build -d` — obrigatório após alterar modelos freezed (arquivos gerados não vão para o git)
+- `dart run build_runner build` — obrigatório após alterar modelos freezed (arquivos gerados não vão para o git)
 - `flutter analyze` e `dart format lib test tool integration_test test_driver` — o CI verifica ambos
 - `flutter test --coverage && dart run tool/check_coverage.dart` — gate de 100% de linhas (exclui *.g.dart, *.freezed.dart, main.dart)
 - `flutter run -d chrome --dart-define=USE_FAKE_API=true` — demo sem backend
