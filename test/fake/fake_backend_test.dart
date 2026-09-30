@@ -264,7 +264,12 @@ void main() {
         await all(const SpecimenQuery(generations: ['generation-ii'])),
         isEmpty,
       );
-      expect(await ids(const SpecimenQuery(genders: ['female'])), {jolly.id});
+      // Gênero: o seed também tem fêmeas; o filtro traz exatamente elas.
+      expect(await ids(const SpecimenQuery(genders: ['female'])), {
+        for (final s in everything)
+          if (s.gender == 'female') s.id,
+      });
+      expect(everything.firstWhere((s) => s.id == jolly.id).gender, 'female');
       expect(await ids(const SpecimenQuery(natures: ['jolly'])), {jolly.id});
       expect(await ids(const SpecimenQuery(languages: ['ja'])), {jolly.id});
       expect(await ids(const SpecimenQuery(ability: ' KEEN ')), {jolly.id});
@@ -440,7 +445,7 @@ void main() {
             ]),
           ),
         );
-        expect((await backend.fetchSpecimen(bulba.id)).gender, isNull);
+        expect((await backend.fetchSpecimen(bulba.id)).gender, bulba.gender);
         expect(
           await backend.bulkUpdate(
             ids: [bulba.id, nidoranF.id],
