@@ -56,7 +56,7 @@ void main() {
   }
 
   for (final size in [compactSize, expandedSize]) {
-    testWidgets('gênero ao lado do nome, natureza e Pokémon GO '
+    testWidgets('gênero ao lado do nome, natureza e marca do GO '
         '(${size.width.toInt()}px)', (tester) async {
       final id = backend.addSpecimen(
         formId: 1,
@@ -71,8 +71,11 @@ void main() {
       // Label vindo de /specimens/options/, com o tooltip explicando o chip.
       expect(find.text('Adamant'), findsOneWidget);
       expect(find.byTooltip('Natureza'), findsOneWidget);
+      // Marca de origem do GO (ícone + nome), no lugar do antigo 📱.
       expect(find.text('Pokémon GO'), findsOneWidget);
-      expect(find.text(goEmoji), findsOneWidget);
+      expect(find.byTooltip('Marca de origem'), findsOneWidget);
+      expect(find.bySemanticsLabel('Pokémon GO'), findsOneWidget);
+      expect(find.text(goEmoji), findsNothing);
       // O ícone fica na mesma linha do nome.
       expect(
         tester.getCenter(find.byIcon(Icons.male)).dy,
@@ -93,6 +96,22 @@ void main() {
       expect(find.byIcon(Icons.female), findsOneWidget);
       expect(find.text('Jolly'), findsOneWidget);
       expect(find.text('Pokémon GO'), findsNothing);
+      // Sem OT: sem jogo de origem, sem marca.
+      expect(find.byTooltip('Marca de origem'), findsNothing);
+    });
+
+    testWidgets('marca de origem derivada do OT '
+        '(${size.width.toInt()}px)', (tester) async {
+      final ot = backend.addTrainer(
+        name: 'Ash',
+        trainerId: '1',
+        version: 'violet',
+      );
+      final id = backend.addSpecimen(formId: 1, ot: ot);
+      await pump(tester, slotWith(id), size: size);
+
+      expect(find.text('Scarlet e Violet'), findsOneWidget);
+      expect(find.byTooltip('Marca de origem'), findsOneWidget);
     });
   }
 

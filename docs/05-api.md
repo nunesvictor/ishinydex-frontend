@@ -20,7 +20,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |
 | GET | `/api/specimens/?form_id=&available=true&page_size=100` | `fetchAvailable` |
-| GET | `/api/specimens/?page=&page_size=20&search=&available=&is_shiny=&pokeball=&type=&ot=&generation=&ordering=...` | `fetchSpecimens` (inventário; só os filtros usados vão na URL, listas separadas por vírgula; ver `SpecimenQuery.toQueryParameters`) |
+| GET | `/api/specimens/?page=&page_size=20&search=&available=&is_shiny=&pokeball=&type=&ot=&generation=&origin_mark=&ordering=...` | `fetchSpecimens` (inventário; só os filtros usados vão na URL, listas separadas por vírgula; ver `SpecimenQuery.toQueryParameters`) |
 | GET | `/api/forms/?search=&page_size=30` | `searchForms` (seletor de forma do cadastro avulso) |
 | GET | `/api/slots/{id}/` | `fetchSlot` ("Ver no dex": descobre dex e box do slot) |
 | GET | `/api/slots/?personal_dex=&search=&page_size=30` | `searchSlots` (busca no dex: nome da forma ou número, na ordem das boxes) |
@@ -30,7 +30,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | DELETE | `/api/specimens/{id}/` | `release` (libertar: apaga o specimen, mesmo depositado; o slot fica faltante) |
 | GET | `/api/specimens/ids/?<filtros>` | `fetchSpecimenIds` ("selecionar todos os resultados"; sem paginação) |
 | PATCH | `/api/specimens/bulk/` | `bulkUpdate` (`{"ids": [...], "changes": {...}}` → `{"updated": n}`; conflito de gênero → `GenderConflictFailure`) |
-| GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas, tipos e gerações; pokébolas e tipos trazem `sprite_url`) |
+| GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas, tipos, gerações e marcas de origem; pokébolas e tipos trazem `sprite_url`) |
 | GET | `/api/forms/{id}/` | `fetchForm` (habilidades da forma) |
 | GET | `/api/trainers/?page_size=100` | `fetchTrainers` |
 | POST | `/api/trainers/` | `createTrainer` (`{name, trainer_id, version?}`; nome + ID únicos) |
@@ -40,6 +40,16 @@ As implementações ficam em
 [http_personal_dex_repository.dart](../lib/features/personal_dex/data/http_personal_dex_repository.dart),
 [http_specimen_repository.dart](../lib/features/specimens/data/http_specimen_repository.dart) e
 [auth_repository.dart](../lib/features/auth/data/auth_repository.dart).
+
+### Marca de origem
+
+`Specimen.originVersion` (jogo de origem) e `Specimen.originMark` (`paldea`,
+`galar`, `go`...; `null` = sem marca) vêm prontos do backend, que os deriva
+do OT: o app só escolhe o OT, como sempre. A tabela jogo → marca e a
+prioridade do GO ficam em `home/origin_marks.py` no backend (espelhadas no
+`FakeBackend`); o app só traduz o slug em nome e ícone (`OriginMark`). O
+filtro `origin_mark` aceita vários slugs, `go` e `none`, e a lista vem de
+`/specimens/options/`.
 
 ### Slots livres
 

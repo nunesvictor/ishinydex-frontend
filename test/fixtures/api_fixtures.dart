@@ -101,6 +101,8 @@ const specimenJson = <String, dynamic>{
   'updated_at': '2026-08-05T12:24:58.437319-03:00',
   'form': 1,
   'ot': 7,
+  'origin_version': 'scarlet',
+  'origin_mark': 'paldea',
 };
 
 const specimenPageJson = <String, dynamic>{
@@ -146,6 +148,11 @@ const optionsJson = <String, dynamic>{
       'label': 'Poké Ball',
       'sprite_url': 'http://localhost:8008/media/sprites/items/poke-ball.png',
     },
+  ],
+  'origin_mark': [
+    {'value': 'paldea', 'label': 'Scarlet e Violet'},
+    {'value': 'go', 'label': 'Pokémon GO'},
+    {'value': 'none', 'label': 'Sem marca de origem'},
   ],
 };
 
