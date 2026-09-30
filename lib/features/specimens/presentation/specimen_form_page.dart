@@ -261,6 +261,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
+              secondary: const Text(goEmoji, style: TextStyle(fontSize: 20)),
               title: const Text('Veio do Pokémon GO'),
               value: _draft.isFromGo,
               onChanged: (v) =>

@@ -85,9 +85,21 @@ void main() {
     );
     final results = await pumpForm(tester);
     await tester.pumpAndSettle();
-    // Shiny e alfa com os mesmos emojis do admin.
-    expect(find.text(shinyEmoji), findsOneWidget);
-    expect(find.text(alphaEmoji), findsOneWidget);
+    // Shiny, alfa e Pokémon GO com os mesmos emojis do admin, cada um no
+    // seu switch.
+    for (final (emoji, title) in [
+      (shinyEmoji, 'Shiny'),
+      (alphaEmoji, 'Alfa'),
+      (goEmoji, 'Veio do Pokémon GO'),
+    ]) {
+      expect(
+        find.descendant(
+          of: find.widgetWithText(SwitchListTile, title),
+          matching: find.text(emoji),
+        ),
+        findsOneWidget,
+      );
+    }
 
     await tester.enterText(find.byType(TextField).first, ' Bulba ');
     await choose(tester, 'ability', 'Chlorophyll (oculta)');
@@ -254,6 +266,7 @@ void main() {
         await tester.drag(find.byType(ListView), const Offset(0, -3000));
         await tester.pumpAndSettle();
         expect(find.text('obs antiga'), findsOneWidget);
+        expect(find.text(goEmoji), findsOneWidget);
         await tester.tap(find.text('Salvar'));
         await tester.pumpAndSettle();
 
