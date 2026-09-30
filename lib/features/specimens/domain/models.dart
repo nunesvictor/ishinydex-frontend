@@ -184,6 +184,17 @@ abstract class Choice with _$Choice {
   factory Choice.fromJson(Map<String, dynamic> json) => _$ChoiceFromJson(json);
 }
 
+/// Rótulo de [value] entre as [choices] de `/specimens/options/`
+/// (`"adamant"` → `"Adamant"`). Fora da lista, cai no [prettifyName]; sem
+/// valor, é nulo.
+String? choiceLabel(List<Choice>? choices, String? value) {
+  if (value == null || value.isEmpty) return null;
+  for (final c in choices ?? const <Choice>[]) {
+    if (c.value == value) return c.label;
+  }
+  return prettifyName(value);
+}
+
 @freezed
 abstract class SpecimenOptions with _$SpecimenOptions {
   const factory SpecimenOptions({
