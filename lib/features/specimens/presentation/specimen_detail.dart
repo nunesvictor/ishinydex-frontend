@@ -70,20 +70,12 @@ class _Details extends ConsumerWidget {
     final options = ref.watch(specimenOptionsProvider).value;
     final trainers = ref.watch(trainersProvider).value;
     final form = specimen.formRef;
-    String? label(List<Choice>? choices, String? value) {
-      if (value == null || value.isEmpty) return null;
-      for (final c in choices ?? const <Choice>[]) {
-        if (c.value == value) return c.label;
-      }
-      return prettifyName(value);
-    }
-
     final ot = trainers?.where((t) => t.id == specimen.ot).firstOrNull;
     final fields = <(String, String?)>[
-      ('Habilidade', label(null, specimen.ability)),
-      ('Natureza', label(options?.nature, specimen.nature)),
-      ('Gênero', label(options?.gender, specimen.gender)),
-      ('Idioma', label(options?.language, specimen.language)),
+      ('Habilidade', choiceLabel(null, specimen.ability)),
+      ('Natureza', choiceLabel(options?.nature, specimen.nature)),
+      ('Gênero', choiceLabel(options?.gender, specimen.gender)),
+      ('Idioma', choiceLabel(options?.language, specimen.language)),
       ('Treinador original', ot?.label),
       (
         'Data de captura',

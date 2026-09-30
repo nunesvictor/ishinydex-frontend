@@ -19,6 +19,15 @@ const _typeBase = '$_spriteBase/types/generation-viii/sword-shield/small';
 
 /// `gender_rate` das espécies da demonstração (as demais: 4, macho ou
 /// fêmea). Nidoran♀ só fêmea; Nidoran♂ só macho.
+const _seedNatures = ['adamant', 'modest', 'timid'];
+
+/// Gênero de demonstração: o único permitido, ou alternado pela forma.
+String _seedGender(FormDetail form, Map<int, int> genderRates) {
+  final allowed = allowedGenders(form, genderRates);
+  if (allowed.length == 1) return allowed.single;
+  return form.id.isEven ? 'female' : 'male';
+}
+
 const _seedGenderRates = {29: 8, 30: 8, 31: 8, 32: 0, 33: 0, 34: 0};
 
 /// Tipos das formas da demonstração (as demais são "normal").
@@ -115,6 +124,9 @@ class FakeBackend
         isShiny: shiny,
         isAlpha: formId % 5 == 1,
         isFromGo: formId % 7 == 0,
+        gender: _seedGender(backend._forms[formId]!, backend._genderRates),
+        // Alguns sem natureza, como cadastros antigos.
+        nature: formId % 4 == 0 ? null : _seedNatures[formId % 3],
         pokeball: formId.isEven ? 'dream-ball' : 'poke-ball',
         ot: formId % 4 == 0 ? 1 : null,
         capturedAt: formId.isEven ? DateTime(2026, 1, formId) : null,
@@ -307,6 +319,8 @@ class FakeBackend
     bool isAlpha = false,
     bool isFromGo = false,
     String? nickname,
+    String? gender,
+    String? nature,
     String? pokeball,
     int? ot,
     DateTime? capturedAt,
@@ -319,6 +333,8 @@ class FakeBackend
       formRef: _formRef(form),
       formName: form.name,
       nickname: nickname,
+      gender: gender,
+      nature: nature,
       isShiny: isShiny,
       isAlpha: isAlpha,
       isFromGo: isFromGo,
