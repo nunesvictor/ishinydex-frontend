@@ -16,10 +16,18 @@ server {
     gzip_min_length 1024;
 
     # ---- Backend (Django/uwsgi) ----
+    # O nome do backend é resolvido a cada requisição (proxy_pass com
+    # variável + resolver), e não só ao iniciar: assim o nginx sobe e serve o
+    # app mesmo com o backend fora do ar, respondendo 502 só nestas rotas.
+    # ${NGINX_LOCAL_RESOLVERS} é o DNS do container (no Docker, 127.0.0.11),
+    # preenchido pela imagem oficial (NGINX_ENTRYPOINT_LOCAL_RESOLVERS).
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+    set $backend ${BACKEND_URL};
+
     # Host preservado: o Django gera URLs absolutas (sprites) com o mesmo
     # endereço que o navegador usou.
     location ~ ^/(api|media|static|admin)/ {
-        proxy_pass ${BACKEND_URL};
+        proxy_pass $backend;
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

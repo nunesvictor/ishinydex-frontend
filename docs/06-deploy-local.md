@@ -44,6 +44,11 @@ Três conceitos que aparecem aqui:
   o nginx recebe todas as requisições. As que começam com `/api`, `/media`,
   `/static` ou `/admin` ele repassa para o backend e devolve a resposta. O
   navegador nem sabe que existe outro servidor.
+  O nome do backend é resolvido **a cada requisição** (`resolver` +
+  `proxy_pass` com variável), e não só quando o nginx inicia. Sem isso, com o
+  backend parado o nginx nem subia (`host not found in upstream`) e o app
+  inteiro ficava fora do ar (issue #46). Agora o app carrega e só as rotas do
+  backend respondem 502.
 - **Mesma origem**: para o navegador, app e API estão no mesmo endereço
   (`http://ip:8090`). Por isso não existe CORS, e o app é compilado com
   `API_BASE_URL=/api`, uma URL relativa ao endereço da página. O mesmo build
