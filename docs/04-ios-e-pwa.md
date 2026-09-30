@@ -141,3 +141,24 @@ Com um Mac e Xcode, dá para rodar direto no iPhone conectado:
 2. `flutter run -d <iphone> --release --dart-define=API_BASE_URL=...`
 
 A mesma regra de 7 dias vale para Apple ID gratuito.
+
+## Ícone do app
+
+O ícone (brilho shiny dourado sobre o índigo do tema, #3F51B5) é gerado por
+[`tool/icon/generate_icons.py`](../tool/icon/generate_icons.py), que
+sobrescreve todos os arquivos de uma vez:
+
+```bash
+pip install pillow          # uma vez
+python3 tool/icon/generate_icons.py
+```
+
+| Arquivo | Uso | Detalhe |
+|---|---|---|
+| `web/icons/Icon-192.png` / `Icon-512.png` | Tela de Início do iPhone (`apple-touch-icon`) e PWA | Quadrado cheio: o iOS arredonda os cantos sozinho |
+| `web/icons/Icon-maskable-*.png` | Android | Desenho a 80%: o Android recorta o ícone (círculo, gota...) e só a área central é garantida |
+| `web/favicon.png` | Aba do navegador (16 px) | Só a estrela grande: as pequenas somem nesse tamanho |
+| `ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png` | App nativo (.ipa) | Tamanhos lidos do `Contents.json`; sem transparência, a Apple recusa ícone com canal alfa |
+
+O iPhone guarda o ícone quando o atalho é criado: para ver um ícone novo,
+remova o atalho da Tela de Início e adicione de novo pelo Safari.
