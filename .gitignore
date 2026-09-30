@@ -54,5 +54,5 @@ app.*.map.json
 # Cobertura
 /coverage/
 
-# Configuração local do docker compose
+# Variáveis locais (nunca versionar)
 .env

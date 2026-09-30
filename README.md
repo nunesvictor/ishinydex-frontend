@@ -5,14 +5,23 @@ ver as boxes (no mesmo layout do Pokémon HOME), acompanhar o progresso e
 **depositar** specimens nos slots.
 
 - 🌐 **Web responsiva**: desktop (3 painéis), tablet (2 painéis) e celular (swipe entre boxes).
-- 🐳 **Deploy local em Docker**: nginx servindo o app e repassando a API; acesso por `http://<ip-do-pc>:8090` no PC e no celular.
+- 🐳 **Imagem Docker**: nginx servindo o app e repassando a API, usada pelo repositório principal; acesso por `http://<ip-do-pc>:8090` no PC e no celular.
 - 📱 **iPhone**: pelo navegador; no futuro como **PWA** (HTTPS) ou app nativo via `.ipa` gerado no GitHub Actions.
 - ✅ **100% de cobertura de testes** (unitários, de widget e de integração no navegador).
 
-> **Rodar o app completo (backend + frontend):** use o repositório
-> [**ishinydex**](https://github.com/nunesvictor/ishinydex), que junta os dois
-> como submodules e sobe tudo com um `docker compose up -d --build`. Este
-> repositório é o código do frontend e o ambiente de desenvolvimento dele.
+> **Este repositório não é para deploy.** Para instalar e rodar o iShinyDex
+> (backend + frontend), clone o repositório principal
+> [**ishinydex**](https://github.com/nunesvictor/ishinydex), que traz este
+> código como submodule e sobe tudo com um comando:
+>
+> ```bash
+> git clone --recurse-submodules https://github.com/nunesvictor/ishinydex.git
+> cd ishinydex && cp .env.example .env   # troque os change-me
+> docker compose up -d --build           # app em http://<ip-do-pc>:8090
+> ```
+>
+> O `Dockerfile` e o `deploy/nginx/` daqui são usados por esse compose. Aqui
+> fica o código do frontend e o desenvolvimento dele (`flutter run`).
 
 ## Início rápido
 
@@ -26,7 +35,7 @@ dart run build_runner build  # gera os arquivos *.g.dart e *.freezed.dart
 # Sem backend (dados de demonstração em memória, qualquer usuário/senha entra):
 flutter run -d chrome --dart-define=USE_FAKE_API=true
 
-# Com o backend rodando (docker compose up no ishinydex-backend):
+# Com o backend de desenvolvimento rodando (docker compose up no ishinydex-backend, :8008):
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 ```
 
@@ -48,7 +57,7 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 | Testes + cobertura | `flutter test --coverage && dart run tool/check_coverage.dart` |
 | Teste de integração (web) | veja [docs/03-testes.md](docs/03-testes.md#teste-de-integração-no-navegador) |
 | Build web | `flutter build web --dart-define=API_BASE_URL=https://.../api` |
-| Deploy local (Docker) | `docker compose up -d --build` → `http://<ip-do-pc>:8090` (veja [docs/06-deploy-local.md](docs/06-deploy-local.md)) |
+| Imagem Docker / deploy | pelo repositório principal (veja [docs/06-deploy-local.md](docs/06-deploy-local.md)) |
 
 ### Configuração (`--dart-define`)
 
@@ -66,7 +75,7 @@ Leia nesta ordem se você está começando com Flutter:
 3. [**Testes**](docs/03-testes.md): tipos de teste, helpers, mocks e o gate de 100% de cobertura.
 4. [**iPhone: PWA e .ipa**](docs/04-ios-e-pwa.md): como instalar no iPhone e como o CI gera o `.ipa`.
 5. [**API**](docs/05-api.md): endpoints consumidos e como integrar um novo.
-6. [**Deploy local**](docs/06-deploy-local.md): Docker + nginx, acesso pela rede, dia a dia e problemas comuns.
+6. [**Imagem Docker e deploy**](docs/06-deploy-local.md): como a imagem funciona (build, nginx, cache), acesso pela rede e problemas comuns.
 
 ## Estrutura resumida
 
@@ -84,8 +93,7 @@ lib/
 test/                 # espelha lib/
 integration_test/     # fluxo completo no navegador
 tool/                 # scripts (verificação de cobertura)
-deploy/nginx/         # configuração do nginx do deploy local
-Dockerfile            # build multi-stage (Flutter → nginx)
-docker-compose.yml    # deploy local
+deploy/nginx/         # configuração do nginx da imagem
+Dockerfile            # build multi-stage (Flutter → nginx), usado pelo repositório principal
 .github/workflows/    # CI (testes) e iOS (.ipa)
 ```
