@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repository.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
 import '../../fixtures/api_fixtures.dart';
 
@@ -173,5 +174,40 @@ void main() {
       forceNewBox: true,
     );
     expect(dex.total, 1227);
+  });
+
+  test('fetchHunts: filtros e paginação', () async {
+    adapter.onGet(
+      'personal-dexes/1/hunts/',
+      (server) => server.reply(200, {
+        'count': 1,
+        'next': null,
+        'previous': null,
+        'results': [
+          {
+            ...missingSlotJson,
+            'reasons': ['no_shiny'],
+            'shiny_lock': null,
+          },
+        ],
+      }),
+      queryParameters: {
+        'reasons': 'no_shiny,from_go',
+        'generation': 'generation-vii',
+        'page': 2,
+        'page_size': 20,
+      },
+    );
+    final page = await repository.fetchHunts(
+      1,
+      const HuntQuery(
+        reasons: [HuntReason.noShiny, HuntReason.fromGo],
+        generations: ['generation-vii'],
+      ),
+      page: 2,
+      pageSize: 20,
+    );
+    expect(page.count, 1);
+    expect(page.results.single.reasons, [HuntReason.noShiny]);
   });
 }

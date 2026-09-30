@@ -119,6 +119,24 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
   });
 
   @override
+  Future<Paginated<Hunt>> fetchHunts(
+    int dexId,
+    HuntQuery query, {
+    required int page,
+    required int pageSize,
+  }) => guardRequest(() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'personal-dexes/$dexId/hunts/',
+      queryParameters: {
+        ...query.toQueryParameters(),
+        'page': page,
+        'page_size': pageSize,
+      },
+    );
+    return Paginated.fromJson(response.data!, Hunt.parse);
+  });
+
+  @override
   Future<Slot> deposit({required int slotId, required int specimenId}) =>
       guardRequest(() async {
         final response = await _dio.post<Map<String, dynamic>>(

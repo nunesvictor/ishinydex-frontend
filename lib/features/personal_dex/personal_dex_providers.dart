@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repository.dart';
@@ -71,6 +72,24 @@ final FutureProviderFamily<List<Slot>, SlotSearchKey> slotSearchProvider =
           .searchSlots(dexId: key.dexId, search: key.search),
     );
 
+const huntPageSize = 20;
+
+typedef HuntPageKey = ({int dexId, HuntQuery query, int page});
+
+/// Uma página da lista de caçadas. Como no inventário, cada item observa só
+/// a página em que está (rolagem infinita sem estado extra).
+final FutureProviderFamily<Paginated<Hunt>, HuntPageKey> huntPageProvider =
+    FutureProvider.autoDispose.family<Paginated<Hunt>, HuntPageKey>(
+      (ref, key) => ref
+          .watch(personalDexRepositoryProvider)
+          .fetchHunts(
+            key.dexId,
+            key.query,
+            page: key.page,
+            pageSize: huntPageSize,
+          ),
+    );
+
 final slotActionsProvider = Provider<SlotActions>(SlotActions.new);
 
 /// Depositar, libertar e editar specimens de um slot, invalidando o que a
@@ -114,7 +133,8 @@ class SlotActions {
     ..invalidate(dexProvider)
     ..invalidate(boxesProvider)
     ..invalidate(generationsProvider)
-    ..invalidate(slotsProvider);
+    ..invalidate(slotsProvider)
+    ..invalidate(huntPageProvider);
 
   /// Liberta um specimen pelo id (inventário), esteja depositado ou não.
   Future<void> releaseSpecimen(int specimenId) async {
@@ -130,6 +150,8 @@ class SlotActions {
       ..invalidate(dexListProvider);
     if (dexId == null) return;
     _ref
+      // A lista de caçadas pode estar embaixo, na pilha de navegação.
+      ..invalidate(huntPageProvider)
       ..invalidate(slotsProvider((dexId: dexId, boxId: slot.box.id)))
       ..invalidate(boxesProvider(dexId))
       ..invalidate(generationsProvider(dexId))

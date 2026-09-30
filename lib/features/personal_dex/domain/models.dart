@@ -151,6 +151,131 @@ abstract class GenerationProgress with _$GenerationProgress {
   int get missing => total - registered;
 }
 
+/// Por que um slot está na lista de caçadas; [param] é o valor da API.
+enum HuntReason {
+  noShiny('no_shiny', 'Sem shiny'),
+  fromGo('from_go', 'Shiny do GO'),
+  pokeball('pokeball', 'Pokébola');
+
+  HuntReason(this.param, this.label);
+
+  final String param;
+  final String label;
+
+  /// Valor da API → motivo; desconhecido → `null` (ignorado).
+  static HuntReason? fromParam(String value) =>
+      values.where((r) => r.param == value).firstOrNull;
+}
+
+/// Categoria da espécie nos filtros de caçadas.
+enum HuntCategory {
+  legendary('legendary', 'Lendário'),
+  mythical('mythical', 'Mítico'),
+  ultraBeast('ultra-beast', 'Ultra Beast'),
+  baby('baby', 'Bebê'),
+  regular('regular', 'Comum');
+
+  HuntCategory(this.param, this.label);
+
+  final String param;
+  final String label;
+}
+
+/// Shiny lock da forma, como a API informa em `shiny_lock`.
+enum ShinyLock {
+  /// Ainda dá para conseguir, por distribuição (evento).
+  distroOnly('distro-only', 'Só por distribuição'),
+
+  /// Impossível de obter shiny; só aparece com "incluir impossíveis".
+  unobtainable('unobtainable', 'Shiny impossível');
+
+  ShinyLock(this.param, this.label);
+
+  final String param;
+  final String label;
+
+  static ShinyLock? fromParam(String? value) =>
+      values.where((l) => l.param == value).firstOrNull;
+}
+
+/// Item da lista de caçadas (`GET /personal-dexes/{id}/hunts/`): um slot e
+/// todos os motivos em que ele se encaixa.
+///
+/// Sem `fromJson` gerado: na API o slot vem "achatado" (os campos do slot e,
+/// ao lado, `reasons` e `shiny_lock`), então [Hunt.parse] monta o objeto à
+/// mão. Uma `factory` com corpo não vira um "caso" novo no freezed.
+@freezed
+abstract class Hunt with _$Hunt {
+  const factory Hunt({
+    required Slot slot,
+    required List<HuntReason> reasons,
+    ShinyLock? shinyLock,
+  }) = _Hunt;
+
+  const Hunt._();
+
+  factory Hunt.parse(Map<String, dynamic> json) => Hunt(
+    slot: Slot.fromJson(json),
+    reasons: [
+      for (final value in json['reasons'] as List<dynamic>)
+        ?HuntReason.fromParam(value as String),
+    ],
+    shinyLock: ShinyLock.fromParam(json['shiny_lock'] as String?),
+  );
+}
+
+/// Filtros da lista de caçadas.
+///
+/// Dois grupos: os **motivos** ([reasons], somados com OU), sempre à vista na
+/// tela; e o **escopo** (o resto, combinado com E), na folha de filtros.
+@freezed
+abstract class HuntQuery with _$HuntQuery {
+  const factory HuntQuery({
+    @Default(<HuntReason>[HuntReason.noShiny]) List<HuntReason> reasons,
+
+    /// Bolas aceitas pelo motivo [HuntReason.pokeball].
+    @Default(<String>[]) List<String> acceptedBalls,
+    @Default(<String>[]) List<String> generations,
+
+    /// Qualquer um dos tipos (diferente do inventário, que exige todos).
+    @Default(<String>[]) List<String> types,
+    @Default(<HuntCategory>[]) List<HuntCategory> categories,
+    @Default('') String search,
+    @Default(false) bool includeLocked,
+  }) = _HuntQuery;
+
+  const HuntQuery._();
+
+  /// Quantos grupos do escopo estão ativos (o número do badge de Filtros).
+  int get scopeCount => [
+    generations.isNotEmpty,
+    types.isNotEmpty,
+    categories.isNotEmpty,
+    includeLocked,
+  ].where((active) => active).length;
+
+  /// Limpa o escopo, mantendo motivos e busca.
+  HuntQuery clearScope() =>
+      HuntQuery(reasons: reasons, acceptedBalls: acceptedBalls, search: search);
+
+  /// Parâmetros da API. `reasons` vai sempre: sem ele, a API usaria o
+  /// padrão, e não o que está na tela.
+  Map<String, dynamic> toQueryParameters() {
+    String join(Iterable<String> values) => values.join(',');
+    final search = this.search.trim();
+    return {
+      'reasons': join(reasons.map((r) => r.param)),
+      if (acceptedBalls.isNotEmpty) 'accepted_balls': join(acceptedBalls),
+      if (generations.isNotEmpty) 'generation': join(generations),
+      if (types.isNotEmpty) 'type': join(types),
+      if (categories.isNotEmpty)
+        'category': join(categories.map((c) => c.param)),
+      if (search.isNotEmpty) 'search': search,
+      if (includeLocked) 'include_locked': true,
+    };
+  }
+}
+
 /// Simulação de um dex padrão (`GET /personal-dexes/preview/`).
 @freezed
 abstract class DexPreview with _$DexPreview {

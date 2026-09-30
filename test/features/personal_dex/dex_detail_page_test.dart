@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -58,6 +59,14 @@ class _FlakyRepository implements PersonalDexRepository {
   @override
   Future<List<GenerationProgress>> fetchGenerations(int dexId) async =>
       generations ?? await inner.fetchGenerations(dexId);
+
+  @override
+  Future<Paginated<Hunt>> fetchHunts(
+    int dexId,
+    HuntQuery query, {
+    required int page,
+    required int pageSize,
+  }) => inner.fetchHunts(dexId, query, page: page, pageSize: pageSize);
 
   @override
   Future<Slot> fetchSlot(int slotId) => inner.fetchSlot(slotId);
@@ -527,14 +536,25 @@ void main() {
         // Slot 40 = HOME 2, posição 10 (forma 40).
         await go(tester, Routes.dex(1, boxId: 2, slotId: 40));
         expect(find.text('HOME 2 · 19/28'), findsOneWidget);
-        if (size == compactSize) {
-          // No compacto o detalhe fica no bottom sheet: toca no slot.
-          await tester.tap(slot(40));
-          await tester.pumpAndSettle();
-        }
         expect(find.text('Wigglytuff'), findsWidgets);
+        // No compacto o detalhe já abre sozinho, no bottom sheet.
+        expect(
+          find.byType(BottomSheet),
+          size == compactSize ? findsOneWidget : findsNothing,
+        );
       });
     }
+
+    testWidgets('o sheet abre uma vez só, mesmo reconstruindo', (tester) async {
+      await pumpFullApp(tester, size: compactSize);
+      await go(tester, Routes.dex(1, boxId: 2, slotId: 40));
+      await tester.tapAt(const Offset(200, 20)); // fora do sheet: fecha
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      await tester.tap(find.byTooltip('Destacar faltantes'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+    });
 
     testWidgets('box inexistente na URL cai na primeira', (tester) async {
       await pumpFullApp(tester);

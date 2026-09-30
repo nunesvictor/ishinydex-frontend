@@ -1,3 +1,4 @@
+import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
 abstract interface class PersonalDexRepository {
@@ -31,4 +32,12 @@ abstract interface class PersonalDexRepository {
   Future<List<Slot>> searchSlots({required int dexId, required String search});
 
   Future<Slot> deposit({required int slotId, required int specimenId});
+
+  /// Uma página da lista de caçadas de um shiny dex, na ordem das boxes.
+  Future<Paginated<Hunt>> fetchHunts(
+    int dexId,
+    HuntQuery query, {
+    required int page,
+    required int pageSize,
+  });
 }
