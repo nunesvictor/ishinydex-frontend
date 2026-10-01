@@ -201,6 +201,12 @@ void main() {
     );
     expect(const SpecimenQuery(shinyOnly: true).hasFilters, true);
     expect(const SpecimenQuery(originMarks: ['paldea']).hasFilters, true);
+    // "Só selecionados": vai como `id` e conta como filtro, mas não como
+    // filtro avançado (não é da folha de filtros).
+    const onlySelected = SpecimenQuery(ids: [7, 3]);
+    expect(onlySelected.hasFilters, true);
+    expect(onlySelected.advancedCount, 0);
+    expect(onlySelected.toQueryParameters(), {'id': '7,3'});
   });
 
   test('SpecimenQuery.advancedCount conta grupos, não valores', () {

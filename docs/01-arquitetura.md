@@ -249,9 +249,17 @@ A terceira aba lista **todos** os espécimes, depositados ou não:
   formulário com `depositAfterSave: false` (botão "Salvar").
 - **Edição em lote** ([bulk_edit_sheet.dart](../lib/features/specimens/presentation/widgets/bulk_edit_sheet.dart)):
   - toque longo entra no modo de seleção (AppBar contextual; tocar marca e
-    desmarca; mudar o filtro descarta a seleção);
+    desmarca);
+  - a seleção **sobrevive** à busca e aos filtros: o lote pode juntar
+    resultados de várias buscas. A AppBar mostra "N selecionados" e, se
+    houver, "M fora da lista" (`specimenIdsProvider` com os ids da consulta
+    atual);
+  - o chip "Só selecionados" troca a lista por `SpecimenQuery(ids: ...)`
+    (filtro `id` da API), para revisar e desmarcar antes do lote; mudar a
+    busca ou um filtro volta para a lista normal;
   - "Selecionar todos os resultados" busca os ids do filtro
-    (`GET /specimens/ids/`), inclusive páginas não carregadas;
+    (`GET /specimens/ids/`), inclusive páginas não carregadas, e **soma** à
+    seleção;
   - a folha começa com tudo em "Manter" (`SpecimenChanges` de `FieldEdit`);
     confirmação com resumo e aviso de que não dá para desfazer;
   - `PATCH /specimens/bulk/` é tudo ou nada; gênero impossível para algum

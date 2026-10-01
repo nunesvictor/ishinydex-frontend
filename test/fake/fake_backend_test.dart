@@ -436,6 +436,15 @@ void main() {
       expect((none.originVersion, none.originMark), (null, null));
     });
 
+    test('filtro ids ("só selecionados")', () async {
+      final some = (await all(emptySpecimenQuery)).take(3).toList();
+      final ids = [some[2].id, some[0].id];
+      final picked = await all(SpecimenQuery(ids: ids));
+      expect(picked.map((s) => s.id).toSet(), ids.toSet());
+      // Combina com os outros filtros.
+      expect(await all(SpecimenQuery(ids: ids, search: 'zzz')), isEmpty);
+    });
+
     test('ids do filtro, na ordem da lista', () async {
       const query = SpecimenQuery(
         withoutPokeball: true,

@@ -316,6 +316,10 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     DateTime? capturedAfter,
     DateTime? capturedBefore,
     @Default(SpecimenOrdering.dex) SpecimenOrdering ordering,
+
+    /// Só estes espécimes (chip "Só selecionados" do lote). Não é um filtro
+    /// da folha: não conta no [advancedCount].
+    @Default(<int>[]) List<int> ids,
   }) = _SpecimenQuery;
 
   const SpecimenQuery._();
@@ -387,6 +391,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
       if (capturedBefore != null)
         'captured_before': _dateFormat.format(capturedBefore!),
       if (ordering != SpecimenOrdering.dex) 'ordering': ordering.param,
+      if (ids.isNotEmpty) 'id': join(ids),
     };
   }
 }
