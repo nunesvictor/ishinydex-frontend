@@ -284,6 +284,9 @@ abstract class HuntQuery with _$HuntQuery {
   }
 }
 
+/// Limite de boxes do Pokémon HOME (o backend não cria boxes além dele).
+const homeMaxBoxes = 200;
+
 /// Simulação de um dex padrão (`GET /personal-dexes/preview/`).
 @freezed
 abstract class DexPreview with _$DexPreview {
@@ -293,7 +296,11 @@ abstract class DexPreview with _$DexPreview {
     required int largestFreeRun,
     required bool enoughSpace,
 
-    /// Onde o esquema começaria; `null` sem espaço.
+    /// Boxes novas que a criação faria no fim (0: só boxes existentes).
+    @Default(0) int boxesToCreate,
+
+    /// Onde o esquema começaria; `null` sem espaço ou quando o dex fica todo
+    /// em boxes novas.
     BoxRef? firstBox,
   }) = _DexPreview;
 

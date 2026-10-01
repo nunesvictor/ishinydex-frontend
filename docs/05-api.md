@@ -15,7 +15,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/personal-dexes/{id}/boxes/` | `fetchBoxes` (lista simples, sem paginação) |
 | GET | `/api/personal-dexes/{id}/generations/` | `fetchGenerations` (progresso por geração, com a primeira box de cada uma) |
 | GET | `/api/personal-dexes/{id}/hunts/?reasons=&accepted_balls=&generation=&type=&category=&search=&include_locked=&page=&page_size=20` | `fetchHunts` (caçadas do shiny dex; `reasons` vai sempre, o resto só quando usado; ver `HuntQuery.toQueryParameters`) |
-| GET | `/api/personal-dexes/preview/?force_new_box=` | `previewNewDex` (simula o dex padrão: formas, boxes, onde começa, se há espaço) |
+| GET | `/api/personal-dexes/preview/?force_new_box=` | `previewNewDex` (simula o dex padrão: formas, boxes, onde começa, boxes novas a criar, se há espaço) |
 | POST | `/api/personal-dexes/` | `createDex` (`{name, is_shiny_dex, force_new_box}`; conjunto padrão nas primeiras boxes livres) |
 | GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |

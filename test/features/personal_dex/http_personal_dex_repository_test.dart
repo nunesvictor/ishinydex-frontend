@@ -149,6 +149,7 @@ void main() {
           'boxes_needed': 45,
           'largest_free_run': 150,
           'enough_space': true,
+          'boxes_to_create': 2,
           'first_box': {'id': 50, 'name': 'HOME 50', 'position': 50},
         }),
         queryParameters: {'force_new_box': true},
@@ -168,6 +169,7 @@ void main() {
     final preview = await repository.previewNewDex(forceNewBox: true);
     expect(preview.boxesNeeded, 45);
     expect(preview.firstBox!.name, 'HOME 50');
+    expect(preview.boxesToCreate, 2);
     final dex = await repository.createDex(
       name: 'Living',
       isShinyDex: false,

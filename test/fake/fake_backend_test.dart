@@ -671,14 +671,62 @@ void main() {
         backend.createDex(name: ' ', isShinyDex: false, forceNewBox: false),
         _validation('name'),
       );
-      // Sobrou 1 box livre (HOME 6): não cabe outro.
+      // Sobrou 1 box livre (HOME 6), a última: o próximo dex a completa
+      // com uma box nova no fim.
+      final extending = await backend.previewNewDex(forceNewBox: false);
+      expect(extending.enoughSpace, true);
+      expect(extending.boxesToCreate, 1);
+      expect(extending.firstBox!.name, 'HOME 6');
+      final other = await backend.createDex(
+        name: 'Outra',
+        isShinyDex: false,
+        forceNewBox: false,
+      );
+      expect((await backend.fetchBoxes(other.id)).map((b) => b.name), [
+        'HOME 6',
+        'HOME 7',
+      ]);
+
+      // Sem nenhuma livre: tudo em boxes novas, até o limite.
+      final allNew = await backend.previewNewDex(forceNewBox: false);
+      expect(allNew.boxesToCreate, 2);
+      expect(allNew.firstBox, isNull);
+      backend.maxBoxes = 8;
       final full = await backend.previewNewDex(forceNewBox: false);
       expect(full.enoughSpace, false);
+      expect(full.boxesToCreate, 0);
       expect(full.firstBox, isNull);
       expect(
-        backend.createDex(name: 'Outra', isShinyDex: false, forceNewBox: false),
+        backend.createDex(name: 'Mais', isShinyDex: false, forceNewBox: false),
         _validation(ValidationFailure.nonFieldKey),
       );
+    });
+
+    test('novo dex sem boxes: cria "HOME n" pulando nomes usados', () async {
+      final empty = FakeBackend()..addForm(id: 1, name: 'bulbasaur');
+      final first = await empty.createDex(
+        name: 'Primeiro',
+        isShinyDex: false,
+        forceNewBox: false,
+      );
+      expect((await empty.fetchBoxes(first.id)).map((b) => b.name), ['HOME 1']);
+      empty.addFreeBox('HOME 3');
+      // HOME 3 está livre e é a última: cabe nela.
+      final second = await empty.createDex(
+        name: 'Segundo',
+        isShinyDex: false,
+        forceNewBox: false,
+      );
+      expect((await empty.fetchBoxes(second.id)).map((b) => b.name), [
+        'HOME 3',
+      ]);
+      // A próxima seria a 3ª box, mas "HOME 3" já existe.
+      final third = await empty.createDex(
+        name: 'Terceiro',
+        isShinyDex: false,
+        forceNewBox: false,
+      );
+      expect((await empty.fetchBoxes(third.id)).map((b) => b.name), ['HOME 4']);
     });
 
     test('nova box a cada geração começa a geração no 1º slot', () async {

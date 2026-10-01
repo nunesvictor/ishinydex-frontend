@@ -161,9 +161,13 @@ Um usuário pode ter vários dexes.
     com as regras explicadas na tela. Tem as opções "Dex shiny" e "Nova box a
     cada geração".
   - **Resumo antes de criar:** `GET /personal-dexes/preview/` diz quantas formas,
-    quantas boxes e a partir de qual box. Sem espaço, o botão fica desabilitado.
+    quantas boxes, a partir de qual box e quantas boxes novas seriam criadas
+    no fim (`boxesToCreate`; `firstBox` nulo = dex todo em boxes novas). Sem
+    espaço nem criando boxes (limite de 200 do HOME, `homeMaxBoxes`), o botão
+    fica desabilitado.
   - **Criação:** `POST /personal-dexes/` instala o esquema na primeira sequência
-    de boxes livres, e o app abre o dex novo.
+    de boxes livres (ou completa a do fim com boxes novas), e o app abre o dex
+    novo.
   - **Personalizado:** aparece como "em breve". Chama `openCustomDexFlow`, que
     hoje só avisa e é o ponto a substituir quando esse fluxo for definido.
 
