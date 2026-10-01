@@ -68,10 +68,16 @@ void main() {
       expect(find.text('Selecione um espécime na lista.'), findsOneWidget);
       expect(specimenTile(shinyBulba.id), findsOneWidget);
       expect(specimenTile(plainBulba.id), findsOneWidget);
+      // Contador: sem filtro, só o total.
+      final total = specimens.length;
+      expect(find.text('$total espécimes'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(FilterChip, 'Shiny'));
       await tester.pumpAndSettle();
       expect(specimenTile(plainBulba.id), findsNothing);
+      // Com filtro: "filtrados de todos".
+      final shiny = specimens.where((s) => s.isShiny).length;
+      expect(find.text('$shiny de $total espécimes'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilterChip, 'Shiny'));
       await tester.pumpAndSettle();
 
@@ -102,6 +108,7 @@ void main() {
 
       await search(tester, 'pidgeotto');
       expect(find.byType(SpecimenListTile), findsNWidgets(2));
+      expect(find.text('2 de $total espécimes'), findsOneWidget);
       await search(tester, 'zzz');
       expect(find.text('Nenhum espécime encontrado.'), findsOneWidget);
     });
@@ -295,6 +302,9 @@ void main() {
       expect(find.widgetWithText(Badge, '1'), findsOneWidget);
       expect(find.widgetWithText(InputChip, 'Sem pokébola'), findsOneWidget);
       expect(specimenTile(saur.id), findsOneWidget);
+      final all = await allSpecimens(backend);
+      final noBall = all.where((s) => s.pokeball == null).length;
+      expect(find.text('$noBall de ${all.length} espécimes'), findsOneWidget);
       // O subtítulo mostra a pokébola ("Dream Ball"...): nenhum tem.
       expect(find.textContaining('Ball'), findsNothing);
 
@@ -520,5 +530,21 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  testWidgets('contador: singular e separador de milhar', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const Scaffold(
+        body: Column(
+          children: [
+            ResultCount(query: emptySpecimenQuery, count: 1),
+            ResultCount(query: emptySpecimenQuery, count: 1159),
+          ],
+        ),
+      ),
+    );
+    expect(find.text('1 espécime'), findsOneWidget);
+    expect(find.text('1.159 espécimes'), findsOneWidget);
   });
 }

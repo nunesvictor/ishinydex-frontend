@@ -188,6 +188,21 @@ void main() {
     });
   });
 
+  test('SpecimenQuery.hasFilters: rápidos e avançados; a ordem não conta', () {
+    expect(emptySpecimenQuery.hasFilters, false);
+    expect(
+      const SpecimenQuery(ordering: SpecimenOrdering.capturedDesc).hasFilters,
+      false,
+    );
+    expect(const SpecimenQuery(search: 'bulba').hasFilters, true);
+    expect(
+      const SpecimenQuery(status: SpecimenStatus.available).hasFilters,
+      true,
+    );
+    expect(const SpecimenQuery(shinyOnly: true).hasFilters, true);
+    expect(const SpecimenQuery(originMarks: ['paldea']).hasFilters, true);
+  });
+
   test('SpecimenQuery.advancedCount conta grupos, não valores', () {
     expect(emptySpecimenQuery.advancedCount, 0);
     // Filtros rápidos não contam.
