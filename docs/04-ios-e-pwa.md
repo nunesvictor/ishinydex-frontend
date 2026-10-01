@@ -35,6 +35,16 @@ Não precisa de mais nada: nem HTTPS, nem domínio, nem build separado.
    e das metatags `apple-mobile-web-app-*` do
    [index.html](../web/index.html).
 
+**Barra de status (relógio, sinal, bateria):** acompanha o modo claro/escuro
+do sistema. O iOS pinta a barra com o `theme-color` da página
+(`apple-mobile-web-app-status-bar-style=default`) e escolhe o texto que
+contrasta. O `index.html` traz um `theme-color` por modo (a cor do AppBar de
+cada tema, conferida em `test/web_index_test.dart`), e o app atualiza a cor ao
+trocar de modo com ele aberto (`Title` no `builder` de
+[app.dart](../lib/app.dart)). Depois de mudar o `index.html`, remova e
+recrie o atalho se a barra não mudar: o iOS guarda parte da configuração na
+hora em que o atalho é criado.
+
 Uso real testado em 30/09/2026. A decisão de não usar HTTPS está em
 [ishinydex#10](https://github.com/nunesvictor/ishinydex/issues/10).
 

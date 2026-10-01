@@ -21,5 +21,14 @@ class IShinyDexApp extends ConsumerWidget {
     supportedLocales: const [Locale('pt', 'BR')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     routerConfig: ref.watch(routerProvider),
+    // Na web, o `Title` grava o `<meta name="theme-color">`, que o iPhone usa
+    // na barra de status (relógio, bateria). O do MaterialApp usa sempre o
+    // tema claro; este, abaixo dele, usa a cor do AppBar do tema em uso e é
+    // refeito quando o sistema troca entre claro e escuro.
+    builder: (context, child) => Title(
+      title: 'iShinyDex',
+      color: Theme.of(context).colorScheme.surface,
+      child: child!,
+    ),
   );
 }

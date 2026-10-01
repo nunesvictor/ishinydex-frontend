@@ -8,12 +8,22 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Controle do PersonalDex do iShinyDex.">
-  <meta name="theme-color" content="#3F51B5">
+  <!-- Cor da barra de status/do navegador: a do AppBar de cada tema
+       (colorScheme.surface do AppTheme; conferida em test/web_index_test.dart).
+       O app troca a cor quando o sistema muda de modo (Title em app.dart). -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF8FF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121318">
+  <style>
+    body { background-color: #FBF8FF; }
+    @media (prefers-color-scheme: dark) { body { background-color: #121318; } }
+  </style>
 
   <!-- PWA no iOS: abrir em tela cheia a partir da tela de início. -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- "default": o iOS pinta a barra com o theme-color e escolhe o texto
+       que contrasta (escuro no claro, branco no escuro). -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="iShinyDex">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
