@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
@@ -96,7 +97,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
       await tester.pumpAndSettle();
       expect(specimenTile(saur.id), findsNothing); // Saur não é alfa
-      expect(find.text(alphaEmoji), findsWidgets);
+      expect(find.byType(AlphaIcon), findsWidgets);
       await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilterChip, 'GO'));

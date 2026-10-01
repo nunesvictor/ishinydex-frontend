@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
-import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -59,7 +58,7 @@ Future<void> tapInSheet(WidgetTester tester, Finder finder) async {
 }
 
 Finder flag(String label, String option) => find.descendant(
-  of: find.ancestor(of: find.text(label), matching: find.byType(Row)).first,
+  of: find.ancestor(of: find.text(label), matching: find.byType(Wrap)).first,
   matching: find.text(option),
 );
 
@@ -100,10 +99,10 @@ void main() {
       await tester.pumpAndSettle();
 
       await tapInSheet(tester, find.widgetWithText(ChoiceChip, 'Fêmea'));
-      await tapInSheet(tester, flag('$shinyEmoji Shiny', 'Não'));
-      await tapInSheet(tester, flag('$alphaEmoji Alfa', 'Sim'));
-      await tapInSheet(tester, flag('$goEmoji GO', 'Sim'));
-      await tapInSheet(tester, flag('$goEmoji GO', keepLabel));
+      await tapInSheet(tester, flag('Shiny', 'Não'));
+      await tapInSheet(tester, flag('Alfa', 'Sim'));
+      await tapInSheet(tester, flag('GO', 'Sim'));
+      await tapInSheet(tester, flag('GO', keepLabel));
 
       expect(find.text('Revisar 8 alterações'), findsOneWidget);
       await tester.tap(find.text('Revisar 8 alterações'));
@@ -192,7 +191,7 @@ void main() {
   testWidgets('expandido: abre como diálogo', (tester) async {
     final results = await pumpSheet(tester, size: expandedSize);
     expect(find.byType(Dialog), findsOneWidget);
-    await tapInSheet(tester, flag('$shinyEmoji Shiny', 'Sim'));
+    await tapInSheet(tester, flag('Shiny', 'Sim'));
     await tester.tap(find.text('Revisar 1 alteração'));
     await tester.pumpAndSettle();
     expect(results.single, const SpecimenChanges(isShiny: SetTo(true)));

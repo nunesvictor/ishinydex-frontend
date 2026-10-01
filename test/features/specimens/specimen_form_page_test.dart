@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -85,17 +86,17 @@ void main() {
     );
     final results = await pumpForm(tester);
     await tester.pumpAndSettle();
-    // Shiny, alfa e Pokémon GO com os mesmos emojis do admin, cada um no
-    // seu switch.
-    for (final (emoji, title) in [
-      (shinyEmoji, 'Shiny'),
-      (alphaEmoji, 'Alfa'),
-      (goEmoji, 'Veio do Pokémon GO'),
+    // Shiny e Pokémon GO com os emojis do admin, alfa com o ícone do HOME,
+    // cada um no seu switch.
+    for (final (icon, title) in [
+      (find.text(shinyEmoji), 'Shiny'),
+      (find.byType(AlphaIcon), 'Alfa'),
+      (find.text(goEmoji), 'Veio do Pokémon GO'),
     ]) {
       expect(
         find.descendant(
           of: find.widgetWithText(SwitchListTile, title),
-          matching: find.text(emoji),
+          matching: icon,
         ),
         findsOneWidget,
       );

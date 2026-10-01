@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -253,7 +254,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
-              secondary: const Text(alphaEmoji, style: TextStyle(fontSize: 20)),
+              secondary: const AlphaIcon(size: 24, semanticLabel: null),
               title: const Text('Alfa'),
               value: _draft.isAlpha,
               onChanged: (v) =>

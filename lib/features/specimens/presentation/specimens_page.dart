@@ -8,6 +8,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -358,7 +359,7 @@ class _Filters extends StatelessWidget {
         onSelected: (v) => onChanged(query.copyWith(shinyOnly: v)),
       ),
       FilterChip(
-        avatar: const Text(alphaEmoji),
+        avatar: const AlphaIcon(size: 18, semanticLabel: null),
         label: const Text('Alfa'),
         selected: query.alphaOnly,
         onSelected: (v) => onChanged(query.copyWith(alphaOnly: v)),
