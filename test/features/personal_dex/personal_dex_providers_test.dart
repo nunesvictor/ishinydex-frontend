@@ -55,6 +55,11 @@ void main() {
       final before = await container.read(dexProvider(1).future);
       final slot = (await container.read(slotsProvider(key).future))[2];
       final saur = (await backend.fetchAvailable(3)).single;
+      // Shiny para contar no progresso do shiny dex.
+      await backend.bulkUpdate(
+        ids: [saur.id],
+        changes: const SpecimenChanges(isShiny: SetTo(true)),
+      );
 
       final actions = container.read(slotActionsProvider);
       final updated = await actions.deposit(slot, specimenId: saur.id);

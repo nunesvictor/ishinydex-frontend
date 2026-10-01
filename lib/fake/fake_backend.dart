@@ -60,6 +60,34 @@ const _speciesNames = [
   'mankey', 'primeape', 'growlithe',
 ];
 
+/// Como o `slugify` do Django, que a API aplica à busca em nomes de forma e
+/// habilidade (slugs da PokéAPI): "Iron Hands" → "iron-hands", "Mr. Mime" →
+/// "mr-mime", "Flabébé" → "flabebe". Se não sobrar nada, o texto como veio.
+String slugSearch(String text) {
+  var slug = text.toLowerCase();
+  for (final MapEntry(key: plain, value: accented) in _accents.entries) {
+    slug = slug.replaceAll(RegExp('[$accented]'), plain);
+  }
+  slug = slug
+      .replaceAll(RegExp(r'[^\w\s-]'), '')
+      .replaceAll(RegExp(r'[-\s]+'), '-')
+      .replaceAll(RegExp(r'^[-_]+|[-_]+$'), '');
+  return slug.isEmpty ? text : slug;
+}
+
+/// Letra sem acento → variantes acentuadas (o `slugify` decompõe e descarta
+/// o acento; o resto do que não é ASCII some).
+const _accents = {
+  'a': 'àáâãäå',
+  'c': 'ç',
+  'e': 'èéêë',
+  'i': 'ìíîï',
+  'n': 'ñ',
+  'o': 'òóôõö',
+  'u': 'ùúûü',
+  'y': 'ýÿ',
+};
+
 class _SlotRecord {
   _SlotRecord({
     required this.id,
@@ -648,7 +676,7 @@ class FakeBackend
         GenerationProgress(
           generation: generation,
           total: slots.length,
-          registered: slots.where((s) => s.specimenId != null).length,
+          registered: slots.where(_countsForProgress).length,
           firstBox: slots.first.box,
         ),
     ];
@@ -669,7 +697,7 @@ class FakeBackend
           position: _boxes[boxId]!.position,
           total: slots.where((s) => s.formId != null).length,
           registered: slots
-              .where((s) => s.formId != null && s.specimenId != null)
+              .where((s) => s.formId != null && _countsForProgress(s))
               .length,
         ),
     ]..sort((a, b) => a.position.compareTo(b.position));
@@ -697,8 +725,9 @@ class FakeBackend
     await _delay();
     final text = search.trim().toLowerCase();
     final number = int.tryParse(text);
+    final slug = slugSearch(text);
     bool matches(FormDetail form) =>
-        number == null ? form.name.contains(text) : _hasNumber(form, number);
+        number == null ? form.name.contains(slug) : _hasNumber(form, number);
     return [
       for (final slot in _slots.values)
         if (slot.dexId == dexId &&
@@ -791,7 +820,7 @@ class FakeBackend
           (query.categories.isEmpty || query.categories.contains(category)) &&
           (search.isEmpty ||
               (number == null
-                  ? form.name.contains(search)
+                  ? form.name.contains(slugSearch(search))
                   : _hasNumber(form, number)));
       if (matches) {
         hunts.add(Hunt(slot: _toSlot(slot), reasons: reasons, shinyLock: lock));
@@ -986,7 +1015,7 @@ class FakeBackend
   @override
   Future<List<FormRef>> searchForms(String search) async {
     await _delay();
-    final text = search.trim().toLowerCase();
+    final text = slugSearch(search.trim().toLowerCase());
     return [
       for (final form in _forms.values)
         if (form.name.contains(text)) _formRef(form),
@@ -1108,8 +1137,16 @@ class FakeBackend
     );
     return _dexes[dexId]!.copyWith(
       total: slots.length,
-      registered: slots.where((s) => s.specimenId != null).length,
+      registered: slots.where(_countsForProgress).length,
     );
+  }
+
+  /// Como `counts_for_progress` da API: slot com espécime e, num shiny dex,
+  /// só se ele for shiny (o não shiny fica no slot, mas não completa o dex).
+  bool _countsForProgress(_SlotRecord slot) {
+    final specimen = _specimens[slot.specimenId];
+    if (specimen == null) return false;
+    return !_dexes[slot.dexId]!.isShinyDex || specimen.isShiny;
   }
 
   /// Como `search_forms` da API: nº nacional da espécie ou `pokeapiId`.
@@ -1119,7 +1156,7 @@ class FakeBackend
   bool _matches(Specimen s, SpecimenQuery query) {
     final search = query.search.trim().toLowerCase();
     final number = int.tryParse(search);
-    final ability = query.ability.trim().toLowerCase();
+    final ability = slugSearch(query.ability.trim().toLowerCase());
     final available = query.status.availableParam;
     final form = _forms[s.form]!;
     final formTypes = {for (final t in form.types) t.type};
@@ -1128,8 +1165,11 @@ class FakeBackend
         values.isEmpty || values.contains(value);
     return (search.isEmpty ||
             (number == null
+                // O apelido é texto livre; o nome da forma, um slug.
                 ? (s.nickname ?? '').toLowerCase().contains(search) ||
-                      (s.formName ?? '').toLowerCase().contains(search)
+                      (s.formName ?? '').toLowerCase().contains(
+                        slugSearch(search),
+                      )
                 : _hasNumber(form, number))) &&
         (available == null || (_slotHolding(s.id) == null) == available) &&
         (query.ids.isEmpty || query.ids.contains(s.id)) &&
