@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -113,6 +114,7 @@ void main() {
     );
     // O não-shiny vem primeiro.
     expect(find.textContaining('Alfa · Poke Ball'), findsOneWidget);
+    expect(find.byType(AlphaIcon), findsOneWidget);
     await tester.tap(find.text('Charizard'));
     await tester.pumpAndSettle();
     expect(find.textContaining('é shiny, mas o dex não é'), findsOneWidget);

@@ -1,6 +1,6 @@
 # Assets
 
-Fora de `origin_marks/` para não entrar no bundle (o `pubspec.yaml` declara a pasta inteira).
+Fora de `icons/` e `origin_marks/` para não entrar no bundle (o `pubspec.yaml` declara as pastas inteiras).
 
 ## Marcas de origem (`origin_marks/`)
 
@@ -20,3 +20,9 @@ Fora de `origin_marks/` para não entrar no bundle (o `pubspec.yaml` declara a p
 | `go.png` | `GO_icon_HOME.png` |
 
 O app pinta o branco com a cor do tema (`OriginMarkIcon`, em `lib/core/widgets/origin_mark_chip.dart`).
+
+## Ícone de alfa (`icons/alpha.png`)
+
+Selo de alfa do Pokémon HOME/Legends: Arceus (58×61, colorido), baixado da Bulbagarden Archives como `Alpha_icon.png` ("Icon used in summary screen of Alpha Pokémon"; artigo [Alpha Pokémon](https://bulbapedia.bulbagarden.net/wiki/Alpha_Pok%C3%A9mon)). Não confundir com `Alpha_Mark.png`, a marca "Former Alpha" de Scarlet/Violet. Mesma ressalva de propriedade das marcas de origem.
+
+Usado por `AlphaIcon` (`lib/core/widgets/alpha_icon.dart`), que volta ao emoji 💢 se o asset falhar.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -186,17 +187,20 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
                 ),
               ),
               _FlagRow(
-                label: '$shinyEmoji Shiny',
+                icon: const Text(shinyEmoji),
+                label: 'Shiny',
                 edit: _changes.isShiny,
                 onChanged: (edit) => _update(_changes.copyWith(isShiny: edit)),
               ),
               _FlagRow(
-                label: '$alphaEmoji Alfa',
+                icon: const AlphaIcon(semanticLabel: null),
+                label: 'Alfa',
                 edit: _changes.isAlpha,
                 onChanged: (edit) => _update(_changes.copyWith(isAlpha: edit)),
               ),
               _FlagRow(
-                label: '$goEmoji GO',
+                icon: const Text(goEmoji),
+                label: 'GO',
                 edit: _changes.isFromGo,
                 onChanged: (edit) => _update(_changes.copyWith(isFromGo: edit)),
               ),
@@ -412,11 +416,13 @@ class _Section extends StatelessWidget {
 /// Flag com três estados numa linha: Manter | Sim | Não.
 class _FlagRow extends StatelessWidget {
   const _FlagRow({
+    required this.icon,
     required this.label,
     required this.edit,
     required this.onChanged,
   });
 
+  final Widget icon;
   final String label;
   final FieldEdit<bool> edit;
   final ValueChanged<FieldEdit<bool>> onChanged;
@@ -424,11 +430,21 @@ class _FlagRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(24, 4, 24, 4),
-    child: Row(
+    // Lado a lado quando cabe; numa tela estreita os botões descem para a
+    // linha de baixo em vez de espremer o rótulo.
+    child: Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
       spacing: 8,
+      runSpacing: 4,
       children: [
-        Expanded(
-          child: Text(label, style: Theme.of(context).textTheme.titleSmall),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 8,
+          children: [
+            icon,
+            Text(label, style: Theme.of(context).textTheme.titleSmall),
+          ],
         ),
         SegmentedButton<FieldEdit<bool>>(
           showSelectedIcon: false,

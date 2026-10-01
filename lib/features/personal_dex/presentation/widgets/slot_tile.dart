@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
@@ -73,7 +74,7 @@ class SlotTile extends StatelessWidget {
                 if (specimen != null &&
                     specimen.isAlpha &&
                     size >= SlotTile.alphaMinSize)
-                  Text(alphaEmoji, semanticsLabel: 'Alfa', style: badgeStyle),
+                  AlphaIcon(size: size * 0.18),
               ];
               return Stack(
                 fit: StackFit.expand,

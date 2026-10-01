@@ -38,7 +38,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/core/router/app_router.dart](../lib/core/router/app_router.dart) | Rotas e redirecionamento de login |
 | [lib/core/responsive/](../lib/core/responsive/) | `WindowSize` (breakpoints) e `AdaptiveShell` (NavigationBar/Rail) |
 | [lib/core/theme/app_theme.dart](../lib/core/theme/app_theme.dart) | Tema Material 3 |
-| [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação, `OriginMarkChip`/`OriginMarkIcon` (marca de origem) |
+| [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação, `OriginMarkChip`/`OriginMarkIcon` (marca de origem), `AlphaIcon` (selo de alfa do HOME) |
 | [lib/core/utils/origin_mark.dart](../lib/core/utils/origin_mark.dart) | `OriginMark`: slug da API → nome e ícone da marca de origem (a regra fica no backend) |
 | [assets/](../assets/) | Arquivos empacotados no app (`pubspec.yaml` → `flutter: assets:`); hoje, os ícones das marcas de origem (fonte em `assets/README.md`) |
 | [lib/features/auth/](../lib/features/auth/) | Login por token, armazenamento seguro do token, `AuthController` |
@@ -232,7 +232,8 @@ filtros como estavam. Na API, cada item é um slot "achatado" com `reasons` e
 A terceira aba lista **todos** os espécimes, depositados ou não:
 
 - **Cabeçalho compacto** (`SpecimenHeadline`, como no Pokémon HOME):
-  pokébola, nome/apelido e selos em emoji (♂️/♀️, ✨, 💢, 📱) numa linha.
+  pokébola, nome/apelido e selos (♂️/♀️, ✨, ícone de alfa do HOME, 📱)
+  numa linha.
   É o título de cada item da lista (o subtítulo é "Espécie · #0402", com o
   nº da dex nacional) e o nome nos detalhes do espécime e do slot, no lugar
   dos chips de Shiny, Alfa e pokébola. Recebe valores soltos porque o slot

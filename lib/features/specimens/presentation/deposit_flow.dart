@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -193,7 +194,7 @@ class _SpecimenTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = [
       if (specimen.isShiny) 'Shiny',
-      if (specimen.isAlpha) '$alphaEmoji Alfa',
+      if (specimen.isAlpha) 'Alfa',
       if (specimen.pokeball != null) prettifyName(specimen.pokeball!),
       if (specimen.capturedAt != null)
         MaterialLocalizations.of(context)
@@ -204,7 +205,27 @@ class _SpecimenTile extends StatelessWidget {
       enabled: enabled,
       leading: PokemonSprite(url: specimen.spriteUrl, size: 48),
       title: Text(specimen.displayName),
-      subtitle: details.isEmpty ? null : Text(details.join(' · ')),
+      subtitle: details.isEmpty
+          ? null
+          : Text.rich(
+              TextSpan(
+                children: [
+                  for (final (i, part) in details.indexed) ...[
+                    if (i > 0) const TextSpan(text: ' · '),
+                    // O ícone de alfa vai antes da palavra, no meio da linha.
+                    if (part == 'Alfa' && specimen.isAlpha)
+                      const WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 2),
+                          child: AlphaIcon(size: 16, semanticLabel: null),
+                        ),
+                      ),
+                    TextSpan(text: part),
+                  ],
+                ],
+              ),
+            ),
       trailing: specimen.isShiny
           ? const Text(shinyEmoji, semanticsLabel: 'Shiny')
           : null,

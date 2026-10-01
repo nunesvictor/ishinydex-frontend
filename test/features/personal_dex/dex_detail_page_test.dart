@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -140,7 +140,7 @@ void main() {
       expect(find.text('Registrado'), findsOneWidget);
       // Selo 💢 nos alfas da box (formas 1, 11, 16 e 26) + o do cabeçalho
       // do detalhe (sem chips de Shiny, Alfa ou pokébola).
-      expect(find.text(alphaEmoji), findsNWidgets(5));
+      expect(find.byType(AlphaIcon), findsNWidgets(5));
       expect(find.text('Alfa'), findsNothing);
       expect(ballSprite('Poke Ball'), findsOneWidget);
       expect(find.text('Editar espécime'), findsOneWidget);
