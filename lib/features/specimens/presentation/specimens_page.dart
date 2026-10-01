@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
@@ -395,23 +396,31 @@ class SpecimenList extends ConsumerWidget {
       AsyncData(value: final page) when page.count == 0 => const EmptyView(
         message: 'Nenhum espécime encontrado.',
       ),
-      AsyncData(value: final page) => RefreshIndicator.adaptive(
-        onRefresh: () {
-          ref.invalidate(specimenPageProvider);
-          return ref.read(firstPage.future);
-        },
-        child: ListView.builder(
-          padding: const EdgeInsets.only(bottom: 88), // espaço do botão +
-          itemCount: page.count,
-          itemBuilder: (context, i) => _SpecimenItem(
-            query: query,
-            index: i,
-            selectedId: selectedId,
-            checkedIds: checkedIds,
-            onTap: onTap,
-            onLongPress: onLongPress,
+      AsyncData(value: final page) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ResultCount(query: query, count: page.count),
+          Expanded(
+            child: RefreshIndicator.adaptive(
+              onRefresh: () {
+                ref.invalidate(specimenPageProvider);
+                return ref.read(firstPage.future);
+              },
+              child: ListView.builder(
+                padding: const EdgeInsets.only(bottom: 88), // espaço do +
+                itemCount: page.count,
+                itemBuilder: (context, i) => _SpecimenItem(
+                  query: query,
+                  index: i,
+                  selectedId: selectedId,
+                  checkedIds: checkedIds,
+                  onTap: onTap,
+                  onLongPress: onLongPress,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
       AsyncError(:final error) => ErrorView(
         error: error,
@@ -419,6 +428,38 @@ class SpecimenList extends ConsumerWidget {
       ),
       _ => const LoadingView(),
     };
+  }
+}
+
+/// Contador acima da lista: "1.159 espécimes" sem filtro, ou
+/// "42 de 1.159 espécimes" com filtro. O [count] é o total da consulta (vem
+/// da 1ª página); o total geral vem da mesma consulta sem filtros, que fica
+/// em cache (sem filtro, é a mesma requisição).
+class ResultCount extends ConsumerWidget {
+  const ResultCount({required this.query, required this.count, super.key});
+
+  final SpecimenQuery query;
+  final int count;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final number = NumberFormat.decimalPattern('pt_BR');
+    String noun(int n) => n == 1 ? 'espécime' : 'espécimes';
+    // Com filtro, o total geral aparece assim que carregar; até lá, só o
+    // número filtrado.
+    final total = query.hasFilters
+        ? ref
+              .watch(specimenPageProvider((query: emptySpecimenQuery, page: 1)))
+              .value
+              ?.count
+        : null;
+    final text = total == null
+        ? '${number.format(count)} ${noun(count)}'
+        : '${number.format(count)} de ${number.format(total)} ${noun(total)}';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+    );
   }
 }
 

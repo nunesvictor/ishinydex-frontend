@@ -332,6 +332,10 @@ abstract class SpecimenQuery with _$SpecimenQuery {
   bool get hasOtFilter => ots.isNotEmpty || withoutOt;
   bool get hasCaptureFilter => capturedAfter != null || capturedBefore != null;
 
+  /// Algum filtro (rápido ou avançado) restringe a lista? A ordem não conta.
+  bool get hasFilters =>
+      copyWith(ordering: SpecimenOrdering.dex) != emptySpecimenQuery;
+
   /// Quantos grupos de filtros avançados estão ativos (o número do badge do
   /// botão Filtros). A ordem conta quando não é a padrão.
   int get advancedCount => [
