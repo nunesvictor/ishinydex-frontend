@@ -227,13 +227,21 @@ class _PreviewCard extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: switch (preview) {
-          AsyncData(value: final p) when p.enoughSpace => Text(
-            '${p.forms} formas em ${p.boxesNeeded} boxes, a partir da '
-            '${p.firstBox!.name}.',
-          ),
+          AsyncData(value: final p) when p.enoughSpace => Text(switch (p
+              .firstBox) {
+            // Dex inteiro em boxes novas, criadas depois da última.
+            null =>
+              '${p.forms} formas em ${p.boxesNeeded} boxes novas, '
+                  'criadas no fim.',
+            final first =>
+              '${p.forms} formas em ${p.boxesNeeded} boxes, a partir da '
+                  '${first.name}'
+                  '${p.boxesToCreate > 0 ? ' (cria ${_boxes(p.boxesToCreate)} no fim)' : ''}.',
+          }),
           AsyncData(value: final p) => Text(
             'Não há espaço: este dex precisa de ${p.boxesNeeded} boxes livres '
-            'seguidas, e a maior sequência livre tem ${p.largestFreeRun}.',
+            'seguidas, a maior sequência livre tem ${p.largestFreeRun}, e o '
+            'HOME tem no máximo $homeMaxBoxes boxes.',
             style: TextStyle(color: scheme.onErrorContainer),
           ),
           AsyncError(:final error) => Row(
@@ -258,3 +266,6 @@ class _PreviewCard extends ConsumerWidget {
     );
   }
 }
+
+/// "1 box nova" / "3 boxes novas".
+String _boxes(int count) => count == 1 ? '1 box nova' : '$count boxes novas';

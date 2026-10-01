@@ -370,6 +370,17 @@ class FakeBackend
     return id;
   }
 
+  /// "HOME n" pela posição da próxima box, pulando nomes já usados (como
+  /// `create_boxes` no backend).
+  String _nextBoxName() {
+    final names = {for (final b in _boxes.values) b.name};
+    var number = _boxes.length + 1;
+    while (names.contains('HOME $number')) {
+      number++;
+    }
+    return 'HOME $number';
+  }
+
   /// Box de 30 slots sem forma nem dex (como as criadas por
   /// `create_home_boxes` no backend).
   int addFreeBox(String name) =>
@@ -438,9 +449,16 @@ class FakeBackend
   List<FormDetail> get _defaultForms =>
       _forms.values.toList()..sort((a, b) => a.id.compareTo(b.id));
 
+  /// Limite de boxes (o do HOME); os testes podem baixar.
+  int maxBoxes = homeMaxBoxes;
+
   /// Mesmas regras do backend (`home/services.py`): simula o esquema e acha a
-  /// 1ª sequência de boxes livres que comporte todas as formas.
-  ({int needed, int largest, List<BoxRef>? boxes}) _planDex(bool forceNewBox) {
+  /// 1ª sequência de boxes livres que comporte todas as formas; se nenhuma
+  /// comportar, completa a sequência livre do fim com boxes novas, até
+  /// [maxBoxes].
+  ({int needed, int largest, List<BoxRef>? boxes, int toCreate}) _planDex(
+    bool forceNewBox,
+  ) {
     final forms = _defaultForms;
     var needed = 0;
     for (var index = 0; index < forms.length;) {
@@ -469,11 +487,30 @@ class FakeBackend
         runs.last.add(box);
       }
     }
+    final largest = runs.map((r) => r.length).fold(0, (a, b) => a > b ? a : b);
     final fitting = runs.where((r) => r.length >= needed).firstOrNull;
+    if (fitting != null) {
+      return (
+        needed: needed,
+        largest: largest,
+        boxes: fitting.sublist(0, needed),
+        toCreate: 0,
+      );
+    }
+    // Só a sequência que vai até a última box pode continuar em boxes novas.
+    final last = _boxes.values.isEmpty
+        ? null
+        : _boxes.values.reduce((a, b) => a.position > b.position ? a : b);
+    final trailing = runs.last.isNotEmpty && runs.last.last.id == last?.id
+        ? runs.last
+        : <BoxRef>[];
+    final missing = needed - trailing.length;
+    final fits = _boxes.length + missing <= maxBoxes;
     return (
       needed: needed,
-      largest: runs.map((r) => r.length).fold(0, (a, b) => a > b ? a : b),
-      boxes: fitting?.sublist(0, needed),
+      largest: largest,
+      boxes: fits ? trailing : null,
+      toCreate: fits ? missing : 0,
     );
   }
 
@@ -491,7 +528,8 @@ class FakeBackend
       boxesNeeded: plan.needed,
       largestFreeRun: plan.largest,
       enoughSpace: plan.boxes != null,
-      firstBox: plan.boxes?.first,
+      boxesToCreate: plan.toCreate,
+      firstBox: plan.boxes?.firstOrNull,
     );
   }
 
@@ -517,8 +555,9 @@ class FakeBackend
     if (boxes == null) {
       final message =
           'Não há boxes livres seguidas suficientes para este PersonalDex: '
-          'ele precisa de ${plan.needed}, e a maior sequência livre tem '
-          '${plan.largest}.';
+          'ele precisa de ${plan.needed}, a maior sequência livre tem '
+          '${plan.largest}, e criar as boxes que faltam passaria das '
+          '$maxBoxes boxes do Pokémon HOME.';
       throw ValidationFailure({
         ValidationFailure.nonFieldKey: [message],
       });
@@ -526,8 +565,12 @@ class FakeBackend
     final id = addDex(name: name, isShinyDex: isShinyDex);
     _dexes[id] = _dexes[id]!.copyWith(forceNewBox: forceNewBox);
     final forms = _defaultForms;
+    final newBoxes = [
+      for (var i = 0; i < plan.toCreate; i++)
+        _boxes[addFreeBox(_nextBoxName())]!,
+    ];
     var index = 0;
-    for (final box in boxes) {
+    for (final box in [...boxes, ...newBoxes]) {
       final slots = _slots.values.where((s) => s.box.id == box.id).toList();
       for (final (position, slot) in slots.indexed) {
         if (index >= forms.length) break;

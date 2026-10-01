@@ -114,11 +114,58 @@ void main() {
         find.textContaining('precisa de 45 boxes livres seguidas'),
         findsOneWidget,
       );
+      expect(
+        find.textContaining('o HOME tem no máximo 200 boxes'),
+        findsOneWidget,
+      );
       final button = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Criar PersonalDex'),
       );
       expect(button.onPressed, isNull);
     });
+
+    for (final (preview, text) in [
+      (
+        const DexPreview(
+          forms: 1227,
+          boxesNeeded: 45,
+          largestFreeRun: 0,
+          enoughSpace: true,
+          boxesToCreate: 45,
+        ),
+        '1227 formas em 45 boxes novas, criadas no fim.',
+      ),
+      (
+        const DexPreview(
+          forms: 1227,
+          boxesNeeded: 45,
+          largestFreeRun: 44,
+          enoughSpace: true,
+          boxesToCreate: 1,
+          firstBox: BoxRef(id: 7, name: 'HOME 7', position: 7),
+        ),
+        '1227 formas em 45 boxes, a partir da HOME 7 (cria 1 box nova no fim).',
+      ),
+      (
+        const DexPreview(
+          forms: 1227,
+          boxesNeeded: 45,
+          largestFreeRun: 40,
+          enoughSpace: true,
+          boxesToCreate: 5,
+          firstBox: BoxRef(id: 11, name: 'HOME 11', position: 11),
+        ),
+        '1227 formas em 45 boxes, a partir da HOME 11 '
+            '(cria 5 boxes novas no fim).',
+      ),
+    ]) {
+      testWidgets('boxes novas no resumo: $text', (tester) async {
+        when(() => repository.previewNewDex(forceNewBox: false))
+            .thenAnswer((_) async => preview);
+        await pump(tester);
+        expect(find.text(text), findsOneWidget);
+      });
+    }
 
     testWidgets('erro na simulação com retry', (tester) async {
       var calls = 0;
