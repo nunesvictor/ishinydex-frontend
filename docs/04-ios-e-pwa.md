@@ -1,68 +1,84 @@
-# iPhone: PWA e .ipa
+# iPhone: atalho do Safari (PWA) e .ipa
 
 Há dois jeitos de ter o app no iPhone:
 
-| | **PWA** (recomendado) | **.ipa nativo (sideload)** |
+| | **Atalho do Safari / PWA** (o que usamos) | **.ipa nativo (sideload)** |
 | --- | --- | --- |
-| Como instala | Safari → Compartilhar → "Adicionar à Tela de Início" | Gerado no GitHub Actions e instalado com AltStore/Sideloadly |
+| Como instala | Safari → Compartilhar → "Adicionar à Tela de Início" | Gerado no GitHub Actions e instalado com Sideloadly/AltStore |
 | Custo | Zero | Zero (o repositório é público: minutos de macOS ilimitados) |
-| Validade | Não expira | **7 dias** com Apple ID gratuito (1 ano com conta paga de US$ 99) |
+| Validade | Não expira | **7 dias** com Apple ID gratuito (1 ano com conta paga de US$ 99/ano) |
 | Atualização | Automática a cada deploy | Novo build + reinstalar |
-| Precisa de | HTTPS acessível pelo iPhone | Um PC com AltServer/Sideloadly na mesma rede |
+| Precisa de | O app no ar na rede local (`http://<ip-do-pc>:8090`) | Windows ou macOS com Sideloadly/AltServer (no Linux, só ferramentas não oficiais) |
 
-A web já é requisito do projeto, então o **PWA sai de graça** e é o caminho
-principal. O `.ipa` fica como alternativa.
-
-> **Hoje:** o app roda no Docker local e é acessado pelo Safari em
-> `http://<ip-do-pc>:8090` ([06-deploy-local.md](06-deploy-local.md)). O PWA
-> abaixo é o próximo passo, e depende de HTTPS.
+A web já é requisito do projeto, então o atalho do Safari sai de graça e é o
+caminho atual. O `.ipa` fica documentado como alternativa (ver o fim deste
+guia).
 
 ---
 
-## PWA
+## Atalho do Safari (PWA sem HTTPS)
 
-### 1. Gerar o build web
+### 1. App no ar
 
-```bash
-flutter build web --release --dart-define=API_BASE_URL=https://SEU-HOST/api
-```
+Build e hospedagem já estão resolvidos pelo compose do repositório principal
+[ishinydex](https://github.com/nunesvictor/ishinydex) (nginx em `:8090`, app
+compilado com `API_BASE_URL=/api`, ver [06-deploy-local.md](06-deploy-local.md)).
+Não precisa de mais nada: nem HTTPS, nem domínio, nem build separado.
 
-O resultado é uma pasta estática em `build/web/`. Qualquer servidor HTTP serve.
-O [deploy local em Docker](06-deploy-local.md) já faz isso com nginx e
-`API_BASE_URL=/api`; para o PWA, basta colocar HTTPS na frente dele.
+### 2. Instalar no iPhone
 
-### 2. Hospedar com HTTPS
-
-O iPhone precisa acessar **a web e a API** por **HTTPS**. O armazenamento
-seguro do token (WebCrypto) só funciona em HTTPS ou `localhost`.
-
-Opções, da mais simples para uso pessoal à mais trabalhosa:
-
-1. **Tailscale** (sugerido): instale no PC que roda o backend e no iPhone. O
-   `tailscale serve` expõe portas locais com HTTPS válido num domínio
-   `*.ts.net`, acessível só pelos seus dispositivos:
-   ```bash
-   tailscale serve --bg --https=443 http://localhost:8008    # API
-   tailscale serve --bg --https=8443 /caminho/para/build/web  # frontend
-   ```
-   Depois use `--dart-define=API_BASE_URL=https://SEU-PC.SEU-TAILNET.ts.net/api`.
-2. **Servir o `build/web` pelo próprio backend** (mesma origem, sem CORS),
-   atrás de um proxy com HTTPS.
-3. **GitHub Pages / Netlify** para o frontend e o backend exposto com HTTPS
-   (mais trabalho e expõe a API na internet).
-
-> Se o frontend e a API estiverem em origens diferentes, adicione a origem do
-> frontend em `FRONTEND_ORIGINS` no `.env` do backend (CORS).
-
-### 3. Instalar no iPhone
-
-1. Abra a URL do frontend no **Safari**.
+1. Com o iPhone na **mesma rede Wi-Fi** do PC, abra
+   `http://<ip-do-pc>:8090` no **Safari** (ex.: `http://192.168.0.193:8090`).
 2. Toque em **Compartilhar** → **Adicionar à Tela de Início**.
-3. O app abre em tela cheia, com nome e ícone do [manifest](../web/manifest.json).
+3. O ícone aparece na Tela de Início e o app abre em **tela cheia**, sem a
+   barra do Safari, com o nome e o ícone do [manifest](../web/manifest.json)
+   e das metatags `apple-mobile-web-app-*` do
+   [index.html](../web/index.html).
+
+Uso real testado em 30/09/2026. A decisão de não usar HTTPS está em
+[ishinydex#10](https://github.com/nunesvictor/ishinydex/issues/10).
+
+### O que funciona e o que não funciona sem HTTPS
+
+Em HTTP (fora de `localhost`), o navegador não libera recursos de "contexto
+seguro": **service worker** e **WebCrypto**.
+
+| Recurso | Sem HTTPS | Faz falta? |
+| --- | --- | --- |
+| Tela cheia, ícone e nome na Tela de Início | ✅ funciona | — |
+| Login e uso normal do app | ✅ funciona | — |
+| Atualização a cada deploy | ✅ automática (o `flutter_bootstrap.js` é sempre revalidado; ver [06-deploy-local.md](06-deploy-local.md)) | — |
+| Token salvo | ✅ no `localStorage` ([`PrefsTokenStorage`](../lib/features/auth/data/token_storage.dart)), porque o armazenamento seguro da web depende de WebCrypto | Não: o app só é acessível na rede de casa |
+| Uso **offline** | ❌ (precisa de service worker) | Não: sem o backend não há dados para mostrar |
+| Cache do app para abrir sem rede | ❌ (service worker) | Não, pelo mesmo motivo |
+| Notificações push | ❌ (service worker + HTTPS) | Não usamos |
+
+### Com o servidor fora do ar
+
+| Situação | O que o iPhone mostra |
+| --- | --- |
+| PC desligado, fora da rede ou nginx parado | O Safari mostra "não foi possível conectar ao servidor": não há nada para carregar. |
+| Só o backend parado | O app carrega normalmente (o nginx serve os arquivos), e as telas que dependem da API mostram o erro do servidor (nginx responde **502**; issue #46). Ao subir o backend, "Tentar novamente" volta a funcionar. |
+| Celular em outra rede (4G, outro Wi-Fi) | Não conecta: o endereço só existe na rede local. |
+
+> **Se um dia precisar de HTTPS** (acesso fora de casa, offline, push): o
+> caminho mais simples é o **Tailscale**. Com ele instalado no PC e no
+> iPhone, `tailscale serve --bg --https=443 http://localhost:8090` publica a
+> mesma porta com HTTPS válido num domínio `*.ts.net`, visível só para os seus
+> dispositivos. App e API continuam na mesma origem, sem CORS e sem rebuild
+> (o `API_BASE_URL=/api` é relativo).
 
 ---
 
 ## .ipa via GitHub Actions
+
+> **Por que não é o caminho atual:** o atalho do Safari já dá tela cheia e
+> atualização automática, sem custo nem validade. O `.ipa` sem conta paga
+> **expira a cada 7 dias**; a conta da Apple custa **US$ 99/ano**. A
+> instalação precisa de Sideloadly ou AltServer, que só existem
+> oficialmente para Windows e macOS (no Linux, só o AltServer-Linux, não
+> oficial). Para compilar localmente, só com um Mac. Fica aqui para o dia em
+> que um app nativo fizer sentido.
 
 O workflow [ios.yml](../.github/workflows/ios.yml) compila o app num runner
 **macOS** (compilar para iOS exige Xcode) e gera um `.ipa` **sem assinatura**.
@@ -83,18 +99,20 @@ embutida no build. Como o repositório é público e os logs do Actions também,
 guarde a URL num **secret**, que é mascarado nos logs:
 
 - GitHub → *Settings* → *Secrets and variables* → *Actions* → aba *Secrets* →
-  **New repository secret** → `API_BASE_URL` = `https://SEU-PC.SEU-TAILNET.ts.net/api`.
+  **New repository secret** → `API_BASE_URL` = `http://<ip-do-pc>:8090/api`
+  (ou a URL HTTPS, se um dia houver).
   Ou pelo terminal: `gh secret set API_BASE_URL`.
 
 O campo `api_base_url` ao disparar o workflow também funciona, mas o valor
 aparece nos logs públicos.
 
 > O `.ipa` é público (artifacts e releases de repositórios públicos podem ser
-> baixados por qualquer pessoa) e contém a URL embutida. Com Tailscale isso
-> não é um problema: a URL só responde para os seus dispositivos.
+> baixados por qualquer pessoa) e contém a URL embutida. Com um IP da rede
+> local (ou um domínio do Tailscale), isso não é um problema: a URL só
+> responde dentro da sua rede.
 
 > O `Info.plist` libera HTTP **apenas na rede local**
-> (`NSAllowsLocalNetworking`), por exemplo `http://192.168.0.10:8008/api`.
+> (`NSAllowsLocalNetworking`), por exemplo `http://192.168.0.193:8090/api`.
 > Fora da rede local, use HTTPS.
 
 ### 2. Gerar o .ipa
