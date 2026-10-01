@@ -168,6 +168,7 @@ abstract class FormDetail with _$FormDetail {
     required String spriteUrl,
     required String shinySpriteUrl,
     @Default('') String formName,
+    int? nationalNumber,
     @Default(<FormType>[]) List<FormType> types,
     @Default(<FormAbility>[]) List<FormAbility> abilities,
     @Default(false) bool isShinylocked,

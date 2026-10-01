@@ -13,6 +13,10 @@ abstract class FormRef with _$FormRef {
     required String spriteUrl,
     required String shinySpriteUrl,
     @Default('') String formName,
+
+    /// Nº da espécie na Pokédex nacional (o mesmo nas formas alternativas,
+    /// cujo [pokeapiId] passa de 10000); `null` se a API não souber.
+    int? nationalNumber,
   }) = _FormRef;
 
   const FormRef._();
@@ -21,6 +25,10 @@ abstract class FormRef with _$FormRef {
       _$FormRefFromJson(json);
 
   String get displayName => prettifyName(name);
+
+  /// "#0402": nº nacional, ou o [pokeapiId] se não houver.
+  String get dexNumber =>
+      '#${(nationalNumber ?? pokeapiId).toString().padLeft(4, '0')}';
 
   String spriteFor({required bool shiny}) => shiny ? shinySpriteUrl : spriteUrl;
 }

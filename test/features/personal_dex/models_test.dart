@@ -15,6 +15,20 @@ void main() {
     expect(slot.box.name, 'HOME 1');
   });
 
+  test('FormRef.dexNumber: nº nacional, ou o pokeapiId sem ele', () {
+    final alola = FormRef.fromJson({
+      'id': 2,
+      'name': 'raichu-alola',
+      'pokeapi_id': 10100,
+      'national_number': 26,
+      'sprite_url': '',
+      'shiny_sprite_url': '',
+    });
+    expect(alola.nationalNumber, 26);
+    expect(alola.dexNumber, '#0026');
+    expect(alola.copyWith(nationalNumber: null).dexNumber, '#10100');
+  });
+
   test('Slot faltante e slot livre', () {
     final missing = Slot.fromJson(missingSlotJson);
     expect(missing.isMissing, true);

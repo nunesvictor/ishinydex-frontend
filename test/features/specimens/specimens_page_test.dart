@@ -32,7 +32,7 @@ Future<void> openSpecimensTab(WidgetTester tester) async {
 /// Busca com debounce: digita e espera a consulta sair.
 Future<void> search(WidgetTester tester, String text) async {
   await tester.enterText(
-    find.widgetWithText(TextField, 'Buscar por apelido ou forma'),
+    find.widgetWithText(TextField, 'Apelido, forma ou nº da dex'),
     text,
   );
   await tester.pump(const Duration(milliseconds: 400));
@@ -109,8 +109,18 @@ void main() {
       await search(tester, 'pidgeotto');
       expect(find.byType(SpecimenListTile), findsNWidgets(2));
       expect(find.text('2 de $total espécimes'), findsOneWidget);
+      // Número: nº nacional (pidgeotto = 17).
+      await search(tester, '17');
+      expect(find.byType(SpecimenListTile), findsNWidgets(2));
       await search(tester, 'zzz');
       expect(find.text('Nenhum espécime encontrado.'), findsOneWidget);
+
+      // O "x" apaga o texto e volta à lista completa na hora.
+      await tester.tap(find.byTooltip('Limpar busca'));
+      await tester.pumpAndSettle();
+      expect(find.text('zzz'), findsNothing);
+      expect(find.text('$total espécimes'), findsOneWidget);
+      expect(find.byTooltip('Limpar busca'), findsNothing);
     });
 
     testWidgets('rolagem carrega as próximas páginas', (tester) async {
@@ -254,7 +264,10 @@ void main() {
       await tester.tap(find.byType(CloseButton));
       await tester.pumpAndSettle();
 
+      // Sem texto, sem "x"; digitando, ele aparece.
+      expect(find.byTooltip('Limpar busca'), findsNothing);
       await search(tester, 'saur');
+      expect(find.byTooltip('Limpar busca'), findsOneWidget);
       await tester.tap(specimenTile(saur.id));
       await tester.pumpAndSettle();
       expect(find.text('Espécime'), findsOneWidget);
