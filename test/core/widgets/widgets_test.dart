@@ -34,8 +34,12 @@ void main() {
         const Scaffold(body: OriginMarkChip(OriginMark.paldea)),
       );
 
-      expect(find.text('Scarlet e Violet'), findsOneWidget);
-      expect(find.byTooltip('Marca de origem'), findsOneWidget);
+      // Sigla no chip; nome dos jogos no tooltip.
+      expect(find.text('SV'), findsOneWidget);
+      expect(
+        find.byTooltip('Marca de origem: Scarlet e Violet'),
+        findsOneWidget,
+      );
       final image = tester.widget<Image>(find.byType(Image));
       expect((image.image as AssetImage).assetName, OriginMark.paldea.asset);
       // Glifo branco pintado com a cor do tema.

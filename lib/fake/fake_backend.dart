@@ -257,14 +257,14 @@ class FakeBackend
     ],
     // Mesma ordem do backend: marcas, GO e "sem marca".
     originMark: [
-      Choice(value: 'game-boy', label: 'Game Boy'),
-      Choice(value: 'alola', label: 'Trevo preto'),
-      Choice(value: 'lets-go', label: "Let's Go"),
-      Choice(value: 'galar', label: 'Galar'),
-      Choice(value: 'hisui', label: 'Legends: Arceus'),
-      Choice(value: 'paldea', label: 'Scarlet e Violet'),
-      Choice(value: 'lumiose', label: 'Legends: Z-A'),
-      Choice(value: 'go', label: 'Pokémon GO'),
+      Choice(value: 'game-boy', label: 'GB'),
+      Choice(value: 'alola', label: 'SM/USUM'),
+      Choice(value: 'lets-go', label: 'LGPE'),
+      Choice(value: 'galar', label: 'SwSh'),
+      Choice(value: 'hisui', label: 'PLA'),
+      Choice(value: 'paldea', label: 'SV'),
+      Choice(value: 'lumiose', label: 'PLZA'),
+      Choice(value: 'go', label: 'GO'),
       Choice(value: 'none', label: 'Sem marca de origem'),
     ],
     pokeball: [

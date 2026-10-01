@@ -20,11 +20,12 @@ class OriginMarkIcon extends StatelessWidget {
     height: size,
     color: IconTheme.of(context).color,
     colorBlendMode: BlendMode.srcIn,
-    semanticLabel: mark.label,
+    semanticLabel: mark.games,
   );
 }
 
-/// Chip "marca de origem" (ícone + nome), com tooltip explicando o que é.
+/// Chip "marca de origem" (ícone + sigla dos jogos), com tooltip dizendo o
+/// que é e o nome completo dos jogos.
 class OriginMarkChip extends StatelessWidget {
   const OriginMarkChip(this.mark, {super.key});
 
@@ -32,7 +33,7 @@ class OriginMarkChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-    message: 'Marca de origem',
+    message: 'Marca de origem: ${mark.games}',
     child: Chip(
       avatar: ExcludeSemantics(child: OriginMarkIcon(mark)),
       label: Text(mark.label),

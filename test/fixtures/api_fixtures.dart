@@ -150,8 +150,8 @@ const optionsJson = <String, dynamic>{
     },
   ],
   'origin_mark': [
-    {'value': 'paldea', 'label': 'Scarlet e Violet'},
-    {'value': 'go', 'label': 'Pokémon GO'},
+    {'value': 'paldea', 'label': 'SV'},
+    {'value': 'go', 'label': 'GO'},
     {'value': 'none', 'label': 'Sem marca de origem'},
   ],
 };
