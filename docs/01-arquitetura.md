@@ -229,6 +229,15 @@ falta caçar, na ordem das boxes. Dois grupos de filtros no
   mítico, Ultra Beast, bebê, comum), geração, tipo (qualquer um) e "incluir
   shiny impossível".
 
+Cada item segue o estilo do inventário: o título é o mesmo
+`SpecimenHeadline` (pokébola, nome/apelido, ♂️/♀️, ✨, alfa, 📱) com o
+espécime que está no slot, ou só o nome da forma se o slot está vazio; o
+sprite é o shiny da forma (o que se procura). O subtítulo, numa linha só,
+traz "#0402 · HOME 12 · L1 C3 · motivo" (a espécie entra antes do nº quando
+o título mostra um apelido). "Do GO" não aparece no texto porque o 📱 do
+título já diz isso. Para isso o resumo do espécime no slot
+(`SpecimenSummary`) traz `gender` e `is_from_go`.
+
 Por que dentro de `personal_dex` e não numa feature própria: a lista é uma
 visão do dex, e o `SlotActions` (depositar, editar, libertar) precisa
 invalidar o `huntPageProvider`. Numa feature separada, uma importaria a outra.

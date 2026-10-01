@@ -13,6 +13,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Caçadas de um shiny dex: o que ainda falta, ou não serve, em shiny.
@@ -319,8 +320,10 @@ class _HuntItem extends ConsumerWidget {
   }
 }
 
-/// Uma caçada: sprite shiny (o que se procura), nome, posição na box e os
-/// motivos. Um cadeado indica shiny lock.
+/// Uma caçada, no estilo do item do inventário: sprite shiny da forma (o que
+/// se procura) e, no título, o espécime que está no slot como o inventário o
+/// mostra (pokébola, nome, gênero, ✨, alfa, GO). Slot vazio: só o nome da
+/// forma. Um cadeado indica shiny lock.
 class HuntTile extends ConsumerWidget {
   const HuntTile({required this.hunt, required this.onTap, super.key});
 
@@ -332,27 +335,34 @@ class HuntTile extends ConsumerWidget {
     final options =
         ref.watch(specimenOptionsProvider).value ?? const SpecimenOptions();
     final slot = hunt.slot;
+    final form = slot.form;
     final specimen = slot.specimen;
     final lock = hunt.shinyLock;
+    final hasNickname = specimen?.nickname?.isNotEmpty ?? false;
+    // "Do GO" não entra: o emoji do GO já está no título.
     final reasons = [
       for (final reason in hunt.reasons)
-        switch (reason) {
+        ?switch (reason) {
           HuntReason.noShiny => specimen == null ? 'Faltando' : 'Não shiny',
-          HuntReason.fromGo => '$goEmoji Do GO',
-          HuntReason.pokeball =>
-            choiceLabel(options.pokeball, specimen?.pokeball) ?? 'Pokébola',
+          HuntReason.fromGo => null,
+          HuntReason.pokeball => 'Outra pokébola',
         },
     ];
     return ListTile(
       key: ValueKey('hunt-${slot.id}'),
-      leading: PokemonSprite(url: slot.form?.spriteFor(shiny: true), size: 48),
+      leading: PokemonSprite(url: form?.spriteFor(shiny: true), size: 48),
       title: Row(
         spacing: 4,
         children: [
           Flexible(
-            child: Text(
-              slot.form?.displayName ?? '',
-              overflow: TextOverflow.ellipsis,
+            child: SpecimenHeadline(
+              name: specimen?.displayName ?? form?.displayName ?? '',
+              pokeballSpriteUrl: specimen?.pokeballSpriteUrl,
+              pokeballLabel: choiceLabel(options.pokeball, specimen?.pokeball),
+              gender: specimen?.gender,
+              isShiny: specimen?.isShiny ?? false,
+              isAlpha: specimen?.isAlpha ?? false,
+              isFromGo: specimen?.isFromGo ?? false,
             ),
           ),
           if (lock != null)
@@ -362,9 +372,12 @@ class HuntTile extends ConsumerWidget {
             ),
         ],
       ),
-      // Uma linha só (espaço no celular): box, linha/coluna e motivos.
+      // Uma linha só (espaço no celular): a espécie (só se o título mostra
+      // um apelido), nº da dex, posição na box e motivos.
       subtitle: Text(
         [
+          if (hasNickname) ?form?.displayName,
+          ?form?.dexNumber,
           '${slot.box.name} · L${slot.row + 1} C${slot.col + 1}',
           ...reasons,
         ].join(' · '),

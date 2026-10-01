@@ -1260,6 +1260,8 @@ class FakeBackend
               ability: specimen.ability,
               isShiny: specimen.isShiny,
               isAlpha: specimen.isAlpha,
+              isFromGo: specimen.isFromGo,
+              gender: specimen.gender,
               pokeball: specimen.pokeball,
               pokeballSpriteUrl: specimen.pokeballSpriteUrl,
             ),
