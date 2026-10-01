@@ -190,6 +190,8 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                         null => null,
                       },
                       label: Text(choice.label),
+                      // A sigla no chip; o nome dos jogos no tooltip.
+                      tooltip: OriginMark.fromSlug(choice.value)?.games,
                       selected: _draft.originMarks.contains(choice.value),
                       onSelected: (on) => _update(
                         _draft.copyWith(

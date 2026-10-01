@@ -72,9 +72,8 @@ void main() {
       expect(find.text('Adamant'), findsOneWidget);
       expect(find.byTooltip('Natureza'), findsOneWidget);
       // Marca de origem do GO (ícone + nome), no lugar do antigo 📱.
-      expect(find.text('Pokémon GO'), findsOneWidget);
-      expect(find.byTooltip('Marca de origem'), findsOneWidget);
-      expect(find.bySemanticsLabel('Pokémon GO'), findsOneWidget);
+      expect(find.text('GO'), findsOneWidget);
+      expect(find.byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);
       expect(find.text(goEmoji), findsNothing);
       // O ícone fica na mesma linha do nome.
       expect(
@@ -95,9 +94,9 @@ void main() {
       expect(find.bySemanticsLabel('Fêmea'), findsOneWidget);
       expect(find.byIcon(Icons.female), findsOneWidget);
       expect(find.text('Jolly'), findsOneWidget);
-      expect(find.text('Pokémon GO'), findsNothing);
+      expect(find.text('GO'), findsNothing);
       // Sem OT: sem jogo de origem, sem marca.
-      expect(find.byTooltip('Marca de origem'), findsNothing);
+      expect(find.byTooltip(RegExp('^Marca de origem')), findsNothing);
     });
 
     testWidgets('marca de origem derivada do OT '
@@ -110,8 +109,11 @@ void main() {
       final id = backend.addSpecimen(formId: 1, ot: ot);
       await pump(tester, slotWith(id), size: size);
 
-      expect(find.text('Scarlet e Violet'), findsOneWidget);
-      expect(find.byTooltip('Marca de origem'), findsOneWidget);
+      expect(find.text('SV'), findsOneWidget);
+      expect(
+        find.byTooltip('Marca de origem: Scarlet e Violet'),
+        findsOneWidget,
+      );
     });
   }
 

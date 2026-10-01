@@ -123,7 +123,8 @@ void main() {
 
       await tapInSheet(tester, find.widgetWithText(FilterChip, 'I'));
       // Marca de origem: chip com o ícone da marca; "sem marca", sem ícone.
-      final paldea = find.widgetWithText(FilterChip, 'Scarlet e Violet');
+      final paldea = find.widgetWithText(FilterChip, 'SV');
+      expect(find.byTooltip('Scarlet e Violet'), findsOneWidget);
       await tapInSheet(tester, paldea);
       expect(
         find.descendant(of: paldea, matching: find.byType(Image)),
@@ -135,8 +136,8 @@ void main() {
         find.descendant(of: noMark, matching: find.byType(Image)),
         findsNothing,
       );
-      await tapInSheet(tester, find.widgetWithText(FilterChip, 'Pokémon GO'));
-      await tapInSheet(tester, find.widgetWithText(FilterChip, 'Pokémon GO'));
+      await tapInSheet(tester, find.widgetWithText(FilterChip, 'GO'));
+      await tapInSheet(tester, find.widgetWithText(FilterChip, 'GO'));
       await tapInSheet(tester, find.widgetWithText(FilterChip, 'Fêmea'));
 
       await tester.scrollUntilVisible(
@@ -345,7 +346,7 @@ void main() {
         'Fogo / Voador': query.copyWith(types: const []),
         'OT: Ash +1': query.copyWith(ots: const []),
         'Geração I, IV': query.copyWith(generations: const []),
-        'Origem: Pokémon GO +1': query.copyWith(originMarks: const []),
+        'Origem: GO +1': query.copyWith(originMarks: const []),
         'Fêmea': query.copyWith(genders: const []),
         'Modest +1': query.copyWith(natures: const []),
         'Japonês': query.copyWith(languages: const []),

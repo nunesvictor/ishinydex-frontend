@@ -86,8 +86,8 @@ void main() {
         // Selo shiny junto do nome, como no admin.
         expect(find.text('Bulbasaur $shinyEmoji $goEmoji'), findsOneWidget);
         // Marca de origem: GO tem prioridade (o backend manda "go").
-        expect(find.text('Pokémon GO'), findsOneWidget);
-        expect(find.byTooltip('Marca de origem'), findsOneWidget);
+        expect(find.text('GO'), findsOneWidget);
+        expect(find.byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);
       });
     }
 
