@@ -193,6 +193,28 @@ void main() {
     );
   });
 
+  test('bulkRelease envia os ids e devolve quantos', () async {
+    adapter
+      ..onPost(
+        'specimens/bulk-release/',
+        (server) => server.reply(200, {'released': 2}),
+        data: {
+          'ids': [1, 2],
+        },
+      )
+      ..onPost(
+        'specimens/bulk-release/',
+        (server) => server.reply(400, {
+          'ids': ['espécimes não encontrados: 9'],
+        }),
+        data: {
+          'ids': [9],
+        },
+      );
+    expect(await repository.bulkRelease([1, 2]), 2);
+    expect(repository.bulkRelease([9]), throwsA(isA<ValidationFailure>()));
+  });
+
   group('bulkUpdate', () {
     const changes = SpecimenChanges(pokeball: SetTo('dive-ball'));
 

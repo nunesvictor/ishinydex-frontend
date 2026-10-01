@@ -37,6 +37,10 @@ abstract interface class SpecimenRepository {
   /// Liberta (apaga) o specimen. Se estava depositado, o slot fica faltante.
   Future<void> release(int specimenId);
 
+  /// Liberta todos os [ids], tudo ou nada; os depositados deixam o slot
+  /// faltante. Devolve quantos foram libertados.
+  Future<int> bulkRelease(List<int> ids);
+
   Future<FormDetail> fetchForm(int formId);
 
   Future<SpecimenOptions> fetchOptions();

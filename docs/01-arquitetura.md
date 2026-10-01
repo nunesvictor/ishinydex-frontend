@@ -295,6 +295,13 @@ A terceira aba lista **todos** os espécimes, depositados ou não:
   - `PATCH /specimens/bulk/` é tudo ou nada; gênero impossível para algum
     espécime → `GenderConflictFailure` com a lista, e o diálogo oferece
     "Desmarcar estes".
+- **Libertar em lote** (mesma seleção, botão "Libertar em lote"): antes de
+  confirmar, pergunta à API quantos dos marcados estão depositados
+  (`GET /specimens/ids/?id=...&available=false`), porque parte deles pode
+  estar em páginas não carregadas; a confirmação avisa que esses slots
+  ficarão faltantes. `POST /specimens/bulk-release/` é tudo ou nada; depois,
+  `specimensChanged()` recarrega inventário, contagens e caçadas, e o
+  detalhe aberto ao lado fecha se era de um libertado.
 - **Caches entre abas:** o `StatefulShellRoute` mantém as abas vivas, então
   depositar no dex precisa atualizar o inventário e vice-versa. Por isso:
   - `SlotActions` invalida `specimenPageProvider` junto com as contagens;

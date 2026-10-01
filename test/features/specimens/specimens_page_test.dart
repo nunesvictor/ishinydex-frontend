@@ -587,6 +587,137 @@ void main() {
     });
   });
 
+  group('libertar em lote', () {
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('confirma com os depositados e liberta '
+          '(${size.width.toInt()}px)', (tester) async {
+        final backend = await pumpFullApp(tester, size: size);
+        final specimens = await allSpecimens(backend);
+        final deposited = specimens.where((s) => s.isDeposited).take(2);
+        final loose = specimens.firstWhere((s) => !s.isDeposited);
+        await openSpecimensTab(tester);
+
+        // Só um, não depositado: singular e sem falar de slot. Os soltos
+        // ficam no fim da lista: a busca traz o escolhido para a tela.
+        await search(tester, loose.nickname ?? loose.formName!);
+        await tester.longPress(specimenTile(loose.id));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Libertar em lote'));
+        await tester.pumpAndSettle();
+        expect(find.text('Libertar 1 espécime?'), findsOneWidget);
+        expect(
+          find.text(
+            'O cadastro será apagado. Esta ação não pode ser desfeita.',
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Cancelar'));
+        await tester.pumpAndSettle();
+        expect(find.text('1 selecionado'), findsOneWidget);
+
+        // Mais dois depositados (os primeiros da lista, na ordem das boxes).
+        await search(tester, '');
+        for (final s in deposited) {
+          await tester.tap(specimenTile(s.id));
+          await tester.pumpAndSettle();
+        }
+        expect(find.text('3 selecionados'), findsOneWidget);
+        await tester.tap(find.byTooltip('Libertar em lote'));
+        await tester.pumpAndSettle();
+        expect(find.text('Libertar 3 espécimes?'), findsOneWidget);
+        expect(
+          find.text(
+            'Os cadastros serão apagados. 2 estão depositados e os slots '
+            'ficarão faltantes. Esta ação não pode ser desfeita.',
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('3 espécimes libertados.'), findsOneWidget);
+        expect(find.byType(Checkbox), findsNothing);
+        final rest = {for (final s in await allSpecimens(backend)) s.id};
+        for (final s in [loose, ...deposited]) {
+          expect(rest.contains(s.id), false);
+        }
+      });
+    }
+
+    testWidgets('1 depositado; o detalhe aberto do libertado fecha', (
+      tester,
+    ) async {
+      final backend = await pumpFullApp(tester);
+      final deposited = (await allSpecimens(backend))
+          .firstWhere((s) => s.isDeposited);
+      await openSpecimensTab(tester);
+      await tester.tap(specimenTile(deposited.id));
+      await tester.pumpAndSettle();
+      expect(find.text('Selecione um espécime na lista.'), findsNothing);
+      await tester.longPress(specimenTile(deposited.id));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Libertar em lote'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'O cadastro será apagado. 1 está depositado e o slot ficará '
+          'faltante. Esta ação não pode ser desfeita.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 espécime libertado.'), findsOneWidget);
+      expect(find.text('Selecione um espécime na lista.'), findsOneWidget);
+    });
+
+    testWidgets('falhas viram mensagem e mantêm a seleção', (tester) async {
+      final repository = MockSpecimenRepository();
+      final specimen = Specimen.fromJson(specimenJson);
+      final fake = FakeBackend.seeded();
+      registerFallbackValue(emptySpecimenQuery);
+      when(
+        () => repository.fetchSpecimens(
+          any(),
+          page: any(named: 'page'),
+          pageSize: any(named: 'pageSize'),
+        ),
+      ).thenAnswer((_) async => Paginated(count: 1, results: [specimen]));
+      when(repository.fetchOptions).thenAnswer((_) async => fake.options);
+      when(repository.fetchTrainers).thenAnswer((_) async => const []);
+      var idsFail = true;
+      when(() => repository.fetchSpecimenIds(any())).thenAnswer((_) async {
+        if (idsFail) throw const NetworkFailure();
+        return const <int>[];
+      });
+      when(() => repository.bulkRelease(any()))
+          .thenThrow(const ServerFailure());
+      await pumpWidgetApp(
+        tester,
+        const SpecimensPage(),
+        overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
+      );
+      await tester.pumpAndSettle();
+      await tester.longPress(specimenTile(specimen.id));
+      await tester.pumpAndSettle();
+
+      // Sem a contagem de depositados, nem pergunta.
+      await tester.tap(find.byTooltip('Libertar em lote'));
+      await tester.pumpAndSettle();
+      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Libertar 1 espécime?'), findsNothing);
+
+      idsFail = false;
+      await tester.tap(find.byTooltip('Libertar em lote'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
+      await tester.pumpAndSettle();
+      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('1 selecionado'), findsOneWidget);
+      verify(() => repository.bulkRelease([specimen.id])).called(1);
+    });
+  });
+
   testWidgets('contador: singular e separador de milhar', (tester) async {
     await pumpWidgetApp(
       tester,
