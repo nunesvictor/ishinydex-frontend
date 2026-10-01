@@ -50,7 +50,8 @@ FROM nginx:1.29-alpine AS final
 COPY deploy/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/build/web /usr/share/nginx/html
 
-ENV BACKEND_URL=http://host.docker.internal:8080
+# Padrão: o serviço `backend` do compose do repositório principal (ishinydex).
+ENV BACKEND_URL=http://backend:8000
 # Expõe o DNS do container em ${NGINX_LOCAL_RESOLVERS} para o template.
 ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 EXPOSE 80

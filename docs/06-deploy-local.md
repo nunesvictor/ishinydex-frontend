@@ -1,21 +1,22 @@
-# Deploy local (Docker)
+# Imagem Docker e deploy
 
-> **Forma recomendada:** o repositório
-> [ishinydex](https://github.com/nunesvictor/ishinydex) sobe backend e frontend
-> juntos, com um `docker compose` só. O nginx fala com o backend pela rede
-> interna do compose, sem `host.docker.internal`. O que este guia descreve (um
-> compose por repositório) continua valendo para **desenvolvimento**, quando se
-> quer reconstruir só o frontend.
+> **Este repositório não faz deploy sozinho.** O app completo (backend +
+> frontend) é instalado e sobe pelo repositório principal
+> [ishinydex](https://github.com/nunesvictor/ishinydex), que traz este código
+> como submodule e constrói a imagem com o [Dockerfile](../Dockerfile) daqui:
+>
+> ```bash
+> git clone --recurse-submodules https://github.com/nunesvictor/ishinydex.git
+> cd ishinydex && cp .env.example .env   # troque os change-me
+> docker compose up -d --build           # app em http://<ip-do-pc>:8090
+> ```
+>
+> Este guia explica **como a imagem funciona** (build, nginx, cache). Para
+> desenvolver, use o `flutter run` (ver o [README](../README.md)).
 
-Este guia coloca o app para rodar **permanentemente** na sua máquina, acessível
-pelo navegador do PC e de qualquer celular na mesma rede Wi-Fi:
-
-```
-http://<ip-do-pc>:8090
-```
-
-O padrão é o mesmo do backend: Docker Compose, imagem multi-stage e
-`restart: unless-stopped`, para voltar sozinho quando o PC reinicia.
+O app fica acessível pelo navegador do PC e de qualquer celular na mesma rede
+Wi-Fi, em `http://<ip-do-pc>:8090`, e volta sozinho quando o PC reinicia
+(`restart: unless-stopped` no compose do repositório principal).
 
 ## Como funciona
 
@@ -23,13 +24,13 @@ O padrão é o mesmo do backend: Docker Compose, imagem multi-stage e
 Navegador (PC ou celular)
         │  http://192.168.0.193:8090
         ▼
-┌─────────────────────────── container "web" (este repositório) ───┐
+┌──────────────── container "frontend" (imagem deste repositório) ─┐
 │ nginx                                                            │
 │   /                         → arquivos do app (build web)        │
 │   /api/ /media/ /static/ /admin/ → repassa para o backend  ──────┼──┐
 └──────────────────────────────────────────────────────────────────┘  │
-                                                                      │ http://host.docker.internal:8080
-┌─────────────────────────── container "prod" (ishinydex-backend) ─┐  │
+                                                                      │ http://backend:8000
+┌──────────────── container "backend" (imagem do ishinydex-backend) ┐  │ (rede interna do compose)
 │ uwsgi + Django                                              ◄────┼──┘
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -73,64 +74,19 @@ O nginx repassa o cabeçalho `Host` original, então o Django gera as URLs dos
 sprites com o endereço que o navegador usou
 (`http://192.168.0.193:8090/media/...`).
 
-## Subindo tudo
+## Configuração da imagem
 
-### 1. Backend em modo produção
+| Variável (ambiente do container) | Padrão | Uso |
+| --- | --- | --- |
+| `BACKEND_URL` | definido pelo compose principal (`http://backend:8000`) | Backend para onde o nginx repassa a API |
 
-No repositório do backend:
-
-```bash
-cd ../ishinydex-backend
-docker compose --profile prod up -d --build prod
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/personal-dexes/   # 401 = ok
-```
-
-O serviço `prod` usa uwsgi com `DEBUG=False` e compartilha o banco com o
-ambiente de desenvolvimento. O `web` (porta 8008) pode continuar rodando em
-paralelo para você programar.
-
-### 2. Frontend
-
-```bash
-cd ../ishinydex-frontend
-docker compose up -d --build        # primeira vez: ~5 min (baixa o SDK do Flutter)
-```
-
-### 3. Acessar
-
-```bash
-hostname -I | awk '{print $1}'      # IP do PC na rede, ex.: 192.168.0.193
-```
-
-- No PC: <http://localhost:8090>
-- No celular (mesma rede Wi-Fi): `http://192.168.0.193:8090`
-
-Se o celular não abrir, libere a porta no firewall (só se o `ufw` estiver
-ativo; confira com `sudo ufw status`):
-
-```bash
-sudo ufw allow 8090/tcp
-```
+A porta publicada (`X_WEB_PORT`, padrão `8090`) e o dia a dia (atualizar,
+logs, backup) ficam no repositório principal: veja o README e o `CLAUDE.md`
+de lá. Se o celular não abrir a página, libere a porta no firewall (só se o
+`ufw` estiver ativo; confira com `sudo ufw status`): `sudo ufw allow 8090/tcp`.
 
 > **Dica:** o IP pode mudar quando o roteador reinicia. Para evitar isso,
 > reserve um IP fixo para o PC nas configurações de DHCP do roteador.
-
-## Dia a dia
-
-| Tarefa | Comando |
-| --- | --- |
-| Atualizar depois de mudar o código | `git pull && docker compose up -d --build` |
-| Ver logs do nginx | `docker compose logs -f web` |
-| Parar | `docker compose down` |
-| Status | `docker compose ps` |
-| Usar o backend de dev em vez do prod | `BACKEND_URL=http://host.docker.internal:8008 docker compose up -d` |
-
-Configurações ficam num `.env` (copie de [.env.example](../.env.example)):
-
-| Variável | Padrão | Uso |
-| --- | --- | --- |
-| `X_WEB_PORT` | `8090` | Porta do host |
-| `BACKEND_URL` | `http://host.docker.internal:8080` | Backend para onde o nginx repassa a API |
 
 ## Login e armazenamento do token
 
@@ -144,11 +100,11 @@ nativo de iOS, o token continua no Keychain.
 
 | Sintoma | Causa provável |
 | --- | --- |
-| Tela de erro "Erro no servidor" / nginx responde **502** | O backend `prod` está parado. Suba com o comando do passo 1 e veja `docker compose --profile prod logs prod` no backend. |
-| API responde **500** e o log do `prod` mostra `MemoryError` | Limite de memória do uwsgi (`limit-as` em `src/uwsgi/django-pokedex.ini` do backend) curto demais. Em 2026-09 foi preciso subir de 1024 para 2048 MB e fixar `offload-threads = 2`; o padrão `%k` cria uma thread por núcleo. |
+| Tela de erro "Erro no servidor" / nginx responde **502** | O backend está parado. No repositório principal: `docker compose ps` e `docker compose logs backend`. |
+| API responde **500** e o log do backend mostra `MemoryError` | Limite de memória do uwsgi (`limit-as` em `src/uwsgi/django-pokedex.ini` do backend) curto demais. Em 2026-09 foi preciso subir de 1024 para 2048 MB e fixar `offload-threads = 2`; o padrão `%k` cria uma thread por núcleo. |
 | Celular não abre a página | Celular em outra rede (ex.: 4G), firewall bloqueando a porta 8090, ou IP mudou. |
-| Mudança no código não aparece | Faltou `--build` no `docker compose up`. Depois, recarregue a página: o `flutter_bootstrap.js` nunca fica em cache e aponta para `/v/<hash>/` da versão nova. Para conferir a versão no ar: `curl -s localhost:8090/flutter_bootstrap.js \| grep buildVersion`. |
-| Sprites sem imagem | Veja se `http://<ip>:8090/media/sprites/pokemon/other/home/1.png` abre. Se não abrir, o volume `sprites` do backend não foi populado. |
+| Mudança no código não aparece | O submodule não foi atualizado (PR de bump no principal) ou faltou `--build` no `docker compose up`. Depois, recarregue a página: o `flutter_bootstrap.js` nunca fica em cache e aponta para `/v/<hash>/` da versão nova. Para conferir a versão no ar: `curl -s localhost:8090/flutter_bootstrap.js \| grep buildVersion`. |
+| Sprites sem imagem | Veja se `http://<ip>:8090/media/sprites/pokemon/other/home/1.png` abre. Se não abrir, o volume `sprites` não foi populado (serviço `sprites` do compose principal). |
 
 ## Próximos passos (fora do escopo por enquanto)
 
