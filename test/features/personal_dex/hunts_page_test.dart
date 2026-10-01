@@ -6,6 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -54,7 +57,8 @@ void main() {
       // Semente: 19 formas sem espécime no shiny dex.
       expect(find.text('19 para caçar'), findsOneWidget);
       expect(find.text('Venusaur'), findsOneWidget);
-      expect(find.text('HOME 1 · L1 C3 · Faltando'), findsOneWidget);
+      // Nº da dex, posição na box e motivo.
+      expect(find.text('#0003 · HOME 1 · L1 C3 · Faltando'), findsOneWidget);
 
       await tester.tap(find.text('Venusaur'));
       await tester.pumpAndSettle();
@@ -132,7 +136,11 @@ void main() {
     expect(find.text('25 para caçar'), findsOneWidget);
     await _tapChip(tester, 'Sem shiny');
     expect(find.text('6 para caçar'), findsOneWidget);
-    expect(find.textContaining('📱 Do GO'), findsWidgets);
+    // O GO aparece como emoji no título, como no inventário.
+    expect(
+      find.descendant(of: find.byType(HuntTile), matching: find.text(goEmoji)),
+      findsWidgets,
+    );
     // Único motivo marcado: não dá para desmarcar.
     await _tapChip(tester, 'Shiny do GO');
     expect(find.text('6 para caçar'), findsOneWidget);
@@ -153,7 +161,7 @@ void main() {
     expect(_chip('Fora de: Poké Ball'), findsOneWidget);
     // GO (6) + shinies em Dream Ball (20), com 3 nos dois.
     expect(find.text('23 para caçar'), findsOneWidget);
-    expect(find.textContaining('Dream Ball'), findsWidgets);
+    expect(find.textContaining('Outra pokébola'), findsWidgets);
 
     await _tapChip(tester, 'Shiny do GO');
     expect(find.text('20 para caçar'), findsOneWidget);
@@ -233,6 +241,64 @@ void main() {
       ],
     );
 
+    testWidgets('item no estilo do inventário: espécime com apelido', (
+      tester,
+    ) async {
+      answer(
+        1,
+        () async => Paginated(
+          count: 1,
+          results: [
+            Hunt.parse({
+              ...missingSlotJson,
+              'specimen': {
+                'id': 5,
+                'nickname': 'Vovó',
+                'form_name': 'rattata-alola',
+                'is_shiny': true,
+                'is_alpha': true,
+                'is_from_go': true,
+                'gender': 'female',
+                'pokeball': 'dream-ball',
+                'pokeball_sprite_url': 'http://x/dream-ball.png',
+              },
+              'reasons': ['from_go', 'pokeball'],
+              'shiny_lock': null,
+            }),
+          ],
+        ),
+      );
+      await pump(tester);
+      await tester.pumpAndSettle();
+
+      Finder inTile(Finder finder) =>
+          find.descendant(of: find.byType(HuntTile), matching: finder);
+      expect(inTile(find.text('Vovó')), findsOneWidget);
+      for (final emoji in [femaleEmoji, shinyEmoji, goEmoji]) {
+        expect(inTile(find.text(emoji)), findsOneWidget);
+      }
+      expect(inTile(find.byType(AlphaIcon)), findsOneWidget);
+      expect(
+        inTile(
+          find.byWidgetPredicate(
+            (w) =>
+                w is PokemonSprite &&
+                w.url == 'http://x/dream-ball.png' &&
+                w.semanticLabel == 'Dream Ball',
+          ),
+        ),
+        findsOneWidget,
+      );
+      // Com apelido, a espécie vai para a linha de baixo; "Do GO" não
+      // repete o emoji do título.
+      expect(
+        inTile(
+          find.text('Rattata Alola · #10193 · HOME 1 · L4 C2 · Outra pokébola'),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('erro na 1ª página tem "Tentar novamente"', (tester) async {
       var fail = true;
       answer(1, () async {
@@ -277,8 +343,8 @@ void main() {
       });
       await pump(tester);
       await tester.pumpAndSettle();
-      // Bola desconhecida (sem espécime) e slot sem forma.
-      expect(find.textContaining('Pokébola'), findsWidgets);
+      // Motivo pokébola sem espécime e slot sem forma.
+      expect(find.textContaining('Outra pokébola'), findsWidgets);
 
       await tester.drag(find.byType(ListView), const Offset(0, -3000));
       await tester.pump();

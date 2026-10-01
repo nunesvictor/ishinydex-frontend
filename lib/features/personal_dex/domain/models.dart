@@ -42,6 +42,8 @@ abstract class SpecimenSummary with _$SpecimenSummary {
     String? ability,
     @Default(false) bool isShiny,
     @Default(false) bool isAlpha,
+    @Default(false) bool isFromGo,
+    String? gender,
     String? pokeball,
     String? pokeballSpriteUrl,
   }) = _SpecimenSummary;
