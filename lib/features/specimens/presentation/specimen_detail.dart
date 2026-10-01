@@ -13,6 +13,7 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Detalhe do specimen em tela própria (layout compacto).
@@ -101,16 +102,18 @@ class _Details extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          // Selos junto do nome, como no admin ("Bulba ✨💢").
-          Text(
-            [
-              specimen.displayName,
-              if (specimen.isShiny) shinyEmoji,
-              if (specimen.isAlpha) alphaEmoji,
-              if (specimen.isFromGo) goEmoji,
-            ].join(' '),
+          SpecimenHeadline(
+            name: specimen.displayName,
+            pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+            pokeballLabel: specimen.pokeball == null
+                ? null
+                : prettifyName(specimen.pokeball!),
+            gender: specimen.gender,
+            isShiny: specimen.isShiny,
+            isAlpha: specimen.isAlpha,
+            isFromGo: specimen.isFromGo,
             style: theme.textTheme.titleLarge,
-            textAlign: TextAlign.center,
+            center: true,
           ),
           if (form != null)
             Text(
@@ -134,20 +137,8 @@ class _Details extends ConsumerWidget {
                   avatar: Icon(Icons.radio_button_unchecked),
                   label: Text('Disponível'),
                 ),
-              if (specimen.isShiny)
-                const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
-              if (specimen.isAlpha)
-                const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
               if (OriginMark.fromSlug(specimen.originMark) case final mark?)
                 OriginMarkChip(mark),
-              if (specimen.pokeball != null)
-                Chip(
-                  avatar: PokemonSprite(
-                    url: specimen.pokeballSpriteUrl,
-                    size: 20,
-                  ),
-                  label: Text(prettifyName(specimen.pokeball!)),
-                ),
             ],
           ),
           const SizedBox(height: 8),

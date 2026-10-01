@@ -83,8 +83,18 @@ void main() {
         expect(find.text('23/09/2024'), findsOneWidget);
         expect(find.text('Pego no safári'), findsOneWidget);
         expect(find.text('Bulbasaur · #0001'), findsOneWidget);
-        // Selo shiny junto do nome, como no admin.
-        expect(find.text('Bulbasaur $shinyEmoji $goEmoji'), findsOneWidget);
+        // Cabeçalho: nome e selos em emoji, na mesma linha.
+        expect(find.text('Bulbasaur'), findsOneWidget);
+        expect(find.text(shinyEmoji), findsOneWidget);
+        expect(find.text(goEmoji), findsOneWidget);
+        expect(find.text(maleEmoji), findsOneWidget);
+        expect(
+          tester.getCenter(find.text(shinyEmoji)).dy,
+          moreOrLessEquals(
+            tester.getCenter(find.text('Bulbasaur')).dy,
+            epsilon: 2,
+          ),
+        );
         // Marca de origem: GO tem prioridade (o backend manda "go").
         expect(find.text('GO'), findsOneWidget);
         expect(find.byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);

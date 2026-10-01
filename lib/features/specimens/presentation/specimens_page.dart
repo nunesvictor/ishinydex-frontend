@@ -17,6 +17,7 @@ import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dar
 import 'package:ishinydex/features/specimens/presentation/widgets/bulk_edit_sheet.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Inventário: todos os specimens, com busca e filtros.
@@ -640,27 +641,25 @@ class SpecimenListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final form = specimen.formRef;
-    final details = [
-      if (form != null) form.displayName,
-      if (specimen.isAlpha) '$alphaEmoji Alfa',
-      if (specimen.pokeball != null) prettifyName(specimen.pokeball!),
-    ];
     return ListTile(
       key: ValueKey('specimen-${specimen.id}'),
       selected: selected || (checked ?? false),
       leading: PokemonSprite(url: specimen.spriteUrl, size: 48),
-      title: Row(
-        spacing: 4,
-        children: [
-          Flexible(
-            child: Text(specimen.displayName, overflow: TextOverflow.ellipsis),
-          ),
-          if (specimen.isShiny) const Text(shinyEmoji, semanticsLabel: 'Shiny'),
-          if (specimen.isFromGo)
-            const Text(goEmoji, semanticsLabel: 'Pokémon GO'),
-        ],
+      title: SpecimenHeadline(
+        name: specimen.displayName,
+        pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+        pokeballLabel: specimen.pokeball == null
+            ? null
+            : prettifyName(specimen.pokeball!),
+        gender: specimen.gender,
+        isShiny: specimen.isShiny,
+        isAlpha: specimen.isAlpha,
+        isFromGo: specimen.isFromGo,
       ),
-      subtitle: Text(details.join(' · ')),
+      // Espécie e nº da dex nacional (a pokébola subiu para o título).
+      subtitle: form == null
+          ? null
+          : Text('${form.displayName} · ${form.dexNumber}'),
       trailing: switch (checked) {
         final bool value => Checkbox(value: value, onChanged: (_) => onTap()),
         null when specimen.isDeposited => const Tooltip(

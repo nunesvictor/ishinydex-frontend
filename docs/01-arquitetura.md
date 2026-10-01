@@ -231,6 +231,12 @@ filtros como estavam. Na API, cada item é um slot "achatado" com `reasons` e
 
 A terceira aba lista **todos** os espécimes, depositados ou não:
 
+- **Cabeçalho compacto** (`SpecimenHeadline`, como no Pokémon HOME):
+  pokébola, nome/apelido e selos em emoji (♂️/♀️, ✨, 💢, 📱) numa linha.
+  É o título de cada item da lista (o subtítulo é "Espécie · #0402", com o
+  nº da dex nacional) e o nome nos detalhes do espécime e do slot, no lugar
+  dos chips de Shiny, Alfa e pokébola. Recebe valores soltos porque o slot
+  só tem o resumo do espécime; a pokébola acompanha o tamanho da fonte.
 - **Filtros rápidos** na barra: busca por apelido, forma ou nº da dex
   nacional (com um "x" que limpa o campo e busca na hora; o
   `TextEditingController` fica no `State` da página, que também controla o
