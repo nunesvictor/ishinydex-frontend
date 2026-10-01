@@ -68,7 +68,9 @@ void main() {
 
       expect(find.text('Selecione um espécime na lista.'), findsOneWidget);
       expect(specimenTile(shinyBulba.id), findsOneWidget);
-      expect(specimenTile(plainBulba.id), findsOneWidget);
+      // Ordem das boxes (padrão): o Bulbasaur comum está depositado na
+      // HOME 3, então só aparece junto dela.
+      expect(specimenTile(plainBulba.id), findsNothing);
       // Contador: sem filtro, só o total.
       final total = specimens.length;
       expect(find.text('$total espécimes'), findsOneWidget);

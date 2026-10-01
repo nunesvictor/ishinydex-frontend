@@ -584,8 +584,8 @@ class ActiveFilterChips extends ConsumerWidget {
     final pattern = capturePattern(context, ref);
     final q = query;
     final chips = <(String, SpecimenQuery)>[
-      if (q.ordering != SpecimenOrdering.dex)
-        (q.ordering.label, q.copyWith(ordering: SpecimenOrdering.dex)),
+      if (q.ordering != SpecimenOrdering.box)
+        (q.ordering.label, q.copyWith(ordering: SpecimenOrdering.box)),
       if (q.hasPokeballFilter)
         (
           _pokeballSummary(q, options)!,

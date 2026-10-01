@@ -1117,13 +1117,14 @@ class FakeBackend
             (captured != null && !captured.isAfter(query.capturedBefore!)));
   }
 
-  /// Mesmas ordens da API; o id faz as vezes do `created_at` e desempata.
-  static Comparator<Specimen> _ordering(SpecimenOrdering ordering) =>
+  /// Mesmas ordens da API; o id faz as vezes do `created_at` e desempata, e
+  /// o id da forma, do `form__order`.
+  Comparator<Specimen> _ordering(SpecimenOrdering ordering) =>
       switch (ordering) {
-        SpecimenOrdering.dex => (
-          a,
-          b,
-        ) => a.form != b.form ? a.form - b.form : a.id - b.id,
+        SpecimenOrdering.box => _byKey(_boxKey),
+        SpecimenOrdering.national => _byKey(
+          (s) => _forms[s.form]!.nationalNumber,
+        ),
         SpecimenOrdering.capturedAsc => (a, b) => _byCapture(
           a,
           b,
@@ -1136,6 +1137,30 @@ class FakeBackend
         ),
         SpecimenOrdering.createdDesc => (a, b) => b.id - a.id,
       };
+
+  /// Pela chave (`null` no fim), depois forma e id.
+  static Comparator<Specimen> _byKey(int? Function(Specimen) key) => (a, b) {
+    final (x, y) = (key(a), key(b));
+    if (x != y) {
+      if (x == null) return 1;
+      if (y == null) return -1;
+      return x - y;
+    }
+    return a.form != b.form ? a.form - b.form : a.id - b.id;
+  };
+
+  /// Como `box_order` da API: o slot do espécime, se depositado; senão o 1º
+  /// slot (menor box) com a forma dele; `null` fora das boxes.
+  int? _boxKey(Specimen specimen) {
+    int key(_SlotRecord s) => s.box.position * 30 + s.row * 6 + s.col;
+    final own = _slotHolding(specimen.id);
+    if (own != null) return key(own);
+    final keys = [
+      for (final s in _slots.values)
+        if (s.formId == specimen.form) key(s),
+    ];
+    return keys.isEmpty ? null : keys.reduce((a, b) => a < b ? a : b);
+  }
 
   /// Pela data de captura; sem data sempre no fim, nas duas direções.
   static int _byCapture(Specimen a, Specimen b, {required bool descending}) {

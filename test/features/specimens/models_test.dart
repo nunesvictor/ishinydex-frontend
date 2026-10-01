@@ -226,7 +226,8 @@ void main() {
 
   test('SpecimenOrdering → ordering da API', () {
     expect(SpecimenOrdering.values.map((o) => o.param), [
-      'dex',
+      'box',
+      'national',
       '-captured_at',
       'captured_at',
       '-created_at',

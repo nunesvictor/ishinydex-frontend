@@ -218,7 +218,7 @@ void main() {
       await tapInSheet(tester, find.text('Ordenar por'), delta: -200);
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
-      expect(find.text('Nº da Pokédex'), findsOneWidget);
+      expect(find.text('Ordem das boxes'), findsOneWidget);
 
       // Intervalo já definido: o calendário abre nele. Escolher outro
       // intervalo (10 a 20/01) aparece no formato dos Ajustes (mm/dd).
@@ -340,7 +340,7 @@ void main() {
       final changes = await pumpChips(tester, query);
       final expected = {
         'Cadastrados recentemente': query.copyWith(
-          ordering: SpecimenOrdering.dex,
+          ordering: SpecimenOrdering.box,
         ),
         'Dream Ball': query.copyWith(pokeballs: const []),
         'Fogo / Voador': query.copyWith(types: const []),

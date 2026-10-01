@@ -317,10 +317,10 @@ void main() {
       final created = await all(
         const SpecimenQuery(ordering: SpecimenOrdering.createdDesc),
       );
-      final dexOrder = await all(
-        emptySpecimenQuery.copyWith(ordering: SpecimenOrdering.dex),
+      final boxOrder = await all(
+        emptySpecimenQuery.copyWith(ordering: SpecimenOrdering.box),
       );
-      expect(dexOrder.map((s) => s.id), everything.map((s) => s.id));
+      expect(boxOrder.map((s) => s.id), everything.map((s) => s.id));
       // Sem data vão para o fim nas duas direções.
       for (final list in [recent, oldest]) {
         expect(list.take(dated).every((s) => s.capturedAt != null), true);
@@ -597,6 +597,40 @@ void main() {
         pageSize: 20,
       );
       expect(none.count, 0);
+    });
+
+    test('ordem das boxes e nº nacional', () async {
+      // Eevee (133) na 2ª box, Glaceon (471) na 1ª; Mew (151) fora das
+      // boxes; um Eevee depositado numa 3ª box.
+      final fake = FakeBackend()
+        ..addForm(id: 133, name: 'eevee')
+        ..addForm(id: 151, name: 'mew')
+        ..addForm(id: 471, name: 'glaceon')
+        ..addBox(dexId: 1, name: 'HOME 1', formIds: const [471])
+        ..addBox(dexId: 1, name: 'HOME 2', formIds: const [133])
+        ..addBox(dexId: 2, name: 'HOME 3', formIds: const [133]);
+      final eevee = fake.addSpecimen(formId: 133);
+      final mew = fake.addSpecimen(formId: 151);
+      final glaceon = fake.addSpecimen(formId: 471);
+      final deposited = fake.addSpecimen(formId: 133);
+      final slot = (await fake.fetchSlots(dexId: 2, boxId: 3)).first;
+      await fake.deposit(slotId: slot.id, specimenId: deposited);
+
+      Future<List<int>> ids(SpecimenOrdering ordering) async => [
+        for (final s in (await fake.fetchSpecimens(
+          SpecimenQuery(ordering: ordering),
+          page: 1,
+          pageSize: 10,
+        )).results)
+          s.id,
+      ];
+      expect(await ids(SpecimenOrdering.box), [glaceon, eevee, deposited, mew]);
+      expect(await ids(SpecimenOrdering.national), [
+        eevee,
+        deposited,
+        mew,
+        glaceon,
+      ]);
     });
 
     test('searchSlots: nome ou número, só do dex e com forma', () async {
