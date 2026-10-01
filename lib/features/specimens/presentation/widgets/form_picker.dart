@@ -94,7 +94,7 @@ class _FormPickerState extends ConsumerState<FormPicker> {
           key: ValueKey('form-${forms[i].id}'),
           leading: PokemonSprite(url: forms[i].spriteUrl, size: 40),
           title: Text(forms[i].displayName),
-          subtitle: Text('#${forms[i].pokeapiId.toString().padLeft(4, '0')}'),
+          subtitle: Text(forms[i].dexNumber),
           onTap: () => Navigator.of(context).pop(forms[i]),
         ),
       ),

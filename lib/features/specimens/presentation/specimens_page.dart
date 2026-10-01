@@ -39,6 +39,10 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
   int? _selectedId;
   Timer? _debounce;
 
+  /// Texto da busca; o estado da tela guarda o controller para o "x" poder
+  /// limpar o campo.
+  final _search = TextEditingController();
+
   /// Marcados para a edição em lote; vazio = fora do modo de seleção.
   Set<int> _checked = {};
 
@@ -75,6 +79,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _search.dispose();
     super.dispose();
   }
 
@@ -87,6 +92,13 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     );
   }
 
+  /// O "x" do campo: apaga o texto e busca na hora, sem esperar o debounce.
+  void _clearSearch() {
+    _debounce?.cancel();
+    _search.clear();
+    _setQuery(_query.copyWith(search: ''));
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = WindowSize.of(context);
@@ -94,7 +106,9 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       children: [
         _Filters(
           query: _query,
+          searchController: _search,
           onSearchChanged: _onSearchChanged,
+          onSearchCleared: _clearSearch,
           onChanged: _setQuery,
           selectedCount: _checked.length,
           onlySelected: _onlySelected,
@@ -288,7 +302,9 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
 class _Filters extends StatelessWidget {
   const _Filters({
     required this.query,
+    required this.searchController,
     required this.onSearchChanged,
+    required this.onSearchCleared,
     required this.onChanged,
     required this.selectedCount,
     required this.onlySelected,
@@ -296,7 +312,9 @@ class _Filters extends StatelessWidget {
   });
 
   final SpecimenQuery query;
+  final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
+  final VoidCallback onSearchCleared;
   final ValueChanged<SpecimenQuery> onChanged;
 
   /// Marcados para o lote (0 = fora do modo de seleção).
@@ -361,12 +379,25 @@ class _Filters extends StatelessWidget {
             spacing: 4,
             children: [
               Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Buscar por apelido ou forma',
-                    prefixIcon: Icon(Icons.search),
+                // Reconstrói só o campo quando o texto muda, para o "x"
+                // aparecer apenas com algo digitado.
+                child: ValueListenableBuilder(
+                  valueListenable: searchController,
+                  builder: (context, value, _) => TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Apelido, forma ou nº da dex',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: value.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Limpar busca',
+                              onPressed: onSearchCleared,
+                              icon: const Icon(Icons.clear),
+                            ),
+                    ),
+                    onChanged: onSearchChanged,
                   ),
-                  onChanged: onSearchChanged,
                 ),
               ),
               IconButton(

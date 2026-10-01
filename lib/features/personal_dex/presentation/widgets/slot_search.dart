@@ -120,7 +120,7 @@ class _SlotResult extends StatelessWidget {
       leading: PokemonSprite(url: slot.spriteUrl, size: 40),
       title: Text(form.displayName),
       subtitle: Text(
-        '#${form.pokeapiId.toString().padLeft(4, '0')} · ${slot.box.name} · '
+        '${form.dexNumber} · ${slot.box.name} · '
         'linha ${slot.row + 1}, coluna ${slot.col + 1}',
       ),
       trailing: slot.isRegistered

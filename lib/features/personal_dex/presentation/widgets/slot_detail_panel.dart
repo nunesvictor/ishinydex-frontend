@@ -74,7 +74,7 @@ class SlotDetailPanel extends ConsumerWidget {
             textAlign: TextAlign.center,
           ),
           Text(
-            '#${form.pokeapiId.toString().padLeft(4, '0')}'
+            '${form.dexNumber}'
             '${form.formName.isEmpty ? '' : ' · ${prettifyName(form.formName)}'}',
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,

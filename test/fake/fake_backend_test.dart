@@ -198,6 +198,16 @@ void main() {
         'ivysaur',
         'venusaur',
       });
+      // Número: nº nacional da espécie (como search_forms da API).
+      final ivysaur = await all(
+        emptySpecimenQuery.copyWith(
+          search: '2',
+          status: SpecimenStatus.all,
+          shinyOnly: false,
+        ),
+      );
+      expect(ivysaur.map((s) => s.formName).toSet(), {'ivysaur'});
+      expect(ivysaur.first.formRef!.nationalNumber, 2);
       expect(saur.any((s) => s.nickname == 'Saur'), true);
     });
 

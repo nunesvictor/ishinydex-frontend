@@ -231,8 +231,10 @@ filtros como estavam. Na API, cada item é um slot "achatado" com `reasons` e
 
 A terceira aba lista **todos** os espécimes, depositados ou não:
 
-- **Filtros rápidos** na barra: busca por apelido ou forma,
-  Todos/Disponíveis/Depositados, Shiny, Alfa e GO.
+- **Filtros rápidos** na barra: busca por apelido, forma ou nº da dex
+  nacional (com um "x" que limpa o campo e busca na hora; o
+  `TextEditingController` fica no `State` da página, que também controla o
+  debounce), Todos/Disponíveis/Depositados, Shiny, Alfa e GO.
 - **Filtros avançados** na folha "Filtros": ordem, pokébola (e "sem"), OT
   (e "sem"), natureza, idioma, tipo (até 2, exige os dois), geração, gênero,
   habilidade e intervalo de captura. Tudo vai num `SpecimenQuery`

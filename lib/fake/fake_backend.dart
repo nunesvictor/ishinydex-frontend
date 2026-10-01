@@ -304,6 +304,7 @@ class FakeBackend
       id: id,
       name: name,
       pokeapiId: id,
+      nationalNumber: id,
       spriteUrl: '$_spriteBase/pokemon/other/home/$id.png',
       shinySpriteUrl: '$_spriteBase/pokemon/other/home/shiny/$id.png',
       types: [
@@ -605,8 +606,8 @@ class FakeBackend
     ];
   }
 
-  /// Como a API: nome da forma ou número (no fake, o número da Pokédex é o
-  /// próprio `pokeapiId`); só slots com forma, na ordem das boxes.
+  /// Como a API: nome da forma ou número ([_hasNumber]); só slots com forma,
+  /// na ordem das boxes.
   @override
   Future<List<Slot>> searchSlots({
     required int dexId,
@@ -616,7 +617,7 @@ class FakeBackend
     final text = search.trim().toLowerCase();
     final number = int.tryParse(text);
     bool matches(FormDetail form) =>
-        number == null ? form.name.contains(text) : form.pokeapiId == number;
+        number == null ? form.name.contains(text) : _hasNumber(form, number);
     return [
       for (final slot in _slots.values)
         if (slot.dexId == dexId &&
@@ -710,7 +711,7 @@ class FakeBackend
           (search.isEmpty ||
               (number == null
                   ? form.name.contains(search)
-                  : form.pokeapiId == number));
+                  : _hasNumber(form, number)));
       if (matches) {
         hunts.add(Hunt(slot: _toSlot(slot), reasons: reasons, shinyLock: lock));
       }
@@ -1030,8 +1031,13 @@ class FakeBackend
     );
   }
 
+  /// Como `search_forms` da API: nº nacional da espécie ou `pokeapiId`.
+  bool _hasNumber(FormDetail form, int number) =>
+      form.nationalNumber == number || form.pokeapiId == number;
+
   bool _matches(Specimen s, SpecimenQuery query) {
     final search = query.search.trim().toLowerCase();
+    final number = int.tryParse(search);
     final ability = query.ability.trim().toLowerCase();
     final available = query.status.availableParam;
     final form = _forms[s.form]!;
@@ -1040,8 +1046,10 @@ class FakeBackend
     bool inList<T>(List<T> values, T? value) =>
         values.isEmpty || values.contains(value);
     return (search.isEmpty ||
-            (s.nickname ?? '').toLowerCase().contains(search) ||
-            (s.formName ?? '').toLowerCase().contains(search)) &&
+            (number == null
+                ? (s.nickname ?? '').toLowerCase().contains(search) ||
+                      (s.formName ?? '').toLowerCase().contains(search)
+                : _hasNumber(form, number))) &&
         (available == null || (_slotHolding(s.id) == null) == available) &&
         (query.ids.isEmpty || query.ids.contains(s.id)) &&
         (!query.shinyOnly || s.isShiny) &&
@@ -1160,6 +1168,7 @@ class FakeBackend
     name: form.name,
     formName: form.formName,
     pokeapiId: form.pokeapiId,
+    nationalNumber: form.nationalNumber,
     spriteUrl: form.spriteUrl,
     shinySpriteUrl: form.shinySpriteUrl,
   );

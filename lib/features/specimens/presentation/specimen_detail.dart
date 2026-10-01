@@ -114,8 +114,7 @@ class _Details extends ConsumerWidget {
           ),
           if (form != null)
             Text(
-              '${form.displayName} · '
-              '#${form.pokeapiId.toString().padLeft(4, '0')}',
+              '${form.displayName} · ${form.dexNumber}',
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
