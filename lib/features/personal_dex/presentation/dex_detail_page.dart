@@ -13,6 +13,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigator.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_view.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_menu.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/generation_progress.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
@@ -127,6 +128,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
             icon: const Icon(Icons.filter_alt_outlined),
             selectedIcon: const Icon(Icons.filter_alt),
           ),
+          if (dex.value case final current?) DexMenu(dex: current),
         ],
       ),
       body: switch (dex) {

@@ -585,6 +585,44 @@ class FakeBackend
     return _dexWithCounts(id);
   }
 
+  /// Como o `PATCH` da API: nome e shiny dex; nome vazio ou repetido → 400.
+  @override
+  Future<PersonalDex> updateDex(
+    int dexId, {
+    required String name,
+    required bool isShinyDex,
+  }) async {
+    await _delay();
+    final dex = _dexes[dexId];
+    if (dex == null) throw const NotFoundFailure();
+    if (name.trim().isEmpty) {
+      throw ValidationFailure({
+        'name': ['Este campo não pode ser em branco.'],
+      });
+    }
+    if (_dexes.values.any((d) => d.id != dexId && d.name == name)) {
+      throw ValidationFailure({
+        'name': ['personal dex com este name já existe.'],
+      });
+    }
+    _dexes[dexId] = dex.copyWith(name: name, isShinyDex: isShinyDex);
+    return _dexWithCounts(dexId);
+  }
+
+  /// Como `delete_dex` da API: libera os slots (sem forma, dex nem
+  /// espécime); os espécimes continuam, disponíveis.
+  @override
+  Future<void> deleteDex(int dexId) async {
+    await _delay();
+    if (_dexes.remove(dexId) == null) throw const NotFoundFailure();
+    for (final slot in _slots.values.where((s) => s.dexId == dexId)) {
+      slot
+        ..dexId = null
+        ..formId = null
+        ..specimenId = null;
+    }
+  }
+
   @override
   Future<PersonalDex> fetchDex(int dexId) async {
     await _delay();

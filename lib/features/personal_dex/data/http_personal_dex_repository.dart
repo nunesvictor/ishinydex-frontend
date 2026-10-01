@@ -53,6 +53,24 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
   });
 
   @override
+  Future<PersonalDex> updateDex(
+    int dexId, {
+    required String name,
+    required bool isShinyDex,
+  }) => guardRequest(() async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      'personal-dexes/$dexId/',
+      data: {'name': name, 'is_shiny_dex': isShinyDex},
+    );
+    return PersonalDex.fromJson(response.data!);
+  });
+
+  @override
+  Future<void> deleteDex(int dexId) => guardRequest(() async {
+    await _dio.delete<void>('personal-dexes/$dexId/');
+  });
+
+  @override
   Future<PersonalDex> fetchDex(int dexId) => guardRequest(() async {
     final response = await _dio.get<Map<String, dynamic>>(
       'personal-dexes/$dexId/',

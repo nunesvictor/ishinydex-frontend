@@ -140,6 +140,30 @@ void main() {
     expect(gens.single.firstBox.name, 'HOME 1');
   });
 
+  test('updateDex e deleteDex', () async {
+    adapter
+      ..onPatch(
+        'personal-dexes/1/',
+        (server) => server.reply(200, {
+          'id': 1,
+          'name': 'Minha Dex',
+          'is_shiny_dex': false,
+          'force_new_box': false,
+          'total': 3,
+          'registered': 1,
+        }),
+        data: {'name': 'Minha Dex', 'is_shiny_dex': false},
+      )
+      ..onDelete('personal-dexes/1/', (server) => server.reply(204, null));
+    final dex = await repository.updateDex(
+      1,
+      name: 'Minha Dex',
+      isShinyDex: false,
+    );
+    expect(dex.name, 'Minha Dex');
+    await repository.deleteDex(1);
+  });
+
   test('previewNewDex e createDex', () async {
     adapter
       ..onGet(

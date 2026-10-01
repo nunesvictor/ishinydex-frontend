@@ -729,6 +729,49 @@ void main() {
       expect((await empty.fetchBoxes(third.id)).map((b) => b.name), ['HOME 4']);
     });
 
+    test('editar e apagar dex', () async {
+      final updated = await backend.updateDex(
+        1,
+        name: 'Minha Dex',
+        isShinyDex: false,
+      );
+      expect(updated.name, 'Minha Dex');
+      expect(updated.isShinyDex, false);
+      expect(updated.total, 58);
+      expect(
+        backend.updateDex(1, name: ' ', isShinyDex: false),
+        _validation('name'),
+      );
+      expect(
+        backend.updateDex(1, name: 'Living Dex', isShinyDex: false),
+        _validation('name'),
+      );
+      expect(
+        backend.updateDex(99, name: 'X', isShinyDex: false),
+        throwsA(isA<NotFoundFailure>()),
+      );
+
+      final deposited = (await backend.fetchSpecimens(
+        const SpecimenQuery(status: SpecimenStatus.deposited),
+        page: 1,
+        pageSize: 500,
+      )).count;
+      await backend.deleteDex(1);
+      expect((await backend.fetchDexes()).map((d) => d.name), ['Living Dex']);
+      // Os slots ficam livres e os espécimes continuam, disponíveis.
+      final stillDeposited = (await backend.fetchSpecimens(
+        const SpecimenQuery(status: SpecimenStatus.deposited),
+        page: 1,
+        pageSize: 500,
+      )).count;
+      expect(stillDeposited, lessThan(deposited));
+      expect(
+        (await backend.previewNewDex(forceNewBox: false)).firstBox!.name,
+        'HOME 1',
+      );
+      expect(backend.deleteDex(1), throwsA(isA<NotFoundFailure>()));
+    });
+
     test('nova box a cada geração começa a geração no 1º slot', () async {
       final gens = FakeBackend()
         ..addForm(id: 1, name: 'bulbasaur')

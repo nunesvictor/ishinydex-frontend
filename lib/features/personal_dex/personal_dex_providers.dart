@@ -92,6 +92,38 @@ final FutureProviderFamily<Paginated<Hunt>, HuntPageKey> huntPageProvider =
 
 final slotActionsProvider = Provider<SlotActions>(SlotActions.new);
 
+final dexActionsProvider = Provider<DexActions>(DexActions.new);
+
+/// Renomear e apagar um PersonalDex, invalidando o que mostra o dex.
+class DexActions {
+  DexActions(this._ref);
+
+  final Ref _ref;
+
+  Future<PersonalDex> update(
+    int dexId, {
+    required String name,
+    required bool isShinyDex,
+  }) async {
+    final dex = await _ref
+        .read(personalDexRepositoryProvider)
+        .updateDex(dexId, name: name, isShinyDex: isShinyDex);
+    _ref
+      ..invalidate(dexProvider(dexId))
+      ..invalidate(dexListProvider)
+      // Shiny dex muda o sprite dos slots.
+      ..invalidate(slotsProvider);
+    return dex;
+  }
+
+  /// Apaga o dex. Os espécimes que estavam nele ficam disponíveis, então o
+  /// inventário também recarrega.
+  Future<void> delete(int dexId) async {
+    await _ref.read(personalDexRepositoryProvider).deleteDex(dexId);
+    _ref.read(slotActionsProvider).specimensChanged();
+  }
+}
+
 /// Depositar, libertar e editar specimens de um slot, invalidando o que a
 /// tela mostra (slots, contagens da box, do dex e da lista).
 class SlotActions {
