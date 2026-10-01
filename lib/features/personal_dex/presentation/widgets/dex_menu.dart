@@ -65,9 +65,11 @@ Future<void> deleteDex(
     icon: Icons.warning_amber_rounded,
     title: 'Apagar ${dex.name}?',
     message:
+        // Sem número: `registered` é o progresso (num shiny dex, só os
+        // shiny), não a quantidade de espécimes depositados.
         'Os ${dex.total} slots deste dex ficam livres nas boxes. Os '
-        '${dex.registered} espécimes depositados continuam no inventário, '
-        'como disponíveis. Esta ação não pode ser desfeita.',
+        'espécimes depositados continuam no inventário, como disponíveis. '
+        'Esta ação não pode ser desfeita.',
     confirmLabel: 'Apagar',
     destructive: true,
   );

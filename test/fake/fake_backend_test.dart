@@ -22,6 +22,45 @@ void main() {
     );
   });
 
+  test('slugSearch: como o slugify do Django', () {
+    expect(slugSearch('Iron  Hands'), 'iron-hands');
+    expect(slugSearch('Mr. Mime'), 'mr-mime');
+    expect(slugSearch("Farfetch'd"), 'farfetchd');
+    expect(slugSearch('Flabébé'), 'flabebe');
+    expect(slugSearch('-iron hands-'), 'iron-hands');
+    // Só pontuação: o texto como veio.
+    expect(slugSearch('.'), '.');
+  });
+
+  test('progresso: num shiny dex, só shiny conta; num normal, todos', () async {
+    final fake = FakeBackend()
+      ..addForm(id: 1, name: 'bulbasaur')
+      ..addForm(id: 2, name: 'ivysaur');
+    final shinyDex = fake.addDex(name: 'Shiny', isShinyDex: true);
+    final living = fake.addDex(name: 'Living');
+    fake
+      ..addBox(dexId: shinyDex, name: 'HOME 1', formIds: [1, 2])
+      ..addBox(dexId: living, name: 'HOME 2', formIds: [1, 2]);
+    Future<void> put(int dexId, int index, {required bool shiny}) async {
+      final box = (await fake.fetchBoxes(dexId)).single;
+      final slot = (await fake.fetchSlots(dexId: dexId, boxId: box.id))[index];
+      final specimen = fake.addSpecimen(formId: slot.form!.id, isShiny: shiny);
+      await fake.deposit(slotId: slot.id, specimenId: specimen);
+    }
+
+    await put(shinyDex, 0, shiny: true);
+    await put(shinyDex, 1, shiny: false);
+    await put(living, 0, shiny: true);
+    await put(living, 1, shiny: false);
+
+    expect((await fake.fetchDex(shinyDex)).registered, 1);
+    expect((await fake.fetchBoxes(shinyDex)).single.registered, 1);
+    expect((await fake.fetchGenerations(shinyDex)).single.registered, 1);
+    expect((await fake.fetchDex(living)).registered, 2);
+    expect((await fake.fetchBoxes(living)).single.registered, 2);
+    expect((await fake.fetchGenerations(living)).single.registered, 2);
+  });
+
   test('latência configurada é respeitada', () async {
     final slow = FakeBackend(latency: const Duration(milliseconds: 1));
     expect(await slow.fetchDexes(), isEmpty);
@@ -287,6 +326,7 @@ void main() {
       expect(await ids(const SpecimenQuery(natures: ['jolly'])), {jolly.id});
       expect(await ids(const SpecimenQuery(languages: ['ja'])), {jolly.id});
       expect(await ids(const SpecimenQuery(ability: ' KEEN ')), {jolly.id});
+      expect(await ids(const SpecimenQuery(ability: 'keen eye')), {jolly.id});
     });
 
     test('intervalo de captura e ordenação', () async {
@@ -646,6 +686,12 @@ void main() {
       expect(byNumber.single.personalDex, 2);
       // Forma 40 não está no dex 2 (só 1–30).
       expect(await backend.searchSlots(dexId: 2, search: '40'), isEmpty);
+      // Nome como se escreve: vira slug.
+      final humanized = await backend.searchSlots(
+        dexId: 1,
+        search: 'Nidoran F',
+      );
+      expect(humanized.single.form!.name, 'nidoran-f');
     });
 
     test('fetchGenerations: agrupa pela geração do número', () async {
@@ -832,6 +878,7 @@ void main() {
         'pidgeotto',
         'pidgeot',
       ]);
+      expect((await backend.searchForms('nidoran m')).single.name, 'nidoran-m');
       expect((await backend.fetchSlot(1)).isRegistered, true);
       expect(backend.fetchSlot(999), throwsA(isA<NotFoundFailure>()));
     });
@@ -1040,6 +1087,18 @@ void main() {
       ]);
       expect(await run(const HuntQuery(search: ' MEW')), ['mewtwo']);
       expect(await run(const HuntQuery(search: '793')), ['nihilego']);
+      // Nome como se escreve: vira slug.
+      final iron = FakeBackend()..addForm(id: 992, name: 'iron-hands');
+      final ironDex = iron.addDex(name: 'Shiny', isShinyDex: true);
+      iron.addBox(dexId: ironDex, name: 'HOME 1', formIds: [992]);
+      expect(
+        await names(
+          const HuntQuery(search: 'Iron Hands'),
+          on: iron,
+          dexId: ironDex,
+        ),
+        ['iron-hands'],
+      );
     });
 
     test('shiny lock: impossível só com includeLocked', () async {
