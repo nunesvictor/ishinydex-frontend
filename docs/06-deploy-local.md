@@ -108,4 +108,4 @@ nativo de iOS, o token continua no Keychain.
 
 ## Próximos passos (fora do escopo por enquanto)
 
-- **HTTPS + PWA no iPhone** com Tailscale: ver [04-ios-e-pwa.md](04-ios-e-pwa.md).
+- **HTTPS** (acesso fora de casa, offline): hoje desnecessário; se um dia precisar, ver a nota sobre Tailscale em [04-ios-e-pwa.md](04-ios-e-pwa.md).

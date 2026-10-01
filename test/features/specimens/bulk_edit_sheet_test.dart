@@ -93,7 +93,9 @@ void main() {
       await tester.tap(find.text('Escolher data…'));
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.edit_outlined), findsNothing); // sem digitação
-      await tester.tap(find.text('15'));
+      // Dia 1 do mês atual: nunca está no futuro (o calendário vai até
+      // hoje). Um dia fixo como 15 ficava desabilitado do dia 1 ao 14.
+      await tester.tap(find.text('1').hitTestable().first);
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
@@ -115,7 +117,7 @@ void main() {
           ot: const SetTo(null),
           nature: const SetTo('timid'),
           language: const SetTo('ja'),
-          capturedAt: SetTo(DateTime(now.year, now.month, 15)),
+          capturedAt: SetTo(DateTime(now.year, now.month)),
           gender: const SetTo('female'),
           isShiny: const SetTo(false),
           isAlpha: const SetTo(true),

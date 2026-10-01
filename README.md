@@ -6,7 +6,7 @@ ver as boxes (no mesmo layout do Pokémon HOME), acompanhar o progresso e
 
 - 🌐 **Web responsiva**: desktop (3 painéis), tablet (2 painéis) e celular (swipe entre boxes).
 - 🐳 **Imagem Docker**: nginx servindo o app e repassando a API, usada pelo repositório principal; acesso por `http://<ip-do-pc>:8090` no PC e no celular.
-- 📱 **iPhone**: pelo navegador; no futuro como **PWA** (HTTPS) ou app nativo via `.ipa` gerado no GitHub Actions.
+- 📱 **iPhone**: atalho do Safari na Tela de Início (abre em tela cheia, por HTTP na rede local); app nativo via `.ipa` gerado no GitHub Actions como alternativa.
 - ✅ **100% de cobertura de testes** (unitários, de widget e de integração no navegador).
 
 > **Este repositório não é para deploy.** Para instalar e rodar o iShinyDex
@@ -73,7 +73,7 @@ Leia nesta ordem se você está começando com Flutter:
 1. [**Conceitos de Flutter usados no projeto**](docs/02-conceitos-flutter.md): widgets, estado, Riverpod, rotas, freezed, com exemplos tirados do código.
 2. [**Arquitetura**](docs/01-arquitetura.md): como as pastas se organizam, o caminho de um dado da API até a tela e como adicionar uma feature.
 3. [**Testes**](docs/03-testes.md): tipos de teste, helpers, mocks e o gate de 100% de cobertura.
-4. [**iPhone: PWA e .ipa**](docs/04-ios-e-pwa.md): como instalar no iPhone e como o CI gera o `.ipa`.
+4. [**iPhone: atalho do Safari e .ipa**](docs/04-ios-e-pwa.md): como instalar no iPhone, o que funciona sem HTTPS e como o CI gera o `.ipa`.
 5. [**API**](docs/05-api.md): endpoints consumidos e como integrar um novo.
 6. [**Imagem Docker e deploy**](docs/06-deploy-local.md): como a imagem funciona (build, nginx, cache), acesso pela rede e problemas comuns.
 
