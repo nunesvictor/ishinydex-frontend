@@ -357,15 +357,54 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(Checkbox), findsNothing);
 
-      // Mudar o filtro descarta a seleção.
-      await tester.longPress(specimenTile(saur.id));
+      // A seleção sobrevive à busca: o lote junta resultados de várias
+      // buscas, e a AppBar conta os marcados fora da lista.
+      final outsider = specimens.firstWhere(
+        (s) => !(s.formName ?? '').contains('saur') && s.nickname != 'Saur',
+      );
+      await tester.longPress(specimenTile(outsider.id));
       await tester.pumpAndSettle();
       await search(tester, 'saur');
-      expect(find.byType(Checkbox), findsNothing);
+      expect(find.text('1 selecionado'), findsOneWidget);
+      expect(find.text('1 fora da lista'), findsOneWidget);
+      await tester.tap(specimenTile(saur.id));
+      await tester.pumpAndSettle();
+      expect(find.text('2 selecionados'), findsOneWidget);
 
-      // "Selecionar todos" pega todos os resultados do filtro.
+      // "Só selecionados" lista só os marcados (filtro id da API); mudar a
+      // busca volta para a lista normal.
+      await tester.tap(find.widgetWithText(FilterChip, 'Só selecionados (2)'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SpecimenListTile), findsNWidgets(2));
+      expect(specimenTile(outsider.id), findsOneWidget);
+      expect(find.text('1 fora da lista'), findsNothing);
+      // Desmarcar na visão some com o item; sem nenhum, sai do modo.
+      await tester.tap(specimenTile(outsider.id));
+      await tester.pumpAndSettle();
+      expect(find.byType(SpecimenListTile), findsOneWidget);
+      await tester.tap(specimenTile(saur.id));
+      await tester.pumpAndSettle();
+      expect(find.byType(Checkbox), findsNothing);
+      expect(find.textContaining('Só selecionados'), findsNothing);
+
+      // "Selecionar todos" soma os resultados do filtro à seleção.
       await tester.longPress(specimenTile(saur.id));
       await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilterChip, 'Só selecionados (1)'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SpecimenListTile), findsOneWidget);
+      // Mudar a busca sai da visão "Só selecionados" (mantendo a seleção).
+      await search(tester, 'sau');
+      expect(
+        tester
+            .widget<FilterChip>(
+              find.widgetWithText(FilterChip, 'Só selecionados (1)'),
+            )
+            .selected,
+        false,
+      );
+      await search(tester, 'saur');
+      expect(find.textContaining('fora da lista'), findsNothing);
       await tester.tap(find.byTooltip('Selecionar todos os resultados'));
       await tester.pumpAndSettle();
       final matching = specimens

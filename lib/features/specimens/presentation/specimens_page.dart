@@ -24,7 +24,9 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// - compacto: lista; tocar abre o detalhe em tela própria
 /// - médio/expandido: lista | detalhe do specimen selecionado
 /// - toque longo: modo de seleção para editar em lote (tocar marca e
-///   desmarca; a AppBar mostra as ações do lote)
+///   desmarca; a AppBar mostra as ações do lote). A seleção sobrevive à
+///   busca e aos filtros, para montar o lote em várias buscas; o chip
+///   "Só selecionados" lista só os marcados.
 class SpecimensPage extends ConsumerStatefulWidget {
   const SpecimensPage({super.key});
 
@@ -40,19 +42,35 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
   /// Marcados para a edição em lote; vazio = fora do modo de seleção.
   Set<int> _checked = {};
 
+  /// Chip "Só selecionados": a lista mostra só os marcados.
+  bool _onlySelected = false;
+
   bool get _selecting => _checked.isNotEmpty;
 
-  /// A seleção pertence aos resultados atuais: mudar o filtro a descarta.
+  /// O que a lista mostra: a consulta da barra, ou só os marcados (na mesma
+  /// ordem escolhida).
+  SpecimenQuery get _listQuery => _onlySelected
+      ? SpecimenQuery(ids: [..._checked]..sort(), ordering: _query.ordering)
+      : _query;
+
+  /// Mudar a busca ou um filtro mantém a seleção (o lote pode juntar
+  /// resultados de várias buscas) e volta da visão "Só selecionados".
   void _setQuery(SpecimenQuery query) => setState(() {
     _query = query;
-    _checked = {};
+    _onlySelected = false;
   });
 
-  void _toggle(Specimen specimen) => setState(() {
-    _checked = _checked.contains(specimen.id)
-        ? ({..._checked}..remove(specimen.id))
-        : {..._checked, specimen.id};
+  /// Troca a seleção; sem nenhum marcado, sai do modo de seleção.
+  void _setChecked(Set<int> checked) => setState(() {
+    _checked = checked;
+    if (checked.isEmpty) _onlySelected = false;
   });
+
+  void _toggle(Specimen specimen) => _setChecked(
+    _checked.contains(specimen.id)
+        ? ({..._checked}..remove(specimen.id))
+        : {..._checked, specimen.id},
+  );
 
   @override
   void dispose() {
@@ -78,10 +96,13 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
           query: _query,
           onSearchChanged: _onSearchChanged,
           onChanged: _setQuery,
+          selectedCount: _checked.length,
+          onlySelected: _onlySelected,
+          onOnlySelectedChanged: (on) => setState(() => _onlySelected = on),
         ),
         Expanded(
           child: SpecimenList(
-            query: _query,
+            query: _listQuery,
             selectedId: size.isCompact ? null : _selectedId,
             checkedIds: _selecting ? _checked : null,
             onLongPress: _toggle,
@@ -100,12 +121,13 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
           ? AppBar(
               leading: IconButton(
                 tooltip: 'Cancelar seleção',
-                onPressed: () => setState(() => _checked = {}),
+                onPressed: () => _setChecked({}),
                 icon: const Icon(Icons.close),
               ),
-              title: Text(
-                '${_checked.length} '
-                '${_checked.length == 1 ? 'selecionado' : 'selecionados'}',
+              title: _SelectionTitle(
+                checked: _checked,
+                // Na visão "Só selecionados", todos estão na lista.
+                query: _onlySelected ? null : _query,
               ),
               actions: [
                 IconButton(
@@ -157,13 +179,14 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
 
-  /// Todos os resultados do filtro, inclusive as páginas não carregadas.
+  /// Soma à seleção todos os resultados do filtro, inclusive as páginas não
+  /// carregadas.
   Future<void> _selectAll() async {
     try {
       final ids = await ref
           .read(specimenRepositoryProvider)
-          .fetchSpecimenIds(_query);
-      if (mounted) setState(() => _checked = ids.toSet());
+          .fetchSpecimenIds(_listQuery);
+      if (mounted) _setChecked({..._checked, ...ids});
     } on AppFailure catch (failure) {
       if (mounted) _showMessage(failure.message);
     }
@@ -191,7 +214,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
           .bulkUpdate(ids: [..._checked]..sort(), changes: changes);
       ref.read(slotActionsProvider).specimensChanged();
       if (!mounted) return;
-      setState(() => _checked = {});
+      _setChecked({});
       _showMessage(
         '$updated ${updated == 1 ? 'espécime atualizado' : 'espécimes atualizados'}.',
       );
@@ -234,9 +257,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       ),
     );
     if (uncheck ?? false) {
-      setState(() {
-        _checked = {..._checked}..removeAll(failure.conflicts.map((c) => c.id));
-      });
+      _setChecked({..._checked}..removeAll(failure.conflicts.map((c) => c.id)));
     }
   }
 
@@ -269,16 +290,32 @@ class _Filters extends StatelessWidget {
     required this.query,
     required this.onSearchChanged,
     required this.onChanged,
+    required this.selectedCount,
+    required this.onlySelected,
+    required this.onOnlySelectedChanged,
   });
 
   final SpecimenQuery query;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<SpecimenQuery> onChanged;
 
+  /// Marcados para o lote (0 = fora do modo de seleção).
+  final int selectedCount;
+  final bool onlySelected;
+  final ValueChanged<bool> onOnlySelectedChanged;
+
   @override
   Widget build(BuildContext context) {
     final count = query.advancedCount;
     final quick = <Widget>[
+      // No modo de seleção, o primeiro chip lista só os marcados.
+      if (selectedCount > 0)
+        FilterChip(
+          avatar: const Icon(Icons.checklist),
+          label: Text('Só selecionados ($selectedCount)'),
+          selected: onlySelected,
+          onSelected: onOnlySelectedChanged,
+        ),
       SegmentedButton<SpecimenStatus>(
         showSelectedIcon: false,
         segments: const [
@@ -364,6 +401,41 @@ class _Filters extends StatelessWidget {
                 ),
         ),
         ActiveFilterChips(query: query, onChanged: onChanged),
+      ],
+    );
+  }
+}
+
+/// Título do modo de seleção: "N selecionados" e, se houver marcados fora
+/// dos resultados da [query], "M fora da lista" (o lote vale para todos).
+class _SelectionTitle extends ConsumerWidget {
+  const _SelectionTitle({required this.checked, required this.query});
+
+  final Set<int> checked;
+
+  /// `null` quando todos os marcados estão na lista ("Só selecionados").
+  final SpecimenQuery? query;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final query = this.query;
+    final inList = query == null
+        ? null
+        : ref.watch(specimenIdsProvider(query)).value?.toSet();
+    final outside = inList == null
+        ? 0
+        : checked.where((id) => !inList.contains(id)).length;
+    final n = checked.length;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$n ${n == 1 ? 'selecionado' : 'selecionados'}'),
+        if (outside > 0)
+          Text(
+            '$outside fora da lista',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
       ],
     );
   }

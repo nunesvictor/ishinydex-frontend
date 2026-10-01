@@ -1043,6 +1043,7 @@ class FakeBackend
             (s.nickname ?? '').toLowerCase().contains(search) ||
             (s.formName ?? '').toLowerCase().contains(search)) &&
         (available == null || (_slotHolding(s.id) == null) == available) &&
+        (query.ids.isEmpty || query.ids.contains(s.id)) &&
         (!query.shinyOnly || s.isShiny) &&
         (!query.alphaOnly || s.isAlpha) &&
         (!query.fromGoOnly || s.isFromGo) &&

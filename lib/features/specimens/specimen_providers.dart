@@ -46,6 +46,14 @@ specimenPageProvider = FutureProvider.autoDispose
     );
 
 /// Formas cujo nome contém o texto (seletor de forma do cadastro avulso).
+/// Ids de todos os resultados de uma consulta (sem paginação): o modo de
+/// seleção usa para contar os marcados que estão fora da lista.
+final FutureProviderFamily<List<int>, SpecimenQuery> specimenIdsProvider =
+    FutureProvider.autoDispose.family<List<int>, SpecimenQuery>(
+      (ref, query) =>
+          ref.watch(specimenRepositoryProvider).fetchSpecimenIds(query),
+    );
+
 final FutureProviderFamily<List<FormRef>, String> formSearchProvider =
     FutureProvider.autoDispose.family<List<FormRef>, String>(
       (ref, search) =>
