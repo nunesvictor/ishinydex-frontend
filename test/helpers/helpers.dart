@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/app.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/auth/data/token_storage.dart';
@@ -12,6 +13,12 @@ import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
+
+/// Sprite de pokébola do `SpecimenHeadline`: o nome da bola fica no rótulo
+/// de acessibilidade, não num texto.
+Finder ballSprite(Pattern label) => find.byWidgetPredicate(
+  (w) => w is PokemonSprite && (w.semanticLabel?.contains(label) ?? false),
+);
 
 /// Tamanhos de tela usados nos testes responsivos.
 const compactSize = Size(400, 800);

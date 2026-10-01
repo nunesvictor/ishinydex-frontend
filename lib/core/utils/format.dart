@@ -16,6 +16,10 @@ const alphaEmoji = '💢';
 /// Espécime vindo do Pokémon GO, como no admin.
 const goEmoji = '📱';
 
+/// Gênero ("male"/"female" da API); sem gênero, nada.
+const maleEmoji = '♂️';
+const femaleEmoji = '♀️';
+
 const _diacritics = {
   'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', //
   'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',

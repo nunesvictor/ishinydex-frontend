@@ -318,14 +318,14 @@ void main() {
       final all = await allSpecimens(backend);
       final noBall = all.where((s) => s.pokeball == null).length;
       expect(find.text('$noBall de ${all.length} espécimes'), findsOneWidget);
-      // O subtítulo mostra a pokébola ("Dream Ball"...): nenhum tem.
-      expect(find.textContaining('Ball'), findsNothing);
+      // O cabeçalho mostra a pokébola ("Dream Ball"...): nenhum tem.
+      expect(ballSprite('Ball'), findsNothing);
 
       // O X do chip remove o filtro.
       await tester.tap(find.byTooltip('Remover filtro'));
       await tester.pumpAndSettle();
       expect(find.byType(InputChip), findsNothing);
-      expect(find.textContaining('Ball'), findsWidgets);
+      expect(ballSprite('Ball'), findsWidgets);
     });
   });
 
@@ -450,7 +450,7 @@ void main() {
       expect(find.text('$matching espécimes atualizados.'), findsOneWidget);
       expect(find.byType(Checkbox), findsNothing);
       // A lista recarregou com a pokébola nova.
-      expect(find.textContaining('Beast Ball'), findsWidgets);
+      expect(ballSprite('Beast Ball'), findsWidgets);
       expect((await backend.fetchSpecimen(saur.id)).pokeball, 'beast-ball');
     });
 

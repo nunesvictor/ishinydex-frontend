@@ -138,11 +138,11 @@ void main() {
       await tester.tap(slot(1));
       await tester.pumpAndSettle();
       expect(find.text('Registrado'), findsOneWidget);
-      expect(find.text('Shiny'), findsOneWidget);
-      expect(find.text('Alfa'), findsOneWidget);
-      // Selo 💢 nos alfas da box (formas 1, 11, 16 e 26) + chip do detalhe.
+      // Selo 💢 nos alfas da box (formas 1, 11, 16 e 26) + o do cabeçalho
+      // do detalhe (sem chips de Shiny, Alfa ou pokébola).
       expect(find.text(alphaEmoji), findsNWidgets(5));
-      expect(find.text('Poke Ball'), findsOneWidget);
+      expect(find.text('Alfa'), findsNothing);
+      expect(ballSprite('Poke Ball'), findsOneWidget);
       expect(find.text('Editar espécime'), findsOneWidget);
       // Detalhes da forma (tipos e habilidades do fake).
       expect(find.text('Normal'), findsOneWidget);

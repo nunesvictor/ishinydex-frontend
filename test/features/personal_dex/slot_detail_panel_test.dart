@@ -67,7 +67,7 @@ void main() {
       await pump(tester, slotWith(id), size: size);
 
       expect(find.bySemanticsLabel('Macho'), findsOneWidget);
-      expect(find.byIcon(Icons.male), findsOneWidget);
+      expect(find.text(maleEmoji), findsOneWidget);
       // Label vindo de /specimens/options/, com o tooltip explicando o chip.
       expect(find.text('Adamant'), findsOneWidget);
       expect(find.byTooltip('Natureza'), findsOneWidget);
@@ -77,7 +77,7 @@ void main() {
       expect(find.text(goEmoji), findsNothing);
       // O ícone fica na mesma linha do nome.
       expect(
-        tester.getCenter(find.byIcon(Icons.male)).dy,
+        tester.getCenter(find.text(maleEmoji)).dy,
         moreOrLessEquals(tester.getCenter(find.text('Bulba')).dy, epsilon: 2),
       );
     });
@@ -92,7 +92,7 @@ void main() {
       await pump(tester, slotWith(id, formId: 2), size: size);
 
       expect(find.bySemanticsLabel('Fêmea'), findsOneWidget);
-      expect(find.byIcon(Icons.female), findsOneWidget);
+      expect(find.text(femaleEmoji), findsOneWidget);
       expect(find.text('Jolly'), findsOneWidget);
       expect(find.text('GO'), findsNothing);
       // Sem OT: sem jogo de origem, sem marca.
@@ -122,8 +122,8 @@ void main() {
     await pump(tester, slotWith(id, formId: 3));
 
     expect(find.text('Registrado'), findsOneWidget);
-    expect(find.byIcon(Icons.male), findsNothing);
-    expect(find.byIcon(Icons.female), findsNothing);
+    expect(find.text(maleEmoji), findsNothing);
+    expect(find.text(femaleEmoji), findsNothing);
     expect(find.byTooltip('Natureza'), findsNothing);
   });
 

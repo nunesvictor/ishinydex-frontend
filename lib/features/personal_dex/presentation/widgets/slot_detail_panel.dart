@@ -7,6 +7,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Detalhes do slot selecionado com as ações: depositar (slot faltante) ou
@@ -54,7 +55,6 @@ class SlotDetailPanel extends ConsumerWidget {
       ref.watch(specimenOptionsProvider).value?.nature,
       full?.nature,
     );
-    final gender = _genderIcon(full?.gender);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -105,20 +105,8 @@ class SlotDetailPanel extends ConsumerWidget {
                   avatar: Icon(Icons.check_circle, color: Colors.green),
                   label: Text('Registrado'),
                 ),
-                if (specimen.isShiny)
-                  const Chip(avatar: Text(shinyEmoji), label: Text('Shiny')),
-                if (specimen.isAlpha)
-                  const Chip(avatar: Text(alphaEmoji), label: Text('Alfa')),
                 if (OriginMark.fromSlug(full?.originMark) case final mark?)
                   OriginMarkChip(mark),
-                if (specimen.pokeball != null)
-                  Chip(
-                    avatar: PokemonSprite(
-                      url: specimen.pokeballSpriteUrl,
-                      size: 20,
-                    ),
-                    label: Text(prettifyName(specimen.pokeball!)),
-                  ),
                 if (nature != null)
                   // O ícone sozinho não diz o que é: o tooltip explica
                   // ("Natureza") no hover/toque longo e no leitor de tela.
@@ -132,19 +120,17 @@ class SlotDetailPanel extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // Gênero como ícone ao lado do nome: não ocupa linha nova.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    specimen.displayName,
-                    style: theme.textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                if (gender != null) ...[const SizedBox(width: 4), gender],
-              ],
+            SpecimenHeadline(
+              name: specimen.displayName,
+              pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+              pokeballLabel: specimen.pokeball == null
+                  ? null
+                  : prettifyName(specimen.pokeball!),
+              gender: full?.gender,
+              isShiny: specimen.isShiny,
+              isAlpha: specimen.isAlpha,
+              style: theme.textTheme.titleMedium,
+              center: true,
             ),
           ],
           const SizedBox(height: 16),
@@ -180,18 +166,3 @@ class SlotDetailPanel extends ConsumerWidget {
 
 /// ♂/♀ com rótulo para o leitor de tela; sem ícone para `genderless` (e
 /// quando o gênero não foi informado).
-Widget? _genderIcon(String? gender) => switch (gender) {
-  'male' => const Icon(
-    Icons.male,
-    size: 20,
-    color: Colors.blue,
-    semanticLabel: 'Macho',
-  ),
-  'female' => const Icon(
-    Icons.female,
-    size: 20,
-    color: Colors.pink,
-    semanticLabel: 'Fêmea',
-  ),
-  _ => null,
-};
