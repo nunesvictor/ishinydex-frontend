@@ -272,7 +272,12 @@ enum SpecimenStatus {
 
 /// Ordem do inventário; [param] é o valor de `ordering` na API.
 enum SpecimenOrdering {
-  dex('dex', 'Nº da Pokédex'),
+  /// Onde o espécime fica nas boxes (o próprio slot, se depositado; senão o
+  /// 1º slot com a forma dele). É a ordem padrão.
+  box('box', 'Ordem das boxes'),
+
+  /// Nº da espécie na Pokédex nacional (formas da mesma espécie juntas).
+  national('national', 'Nº da Pokédex nacional'),
   capturedDesc('-captured_at', 'Capturados recentemente'),
   capturedAsc('captured_at', 'Capturados há mais tempo'),
   createdDesc('-created_at', 'Cadastrados recentemente');
@@ -316,7 +321,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     @Default('') String ability,
     DateTime? capturedAfter,
     DateTime? capturedBefore,
-    @Default(SpecimenOrdering.dex) SpecimenOrdering ordering,
+    @Default(SpecimenOrdering.box) SpecimenOrdering ordering,
 
     /// Só estes espécimes (chip "Só selecionados" do lote). Não é um filtro
     /// da folha: não conta no [advancedCount].
@@ -339,7 +344,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
 
   /// Algum filtro (rápido ou avançado) restringe a lista? A ordem não conta.
   bool get hasFilters =>
-      copyWith(ordering: SpecimenOrdering.dex) != emptySpecimenQuery;
+      copyWith(ordering: SpecimenOrdering.box) != emptySpecimenQuery;
 
   /// Quantos grupos de filtros avançados estão ativos (o número do badge do
   /// botão Filtros). A ordem conta quando não é a padrão.
@@ -354,7 +359,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     languages.isNotEmpty,
     ability.trim().isNotEmpty,
     hasCaptureFilter,
-    ordering != SpecimenOrdering.dex,
+    ordering != SpecimenOrdering.box,
   ].where((active) => active).length;
 
   /// Limpa os filtros avançados, mantendo os rápidos.
@@ -391,7 +396,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
         'captured_after': _dateFormat.format(capturedAfter!),
       if (capturedBefore != null)
         'captured_before': _dateFormat.format(capturedBefore!),
-      if (ordering != SpecimenOrdering.dex) 'ordering': ordering.param,
+      if (ordering != SpecimenOrdering.box) 'ordering': ordering.param,
       if (ids.isNotEmpty) 'id': join(ids),
     };
   }
