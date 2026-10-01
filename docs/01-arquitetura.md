@@ -171,6 +171,14 @@ Um usuário pode ter vários dexes.
   - **Personalizado:** aparece como "em breve". Chama `openCustomDexFlow`, que
     hoje só avisa e é o ponto a substituir quando esse fluxo for definido.
 
+- **Editar e apagar:** o menu "⋮" da barra do dex (`DexMenu`) tem "Editar dex"
+  (nome e "Dex shiny"; "nova box a cada geração" não muda, o esquema já está
+  nas boxes) e "Apagar dex", com confirmação. Apagar libera os slots, mantém
+  os espécimes no inventário (disponíveis) e volta para a lista. Fica num
+  menu porque a barra já está cheia no celular. O `DexActions` invalida o que
+  mostra o dex (e, ao apagar, o inventário); o "último dex" salvo não precisa
+  ser limpo: `resolveHomeDexId` ignora um dex que não existe mais.
+
 - **Último dex lembrado:** ao abrir um dex, a `DexDetailPage` grava o id num
   `LastDexStorage`
   ([last_dex_storage.dart](../lib/features/personal_dex/data/last_dex_storage.dart)),

@@ -10,6 +10,7 @@ import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -31,6 +32,26 @@ class _FlakyRepository implements PersonalDexRepository {
 
   /// Quando definido, substitui as gerações do fake.
   List<GenerationProgress>? generations;
+
+  /// Quando definidas, editar/apagar o dex falham com elas.
+  AppFailure? updateFailure;
+  AppFailure? deleteFailure;
+
+  @override
+  Future<PersonalDex> updateDex(
+    int dexId, {
+    required String name,
+    required bool isShinyDex,
+  }) async {
+    if (updateFailure case final failure?) throw failure;
+    return await inner.updateDex(dexId, name: name, isShinyDex: isShinyDex);
+  }
+
+  @override
+  Future<void> deleteDex(int dexId) async {
+    if (deleteFailure case final failure?) throw failure;
+    await inner.deleteDex(dexId);
+  }
 
   @override
   Future<List<PersonalDex>> fetchDexes() => inner.fetchDexes();
@@ -626,6 +647,119 @@ void main() {
       await setScreenSize(tester, compactSize);
       await tester.pumpAndSettle();
       expect(find.byType(PageView), findsOneWidget);
+    });
+  });
+
+  group('editar e apagar dex', () {
+    Future<void> openMenuItem(WidgetTester tester, String item) async {
+      await tester.tap(find.byTooltip('Mais opções'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(item));
+      await tester.pumpAndSettle();
+    }
+
+    Finder nameField() => find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+
+    Future<void> save(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(FilledButton, 'Salvar'));
+      await tester.pumpAndSettle();
+    }
+
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('renomeia e troca shiny dex (${size.width.toInt()}px)', (
+        tester,
+      ) async {
+        await pumpFullApp(tester, size: size);
+        await openShinyDex(tester);
+        expect(find.byTooltip('Caçadas'), findsOneWidget);
+
+        // Cancelar não muda nada.
+        await openMenuItem(tester, 'Editar dex');
+        await tester.tap(find.text('Cancelar'));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsNothing);
+
+        await openMenuItem(tester, 'Editar dex');
+        expect(find.text('Shiny Living Dex'), findsWidgets);
+        await tester.enterText(nameField(), ' ');
+        await save(tester);
+        expect(find.text('Este campo não pode ser em branco.'), findsOneWidget);
+        await tester.enterText(nameField(), 'Living Dex');
+        await save(tester);
+        expect(
+          find.text('personal dex com este name já existe.'),
+          findsOneWidget,
+        );
+
+        await tester.enterText(nameField(), ' Minha Dex ');
+        await tester.tap(find.text('Dex shiny'));
+        await tester.pump();
+        // Enter no campo também salva.
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.text('Dex atualizado.'), findsOneWidget);
+        expect(find.text('Minha Dex'), findsOneWidget);
+        // Sem shiny dex, sem caçadas.
+        expect(find.byTooltip('Caçadas'), findsNothing);
+      });
+
+      testWidgets('apaga e volta para a lista (${size.width.toInt()}px)', (
+        tester,
+      ) async {
+        final backend = await pumpFullApp(tester, size: size);
+        await openShinyDex(tester);
+
+        await openMenuItem(tester, 'Apagar dex');
+        expect(find.text('Apagar Shiny Living Dex?'), findsOneWidget);
+        expect(find.textContaining('continuam no inventário'), findsOneWidget);
+        await tester.tap(find.text('Cancelar'));
+        await tester.pumpAndSettle();
+        expect(find.byType(DexDetailPage), findsOneWidget);
+
+        await openMenuItem(tester, 'Apagar dex');
+        await tester.tap(find.widgetWithText(TextButton, 'Apagar'));
+        await tester.pumpAndSettle();
+        expect(find.text('Dex apagado.'), findsOneWidget);
+        expect(find.byType(DexDetailPage), findsNothing);
+        expect(find.text('Shiny Living Dex'), findsNothing);
+        expect(find.text('Living Dex'), findsOneWidget);
+        expect((await backend.fetchDexes()).map((d) => d.name), ['Living Dex']);
+      });
+    }
+
+    testWidgets('falhas ao editar e apagar mostram a mensagem', (tester) async {
+      final repository = _FlakyRepository(FakeBackend.seeded())
+        ..updateFailure = const NetworkFailure()
+        ..deleteFailure = const ServerFailure();
+      await pumpFullApp(
+        tester,
+        overrides: [
+          personalDexRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      await openShinyDex(tester);
+
+      await openMenuItem(tester, 'Editar dex');
+      await save(tester);
+      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      // Erro de validação fora do nome também vai para o topo do diálogo.
+      repository.updateFailure = ValidationFailure(const {
+        ValidationFailure.nonFieldKey: ['Não pode.'],
+      });
+      await save(tester);
+      expect(find.text('Não pode.'), findsOneWidget);
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      await openMenuItem(tester, 'Apagar dex');
+      await tester.tap(find.widgetWithText(TextButton, 'Apagar'));
+      await tester.pumpAndSettle();
+      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.byType(DexDetailPage), findsOneWidget);
     });
   });
 }

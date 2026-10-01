@@ -16,6 +16,17 @@ abstract interface class PersonalDexRepository {
     required bool forceNewBox,
   });
 
+  /// Renomeia o dex ou troca se é shiny dex (`force_new_box` não muda).
+  Future<PersonalDex> updateDex(
+    int dexId, {
+    required String name,
+    required bool isShinyDex,
+  });
+
+  /// Apaga o dex e libera os slots dele; os espécimes depositados continuam
+  /// no inventário, disponíveis.
+  Future<void> deleteDex(int dexId);
+
   Future<List<BoxSummary>> fetchBoxes(int dexId);
 
   /// Progresso por geração, na ordem em que as gerações aparecem nas boxes.
