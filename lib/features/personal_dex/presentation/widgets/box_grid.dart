@@ -9,6 +9,29 @@ const boxCols = 6;
 /// até este limite.
 const maxCellSize = 200.0;
 
+/// Lado da célula e vão entre as células para a grade caber em [available].
+///
+/// O [BoxGrid] usa isto para se desenhar, e a página do dex para pôr a busca
+/// logo abaixo da grade, sem precisar medir a tela depois de desenhada.
+({double cell, double gap}) boxGridMetrics(Size available) {
+  // Mais espaço, mais respiro entre as células.
+  final gap = available.width >= 800 ? 8.0 : 4.0;
+  final cell = [
+    (available.width - gap * (boxCols - 1)) / boxCols,
+    (available.height - gap * (boxRows - 1)) / boxRows,
+  ].reduce((a, b) => a < b ? a : b).clamp(24.0, maxCellSize);
+  return (cell: cell, gap: gap);
+}
+
+/// Tamanho que a grade ocupa (ela fica centralizada em [available]).
+Size boxGridSize(Size available) {
+  final (:cell, :gap) = boxGridMetrics(available);
+  return Size(
+    boxCols * cell + (boxCols - 1) * gap,
+    boxRows * cell + (boxRows - 1) * gap,
+  );
+}
+
 /// Grade 5×6 de uma box, no mesmo layout do Pokémon HOME.
 ///
 /// A API só devolve os slots do dex; as posições que sobram (ex.: o fim da
@@ -33,12 +56,7 @@ class BoxGrid extends StatelessWidget {
     final byPosition = {for (final s in slots) (s.row, s.col): s};
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Mais espaço, mais respiro entre as células.
-        final gap = constraints.maxWidth >= 800 ? 8.0 : 4.0;
-        final cell = [
-          (constraints.maxWidth - gap * (boxCols - 1)) / boxCols,
-          (constraints.maxHeight - gap * (boxRows - 1)) / boxRows,
-        ].reduce((a, b) => a < b ? a : b).clamp(24.0, maxCellSize);
+        final (:cell, :gap) = boxGridMetrics(constraints.biggest);
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

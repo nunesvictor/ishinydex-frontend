@@ -204,8 +204,11 @@ diálogo: o Safari do iOS só abre o teclado com um toque no próprio campo (ver
 [`slot_search.dart`](../lib/features/personal_dex/presentation/widgets/slot_search.dart):
 
 - **Celular:** como a tela inicial do iPhone, uma pílula "Buscar"
-  (`SlotSearchPill`) fica centralizada logo acima da barra inferior, no
-  alcance do polegar. A pílula é o próprio campo: ao ganhar o foco, ela anima
+  (`SlotSearchPill`) fica centralizada 16 px abaixo da grade da box, no
+  alcance do polegar, e o conjunto grade + pílula fica centralizado no espaço
+  livre. A posição vem do tamanho da grade (`boxGridSize`, o mesmo cálculo do
+  `BoxGrid`): a área das boxes marca o lugar, e a página o mede depois do
+  layout. A pílula é o próprio campo: ao ganhar o foco, ela anima
   até o topo com um `AnimatedPositioned` e vira a barra de busca, a AppBar
   recolhe e os resultados abrem por trás. O campo nunca é recriado, só muda
   de lugar, então o foco e o teclado continuam durante a animação.

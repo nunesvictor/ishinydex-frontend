@@ -11,6 +11,7 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/box_grid.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
@@ -549,7 +550,17 @@ void main() {
       await openShinyDex(tester);
       final pill = find.byType(SlotSearchPill);
       final restTop = tester.getTopLeft(pill).dy;
-      expect(restTop, greaterThan(compactSize.height / 2));
+      // Logo abaixo da última linha da box, centralizada.
+      final grid = tester.getRect(
+        find
+            .descendant(of: find.byType(BoxGrid), matching: find.byType(Column))
+            .first,
+      );
+      expect(restTop - grid.bottom, moreOrLessEquals(16));
+      expect(
+        tester.getCenter(pill).dx,
+        moreOrLessEquals(compactSize.width / 2),
+      );
       expect(find.text('Buscar'), findsOneWidget);
       expect(find.byTooltip('Mais opções').hitTestable(), findsOneWidget);
       expect(
