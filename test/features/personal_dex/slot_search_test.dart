@@ -70,6 +70,7 @@ void main() {
           active: active,
           onChanged: (_) {},
           onCancel: () => cancelled = true,
+          onClear: () {},
         ),
       ),
     );

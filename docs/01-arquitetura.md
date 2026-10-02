@@ -207,7 +207,8 @@ campo (ver `02-conceitos-flutter.md`). Com foco ou texto, a busca fica
 `GET /slots/?personal_dex=&search=`, com debounce) cobrem as boxes, o campo
 vira uma pílula e o botão de faltantes dá lugar a "Cancelar". No compacto, a
 AppBar também recolhe, para sobrar espaço entre o campo e o teclado. "Buscar"
-no teclado só o fecha; os resultados ficam até "Cancelar".
+no teclado só o fecha; os resultados ficam até "Cancelar". O "x" do campo
+(como no inventário) apaga o texto e mantém o foco, para buscar outra coisa.
 
 Escolher um resultado fecha a busca, leva à box do slot e o seleciona; no
 compacto, também abre o bottom sheet. O `PageView` ignora o `onPageChanged` da

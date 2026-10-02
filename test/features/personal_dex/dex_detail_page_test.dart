@@ -588,6 +588,28 @@ void main() {
       expect(find.text('Cancelar'), findsOneWidget);
     });
 
+    testWidgets('o "x" apaga o texto e mantém a busca aberta', (tester) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      expect(find.byTooltip('Limpar busca'), findsNothing);
+      await searchFor(tester, 'wiggly');
+      expect(find.byKey(const ValueKey('search-slot-40')), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Limpar busca'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(searchField()).controller!.text, isEmpty);
+      expect(find.byTooltip('Limpar busca'), findsNothing);
+      expect(
+        find.text('Digite o nome (2 letras ou mais) ou o número.'),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<TextField>(searchField()).focusNode!.hasFocus,
+        isTrue,
+      );
+      expect(find.text('Cancelar'), findsOneWidget);
+    });
+
     testWidgets('cancelar sem escolher não muda nada', (tester) async {
       await pumpFullApp(tester);
       await openShinyDex(tester);

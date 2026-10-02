@@ -145,6 +145,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
               active: _searching,
               onChanged: _onSearchChanged,
               onCancel: _cancelSearch,
+              onClear: _clearSearch,
               trailing: _missingToggle(context),
             ),
           ),
@@ -268,6 +269,16 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       const Duration(milliseconds: 350),
       () => setState(() => _search = text.trim()),
     );
+  }
+
+  /// O "x" do campo: apaga o texto na hora (sem debounce) e mantém o foco,
+  /// para digitar outra coisa. Chamado dentro do toque, então o teclado do
+  /// iPhone continua aberto.
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    _searchFocus.requestFocus();
+    setState(() => _search = '');
   }
 
   /// Limpa a busca e devolve as boxes (a AppBar volta junto).

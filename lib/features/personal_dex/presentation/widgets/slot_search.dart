@@ -24,6 +24,7 @@ class SlotSearchBar extends StatelessWidget {
     required this.active,
     required this.onChanged,
     required this.onCancel,
+    required this.onClear,
     this.trailing,
     super.key,
   });
@@ -33,6 +34,9 @@ class SlotSearchBar extends StatelessWidget {
   final bool active;
   final ValueChanged<String> onChanged;
   final VoidCallback onCancel;
+
+  /// O "x" do campo: apaga o texto, mas a busca continua aberta.
+  final VoidCallback onClear;
 
   /// Ação ao lado do campo enquanto a busca está inativa.
   final Widget? trailing;
@@ -45,22 +49,34 @@ class SlotSearchBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Nome ou número',
-                prefixIcon: const Icon(Icons.search),
-                filled: active,
-                fillColor: scheme.surfaceContainerHigh,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(active ? 28 : 4),
+            // Reconstrói só o campo quando o texto muda, para o "x"
+            // aparecer apenas com algo digitado (como no inventário).
+            child: ValueListenableBuilder(
+              valueListenable: controller,
+              builder: (context, value, _) => TextField(
+                controller: controller,
+                focusNode: focusNode,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Nome ou número',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: value.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Limpar busca',
+                          onPressed: onClear,
+                          icon: const Icon(Icons.clear),
+                        ),
+                  filled: active,
+                  fillColor: scheme.surfaceContainerHigh,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(active ? 28 : 4),
+                  ),
                 ),
+                onChanged: onChanged,
+                // "Buscar" no teclado só o fecha: os resultados ficam.
+                onSubmitted: (_) => focusNode.unfocus(),
               ),
-              onChanged: onChanged,
-              // "Buscar" no teclado só o fecha: os resultados ficam.
-              onSubmitted: (_) => focusNode.unfocus(),
             ),
           ),
           // O AnimatedSize anima a largura (o filtro sai, "Cancelar" entra);
