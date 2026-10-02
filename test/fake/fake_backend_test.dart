@@ -113,6 +113,108 @@ void main() {
     expect(backend.fetchSpecimen(loose.id), throwsA(isA<NotFoundFailure>()));
   });
 
+  group('saves e localização', () {
+    test('criar: só OT de jogo que recebe do HOME, uma vez', () async {
+      // Seed: OT 1 (Scarlet) e 4 (Z-A) já são saves; 2 sem versão; 3 PLA.
+      expect((await backend.fetchSaves()).map((s) => s.title), [
+        'Scarlet · Switch',
+        'Legends Za · Ash (222222)',
+      ]);
+      expect(backend.createSave(trainerId: 99), _validation('trainer'));
+      expect(backend.createSave(trainerId: 2), _validation('trainer'));
+      expect(backend.createSave(trainerId: 1), _validation('trainer'));
+      final save = await backend.createSave(trainerId: 3, label: 'Lite');
+      expect(save.title, 'Legends Arceus · Lite');
+    });
+
+    test('renomear leva o apelido aos espécimes; apagar', () async {
+      final away = (await backend.fetchSlot(62)).specimen!;
+      expect(away.location!.title, 'Scarlet · Switch');
+      await backend.updateSave(1, label: 'OLED');
+      expect(
+        (await backend.fetchSpecimen(away.id)).location!.title,
+        'Scarlet · OLED',
+      );
+      expect(
+        backend.updateSave(99, label: 'x'),
+        throwsA(isA<NotFoundFailure>()),
+      );
+      // Com espécime: recusa. Sem: apaga.
+      expect(backend.deleteSave(1), throwsA(isA<ValidationFailure>()));
+      await backend.deleteSave(2);
+      expect(backend.deleteSave(2), throwsA(isA<NotFoundFailure>()));
+    });
+
+    test('transferir: tudo ou nada, data e contadores', () async {
+      final slot = (await backend.fetchSlots(dexId: 1, boxId: 1)).first;
+      final id = slot.specimen!.id;
+      expect(backend.transfer(const [], saveId: 1), _validation('ids'));
+      expect(backend.transfer([id, 9999], saveId: 1), _validation('ids'));
+      expect(backend.transfer([id], saveId: 99), _validation('save'));
+
+      expect(await backend.transfer([id, id], saveId: 1), 1);
+      expect(await backend.transfer([id], saveId: 1), 0); // já estava
+      final sent = await backend.fetchSpecimen(id);
+      expect(sent.isAway, true);
+      expect(daysSince(sent.locationSince!), 0);
+      expect((await backend.fetchDex(1)).away, 1);
+      expect((await backend.fetchBoxes(1)).first.away, 1);
+      expect((await backend.fetchGenerations(1)).single.away, 1);
+      // Continua contando no progresso.
+      expect((await backend.fetchDex(1)).registered, 39);
+
+      Future<int> count(String location) async => (await backend.fetchSpecimens(
+        SpecimenQuery(location: location),
+        page: 1,
+        pageSize: 500,
+      )).count;
+      expect(await count(SpecimenQuery.locationAway), 2);
+      expect(await count('1'), 2);
+      expect(await count('2'), 0);
+      final all = await count('');
+      expect(await count(SpecimenQuery.locationHome), all - 2);
+
+      expect(await backend.transfer([id], saveId: null), 1);
+      expect((await backend.fetchSpecimen(id)).location, isNull);
+    });
+
+    test('slot reservado recusa outro espécime', () async {
+      // Seed: o Ivysaur do slot 62 está fora do HOME.
+      final other = backend.addSpecimen(formId: 2);
+      expect(
+        backend.deposit(slotId: 62, specimenId: other),
+        _validation(ValidationFailure.nonFieldKey),
+      );
+      final away = (await backend.fetchSlot(62)).specimen!.id;
+      expect(
+        (await backend.deposit(slotId: 62, specimenId: away)).isRegistered,
+        true,
+      );
+    });
+
+    test('evoluir: só evolução; habilidade pelo slot; sai do slot', () async {
+      final slot = await backend.fetchSlot(1); // Bulbasaur do shiny dex
+      final id = slot.specimen!.id;
+      await backend.update(
+        id,
+        SpecimenDraft.fromSpecimen(await backend.fetchSpecimen(id))
+            .copyWith(ability: 'keen-eye'),
+      );
+      expect(backend.evolve(id, formId: 4), _validation('form')); // Charmander
+      expect(backend.evolve(id, formId: 1), _validation('form')); // ele mesmo
+      expect(backend.evolve(9999, formId: 2), throwsA(isA<NotFoundFailure>()));
+
+      final evolved = await backend.evolve(id, formId: 3); // dois estágios
+      expect((evolved.form, evolved.formName), (3, 'venusaur'));
+      expect(evolved.ability, 'keen-eye');
+      expect((await backend.fetchSlot(1)).isMissing, true);
+
+      // Sem habilidade conhecida: fica sem.
+      final plain = backend.addSpecimen(formId: 4);
+      expect((await backend.evolve(plain, formId: 5)).ability, isNull);
+    });
+  });
+
   group('deposit', () {
     test('regras de validação', () async {
       // Slot 3 → forma 3 (faltante); slot 59 → livre.

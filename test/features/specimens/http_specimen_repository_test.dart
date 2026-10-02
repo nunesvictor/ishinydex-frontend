@@ -215,6 +215,70 @@ void main() {
     expect(repository.bulkRelease([9]), throwsA(isA<ValidationFailure>()));
   });
 
+  test('saves: listar, criar, renomear e apagar', () async {
+    const trainer = {
+      'id': 1,
+      'name': 'Ash',
+      'trainer_id': '123456',
+      'version': 'scarlet',
+    };
+    const save = {'id': 4, 'label': 'Switch', 'trainer': trainer};
+    adapter
+      ..onGet('saves/', (server) => server.reply(200, [save]))
+      ..onPost(
+        'saves/',
+        (server) => server.reply(201, save),
+        data: {'trainer': 1, 'label': ''},
+      )
+      ..onPatch(
+        'saves/4/',
+        (server) => server.reply(200, {...save, 'label': 'OLED'}),
+        data: {'label': 'OLED'},
+      )
+      ..onDelete(
+        'saves/4/',
+        (server) => server.reply(400, {'detail': 'ainda tem espécimes'}),
+      );
+    final saves = await repository.fetchSaves();
+    expect(saves.single.title, 'Scarlet · Switch');
+    expect(saves.single.trainer.trainerId, '123456');
+    expect((await repository.createSave(trainerId: 1)).id, 4);
+    expect((await repository.updateSave(4, label: 'OLED')).label, 'OLED');
+    expect(repository.deleteSave(4), throwsA(isA<ValidationFailure>()));
+  });
+
+  test('transfer e evolve', () async {
+    adapter
+      ..onPost(
+        'specimens/transfer/',
+        (server) => server.reply(200, {'transferred': 2}),
+        data: {
+          'ids': [1, 2],
+          'save': 4,
+        },
+      )
+      ..onPost(
+        'specimens/transfer/',
+        (server) => server.reply(200, {'transferred': 1}),
+        data: {
+          'ids': [1],
+          'save': null,
+        },
+      )
+      ..onPost(
+        'specimens/1/evolve/',
+        (server) => server.reply(200, {
+          ...specimenJson,
+          'location': null,
+          'location_since': null,
+        }),
+        data: {'form': 2},
+      );
+    expect(await repository.transfer([1, 2], saveId: 4), 2);
+    expect(await repository.transfer([1], saveId: null), 1);
+    expect((await repository.evolve(1, formId: 2)).isAway, false);
+  });
+
   group('bulkUpdate', () {
     const changes = SpecimenChanges(pokeball: SetTo('dive-ball'));
 

@@ -34,4 +34,15 @@ enum OriginMark {
   /// `"paldea"` → [paldea]; valor desconhecido ou `null` → `null`.
   static OriginMark? fromSlug(String? slug) =>
       values.where((m) => m.slug == slug).firstOrNull;
+
+  /// Marca dos jogos que recebem Pokémon do HOME, pela versão (o selo do
+  /// save onde um espécime está): `"scarlet"` → [paldea].
+  static OriginMark? fromVersion(String? version) => switch (version) {
+    'sword' || 'shield' => galar,
+    'brilliant-diamond' || 'shining-pearl' => bdsp,
+    'legends-arceus' => hisui,
+    'scarlet' || 'violet' => paldea,
+    'legends-za' => lumiose,
+    _ => null,
+  };
 }

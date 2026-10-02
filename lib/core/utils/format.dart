@@ -10,6 +10,9 @@ int percentOf(int done, int total) =>
     total == 0 ? 0 : (done * 100 / total).floor();
 
 /// Emojis de shiny e alfa, os mesmos do admin do backend (`Specimen.__str__`).
+/// `" · 2 fora"` (registrados fora do HOME); vazio se nenhum.
+String awaySuffix(int away) => away > 0 ? ' · $away fora' : '';
+
 const shinyEmoji = '✨';
 const alphaEmoji = '💢';
 

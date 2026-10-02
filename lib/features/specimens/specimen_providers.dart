@@ -75,6 +75,27 @@ final FutureProvider<List<Trainer>> trainersProvider =
       (ref) => ref.watch(specimenRepositoryProvider).fetchTrainers(),
     );
 
+/// Saves do usuário (Ajustes → Meus saves).
+final FutureProvider<List<Save>> savesProvider =
+    FutureProvider.autoDispose<List<Save>>(
+      (ref) => ref.watch(specimenRepositoryProvider).fetchSaves(),
+    );
+
+/// Espécimes fora do HOME (tela "Fora do HOME"); são poucos, então vêm
+/// todos de uma vez.
+final FutureProvider<List<Specimen>> awaySpecimensProvider =
+    FutureProvider.autoDispose<List<Specimen>>(
+      (ref) async =>
+          (await ref
+                  .watch(specimenRepositoryProvider)
+                  .fetchSpecimens(
+                    const SpecimenQuery(location: SpecimenQuery.locationAway),
+                    page: 1,
+                    pageSize: 500,
+                  ))
+              .results,
+    );
+
 /// Versões de jogo: mudam só com um novo jogo, então ficam em cache.
 final versionsProvider = FutureProvider<List<GameVersion>>(
   (ref) => ref.watch(specimenRepositoryProvider).fetchVersions(),

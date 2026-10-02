@@ -3,6 +3,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 
 /// Posição da box sem forma deste dex: só o fundo, sem conteúdo nem toque.
 class EmptySlotTile extends StatelessWidget {
@@ -18,7 +19,9 @@ class EmptySlotTile extends StatelessWidget {
 }
 
 /// Célula da box: sprite apagado quando faltante, bola no canto quando
-/// registrado. Só para slots com forma; os livres usam [EmptySlotTile].
+/// registrado. Fora do HOME (num save), o sprite fica esmaecido e o selo do
+/// jogo aparece no canto superior direito. Só para slots com forma; os
+/// livres usam [EmptySlotTile].
 class SlotTile extends StatelessWidget {
   const SlotTile({
     required this.slot,
@@ -45,6 +48,7 @@ class SlotTile extends StatelessWidget {
     final form = slot.form!;
     final specimen = slot.specimen;
     final ballUrl = specimen?.pokeballSpriteUrl;
+    final away = specimen?.location;
     return Material(
       color: slot.isRegistered
           ? scheme.surfaceContainerHighest
@@ -81,7 +85,11 @@ class SlotTile extends StatelessWidget {
                 children: [
                   Center(
                     child: Opacity(
-                      opacity: slot.isMissing ? 0.35 : 1,
+                      opacity: slot.isMissing
+                          ? 0.35
+                          : away != null
+                          ? 0.55
+                          : 1,
                       child: PokemonSprite(
                         url: slot.spriteUrl,
                         size: size * 0.8,
@@ -107,6 +115,15 @@ class SlotTile extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: badges,
                             ),
+                    ),
+                  if (away != null)
+                    Positioned(
+                      right: inset,
+                      top: inset,
+                      child: Tooltip(
+                        message: 'Em ${away.title}',
+                        child: SaveIcon(away, size: size * 0.22),
+                      ),
                     ),
                   if (ballUrl != null)
                     Positioned(

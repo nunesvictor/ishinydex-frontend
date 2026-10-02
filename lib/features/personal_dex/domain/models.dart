@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 
 part 'models.freezed.dart';
 part 'models.g.dart';
@@ -46,6 +47,11 @@ abstract class SpecimenSummary with _$SpecimenSummary {
     String? gender,
     String? pokeball,
     String? pokeballSpriteUrl,
+
+    /// Save onde o espécime está; `null` = no HOME. Fora do HOME, ele
+    /// continua no slot, que fica reservado para a volta.
+    Save? location,
+    DateTime? locationSince,
   }) = _SpecimenSummary;
 
   const SpecimenSummary._();
@@ -105,6 +111,9 @@ abstract class PersonalDex with _$PersonalDex {
     required String name,
     required int total,
     required int registered,
+
+    /// Dos [registered], quantos estão num save (fora do HOME).
+    @Default(0) int away,
     @Default(false) bool isShinyDex,
     @Default(false) bool forceNewBox,
   }) = _PersonalDex;
@@ -125,6 +134,7 @@ abstract class BoxSummary with _$BoxSummary {
     required int position,
     required int total,
     required int registered,
+    @Default(0) int away,
   }) = _BoxSummary;
 
   const BoxSummary._();
@@ -144,6 +154,7 @@ abstract class GenerationProgress with _$GenerationProgress {
     required int total,
     required int registered,
     required BoxRef firstBox,
+    @Default(0) int away,
   }) = _GenerationProgress;
 
   const GenerationProgress._();

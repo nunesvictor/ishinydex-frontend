@@ -76,6 +76,7 @@ class GenerationProgressView extends ConsumerWidget {
                   child: ProgressBadge(
                     registered: gen.registered,
                     total: gen.total,
+                    away: gen.away,
                   ),
                 ),
                 trailing: Tooltip(

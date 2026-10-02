@@ -78,6 +78,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
   Widget build(BuildContext context) {
     final options =
         ref.watch(specimenOptionsProvider).value ?? const SpecimenOptions();
+    final saves = ref.watch(savesProvider).value ?? const <Save>[];
     final trainers = ref.watch(trainersProvider).value ?? const <Trainer>[];
     final theme = Theme.of(context);
     return Column(
@@ -202,6 +203,23 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                           ),
                         ),
                       ),
+                    ),
+                ]),
+              ),
+              _Section(
+                title: 'Onde está',
+                child: _chips([
+                  for (final (value, label) in [
+                    ('', 'Qualquer lugar'),
+                    (SpecimenQuery.locationHome, 'No HOME'),
+                    (SpecimenQuery.locationAway, 'Fora do HOME'),
+                    for (final save in saves) ('${save.id}', save.title),
+                  ])
+                    ChoiceChip(
+                      label: Text(label),
+                      selected: _draft.location == value,
+                      onSelected: (_) =>
+                          _update(_draft.copyWith(location: value)),
                     ),
                 ]),
               ),
@@ -350,6 +368,14 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
     if (picked != null) _update(apply([...picked]));
   }
 }
+
+/// Rótulo do filtro "Onde está": `"No HOME"`, `"Fora do HOME"` ou o save.
+String locationLabel(String location, List<Save> saves) => switch (location) {
+  SpecimenQuery.locationHome => 'No HOME',
+  SpecimenQuery.locationAway => 'Fora do HOME',
+  final id =>
+    'Em ${saves.where((s) => '${s.id}' == id).firstOrNull?.title ?? 'save #$id'}',
+};
 
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.child});
@@ -628,6 +654,11 @@ class ActiveFilterChips extends ConsumerWidget {
         ),
       if (q.ability.trim().isNotEmpty)
         ('Habilidade: ${q.ability.trim()}', q.copyWith(ability: '')),
+      if (q.location.isNotEmpty)
+        (
+          locationLabel(q.location, ref.watch(savesProvider).value ?? const []),
+          q.copyWith(location: ''),
+        ),
       if (q.hasCaptureFilter)
         (
           captureRangeLabel(pattern, q.capturedAfter, q.capturedBefore),

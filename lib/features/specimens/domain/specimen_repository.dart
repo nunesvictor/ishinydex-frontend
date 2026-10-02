@@ -56,4 +56,24 @@ abstract interface class SpecimenRepository {
 
   /// Versões de jogo em ordem de lançamento.
   Future<List<GameVersion>> fetchVersions();
+
+  /// Saves do usuário.
+  Future<List<Save>> fetchSaves();
+
+  /// Torna o treinador [trainerId] um save. Só treinadores de jogos que
+  /// recebem do HOME ([Save.transferVersions]).
+  Future<Save> createSave({required int trainerId, String label = ''});
+
+  Future<Save> updateSave(int saveId, {required String label});
+
+  /// Apaga o save; com espécimes nele, falha (`ValidationFailure`).
+  Future<void> deleteSave(int saveId);
+
+  /// Leva os [ids] para o save [saveId] (`null` = de volta ao HOME), tudo
+  /// ou nada. Devolve quantos mudaram de lugar.
+  Future<int> transfer(List<int> ids, {required int? saveId});
+
+  /// O espécime evoluiu fora do HOME: passa a ser a forma [formId] e sai do
+  /// slot da forma antiga.
+  Future<Specimen> evolve(int specimenId, {required int formId});
 }

@@ -34,6 +34,12 @@ abstract class Specimen with _$Specimen {
 
     /// Marca de origem (`paldea`, `go`...); `null` = sem marca.
     String? originMark,
+
+    /// Save onde o espécime está; `null` = no HOME.
+    Save? location,
+
+    /// Desde quando está no [location].
+    DateTime? locationSince,
   }) = _Specimen;
 
   const Specimen._();
@@ -50,6 +56,8 @@ abstract class Specimen with _$Specimen {
   String? get spriteUrl => formRef?.spriteFor(shiny: isShiny);
 
   bool get isDeposited => slot != null;
+
+  bool get isAway => location != null;
 }
 
 /// Dados para criar (`POST /specimens/`) ou editar
@@ -238,6 +246,60 @@ abstract class Trainer with _$Trainer {
   }
 }
 
+/// Um save do usuário (`GET /saves/`): onde um espécime pode estar fora do
+/// HOME. A identidade (nome, TID e versão) é a do [trainer].
+@freezed
+abstract class Save with _$Save {
+  const factory Save({
+    required int id,
+    required Trainer trainer,
+    @Default('') String label,
+  }) = _Save;
+
+  const Save._();
+
+  factory Save.fromJson(Map<String, dynamic> json) => _$SaveFromJson(json);
+
+  /// Jogos que recebem Pokémon do HOME (só os OTs desses viram save).
+  static const transferVersions = {
+    'sword',
+    'shield',
+    'brilliant-diamond',
+    'shining-pearl',
+    'legends-arceus',
+    'scarlet',
+    'violet',
+    'legends-za',
+  };
+
+  /// `"Scarlet"`: o jogo do save.
+  String get game => prettifyName(trainer.version ?? '');
+
+  /// `"Scarlet · Switch Lite"`, ou com o treinador se não houver apelido:
+  /// `"Scarlet · Ash (123456)"`.
+  String get title => label.isEmpty
+      ? '$game · ${trainer.name} (${trainer.trainerId})'
+      : '$game · $label';
+}
+
+/// Dias desde [since] até hoje (0 = hoje).
+int daysSince(DateTime since, {DateTime? today}) {
+  final now = today ?? DateTime.now();
+  return DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).difference(DateTime(since.year, since.month, since.day)).inDays;
+}
+
+/// `"hoje"`, `"há 1 dia"`, `"há 203 dias"`.
+String awayFor(DateTime since, {DateTime? today}) =>
+    switch (daysSince(since, today: today)) {
+      <= 0 => 'hoje',
+      1 => 'há 1 dia',
+      final days => 'há $days dias',
+    };
+
 /// Versão de jogo (`GET /versions/`), usada no cadastro de treinador.
 @freezed
 abstract class GameVersion with _$GameVersion {
@@ -326,6 +388,10 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     /// Só estes espécimes (chip "Só selecionados" do lote). Não é um filtro
     /// da folha: não conta no [advancedCount].
     @Default(<int>[]) List<int> ids,
+
+    /// Onde está: [locationHome], [locationAway] ou o id de um save (como
+    /// texto); vazio = qualquer lugar.
+    @Default('') String location,
   }) = _SpecimenQuery;
 
   const SpecimenQuery._();
@@ -335,6 +401,10 @@ abstract class SpecimenQuery with _$SpecimenQuery {
 
   /// Valor que a API entende como "sem" (pokébola, OT).
   static const noneParam = 'none';
+
+  /// Valores de [location]: no HOME ou fora dele (em qualquer save).
+  static const locationHome = 'home';
+  static const locationAway = 'away';
 
   static final _dateFormat = DateFormat('yyyy-MM-dd');
 
@@ -359,6 +429,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     languages.isNotEmpty,
     ability.trim().isNotEmpty,
     hasCaptureFilter,
+    location.isNotEmpty,
     ordering != SpecimenOrdering.box,
   ].where((active) => active).length;
 
@@ -398,6 +469,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
         'captured_before': _dateFormat.format(capturedBefore!),
       if (ordering != SpecimenOrdering.box) 'ordering': ordering.param,
       if (ids.isNotEmpty) 'id': join(ids),
+      if (location.isNotEmpty) 'location': location,
     };
   }
 }

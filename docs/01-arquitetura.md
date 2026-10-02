@@ -248,6 +248,44 @@ URL traz `?slot=`). Com `push`, e não `go`, o voltar retorna à lista com os
 filtros como estavam. Na API, cada item é um slot "achatado" com `reasons` e
 `shiny_lock` ao lado, por isso o `Hunt.parse` é escrito à mão.
 
+## Saves: Pokémon fora do HOME
+
+O HOME transfere Pokémon para os jogos e de volta. Para não esquecer um
+Pokémon num save, o espécime tem uma **localização**: `location` (um
+`Save`, ou `null` = no HOME) e `locationSince`.
+
+- **Save** ([`Save`](../lib/features/specimens/domain/models.dart)) é um
+  treinador original (nome, TID e versão) marcado como "meu", em
+  **Ajustes → Meus saves**
+  ([saves_page.dart](../lib/features/specimens/presentation/saves_page.dart)).
+  Só OTs de jogos que **recebem** do HOME servem (`Save.transferVersions`).
+  O OT continua sendo "de onde o Pokémon veio"; o save é "onde ele está".
+- **Fora do HOME, o espécime continua no slot**, que fica reservado para a
+  volta (a API recusa depositar outro ali). Ele continua contando no
+  progresso; as contagens trazem `away`, mostrado como "· 2 fora" na box,
+  na lista de dexes e nas gerações.
+- **Na box**, o slot fica esmaecido com o selo do jogo no canto superior
+  direito (`OriginMark.fromVersion`: a marca de origem do jogo do save).
+- **Ações** ([location_flow.dart](../lib/features/specimens/presentation/location_flow.dart)),
+  reaproveitadas no painel do slot, no detalhe do espécime, na seleção do
+  inventário (menu "Mais ações") e na tela "Fora do HOME":
+  - *Enviar para jogo…*: escolhe o save numa folha. Sem saves, explica e
+    oferece abrir Meus saves.
+  - *Trazer de volta*: pergunta "Voltou igual / Evoluiu…". Se evoluiu,
+    escolhe a forma nova; `POST /specimens/{id}/evolve/` troca a forma e
+    tira o espécime do slot antigo (que volta a faltar). A evolução vem
+    **antes** da transferência: se a forma não servir, nada muda.
+  - Todas terminam com `specimensChanged()`, que recarrega slots,
+    contagens, inventário e a lista "Fora do HOME".
+- **Fora do HOME**
+  ([away_page.dart](../lib/features/specimens/presentation/away_page.dart),
+  rota `/specimens/away`, atalho na barra do inventário): espécimes
+  agrupados por save, o que saiu há mais tempo primeiro, com "Saiu há N
+  dias". São poucos, então vêm todos numa página só e o agrupamento é feito
+  no app (`AwayPage.group`).
+- **Filtro** "Onde está" na folha do inventário: no HOME, fora ou um save
+  (`location` da API).
+
 ## Inventário (aba Espécimes)
 
 A terceira aba lista **todos** os espécimes, depositados ou não:

@@ -88,6 +88,18 @@ const _accents = {
   'y': 'ýÿ',
 };
 
+const _reservedSlotMessage =
+    'este slot está reservado para um espécime que está fora do HOME; '
+    'traga-o de volta ou retire-o antes.';
+
+/// Cadeias de evolução do seed: forma → forma da qual evolui.
+const _seedEvolvesFrom = {
+  2: 1, 3: 2, 5: 4, 6: 5, 8: 7, 9: 8, 11: 10, 12: 11, 14: 13, 15: 14, //
+  17: 16, 18: 17, 20: 19, 22: 21, 24: 23, 26: 25, 28: 27, 30: 29, 31: 30,
+  33: 32, 34: 33, 36: 35, 38: 37, 40: 39, 42: 41, 44: 43, 45: 44, 47: 46,
+  49: 48, 51: 50, 53: 52, 55: 54, 57: 56,
+};
+
 class _SlotRecord {
   _SlotRecord({
     required this.id,
@@ -124,6 +136,7 @@ class FakeBackend
         name: name,
         types: _seedTypes[index + 1] ?? const ['normal'],
         genderRate: _seedGenderRates[index + 1] ?? 4,
+        evolvesFrom: _seedEvolvesFrom[index + 1],
       );
     }
     backend
@@ -170,6 +183,13 @@ class FakeBackend
       slot.specimenId = specimen;
     }
     backend.addSpecimen(formId: 3, nickname: 'Saur');
+    // Saves: o Scarlet (com um Pokémon do Living Dex fora do HOME) e o Z-A.
+    final scarlet = backend.addSave(trainerId: 1, label: 'Switch');
+    backend.addSave(trainerId: 4);
+    final away = backend._slots.values.firstWhere(
+      (s) => s.dexId == livingDex && s.formId == 2,
+    );
+    backend.moveTo(away.specimenId!, scarlet, since: DateTime(2026, 3, 12));
     // Boxes livres: dá para criar um dex novo na demonstração.
     for (var i = 4; i <= 6; i++) {
       backend.addFreeBox('HOME $i');
@@ -185,6 +205,10 @@ class FakeBackend
   final _slots = <int, _SlotRecord>{};
   final _specimens = <int, Specimen>{};
   final _trainers = <int, Trainer>{};
+  final _saves = <int, Save>{};
+
+  /// Forma → forma da qual evolui (no backend, `evolves_from_species`).
+  final _evolvesFrom = <int, int>{};
 
   /// `gender_rate` da espécie de cada forma (a API não expõe; a regra do
   /// lote usa).
@@ -323,9 +347,13 @@ class FakeBackend
     int genderRate = 4,
     HuntCategory category = HuntCategory.regular,
     ShinyLock? shinyLock,
+
+    /// Forma da qual esta evolui (a regra do `evolve`).
+    int? evolvesFrom,
   }) {
     _genderRates[id] = genderRate;
     _categories[id] = category;
+    if (evolvesFrom != null) _evolvesFrom[id] = evolvesFrom;
     _forms[id] = FormDetail(
       isShinylocked: shinyLock == ShinyLock.unobtainable,
       isDistroOnly: shinyLock == ShinyLock.distroOnly,
@@ -359,6 +387,25 @@ class FakeBackend
       version: version,
     );
     return id;
+  }
+
+  /// Cria um save do treinador [trainerId] (sem validar a versão: os
+  /// testes montam o cenário à vontade).
+  int addSave({required int trainerId, String label = ''}) {
+    final id = _saves.length + 1;
+    _saves[id] = Save(id: id, trainer: _trainers[trainerId]!, label: label);
+    return id;
+  }
+
+  /// Põe o espécime no save [saveId] (`null` = HOME), desde [since].
+  void moveTo(int specimenId, int? saveId, {DateTime? since}) {
+    final specimen = _specimens[specimenId]!;
+    _specimens[specimenId] = saveId == null
+        ? specimen.copyWith(location: null, locationSince: null)
+        : specimen.copyWith(
+            location: _saves[saveId],
+            locationSince: since ?? _today(),
+          );
   }
 
   int addDex({required String name, bool isShinyDex = false}) {
@@ -677,6 +724,7 @@ class FakeBackend
           generation: generation,
           total: slots.length,
           registered: slots.where(_countsForProgress).length,
+          away: slots.where(_isAway).length,
           firstBox: slots.first.box,
         ),
     ];
@@ -699,6 +747,7 @@ class FakeBackend
           registered: slots
               .where((s) => s.formId != null && _countsForProgress(s))
               .length,
+          away: slots.where((s) => s.formId != null && _isAway(s)).length,
         ),
     ]..sort((a, b) => a.position.compareTo(b.position));
   }
@@ -764,6 +813,15 @@ class FakeBackend
     if (specimen.form != slot.formId) {
       throw ValidationFailure({
         'specimen_id': ["specimen form doesn't match with slot form."],
+      });
+    }
+    // Slot reservado: o espécime dele está num save e volta para cá.
+    final current = _specimens[slot.specimenId];
+    if (current != null &&
+        current.id != specimenId &&
+        current.location != null) {
+      throw ValidationFailure({
+        ValidationFailure.nonFieldKey: [_reservedSlotMessage],
       });
     }
     final holder = _slotHolding(specimenId);
@@ -1111,6 +1169,128 @@ class FakeBackend
   /// Mesmas regras do backend: nome e ID obrigatórios, par (nome, ID) único
   /// e versão existente.
   @override
+  Future<List<Save>> fetchSaves() async {
+    await _delay();
+    return [..._saves.values];
+  }
+
+  /// Como `POST /saves/`: só OT de jogo que recebe do HOME, e uma vez.
+  @override
+  Future<Save> createSave({required int trainerId, String label = ''}) async {
+    await _delay();
+    final trainer = _trainers[trainerId];
+    String? error;
+    if (trainer == null) {
+      error = 'Treinador inexistente.';
+    } else if (!Save.transferVersions.contains(trainer.version)) {
+      error =
+          'só treinadores de jogos que recebem Pokémon do HOME podem ser '
+          'saves.';
+    } else if (_saves.values.any((s) => s.trainer.id == trainerId)) {
+      error = 'este treinador já é um save.';
+    }
+    if (error != null) {
+      throw ValidationFailure({
+        'trainer': [error],
+      });
+    }
+    return _saves[addSave(trainerId: trainerId, label: label)]!;
+  }
+
+  @override
+  Future<Save> updateSave(int saveId, {required String label}) async {
+    await _delay();
+    final save = _saves[saveId];
+    if (save == null) throw const NotFoundFailure();
+    final updated = save.copyWith(label: label);
+    _saves[saveId] = updated;
+    // Os espécimes guardam uma cópia do save (como a resposta da API).
+    for (final s in [..._specimens.values]) {
+      if (s.location?.id == saveId) {
+        _specimens[s.id] = s.copyWith(location: updated);
+      }
+    }
+    return updated;
+  }
+
+  @override
+  Future<void> deleteSave(int saveId) async {
+    await _delay();
+    if (!_saves.containsKey(saveId)) throw const NotFoundFailure();
+    if (_specimens.values.any((s) => s.location?.id == saveId)) {
+      throw ValidationFailure(
+        const {},
+        detail:
+            'este save ainda tem espécimes; traga-os de volta ao HOME antes.',
+      );
+    }
+    _saves.remove(saveId);
+  }
+
+  /// Como `POST /specimens/transfer/`: tudo ou nada; quem já está no
+  /// destino não muda (nem a data).
+  @override
+  Future<int> transfer(List<int> ids, {required int? saveId}) async {
+    await _delay();
+    final unique = ids.toSet();
+    final missing = unique.where((id) => !_specimens.containsKey(id));
+    if (unique.isEmpty || missing.isNotEmpty) {
+      throw ValidationFailure({
+        'ids': ['espécimes não encontrados: ${missing.join(', ')}'],
+      });
+    }
+    if (saveId != null && !_saves.containsKey(saveId)) {
+      throw ValidationFailure({
+        'save': ['Save inexistente.'],
+      });
+    }
+    final moving = unique.where((id) => _specimens[id]!.location?.id != saveId);
+    final count = moving.length;
+    for (final id in [...moving]) {
+      moveTo(id, saveId);
+    }
+    return count;
+  }
+
+  /// Como `POST /specimens/{id}/evolve/`: só evolução (direta ou não); a
+  /// habilidade vai para a do mesmo slot e o espécime sai do slot.
+  @override
+  Future<Specimen> evolve(int specimenId, {required int formId}) async {
+    await _delay();
+    final specimen = _specimens[specimenId];
+    if (specimen == null) throw const NotFoundFailure();
+    var current = _evolvesFrom[formId];
+    while (current != null && current != specimen.form) {
+      current = _evolvesFrom[current];
+    }
+    if (current == null || !_forms.containsKey(formId)) {
+      throw ValidationFailure({
+        'form': ['esta forma não é uma evolução do espécime.'],
+      });
+    }
+    final old = _forms[specimen.form]!.abilities
+        .where((a) => a.ability == specimen.ability)
+        .firstOrNull;
+    final form = _forms[formId]!;
+    final ability = old == null
+        ? null
+        : form.abilities
+              .where((a) => a.slot == old.slot && a.isHidden == old.isHidden)
+              .firstOrNull
+              ?.ability;
+    _slotHolding(specimenId)?.specimenId = null;
+    final evolved = specimen.copyWith(
+      form: formId,
+      formRef: _formRef(form),
+      formName: form.name,
+      ability: ability,
+      slot: null,
+    );
+    _specimens[specimenId] = evolved;
+    return evolved;
+  }
+
+  @override
   Future<Trainer> createTrainer({
     required String name,
     required String trainerId,
@@ -1161,7 +1341,17 @@ class FakeBackend
     return _dexes[dexId]!.copyWith(
       total: slots.length,
       registered: slots.where(_countsForProgress).length,
+      away: slots.where(_isAway).length,
     );
+  }
+
+  /// Conta no progresso, mas o espécime está num save.
+  bool _isAway(_SlotRecord slot) =>
+      _countsForProgress(slot) && _specimens[slot.specimenId]!.isAway;
+
+  static DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
   }
 
   /// Como `counts_for_progress` da API: slot com espécime e, num shiny dex,
@@ -1211,6 +1401,12 @@ class FakeBackend
         inList(query.genders, s.gender) &&
         inList(query.natures, s.nature) &&
         inList(query.languages, s.language) &&
+        switch (query.location) {
+          '' => true,
+          SpecimenQuery.locationHome => !s.isAway,
+          SpecimenQuery.locationAway => s.isAway,
+          final save => '${s.location?.id}' == save,
+        } &&
         (ability.isEmpty || (s.ability ?? '').contains(ability)) &&
         (query.capturedAfter == null ||
             (captured != null && !captured.isBefore(query.capturedAfter!))) &&
@@ -1327,6 +1523,8 @@ class FakeBackend
               gender: specimen.gender,
               pokeball: specimen.pokeball,
               pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+              location: specimen.location,
+              locationSince: specimen.locationSince,
             ),
       isShinyDisplay: specimen == null
           ? formId != null && isShinyDex
