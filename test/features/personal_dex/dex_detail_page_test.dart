@@ -498,8 +498,11 @@ void main() {
   });
 
   group('busca no dex', () {
+    // Barra no topo (telas maiores) ou pílula embaixo (celular).
     Finder searchField() => find.descendant(
-      of: find.byType(SlotSearchBar),
+      of: find.byWidgetPredicate(
+        (widget) => widget is SlotSearchBar || widget is SlotSearchPill,
+      ),
       matching: find.byType(TextField),
     );
 
@@ -540,26 +543,41 @@ void main() {
       expect(find.text('HOME 2 · linha 2, coluna 4'), findsOneWidget);
     });
 
-    testWidgets('compacto: o foco recolhe a AppBar e troca o filtro por '
-        '"Cancelar"', (tester) async {
+    testWidgets('compacto: a pílula fica embaixo e sobe para o topo com o '
+        'foco, recolhendo a AppBar', (tester) async {
       await pumpFullApp(tester, size: compactSize);
       await openShinyDex(tester);
+      final pill = find.byType(SlotSearchPill);
+      final restTop = tester.getTopLeft(pill).dy;
+      expect(restTop, greaterThan(compactSize.height / 2));
+      expect(find.text('Buscar'), findsOneWidget);
       expect(find.byTooltip('Mais opções').hitTestable(), findsOneWidget);
-      expect(find.byTooltip('Destacar faltantes'), findsOneWidget);
+      expect(
+        find.byTooltip('Destacar faltantes').hitTestable(),
+        findsOneWidget,
+      );
 
       await tester.tap(searchField());
       await tester.pumpAndSettle();
+      expect(tester.getTopLeft(pill).dy, lessThan(100));
+      expect(find.text('Nome ou número'), findsOneWidget);
       expect(find.byTooltip('Mais opções').hitTestable(), findsNothing);
-      expect(find.byTooltip('Destacar faltantes'), findsNothing);
+      expect(find.byTooltip('Destacar faltantes').hitTestable(), findsNothing);
       expect(
         find.text('Digite o nome (2 letras ou mais) ou o número.'),
         findsOneWidget,
       );
 
+      // O campo não é recriado ao subir: segue com o foco (e o teclado).
+      expect(
+        tester.widget<TextField>(searchField()).focusNode!.hasFocus,
+        isTrue,
+      );
+
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();
+      expect(tester.getTopLeft(pill).dy, restTop);
       expect(find.byTooltip('Mais opções').hitTestable(), findsOneWidget);
-      expect(find.byTooltip('Destacar faltantes'), findsOneWidget);
       expect(find.text('Cancelar'), findsNothing);
     });
 
@@ -572,21 +590,22 @@ void main() {
       expect(find.text('Cancelar'), findsOneWidget);
     });
 
-    testWidgets('"Buscar" no teclado fecha o teclado e mantém os resultados', (
-      tester,
-    ) async {
-      await pumpFullApp(tester, size: compactSize);
-      await openShinyDex(tester);
-      await searchFor(tester, 'wiggly');
-      await tester.testTextInput.receiveAction(TextInputAction.search);
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<TextField>(searchField()).focusNode!.hasFocus,
-        isFalse,
-      );
-      expect(find.byKey(const ValueKey('search-slot-40')), findsOneWidget);
-      expect(find.text('Cancelar'), findsOneWidget);
-    });
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('"Buscar" no teclado fecha o teclado e mantém os resultados '
+          '(${size.width.toInt()}px)', (tester) async {
+        await pumpFullApp(tester, size: size);
+        await openShinyDex(tester);
+        await searchFor(tester, 'wiggly');
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<TextField>(searchField()).focusNode!.hasFocus,
+          isFalse,
+        );
+        expect(find.byKey(const ValueKey('search-slot-40')), findsOneWidget);
+        expect(find.text('Cancelar'), findsOneWidget);
+      });
+    }
 
     testWidgets('o "x" apaga o texto e mantém a busca aberta', (tester) async {
       await pumpFullApp(tester, size: compactSize);
