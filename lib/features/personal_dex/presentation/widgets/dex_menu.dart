@@ -7,14 +7,16 @@ import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 
-enum _DexMenuAction { edit, delete }
+enum _DexMenuAction { progress, edit, delete }
 
-/// Menu "⋮" da barra do dex: editar (nome e shiny dex) e apagar. Fica num
-/// menu, e não em mais ícones, porque a barra já está cheia no celular.
+/// Menu "⋮" da barra do dex: progresso por geração, editar (nome e shiny
+/// dex) e apagar. Fica num menu, e não em mais ícones, para o nome do dex
+/// caber inteiro na barra do celular.
 class DexMenu extends ConsumerWidget {
-  const DexMenu({required this.dex, super.key});
+  const DexMenu({required this.dex, required this.onShowProgress, super.key});
 
   final PersonalDex dex;
+  final VoidCallback onShowProgress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,10 +24,18 @@ class DexMenu extends ConsumerWidget {
     return PopupMenuButton<_DexMenuAction>(
       tooltip: 'Mais opções',
       onSelected: (action) => switch (action) {
+        _DexMenuAction.progress => onShowProgress(),
         _DexMenuAction.edit => showEditDexDialog(context, dex),
         _DexMenuAction.delete => deleteDex(context, ref, dex),
       },
       itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: _DexMenuAction.progress,
+          child: ListTile(
+            leading: Icon(Icons.bar_chart),
+            title: Text('Progresso por geração'),
+          ),
+        ),
         const PopupMenuItem(
           value: _DexMenuAction.edit,
           child: ListTile(

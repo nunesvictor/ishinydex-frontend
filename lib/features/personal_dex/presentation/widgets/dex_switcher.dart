@@ -7,15 +7,23 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 
 /// Título do AppBar do dex que abre um menu para trocar de PersonalDex ou
-/// voltar à lista completa.
+/// voltar à lista completa. [subtitle] (o progresso do dex) vai numa linha
+/// menor embaixo do nome.
 class DexSwitcher extends ConsumerWidget {
-  const DexSwitcher({required this.dexId, required this.title, super.key});
+  const DexSwitcher({
+    required this.dexId,
+    required this.title,
+    this.subtitle,
+    super.key,
+  });
 
   final int dexId;
   final String title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final dexes = ref.watch(dexListProvider).value ?? const <PersonalDex>[];
     return MenuAnchor(
       menuChildren: [
@@ -53,7 +61,23 @@ class DexSwitcher extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(child: Text(title, overflow: TextOverflow.ellipsis)),
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, overflow: TextOverflow.ellipsis),
+                      if (subtitle case final subtitle?)
+                        Text(
+                          subtitle,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
                 const Icon(Icons.arrow_drop_down),
               ],
             ),
