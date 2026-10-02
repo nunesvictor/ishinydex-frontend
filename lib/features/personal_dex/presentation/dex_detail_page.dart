@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,8 +80,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   final GlobalKey _searchStackKey = GlobalKey();
   final GlobalKey _pillAnchorKey = GlobalKey();
 
-  /// Posição da pílula em repouso, medida logo abaixo da grade (celular).
-  double? _pillRestTop;
+  /// Onde a pílula fica em repouso (meio da borda de cima), medido logo
+  /// abaixo da grade.
+  Offset? _pillRest;
 
   /// Depois da primeira medida, a pílula passa a animar ao mudar de lugar.
   bool _pillPlaced = false;
@@ -114,59 +116,32 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final dex = ref.watch(dexProvider(_dexId));
     final boxes = ref.watch(boxesProvider(_dexId));
     final body = _body(context, dex, boxes);
-    return Scaffold(
-      body: WindowSize.of(context).isCompact
-          ? _compactSearchLayout(context, dex.value, body)
-          : _wideSearchLayout(context, dex.value, body),
-    );
+    return Scaffold(body: _searchLayout(context, dex.value, body));
   }
 
-  /// Telas maiores: a busca fica numa barra no topo, sempre visível.
-  Widget _wideSearchLayout(
-    BuildContext context,
-    PersonalDex? dex,
-    Widget body,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      _appBar(context, dex),
-      SlotSearchBar(
-        controller: _searchController,
-        focusNode: _searchFocus,
-        active: _searching,
-        onChanged: _onSearchChanged,
-        onCancel: _cancelSearch,
-        onClear: _clearSearch,
-      ),
-      Expanded(
-        child: Stack(
-          children: [
-            Positioned.fill(child: body),
-            Positioned.fill(child: _resultsPanel(context)),
-          ],
-        ),
-      ),
-    ],
-  );
-
-  /// Celular: como a tela inicial do iPhone, a busca é uma pílula logo
-  /// abaixo da grade da box, no alcance do polegar.
+  /// Como a tela inicial do iPhone, a busca é uma pílula logo abaixo da
+  /// grade da box (no celular, no alcance do polegar). O mesmo vale para
+  /// telas maiores, para não ter uma barra de busca sempre aberta no topo.
   ///
   /// A pílula é o próprio campo de texto (o Safari do iOS só abre o teclado
   /// com um toque no campo). Ao ganhar o foco, o mesmo campo anima até o
   /// topo e vira a barra de busca, com os resultados por trás. Ele muda de
   /// lugar com um `AnimatedPositioned` e nunca é recriado, então o foco (e o
   /// teclado) continuam durante a animação.
-  Widget _compactSearchLayout(
-    BuildContext context,
-    PersonalDex? dex,
-    Widget body,
-  ) {
+  Widget _searchLayout(BuildContext context, PersonalDex? dex, Widget body) {
     final active = _searching;
     final top = MediaQuery.paddingOf(context).top;
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        // Ativa, a barra vai para o topo, centralizada junto do "Cancelar";
+        // no celular ocupa a largura, nas telas maiores tem um limite.
+        final barWidth = math.min(width - 16 - _cancelWidth, _maxBarWidth);
+        final barLeft = math.max<double>(
+          16,
+          (width - barWidth - _cancelWidth) / 2,
+        );
+        final rest = _pillRest;
         return Stack(
           key: _searchStackKey,
           children: [
@@ -206,7 +181,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
             ),
             Positioned(
               top: top + _barMargin,
-              right: 8,
+              left: barLeft + barWidth + 8,
               height: _barHeight,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
@@ -224,14 +199,14 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
               // subiria do rodapé ao abrir a tela).
               duration: _pillPlaced ? searchAnimationDuration : Duration.zero,
               curve: searchAnimationCurve,
-              left: active ? 16 : (width - _pillWidth) / 2,
-              // Em repouso, logo abaixo da grade (ver _buildCompact). Sem
-              // grade (carregando, erro), acima da barra inferior.
+              // Em repouso, logo abaixo da grade (ver _withPillAnchor). Sem
+              // grade (carregando, erro), no rodapé, centralizada.
+              left: active ? barLeft : (rest?.dx ?? width / 2) - _pillWidth / 2,
               top: active
                   ? top + _barMargin
-                  : _pillRestTop ??
+                  : rest?.dy ??
                         constraints.maxHeight - _pillHeight - _pillMargin,
-              width: active ? width - 16 - _cancelWidth : _pillWidth,
+              width: active ? barWidth : _pillWidth,
               height: active ? _barHeight : _pillHeight,
               child: SlotSearchPill(
                 controller: _searchController,
@@ -256,12 +231,15 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   static const _barHeight = 56.0;
   static const _barMargin = 8.0;
 
+  /// Largura máxima da barra ativa (telas maiores).
+  static const _maxBarWidth = 560.0;
+
   /// Largura reservada ao "Cancelar" à direita da barra ativa.
   static const _cancelWidth = 104.0;
 
   /// Resultados por cima das boxes enquanto a busca está ativa. [topInset]
-  /// deixa livre o espaço da barra quando ela flutua por cima (celular).
-  Widget _resultsPanel(BuildContext context, {double topInset = 0}) =>
+  /// deixa livre o espaço da barra, que flutua por cima.
+  Widget _resultsPanel(BuildContext context, {required double topInset}) =>
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: _searching
@@ -412,7 +390,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final grid = Column(
       children: [
         BoxNavigator(boxes: boxes, index: index, onChanged: _selectBox),
-        Expanded(child: _boxView(box)),
+        Expanded(child: _withPillAnchor(_boxView(box))),
       ],
     );
     final detail = SizedBox(
@@ -456,62 +434,64 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
             controller.jumpToPage(i);
           },
         ),
-        // A pílula de busca fica logo abaixo da grade, como a busca da tela
-        // inicial do iPhone acompanha os ícones: o espaço dela é reservado
-        // embaixo, e o conjunto grade + pílula fica centralizado.
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, area) {
-              final pageHeight = area.maxHeight - _pillHeight - _pillGap;
-              // A grade fica centralizada na página, dentro da margem do
-              // BoxView: a borda de baixo dela fica a meia altura dela
-              // abaixo do centro da página.
-              final grid = boxGridSize(
-                Size(
-                  area.maxWidth - 2 * boxViewPadding,
-                  pageHeight - 2 * boxViewPadding,
-                ),
-              );
-              // A pílula fica numa camada acima de tudo (para poder subir
-              // até o topo); aqui só marcamos o lugar dela, e a página mede
-              // depois do layout.
-              WidgetsBinding.instance.addPostFrameCallback(
-                (_) => _measurePillAnchor(),
-              );
-              return Stack(
-                children: [
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: pageHeight,
-                    child: PageView.builder(
-                      controller: controller,
-                      itemCount: boxes.length,
-                      // Ignora a página atual: pular para a box de um slot
-                      // buscado não pode limpar a seleção.
-                      onPageChanged: (i) {
-                        if (i != _boxIndex) _selectBox(i);
-                      },
-                      itemBuilder: (context, i) =>
-                          _boxView(boxes[i], compact: true),
-                    ),
-                  ),
-                  Positioned(
-                    top: pageHeight / 2 + grid.height / 2 + _pillGap,
-                    left: 0,
-                    right: 0,
-                    height: _pillHeight,
-                    child: SizedBox(key: _pillAnchorKey),
-                  ),
-                ],
-              );
-            },
+          child: _withPillAnchor(
+            PageView.builder(
+              controller: controller,
+              itemCount: boxes.length,
+              // Ignora a página atual: pular para a box de um slot buscado
+              // não pode limpar a seleção.
+              onPageChanged: (i) {
+                if (i != _boxIndex) _selectBox(i);
+              },
+              itemBuilder: (context, i) => _boxView(boxes[i], compact: true),
+            ),
           ),
         ),
       ],
     );
   }
+
+  /// A área das boxes ([page]) com o lugar da pílula de busca logo abaixo
+  /// da grade, como a busca da tela inicial do iPhone acompanha os ícones: o
+  /// espaço dela é reservado embaixo, e o conjunto grade + pílula fica
+  /// centralizado.
+  Widget _withPillAnchor(Widget page) => LayoutBuilder(
+    builder: (context, area) {
+      // Embaixo da pílula fica uma margem, para ela não colar no rodapé.
+      final pageHeight = area.maxHeight - _pillHeight - _pillGap - _pillMargin;
+      // A grade fica centralizada na página, dentro da margem do BoxView: a
+      // borda de baixo dela fica a meia altura dela abaixo do centro.
+      final grid = boxGridSize(
+        Size(
+          area.maxWidth - 2 * boxViewPadding,
+          pageHeight - 2 * boxViewPadding,
+        ),
+      );
+      // A pílula fica numa camada acima de tudo (para poder subir até o
+      // topo); aqui só marcamos o lugar dela, e a página mede depois do
+      // layout.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _measurePillAnchor());
+      return Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: pageHeight,
+            child: page,
+          ),
+          Positioned(
+            top: pageHeight / 2 + grid.height / 2 + _pillGap,
+            left: 0,
+            right: 0,
+            height: _pillHeight,
+            child: SizedBox(key: _pillAnchorKey),
+          ),
+        ],
+      );
+    },
+  );
 
   /// Converte a marca da pílula (dentro da área das boxes) para a camada da
   /// busca, onde a pílula de fato fica. Só reconstrói se a posição mudou.
@@ -520,10 +500,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final anchor = _pillAnchorKey.currentContext?.findRenderObject();
     final stack = _searchStackKey.currentContext?.findRenderObject();
     if (anchor is! RenderBox || stack is! RenderBox) return;
-    final restTop = anchor.localToGlobal(Offset.zero, ancestor: stack).dy;
-    if (restTop == _pillRestTop) return;
-    final first = _pillRestTop == null;
-    setState(() => _pillRestTop = restTop);
+    final topLeft = anchor.localToGlobal(Offset.zero, ancestor: stack);
+    final rest = topLeft + Offset(anchor.size.width / 2, 0);
+    if (rest == _pillRest) return;
+    final first = _pillRest == null;
+    setState(() => _pillRest = rest);
     if (first) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _pillPlaced = true);
     }

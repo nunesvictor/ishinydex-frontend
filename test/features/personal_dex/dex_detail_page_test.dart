@@ -499,11 +499,8 @@ void main() {
   });
 
   group('busca no dex', () {
-    // Barra no topo (telas maiores) ou pílula embaixo (celular).
     Finder searchField() => find.descendant(
-      of: find.byWidgetPredicate(
-        (widget) => widget is SlotSearchBar || widget is SlotSearchPill,
-      ),
+      of: find.byType(SlotSearchPill),
       matching: find.byType(TextField),
     );
 
@@ -592,13 +589,26 @@ void main() {
       expect(find.text('Cancelar'), findsNothing);
     });
 
-    testWidgets('expandido: a AppBar fica durante a busca', (tester) async {
+    testWidgets('expandido: a pílula fica abaixo da grade e, ativa, vira uma '
+        'barra com largura limitada', (tester) async {
       await pumpFullApp(tester);
       await openShinyDex(tester);
+      final pill = find.byType(SlotSearchPill);
+      final grid = tester.getRect(
+        find
+            .descendant(of: find.byType(BoxGrid), matching: find.byType(Column))
+            .first,
+      );
+      // Centralizada na coluna da grade (o detalhe do slot fica ao lado).
+      expect(tester.getTopLeft(pill).dy - grid.bottom, moreOrLessEquals(16));
+      expect(tester.getCenter(pill).dx, moreOrLessEquals(grid.center.dx));
+
       await tester.tap(searchField());
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Mais opções').hitTestable(), findsOneWidget);
+      expect(find.byTooltip('Mais opções').hitTestable(), findsNothing);
       expect(find.text('Cancelar'), findsOneWidget);
+      expect(tester.getSize(pill).width, 560);
+      expect(tester.getTopLeft(pill).dy, lessThan(100));
     });
 
     for (final size in [compactSize, expandedSize]) {

@@ -12,90 +12,11 @@ const Curve searchAnimationCurve = Curves.easeOutCubic;
 /// Dica do campo enquanto se digita.
 const _searchHint = 'Nome ou número';
 
-/// Barra de busca do dex no topo (telas maiores).
+/// Busca do dex: em repouso, uma pílula "Buscar" logo abaixo da grade;
+/// ativa (com foco ou texto), a barra de busca do topo.
 ///
-/// Fica na tela, e não num diálogo com `autofocus`, porque o Safari do iOS
-/// só abre o teclado quando o foco nasce de um toque no próprio campo.
-///
-/// [active] (com foco ou texto) vira o campo numa pílula e mostra
-/// "Cancelar", como a busca nativa do iOS. A borda anima sozinha: o
-/// `InputDecorator` faz a transição quando a `border` muda.
-class SlotSearchBar extends StatelessWidget {
-  const SlotSearchBar({
-    required this.controller,
-    required this.focusNode,
-    required this.active,
-    required this.onChanged,
-    required this.onCancel,
-    required this.onClear,
-    super.key,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool active;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onCancel;
-
-  /// O "x" do campo: apaga o texto, mas a busca continua aberta.
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-      child: Row(
-        children: [
-          Expanded(
-            // Reconstrói só o campo quando o texto muda, para o "x"
-            // aparecer apenas com algo digitado (como no inventário).
-            child: ValueListenableBuilder(
-              valueListenable: controller,
-              builder: (context, value, _) => TextField(
-                controller: controller,
-                focusNode: focusNode,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: _searchHint,
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: value.text.isEmpty
-                      ? null
-                      : _ClearButton(onPressed: onClear),
-                  filled: active,
-                  fillColor: scheme.surfaceContainerHigh,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(active ? 28 : 4),
-                  ),
-                ),
-                onChanged: onChanged,
-                // "Buscar" no teclado só o fecha: os resultados ficam.
-                onSubmitted: (_) => focusNode.unfocus(),
-              ),
-            ),
-          ),
-          // O AnimatedSize anima a largura do "Cancelar" ao entrar e sair.
-          AnimatedSize(
-            duration: searchAnimationDuration,
-            curve: searchAnimationCurve,
-            child: active
-                ? Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: TextButton(
-                      onPressed: onCancel,
-                      child: const Text('Cancelar'),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Busca do dex no celular: em repouso, uma pílula "Buscar" acima da barra
-/// inferior; ativa (com foco ou texto), a barra de busca do topo.
+/// É o próprio campo, e não um botão que abre outro: o Safari do iOS só abre
+/// o teclado quando o foco nasce de um toque no campo.
 ///
 /// Quem posiciona e anima a posição e o tamanho é a página; aqui fica só a
 /// aparência. O fundo e a borda são de um `AnimatedContainer` (e não do
