@@ -11,6 +11,8 @@ import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dar
 import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
+import 'package:ishinydex/features/specimens/presentation/away_page.dart';
+import 'package:ishinydex/features/specimens/presentation/saves_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 
@@ -20,6 +22,12 @@ abstract final class Routes {
   static const dexes = '/dexes';
   static const specimens = '/specimens';
   static const settings = '/settings';
+
+  /// Ajustes → Meus saves.
+  static const saves = '$settings/saves';
+
+  /// Espécimes fora do HOME, por save.
+  static const away = '$specimens/away';
 
   /// Dex [id]; com [boxId]/[slotId], abre naquela box com o slot selecionado.
   static String dex(int id, {int? boxId, int? slotId}) => Uri(
@@ -141,6 +149,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: Routes.specimens,
                 builder: (context, state) => const SpecimensPage(),
                 routes: [
+                  // Antes de ':specimenId', que também casaria com "away".
+                  GoRoute(
+                    path: 'away',
+                    builder: (context, state) => const AwayPage(),
+                  ),
                   GoRoute(
                     path: ':specimenId',
                     builder: (context, state) => SpecimenDetailPage(
@@ -158,6 +171,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.settings,
                 builder: (context, state) => const SettingsPage(),
+                routes: [
+                  GoRoute(
+                    path: 'saves',
+                    builder: (context, state) => const SavesPage(),
+                  ),
+                ],
               ),
             ],
           ),

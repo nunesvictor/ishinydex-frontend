@@ -12,6 +12,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -150,7 +151,15 @@ class _Details extends ConsumerWidget {
                 title: Text(name),
                 subtitle: Text(value),
               ),
+          if (specimen.location case final save?)
+            LocationTile(save: save, since: specimen.locationSince),
           const SizedBox(height: 16),
+          LocationActions(
+            specimenId: specimen.id,
+            name: specimen.displayName,
+            away: specimen.isAway,
+          ),
+          const SizedBox(height: 8),
           if (specimen.isDeposited) ...[
             FilledButton.tonalIcon(
               onPressed: () => _openInDex(context, ref),

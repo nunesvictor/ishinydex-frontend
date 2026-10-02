@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
@@ -26,6 +28,13 @@ class SettingsPage extends ConsumerWidget {
                   ? 'Modo demonstração (dados fake)'
                   : env.apiBaseUrl,
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.videogame_asset_outlined),
+            title: const Text('Meus saves'),
+            subtitle: const Text('Jogos para onde você envia Pokémon do HOME'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go(Routes.saves),
           ),
           const _CaptureDateFormatSetting(),
           const Divider(),

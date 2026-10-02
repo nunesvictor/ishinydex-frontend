@@ -25,6 +25,13 @@ Future<List<Specimen>> allSpecimens(FakeBackend backend) async =>
       pageSize: 500,
     )).results;
 
+/// Abre o menu "Mais ações" do modo de seleção e escolhe [label].
+Future<void> openBulkAction(WidgetTester tester, String label) async {
+  await tester.tap(find.byTooltip('Mais ações'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label));
+}
+
 Future<void> openSpecimensTab(WidgetTester tester) async {
   await tester.tap(find.text('Espécimes').first);
   await tester.pumpAndSettle();
@@ -602,7 +609,7 @@ void main() {
         await search(tester, loose.nickname ?? loose.formName!);
         await tester.longPress(specimenTile(loose.id));
         await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('Libertar em lote'));
+        await openBulkAction(tester, 'Libertar em lote');
         await tester.pumpAndSettle();
         expect(find.text('Libertar 1 espécime?'), findsOneWidget);
         expect(
@@ -622,7 +629,7 @@ void main() {
           await tester.pumpAndSettle();
         }
         expect(find.text('3 selecionados'), findsOneWidget);
-        await tester.tap(find.byTooltip('Libertar em lote'));
+        await openBulkAction(tester, 'Libertar em lote');
         await tester.pumpAndSettle();
         expect(find.text('Libertar 3 espécimes?'), findsOneWidget);
         expect(
@@ -656,7 +663,7 @@ void main() {
       expect(find.text('Selecione um espécime na lista.'), findsNothing);
       await tester.longPress(specimenTile(deposited.id));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Libertar em lote'));
+      await openBulkAction(tester, 'Libertar em lote');
       await tester.pumpAndSettle();
       expect(
         find.text(
@@ -702,13 +709,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Sem a contagem de depositados, nem pergunta.
-      await tester.tap(find.byTooltip('Libertar em lote'));
+      await openBulkAction(tester, 'Libertar em lote');
       await tester.pumpAndSettle();
       expect(find.text(const NetworkFailure().message), findsOneWidget);
       expect(find.text('Libertar 1 espécime?'), findsNothing);
 
       idsFail = false;
-      await tester.tap(find.byTooltip('Libertar em lote'));
+      await openBulkAction(tester, 'Libertar em lote');
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
       await tester.pumpAndSettle();

@@ -14,6 +14,7 @@ import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/bulk_edit_sheet.dart';
@@ -36,6 +37,9 @@ class SpecimensPage extends ConsumerStatefulWidget {
   @override
   ConsumerState<SpecimensPage> createState() => _SpecimensPageState();
 }
+
+/// Ações do menu "Mais ações" do modo de seleção.
+enum _BulkAction { send, bringBack, release }
 
 class _SpecimensPageState extends ConsumerState<SpecimensPage> {
   SpecimenQuery _query = emptySpecimenQuery;
@@ -157,14 +161,50 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
                   onPressed: _bulkEdit,
                   icon: const Icon(Icons.edit_note),
                 ),
-                IconButton(
-                  tooltip: 'Libertar em lote',
-                  onPressed: _bulkRelease,
-                  icon: const Icon(Icons.delete_sweep_outlined),
+                // Menos usadas: no menu, para caber no celular.
+                PopupMenuButton<_BulkAction>(
+                  tooltip: 'Mais ações',
+                  onSelected: (action) => switch (action) {
+                    _BulkAction.send => _bulkMove(toHome: false),
+                    _BulkAction.bringBack => _bulkMove(toHome: true),
+                    _BulkAction.release => _bulkRelease(),
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: _BulkAction.send,
+                      child: ListTile(
+                        leading: Icon(Icons.flight_takeoff),
+                        title: Text('Enviar para jogo…'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: _BulkAction.bringBack,
+                      child: ListTile(
+                        leading: Icon(Icons.flight_land),
+                        title: Text('Trazer de volta ao HOME'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: _BulkAction.release,
+                      child: ListTile(
+                        leading: Icon(Icons.delete_sweep_outlined),
+                        title: Text('Libertar em lote'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             )
-          : AppBar(title: const Text('Espécimes')),
+          : AppBar(
+              title: const Text('Espécimes'),
+              actions: [
+                IconButton(
+                  tooltip: 'Fora do HOME',
+                  onPressed: () => context.go(Routes.away),
+                  icon: const Icon(Icons.flight_takeoff),
+                ),
+              ],
+            ),
       floatingActionButton: _selecting
           ? null
           : FloatingActionButton.extended(
@@ -245,6 +285,16 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     } on AppFailure catch (failure) {
       if (mounted) _showMessage(failure.message);
     }
+  }
+
+  /// Envia os marcados para um save, ou os traz de volta ao HOME; deu
+  /// certo, sai do modo de seleção.
+  Future<void> _bulkMove({required bool toHome}) async {
+    final ids = [..._checked]..sort();
+    final moved = toHome
+        ? await bringBackMany(context, ref, ids)
+        : await sendToGame(context, ref, ids);
+    if (moved && mounted) _setChecked({});
   }
 
   /// Confirma (dizendo quantos estão depositados) e liberta os marcados.

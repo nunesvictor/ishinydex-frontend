@@ -38,6 +38,12 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | GET | `/api/trainers/?page_size=100` | `fetchTrainers` |
 | POST | `/api/trainers/` | `createTrainer` (`{name, trainer_id, version?}`; nome + ID únicos) |
 | GET | `/api/versions/` | `fetchVersions` (versões de jogo em ordem de lançamento, sem paginação) |
+| GET | `/api/saves/` | `fetchSaves` (saves do usuário, sem paginação: `{id, label, trainer: Trainer}`) |
+| POST | `/api/saves/` | `createSave` (`{trainer, label}`; só OT de jogo que recebe do HOME) |
+| PATCH | `/api/saves/{id}/` | `updateSave` (só `label`) |
+| DELETE | `/api/saves/{id}/` | `deleteSave` (com espécimes no save → 400) |
+| POST | `/api/specimens/transfer/` | `transfer` (`{"ids": [...], "save": id \| null}` → `{"transferred": n}`; `null` = de volta ao HOME) |
+| POST | `/api/specimens/{id}/evolve/` | `evolve` (`{"form": id}`: evoluiu fora do HOME; sai do slot) |
 
 As implementações ficam em
 [http_personal_dex_repository.dart](../lib/features/personal_dex/data/http_personal_dex_repository.dart),

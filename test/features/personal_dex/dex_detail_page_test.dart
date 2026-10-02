@@ -392,8 +392,9 @@ void main() {
           '(${size.width.toInt()}px)', (tester) async {
         final lastDex = InMemoryLastDexStorage(2);
         await pumpFullApp(tester, size: size, lastDex: lastDex);
-        // Entrou direto no último dex usado.
-        expect(find.text('HOME 3 · 20/30'), findsOneWidget);
+        // Entrou direto no último dex usado (o seed tem 1 espécime dele
+        // num save: conta como registrado e aparece como "fora").
+        expect(find.text('HOME 3 · 20/30 · 1 fora'), findsOneWidget);
 
         await tester.tap(find.byTooltip('Trocar PersonalDex'));
         await tester.pumpAndSettle();

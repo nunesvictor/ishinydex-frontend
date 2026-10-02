@@ -107,7 +107,11 @@ class _DexCard extends StatelessWidget {
                 dex.missing == 0 ? 'Completo!' : 'Faltam ${dex.missing}',
                 style: theme.textTheme.bodySmall,
               ),
-              ProgressBadge(registered: dex.registered, total: dex.total),
+              ProgressBadge(
+                registered: dex.registered,
+                total: dex.total,
+                away: dex.away,
+              ),
             ],
           ),
         ),

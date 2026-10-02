@@ -149,6 +149,60 @@ class HttpSpecimenRepository implements SpecimenRepository {
   });
 
   @override
+  Future<List<Save>> fetchSaves() => guardRequest(() async {
+    final response = await _dio.get<List<dynamic>>('saves/');
+    return [
+      for (final json in response.data!)
+        Save.fromJson(json as Map<String, dynamic>),
+    ];
+  });
+
+  @override
+  Future<Save> createSave({required int trainerId, String label = ''}) =>
+      guardRequest(() async {
+        final response = await _dio.post<Map<String, dynamic>>(
+          'saves/',
+          data: {'trainer': trainerId, 'label': label},
+        );
+        return Save.fromJson(response.data!);
+      });
+
+  @override
+  Future<Save> updateSave(int saveId, {required String label}) =>
+      guardRequest(() async {
+        final response = await _dio.patch<Map<String, dynamic>>(
+          'saves/$saveId/',
+          data: {'label': label},
+        );
+        return Save.fromJson(response.data!);
+      });
+
+  @override
+  Future<void> deleteSave(int saveId) => guardRequest(() async {
+    await _dio.delete<void>('saves/$saveId/');
+  });
+
+  @override
+  Future<int> transfer(List<int> ids, {required int? saveId}) =>
+      guardRequest(() async {
+        final response = await _dio.post<Map<String, dynamic>>(
+          'specimens/transfer/',
+          data: {'ids': ids, 'save': saveId},
+        );
+        return response.data!['transferred'] as int;
+      });
+
+  @override
+  Future<Specimen> evolve(int specimenId, {required int formId}) =>
+      guardRequest(() async {
+        final response = await _dio.post<Map<String, dynamic>>(
+          'specimens/$specimenId/evolve/',
+          data: {'form': formId},
+        );
+        return Specimen.fromJson(response.data!);
+      });
+
+  @override
   Future<Trainer> createTrainer({
     required String name,
     required String trainerId,

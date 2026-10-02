@@ -162,6 +162,7 @@ class SlotActions {
     ..invalidate(specimenPageProvider)
     ..invalidate(specimenIdsProvider)
     ..invalidate(specimenProvider)
+    ..invalidate(awaySpecimensProvider)
     ..invalidate(dexListProvider)
     ..invalidate(dexProvider)
     ..invalidate(boxesProvider)

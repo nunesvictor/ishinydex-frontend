@@ -7,6 +7,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -141,6 +142,16 @@ class SlotDetailPanel extends ConsumerWidget {
               label: const Text('Depositar'),
             )
           else ...[
+            if (specimen.location case final save?) ...[
+              LocationTile(save: save, since: specimen.locationSince),
+              const SizedBox(height: 8),
+            ],
+            LocationActions(
+              specimenId: specimen.id,
+              name: specimen.displayName,
+              away: specimen.location != null,
+            ),
+            const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: onEdit,
               icon: const Icon(Icons.edit),
