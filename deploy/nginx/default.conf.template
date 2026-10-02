@@ -11,6 +11,13 @@ server {
 
     client_max_body_size 10m;
 
+    # O mime.types do nginx não conhece .mjs, e o navegador só carrega um
+    # módulo JavaScript (o main.dart.mjs do build --wasm) com o tipo certo.
+    include /etc/nginx/mime.types;
+    types {
+        application/javascript mjs;
+    }
+
     gzip on;
     gzip_types text/plain text/css application/javascript application/json application/wasm image/svg+xml;
     gzip_min_length 1024;

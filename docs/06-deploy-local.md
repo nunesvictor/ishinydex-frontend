@@ -54,10 +54,20 @@ Três conceitos que aparecem aqui:
   (`http://ip:8090`). Por isso não existe CORS, e o app é compilado com
   `API_BASE_URL=/api`, uma URL relativa ao endereço da página. O mesmo build
   funciona em `localhost`, no IP da rede ou em qualquer domínio futuro.
+- **WebAssembly** (issue #91): por padrão a imagem é compilada com
+  `flutter build web --wasm`, que gera dois builds. O loader do Flutter
+  escolhe no navegador: o build em WebAssembly, com o renderizador `skwasm`,
+  nos navegadores Chromium (Chrome, Brave, Edge), onde o app fica bem mais
+  fluido; e o JavaScript (`main.dart.js` + CanvasKit) nos demais. Safari e
+  Firefox ficam no JavaScript por padrão do Flutter: num teste no iPhone
+  liberando o wasm (`wasmAllowList`), o ganho foi sutil e não compensa o risco
+  de defeitos do WebKit. O nginx serve o `main.dart.mjs` como
+  `application/javascript` (o `mime.types` dele não conhece `.mjs`).
 - **Cache com endereço versionado**: o Flutter sempre gera os mesmos nomes
   (`main.dart.js`, `assets/...`), e um cache longo nesses nomes faria o
   navegador rodar a versão antiga depois de um deploy (issue #5). Por isso:
-  - no build, o [Dockerfile](../Dockerfile) calcula um hash do código e dos
+  - no build, o [Dockerfile](../Dockerfile) calcula um hash do código
+    (`main.dart.js` e, com wasm, `main.dart.wasm` e `main.dart.mjs`) e dos
     assets e o grava no
     [`web/flutter_bootstrap.js`](../web/flutter_bootstrap.js), que carrega o
     app de `/v/<hash>/` (`entrypointBaseUrl` e `assetBase` do loader);
@@ -76,9 +86,10 @@ sprites com o endereço que o navegador usou
 
 ## Configuração da imagem
 
-| Variável (ambiente do container) | Padrão | Uso |
+| Variável | Padrão | Uso |
 | --- | --- | --- |
-| `BACKEND_URL` | definido pelo compose principal (`http://backend:8000`) | Backend para onde o nginx repassa a API |
+| `BACKEND_URL` (ambiente do container) | definido pelo compose principal (`http://backend:8000`) | Backend para onde o nginx repassa a API |
+| `WEB_WASM` (build arg) | `true` | Gera também o build em WebAssembly. `false` volta ao build só JavaScript (no compose principal: `X_WEB_WASM`) |
 
 A porta publicada (`X_WEB_PORT`, padrão `8090`) e o dia a dia (atualizar,
 logs, backup) ficam no repositório principal: veja o README e o `CLAUDE.md`

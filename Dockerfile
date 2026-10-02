@@ -31,11 +31,19 @@ RUN dart run build_runner build
 
 # API_BASE_URL relativa: o nginx atende app e API na mesma origem.
 ARG API_BASE_URL=/api
-RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
+# WEB_WASM=true (padrão) gera também o build em WebAssembly (issue #91). O
+# loader do Flutter escolhe no navegador: wasm nos Chromium (Chrome, Brave,
+# Edge), JavaScript nos demais (Safari, Firefox), que o --wasm gera junto.
+# WEB_WASM=false volta ao build só JavaScript.
+ARG WEB_WASM=true
+RUN if [ "${WEB_WASM}" = "true" ]; then wasm="--wasm"; else wasm=""; fi \
+    && flutter build web --release ${wasm} --dart-define=API_BASE_URL=${API_BASE_URL}
 
 # Cache-busting (issue #5): hash do código e dos assets vira o prefixo v/<hash>/
 # de onde o flutter_bootstrap.js carrega o app (ver web/flutter_bootstrap.js).
-RUN version=$(find build/web/main.dart.js build/web/assets -type f -print0 \
+# O código são os main.dart.* da raiz: .js e, com WEB_WASM, .wasm e .mjs.
+RUN version=$({ find build/web -maxdepth 1 -type f -name 'main.dart.*' -print0; \
+        find build/web/assets -type f -print0; } \
         | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-12) \
     && sed -i "s/__BUILD_VERSION__/${version}/" build/web/flutter_bootstrap.js \
     && grep -q "v/\${buildVersion}/" build/web/flutter_bootstrap.js \
