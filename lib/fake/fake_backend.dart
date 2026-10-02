@@ -1065,6 +1065,29 @@ class FakeBackend
     _slotHolding(specimenId)?.specimenId = null;
   }
 
+  /// Como `POST /specimens/bulk-release/`: tudo ou nada.
+  @override
+  Future<int> bulkRelease(List<int> ids) async {
+    await _delay();
+    final unique = ids.toSet();
+    if (unique.isEmpty) {
+      throw ValidationFailure({
+        'ids': ['Esta lista não pode estar vazia.'],
+      });
+    }
+    final missing = unique.where((id) => !_specimens.containsKey(id));
+    if (missing.isNotEmpty) {
+      throw ValidationFailure({
+        'ids': ['espécimes não encontrados: ${missing.join(', ')}'],
+      });
+    }
+    for (final id in unique) {
+      _slotHolding(id)?.specimenId = null;
+      _specimens.remove(id);
+    }
+    return unique.length;
+  }
+
   @override
   Future<FormDetail> fetchForm(int formId) async {
     await _delay();

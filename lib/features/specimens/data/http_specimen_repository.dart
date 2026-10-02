@@ -110,6 +110,15 @@ class HttpSpecimenRepository implements SpecimenRepository {
   });
 
   @override
+  Future<int> bulkRelease(List<int> ids) => guardRequest(() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      'specimens/bulk-release/',
+      data: {'ids': ids},
+    );
+    return response.data!['released'] as int;
+  });
+
+  @override
   Future<Specimen> create(SpecimenDraft draft) => guardRequest(() async {
     final response = await _dio.post<Map<String, dynamic>>(
       'specimens/',

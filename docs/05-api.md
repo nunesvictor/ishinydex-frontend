@@ -32,6 +32,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | DELETE | `/api/specimens/{id}/` | `release` (libertar: apaga o specimen, mesmo depositado; o slot fica faltante) |
 | GET | `/api/specimens/ids/?<filtros>` | `fetchSpecimenIds` ("selecionar todos os resultados"; sem paginação) |
 | PATCH | `/api/specimens/bulk/` | `bulkUpdate` (`{"ids": [...], "changes": {...}}` → `{"updated": n}`; conflito de gênero → `GenderConflictFailure`) |
+| POST | `/api/specimens/bulk-release/` | `bulkRelease` (`{"ids": [...]}` → `{"released": n}`; tudo ou nada) |
 | GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas, tipos, gerações e marcas de origem; pokébolas e tipos trazem `sprite_url`) |
 | GET | `/api/forms/{id}/` | `fetchForm` (habilidades da forma) |
 | GET | `/api/trainers/?page_size=100` | `fetchTrainers` |

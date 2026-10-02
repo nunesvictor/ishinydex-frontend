@@ -96,6 +96,23 @@ void main() {
     expect(slots.first.isShinyDisplay, true);
   });
 
+  test('bulkRelease: tudo ou nada; depositado deixa o slot faltante', () async {
+    final slot = (await backend.fetchSlots(
+      dexId: 1,
+      boxId: 1,
+    )).firstWhere((s) => s.isRegistered);
+    final loose = (await backend.fetchAvailable(3)).single;
+    final ids = [slot.specimen!.id, loose.id];
+
+    expect(backend.bulkRelease(const []), _validation('ids'));
+    expect(backend.bulkRelease([...ids, 9999]), _validation('ids'));
+    expect((await backend.fetchSlot(slot.id)).isRegistered, true);
+
+    expect(await backend.bulkRelease([...ids, loose.id]), 2);
+    expect((await backend.fetchSlot(slot.id)).isMissing, true);
+    expect(backend.fetchSpecimen(loose.id), throwsA(isA<NotFoundFailure>()));
+  });
+
   group('deposit', () {
     test('regras de validação', () async {
       // Slot 3 → forma 3 (faltante); slot 59 → livre.

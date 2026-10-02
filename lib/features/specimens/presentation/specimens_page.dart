@@ -10,6 +10,7 @@ import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -156,6 +157,11 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
                   onPressed: _bulkEdit,
                   icon: const Icon(Icons.edit_note),
                 ),
+                IconButton(
+                  tooltip: 'Libertar em lote',
+                  onPressed: _bulkRelease,
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                ),
               ],
             )
           : AppBar(title: const Text('Espécimes')),
@@ -236,6 +242,51 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       );
     } on GenderConflictFailure catch (failure) {
       if (mounted) await _showGenderConflicts(failure);
+    } on AppFailure catch (failure) {
+      if (mounted) _showMessage(failure.message);
+    }
+  }
+
+  /// Confirma (dizendo quantos estão depositados) e liberta os marcados.
+  Future<void> _bulkRelease() async {
+    final ids = [..._checked]..sort();
+    final repository = ref.read(specimenRepositoryProvider);
+    try {
+      // Os marcados podem estar em páginas não carregadas: a API conta.
+      final deposited = (await repository.fetchSpecimenIds(
+        SpecimenQuery(ids: ids, status: SpecimenStatus.deposited),
+      )).length;
+      if (!mounted) return;
+      final count = ids.length;
+      final one = count == 1;
+      final confirmed = await showConfirmDialog(
+        context,
+        icon: Icons.warning_amber_rounded,
+        title: one ? 'Libertar 1 espécime?' : 'Libertar $count espécimes?',
+        message: [
+          if (one)
+            'O cadastro será apagado.'
+          else
+            'Os cadastros serão apagados.',
+          if (deposited == 1)
+            '1 está depositado e o slot ficará faltante.'
+          else if (deposited > 1)
+            '$deposited estão depositados e os slots ficarão faltantes.',
+          'Esta ação não pode ser desfeita.',
+        ].join(' '),
+        confirmLabel: 'Libertar',
+        destructive: true,
+      );
+      if (!confirmed || !mounted) return;
+      final released = await repository.bulkRelease(ids);
+      ref.read(slotActionsProvider).specimensChanged();
+      if (!mounted) return;
+      _setChecked({});
+      // O detalhe aberto ao lado pode ser de um libertado.
+      if (ids.contains(_selectedId)) setState(() => _selectedId = null);
+      _showMessage(
+        '$released ${released == 1 ? 'espécime libertado' : 'espécimes libertados'}.',
+      );
     } on AppFailure catch (failure) {
       if (mounted) _showMessage(failure.message);
     }
