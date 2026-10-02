@@ -9,13 +9,16 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 const searchAnimationDuration = Duration(milliseconds: 300);
 const Curve searchAnimationCurve = Curves.easeOutCubic;
 
-/// Campo de busca do dex, sempre visível acima das boxes.
+/// Dica do campo enquanto se digita.
+const _searchHint = 'Nome ou número';
+
+/// Barra de busca do dex no topo (telas maiores).
 ///
 /// Fica na tela, e não num diálogo com `autofocus`, porque o Safari do iOS
 /// só abre o teclado quando o foco nasce de um toque no próprio campo.
 ///
-/// [active] (com foco ou texto) vira o campo numa pílula e troca [trailing]
-/// por "Cancelar", como a busca nativa do iOS. A borda anima sozinha: o
+/// [active] (com foco ou texto) vira o campo numa pílula e mostra
+/// "Cancelar", como a busca nativa do iOS. A borda anima sozinha: o
 /// `InputDecorator` faz a transição quando a `border` muda.
 class SlotSearchBar extends StatelessWidget {
   const SlotSearchBar({
@@ -25,7 +28,6 @@ class SlotSearchBar extends StatelessWidget {
     required this.onChanged,
     required this.onCancel,
     required this.onClear,
-    this.trailing,
     super.key,
   });
 
@@ -37,9 +39,6 @@ class SlotSearchBar extends StatelessWidget {
 
   /// O "x" do campo: apaga o texto, mas a busca continua aberta.
   final VoidCallback onClear;
-
-  /// Ação ao lado do campo enquanto a busca está inativa.
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -58,15 +57,11 @@ class SlotSearchBar extends StatelessWidget {
                 focusNode: focusNode,
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: 'Nome ou número',
+                  hintText: _searchHint,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: value.text.isEmpty
                       ? null
-                      : IconButton(
-                          tooltip: 'Limpar busca',
-                          onPressed: onClear,
-                          icon: const Icon(Icons.clear),
-                        ),
+                      : _ClearButton(onPressed: onClear),
                   filled: active,
                   fillColor: scheme.surfaceContainerHigh,
                   border: OutlineInputBorder(
@@ -79,32 +74,113 @@ class SlotSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          // O AnimatedSize anima a largura (o filtro sai, "Cancelar" entra);
-          // o AnimatedSwitcher faz o cruzamento entre os dois.
+          // O AnimatedSize anima a largura do "Cancelar" ao entrar e sair.
           AnimatedSize(
             duration: searchAnimationDuration,
             curve: searchAnimationCurve,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 150),
-              child: active
-                  ? Padding(
-                      key: const ValueKey('search-cancel'),
-                      padding: const EdgeInsets.only(left: 4),
-                      child: TextButton(
-                        onPressed: onCancel,
-                        child: const Text('Cancelar'),
-                      ),
-                    )
-                  : KeyedSubtree(
-                      key: const ValueKey('search-trailing'),
-                      child: trailing ?? const SizedBox.shrink(),
+            child: active
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: TextButton(
+                      onPressed: onCancel,
+                      child: const Text('Cancelar'),
                     ),
-            ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       ),
     );
   }
+}
+
+/// Busca do dex no celular: em repouso, uma pílula "Buscar" acima da barra
+/// inferior; ativa (com foco ou texto), a barra de busca do topo.
+///
+/// Quem posiciona e anima a posição e o tamanho é a página; aqui fica só a
+/// aparência. O fundo e a borda são de um `AnimatedContainer` (e não do
+/// `InputDecorator`) para acompanharem a altura enquanto ela anima.
+class SlotSearchPill extends StatelessWidget {
+  const SlotSearchPill({
+    required this.controller,
+    required this.focusNode,
+    required this.active,
+    required this.onChanged,
+    required this.onClear,
+    super.key,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool active;
+  final ValueChanged<String> onChanged;
+
+  /// O "x" do campo: apaga o texto, mas a busca continua aberta.
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedContainer(
+      duration: searchAnimationDuration,
+      curve: searchAnimationCurve,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(active ? 28 : 22),
+        border: Border.all(
+          color: active ? scheme.primary : scheme.outlineVariant,
+          width: active ? 2 : 1,
+        ),
+        // Em repouso, a pílula flutua sobre a tela.
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: active ? 0 : 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ValueListenableBuilder(
+        valueListenable: controller,
+        builder: (context, value, _) => TextField(
+          controller: controller,
+          focusNode: focusNode,
+          textInputAction: TextInputAction.search,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+            hintText: active ? _searchHint : 'Buscar',
+            prefixIcon: const Icon(Icons.search),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 44,
+              minHeight: 24,
+            ),
+            suffixIcon: value.text.isEmpty
+                ? null
+                : _ClearButton(onPressed: onClear),
+          ),
+          onChanged: onChanged,
+          // "Buscar" no teclado só o fecha: os resultados ficam.
+          onSubmitted: (_) => focusNode.unfocus(),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClearButton extends StatelessWidget {
+  const _ClearButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: 'Limpar busca',
+    onPressed: onPressed,
+    icon: const Icon(Icons.clear),
+  );
 }
 
 /// Resultados da busca por [search] (nome ou número) no dex [dexId]. Quem

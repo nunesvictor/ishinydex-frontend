@@ -455,7 +455,9 @@ dentro de um diálogo recebe o foco um frame depois do toque no botão que abriu
 o diálogo; o cursor pisca, mas o teclado não aparece. Por isso a busca do dex
 fica **sempre na tela**
 ([`SlotSearchBar`](../lib/features/personal_dex/presentation/widgets/slot_search.dart)),
-como a do inventário: o toque é no campo, e o teclado abre. Quando um campo
+como a do inventário: o toque é no campo, e o teclado abre. No celular, a
+pílula "Buscar" é o próprio campo e anima até o topo ao ganhar o foco; como
+o mesmo widget só muda de posição (`AnimatedPositioned`), o foco continua. Quando um campo
 precisa de teclado imediato no iPhone, ele deve estar na tela antes do toque.
 
 **Animações implícitas.** Widgets `Animated*` (`AnimatedAlign`,

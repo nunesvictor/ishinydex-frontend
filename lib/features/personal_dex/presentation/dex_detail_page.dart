@@ -103,90 +103,180 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   Widget build(BuildContext context) {
     final dex = ref.watch(dexProvider(_dexId));
     final boxes = ref.watch(boxesProvider(_dexId));
-    // No celular a AppBar recolhe durante a busca, para sobrar espaço para
-    // os resultados entre o campo e o teclado. Nas telas maiores não falta
-    // espaço, e a barra sumindo só chamaria atenção.
-    final collapsed = _searching && WindowSize.of(context).isCompact;
-    // A AppBar fica no corpo (e não em `Scaffold.appBar`) para poder
-    // recolher com animação: o AnimatedAlign encolhe a altura até zero.
+    final body = _body(context, dex, boxes);
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ClipRect(
-            child: AnimatedAlign(
-              duration: searchAnimationDuration,
-              curve: searchAnimationCurve,
-              alignment: Alignment.bottomCenter,
-              heightFactor: collapsed ? 0 : 1,
-              child: IgnorePointer(
-                ignoring: collapsed,
-                child: ExcludeSemantics(
-                  excluding: collapsed,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: collapsed ? 0 : 1,
-                    child: _appBar(context, dex.value),
+      body: WindowSize.of(context).isCompact
+          ? _compactSearchLayout(context, dex.value, body)
+          : _wideSearchLayout(context, dex.value, body),
+    );
+  }
+
+  /// Telas maiores: a busca fica numa barra no topo, sempre visível.
+  Widget _wideSearchLayout(
+    BuildContext context,
+    PersonalDex? dex,
+    Widget body,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _appBar(context, dex),
+      SlotSearchBar(
+        controller: _searchController,
+        focusNode: _searchFocus,
+        active: _searching,
+        onChanged: _onSearchChanged,
+        onCancel: _cancelSearch,
+        onClear: _clearSearch,
+      ),
+      Expanded(
+        child: Stack(
+          children: [
+            Positioned.fill(child: body),
+            Positioned.fill(child: _resultsPanel(context)),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  /// Celular: como a tela inicial do iPhone, a busca é uma pílula logo
+  /// acima da barra inferior, no alcance do polegar.
+  ///
+  /// A pílula é o próprio campo de texto (o Safari do iOS só abre o teclado
+  /// com um toque no campo). Ao ganhar o foco, o mesmo campo anima até o
+  /// topo e vira a barra de busca, com os resultados por trás. Ele muda de
+  /// lugar com um `AnimatedPositioned` e nunca é recriado, então o foco (e o
+  /// teclado) continuam durante a animação.
+  Widget _compactSearchLayout(
+    BuildContext context,
+    PersonalDex? dex,
+    Widget body,
+  ) {
+    final active = _searching;
+    final top = MediaQuery.paddingOf(context).top;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // A AppBar fica no corpo (e não em `Scaffold.appBar`) para
+                // poder recolher com animação durante a busca: o
+                // AnimatedAlign encolhe a altura até zero.
+                ClipRect(
+                  child: AnimatedAlign(
+                    duration: searchAnimationDuration,
+                    curve: searchAnimationCurve,
+                    alignment: Alignment.bottomCenter,
+                    heightFactor: active ? 0 : 1,
+                    child: IgnorePointer(
+                      ignoring: active,
+                      child: ExcludeSemantics(
+                        excluding: active,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: active ? 0 : 1,
+                          child: _appBar(context, dex),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          // Sem a AppBar, o campo desce para fora da área da barra de status.
-          AnimatedPadding(
-            duration: searchAnimationDuration,
-            curve: searchAnimationCurve,
-            padding: EdgeInsets.only(
-              top: collapsed ? MediaQuery.paddingOf(context).top : 0,
-            ),
-            child: SlotSearchBar(
-              controller: _searchController,
-              focusNode: _searchFocus,
-              active: _searching,
-              onChanged: _onSearchChanged,
-              onCancel: _cancelSearch,
-              onClear: _clearSearch,
-              trailing: _missingToggle(context),
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(child: _body(context, dex, boxes)),
-                Positioned.fill(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: _searching
-                        ? Material(
-                            key: const ValueKey('search-results'),
-                            color: Theme.of(context).colorScheme.surface,
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 640,
-                                ),
-                                child: SlotSearchResults(
-                                  dexId: _dexId,
-                                  search: _search,
-                                  onSelected: _goToSlot,
-                                ),
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
+                // Espaço da pílula: ela não cobre a última linha da box.
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: _pillHeight + 2 * _pillMargin,
+                    ),
+                    child: body,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
+            Positioned.fill(
+              child: _resultsPanel(
+                context,
+                topInset: top + _barHeight + 2 * _barMargin,
+              ),
+            ),
+            Positioned(
+              top: top + _barMargin,
+              right: 8,
+              height: _barHeight,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: active
+                    ? TextButton(
+                        key: const ValueKey('search-cancel'),
+                        onPressed: _cancelSearch,
+                        child: const Text('Cancelar'),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
+            AnimatedPositioned(
+              duration: searchAnimationDuration,
+              curve: searchAnimationCurve,
+              left: active ? 16 : (width - _pillWidth) / 2,
+              top: active
+                  ? top + _barMargin
+                  : constraints.maxHeight - _pillHeight - _pillMargin,
+              width: active ? width - 16 - _cancelWidth : _pillWidth,
+              height: active ? _barHeight : _pillHeight,
+              child: SlotSearchPill(
+                controller: _searchController,
+                focusNode: _searchFocus,
+                active: active,
+                onChanged: _onSearchChanged,
+                onClear: _clearSearch,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  /// Título (nome e progresso do dex), Caçadas e o menu ⋮. Só o essencial,
-  /// para o nome caber inteiro no celular.
+  static const _pillWidth = 160.0;
+  static const _pillHeight = 44.0;
+  static const _pillMargin = 12.0;
+  static const _barHeight = 56.0;
+  static const _barMargin = 8.0;
+
+  /// Largura reservada ao "Cancelar" à direita da barra ativa.
+  static const _cancelWidth = 104.0;
+
+  /// Resultados por cima das boxes enquanto a busca está ativa. [topInset]
+  /// deixa livre o espaço da barra quando ela flutua por cima (celular).
+  Widget _resultsPanel(BuildContext context, {double topInset = 0}) =>
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: _searching
+            ? Material(
+                key: const ValueKey('search-results'),
+                color: Theme.of(context).colorScheme.surface,
+                child: Padding(
+                  padding: EdgeInsets.only(top: topInset),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: SlotSearchResults(
+                        dexId: _dexId,
+                        search: _search,
+                        onSelected: _goToSlot,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : const SizedBox.shrink(),
+      );
+
+  /// Título (nome e progresso do dex), Caçadas, faltantes e o menu ⋮. Só o
+  /// essencial, para o nome caber inteiro no celular.
   AppBar _appBar(BuildContext context, PersonalDex? dex) {
     final size = WindowSize.of(context);
     return AppBar(
@@ -216,13 +306,14 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
             onPressed: () => context.push(Routes.hunts(_dexId)),
             icon: const Icon(Icons.track_changes),
           ),
+        _missingToggle(context),
         if (dex != null) DexMenu(dex: dex, onShowProgress: _openGenerations),
       ],
     );
   }
 
-  /// Filtro da visualização: fica ao lado da busca, como o botão de filtros
-  /// do inventário. Selecionado, ganha fundo para o estado ficar visível.
+  /// Filtro da visualização, na AppBar. Selecionado, ganha fundo para o
+  /// estado ficar visível.
   Widget _missingToggle(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return IconButton(
