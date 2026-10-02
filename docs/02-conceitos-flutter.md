@@ -447,6 +447,30 @@ que permite:
 No mobile, `requestFocusOnTap: false` deixa o campo só para toque: o teclado
 virtual não abre e não cobre a lista.
 
+### Teclado no iPhone e animações implícitas
+
+**Foco e teclado no Safari do iOS.** O Safari só abre o teclado quando o foco
+nasce de um toque do usuário no próprio campo. Um `TextField(autofocus: true)`
+dentro de um diálogo recebe o foco um frame depois do toque no botão que abriu
+o diálogo; o cursor pisca, mas o teclado não aparece. Por isso a busca do dex
+fica **sempre na tela**
+([`SlotSearchBar`](../lib/features/personal_dex/presentation/widgets/slot_search.dart)),
+como a do inventário: o toque é no campo, e o teclado abre. Quando um campo
+precisa de teclado imediato no iPhone, ele deve estar na tela antes do toque.
+
+**Animações implícitas.** Widgets `Animated*` (`AnimatedAlign`,
+`AnimatedPadding`, `AnimatedOpacity`, `AnimatedSize`, `AnimatedSwitcher`)
+animam sozinhos quando um valor muda num `setState`: basta passar o valor
+novo e a `duration`, sem `AnimationController`. Na busca do dex:
+
+- `AnimatedAlign(heightFactor: 0 ou 1)` dentro de um `ClipRect` recolhe a
+  AppBar no celular (por isso ela fica no corpo, e não em `Scaffold.appBar`,
+  que exige altura fixa);
+- `AnimatedSize` + `AnimatedSwitcher` trocam o botão de filtro por
+  "Cancelar", animando a largura e cruzando os dois;
+- a borda do campo vira pílula sem código extra: o `InputDecorator` já anima
+  a troca de `border`.
+
 ### Imagens do próprio app: assets
 
 Sprites de Pokémon e pokébolas vêm do backend (`Image.network`, dentro do

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -67,10 +68,23 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
 
   int get _dexId => widget.dexId;
 
+  final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+
+  /// Texto da busca depois do debounce (o que vai para a API).
+  String _search = '';
+  Timer? _searchDebounce;
+
+  /// Busca ativa: com foco ou com texto. Os resultados cobrem as boxes.
+  bool get _searching =>
+      _searchFocus.hasFocus || _searchController.text.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
     unawaited(ref.read(lastDexStorageProvider).write(_dexId));
+    // Ganhar ou perder o foco muda o layout (AppBar, "Cancelar").
+    _searchFocus.addListener(() => setState(() {}));
   }
 
   bool get _preferShiny =>
@@ -79,6 +93,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   @override
   void dispose() {
     _pageController?.dispose();
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -86,69 +103,179 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   Widget build(BuildContext context) {
     final dex = ref.watch(dexProvider(_dexId));
     final boxes = ref.watch(boxesProvider(_dexId));
+    // No celular a AppBar recolhe durante a busca, para sobrar espaço para
+    // os resultados entre o campo e o teclado. Nas telas maiores não falta
+    // espaço, e a barra sumindo só chamaria atenção.
+    final collapsed = _searching && WindowSize.of(context).isCompact;
+    // A AppBar fica no corpo (e não em `Scaffold.appBar`) para poder
+    // recolher com animação: o AnimatedAlign encolhe a altura até zero.
     return Scaffold(
-      appBar: AppBar(
-        title: DexSwitcher(
-          dexId: _dexId,
-          title: dex.value?.name ?? 'PersonalDex',
-        ),
-        actions: [
-          if (WindowSize.of(context).isExpanded)
-            IconButton(
-              tooltip: _isBoxListOpen(WindowSize.of(context))
-                  ? 'Ocultar lista de boxes'
-                  : 'Mostrar lista de boxes',
-              isSelected: _isBoxListOpen(WindowSize.of(context)),
-              onPressed: () => setState(
-                () => _boxListOpen = !_isBoxListOpen(WindowSize.of(context)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRect(
+            child: AnimatedAlign(
+              duration: searchAnimationDuration,
+              curve: searchAnimationCurve,
+              alignment: Alignment.bottomCenter,
+              heightFactor: collapsed ? 0 : 1,
+              child: IgnorePointer(
+                ignoring: collapsed,
+                child: ExcludeSemantics(
+                  excluding: collapsed,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: collapsed ? 0 : 1,
+                    child: _appBar(context, dex.value),
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.view_sidebar_outlined),
-              selectedIcon: const Icon(Icons.view_sidebar),
             ),
-          if (dex.value?.isShinyDex ?? false)
-            IconButton(
-              tooltip: 'Caçadas',
-              onPressed: () => context.push(Routes.hunts(_dexId)),
-              icon: const Icon(Icons.track_changes),
+          ),
+          // Sem a AppBar, o campo desce para fora da área da barra de status.
+          AnimatedPadding(
+            duration: searchAnimationDuration,
+            curve: searchAnimationCurve,
+            padding: EdgeInsets.only(
+              top: collapsed ? MediaQuery.paddingOf(context).top : 0,
             ),
-          IconButton(
-            tooltip: 'Progresso por geração',
-            onPressed: _openGenerations,
-            icon: const Icon(Icons.bar_chart),
+            child: SlotSearchBar(
+              controller: _searchController,
+              focusNode: _searchFocus,
+              active: _searching,
+              onChanged: _onSearchChanged,
+              onCancel: _cancelSearch,
+              trailing: _missingToggle(context),
+            ),
           ),
-          IconButton(
-            tooltip: 'Buscar no dex',
-            onPressed: _openSearch,
-            icon: const Icon(Icons.search),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(child: _body(context, dex, boxes)),
+                Positioned.fill(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: _searching
+                        ? Material(
+                            key: const ValueKey('search-results'),
+                            color: Theme.of(context).colorScheme.surface,
+                            child: Align(
+                              alignment: Alignment.topCenter,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 640,
+                                ),
+                                child: SlotSearchResults(
+                                  dexId: _dexId,
+                                  search: _search,
+                                  onSelected: _goToSlot,
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ),
           ),
-          IconButton(
-            tooltip: _onlyMissing ? 'Mostrar todos' : 'Destacar faltantes',
-            isSelected: _onlyMissing,
-            onPressed: () => setState(() => _onlyMissing = !_onlyMissing),
-            icon: const Icon(Icons.filter_alt_outlined),
-            selectedIcon: const Icon(Icons.filter_alt),
-          ),
-          if (dex.value case final current?) DexMenu(dex: current),
         ],
       ),
-      body: switch (dex) {
-        AsyncError(:final error) when !dex.hasValue => ErrorView(
-          error: error,
-          onRetry: () => ref.invalidate(dexProvider(_dexId)),
-        ),
-        _ => boxes.when(
-          skipLoadingOnRefresh: true,
-          data: (items) => items.isEmpty
-              ? const EmptyView(message: 'Este dex ainda não tem boxes.')
-              : _buildLayout(context, items),
-          loading: () => const LoadingView(),
-          error: (error, _) => ErrorView(
-            error: error,
-            onRetry: () => ref.invalidate(boxesProvider(_dexId)),
-          ),
-        ),
-      },
     );
+  }
+
+  /// Título (nome e progresso do dex), Caçadas e o menu ⋮. Só o essencial,
+  /// para o nome caber inteiro no celular.
+  AppBar _appBar(BuildContext context, PersonalDex? dex) {
+    final size = WindowSize.of(context);
+    return AppBar(
+      title: DexSwitcher(
+        dexId: _dexId,
+        title: dex?.name ?? 'PersonalDex',
+        subtitle: dex == null
+            ? null
+            : '${dex.registered} de ${dex.total} registrados · '
+                  '${percentOf(dex.registered, dex.total)}%',
+      ),
+      actions: [
+        if (size.isExpanded)
+          IconButton(
+            tooltip: _isBoxListOpen(size)
+                ? 'Ocultar lista de boxes'
+                : 'Mostrar lista de boxes',
+            isSelected: _isBoxListOpen(size),
+            onPressed: () =>
+                setState(() => _boxListOpen = !_isBoxListOpen(size)),
+            icon: const Icon(Icons.view_sidebar_outlined),
+            selectedIcon: const Icon(Icons.view_sidebar),
+          ),
+        if (dex?.isShinyDex ?? false)
+          IconButton(
+            tooltip: 'Caçadas',
+            onPressed: () => context.push(Routes.hunts(_dexId)),
+            icon: const Icon(Icons.track_changes),
+          ),
+        if (dex != null) DexMenu(dex: dex, onShowProgress: _openGenerations),
+      ],
+    );
+  }
+
+  /// Filtro da visualização: fica ao lado da busca, como o botão de filtros
+  /// do inventário. Selecionado, ganha fundo para o estado ficar visível.
+  Widget _missingToggle(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return IconButton(
+      tooltip: _onlyMissing ? 'Mostrar todos' : 'Destacar faltantes',
+      isSelected: _onlyMissing,
+      onPressed: () => setState(() => _onlyMissing = !_onlyMissing),
+      style: _onlyMissing
+          ? IconButton.styleFrom(
+              backgroundColor: scheme.secondaryContainer,
+              foregroundColor: scheme.onSecondaryContainer,
+            )
+          : null,
+      icon: const Icon(Icons.filter_alt_outlined),
+      selectedIcon: const Icon(Icons.filter_alt),
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    AsyncValue<PersonalDex> dex,
+    AsyncValue<List<BoxSummary>> boxes,
+  ) => switch (dex) {
+    AsyncError(:final error) when !dex.hasValue => ErrorView(
+      error: error,
+      onRetry: () => ref.invalidate(dexProvider(_dexId)),
+    ),
+    _ => boxes.when(
+      skipLoadingOnRefresh: true,
+      data: (items) => items.isEmpty
+          ? const EmptyView(message: 'Este dex ainda não tem boxes.')
+          : _buildLayout(context, items),
+      loading: () => const LoadingView(),
+      error: (error, _) => ErrorView(
+        error: error,
+        onRetry: () => ref.invalidate(boxesProvider(_dexId)),
+      ),
+    ),
+  };
+
+  /// Espera o usuário parar de digitar antes de consultar a API.
+  void _onSearchChanged(String text) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => setState(() => _search = text.trim()),
+    );
+  }
+
+  /// Limpa a busca e devolve as boxes (a AppBar volta junto).
+  void _cancelSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    _searchFocus.unfocus();
+    setState(() => _search = '');
   }
 
   Widget _buildLayout(BuildContext context, List<BoxSummary> boxes) {
@@ -252,11 +379,10 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     if (index >= 0) _boxIndex = index;
   }
 
-  /// Busca por nome/número e leva até a box, com o slot selecionado (no
-  /// compacto, já abre o detalhe no bottom sheet).
-  Future<void> _openSearch() async {
-    final slot = await showSlotSearch(context, dexId: _dexId);
-    if (slot == null || !mounted) return;
+  /// Resultado escolhido na busca: fecha a busca e leva até a box, com o
+  /// slot selecionado (no compacto, já abre o detalhe no bottom sheet).
+  void _goToSlot(Slot slot) {
+    _cancelSearch();
     final boxes = ref.read(boxesProvider(_dexId)).value ?? const [];
     final index = boxes.indexWhere((b) => b.id == slot.box.id);
     setState(() {

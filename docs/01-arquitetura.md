@@ -198,16 +198,35 @@ Um usuário pode ter vários dexes.
 
 ## Busca no dex
 
-O ícone de lupa no AppBar do dex abre o
-[`SlotSearch`](../lib/features/personal_dex/presentation/widgets/slot_search.dart)
-(`GET /slots/?personal_dex=&search=`), que aceita nome ou número. Escolher um
-resultado leva à box do slot e o seleciona; no compacto, também abre o bottom
-sheet. O `PageView` ignora o `onPageChanged` da página atual, para o pulo
-programático não limpar a seleção.
+O campo "Nome ou número" fica sempre visível acima das boxes
+([`SlotSearchBar`](../lib/features/personal_dex/presentation/widgets/slot_search.dart)),
+e não num diálogo: o Safari do iOS só abre o teclado com um toque no próprio
+campo (ver `02-conceitos-flutter.md`). Com foco ou texto, a busca fica
+**ativa**: os resultados
+([`SlotSearchResults`](../lib/features/personal_dex/presentation/widgets/slot_search.dart),
+`GET /slots/?personal_dex=&search=`, com debounce) cobrem as boxes, o campo
+vira uma pílula e o botão de faltantes dá lugar a "Cancelar". No compacto, a
+AppBar também recolhe, para sobrar espaço entre o campo e o teclado. "Buscar"
+no teclado só o fecha; os resultados ficam até "Cancelar".
+
+Escolher um resultado fecha a busca, leva à box do slot e o seleciona; no
+compacto, também abre o bottom sheet. O `PageView` ignora o `onPageChanged` da
+página atual, para o pulo programático não limpar a seleção.
+
+## AppBar do dex
+
+Só o essencial, para o nome do dex caber no celular: o título
+([`DexSwitcher`](../lib/features/personal_dex/presentation/widgets/dex_switcher.dart))
+com o progresso do dex embaixo ("20 de 30 registrados · 66%"), o ícone de
+Caçadas (só em shiny dex) e o menu ⋮
+([`DexMenu`](../lib/features/personal_dex/presentation/widgets/dex_menu.dart)):
+Progresso por geração, Editar dex e Apagar dex. "Destacar faltantes" é um
+filtro da visualização e fica ao lado do campo de busca, como o botão de
+filtros do inventário.
 
 ## Progresso por geração
 
-O ícone de gráfico no AppBar do dex abre o
+"Progresso por geração", no menu ⋮ do dex, abre o
 [`GenerationProgressView`](../lib/features/personal_dex/presentation/widgets/generation_progress.dart)
 (`GET /personal-dexes/{id}/generations/`): uma linha por geração com
 registrados/total e "Faltam N". Tocar numa geração leva à primeira box dela. O

@@ -12,6 +12,7 @@ import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.d
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
@@ -124,6 +125,14 @@ Future<void> openShinyDex(WidgetTester tester) async {
 }
 
 Finder slot(int id) => find.byKey(ValueKey('slot-$id'));
+
+/// Progresso por geração fica no menu ⋮ da AppBar.
+Future<void> openProgress(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('Mais opções'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Progresso por geração'));
+  await tester.pumpAndSettle();
+}
 
 /// Rola o formulário do specimen até o fim (onde fica o "Salvar") e salva.
 Future<void> saveSpecimenForm(WidgetTester tester) async {
@@ -395,6 +404,8 @@ void main() {
         // Entrou direto no último dex usado (o seed tem 1 espécime dele
         // num save: conta como registrado e aparece como "fora").
         expect(find.text('HOME 3 · 20/30 · 1 fora'), findsOneWidget);
+        // Progresso do dex embaixo do nome, na AppBar.
+        expect(find.text('20 de 30 registrados · 66%'), findsOneWidget);
 
         await tester.tap(find.byTooltip('Trocar PersonalDex'));
         await tester.pumpAndSettle();
@@ -448,16 +459,14 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('HOME A · 0/1'), findsOneWidget);
 
-        await tester.tap(find.byTooltip('Progresso por geração'));
-        await tester.pumpAndSettle();
+        await openProgress(tester);
         expect(find.text('Geração I'), findsOneWidget);
         await tester.tap(find.text('Geração II'));
         await tester.pumpAndSettle();
         expect(find.text('HOME B · 0/1'), findsOneWidget);
 
         // Fechar sem escolher mantém a box.
-        await tester.tap(find.byTooltip('Progresso por geração'));
-        await tester.pumpAndSettle();
+        await openProgress(tester);
         await tester.tap(find.byType(CloseButton));
         await tester.pumpAndSettle();
         expect(find.text('HOME B · 0/1'), findsOneWidget);
@@ -481,8 +490,7 @@ void main() {
         ],
       );
       await openShinyDex(tester);
-      await tester.tap(find.byTooltip('Progresso por geração'));
-      await tester.pumpAndSettle();
+      await openProgress(tester);
       await tester.tap(find.text('Geração I'));
       await tester.pumpAndSettle();
       expect(find.text('HOME 1 · 20/30'), findsOneWidget);
@@ -490,13 +498,15 @@ void main() {
   });
 
   group('busca no dex', () {
+    Finder searchField() => find.descendant(
+      of: find.byType(SlotSearchBar),
+      matching: find.byType(TextField),
+    );
+
     Future<void> searchFor(WidgetTester tester, String text) async {
-      await tester.tap(find.byTooltip('Buscar no dex'));
+      await tester.tap(searchField());
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Nome ou número'),
-        text,
-      );
+      await tester.enterText(searchField(), text);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
     }
@@ -511,6 +521,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('HOME 2 · 19/28'), findsOneWidget);
       expect(find.text('Wigglytuff'), findsWidgets);
+      // Escolher um resultado fecha a busca.
+      expect(find.text('Cancelar'), findsNothing);
+      expect(tester.widget<TextField>(searchField()).controller!.text, isEmpty);
     });
 
     testWidgets('compacto: por número, abre o detalhe no bottom sheet', (
@@ -527,13 +540,61 @@ void main() {
       expect(find.text('HOME 2 · linha 2, coluna 4'), findsOneWidget);
     });
 
-    testWidgets('fechar sem escolher não muda nada', (tester) async {
+    testWidgets('compacto: o foco recolhe a AppBar e troca o filtro por '
+        '"Cancelar"', (tester) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      expect(find.byTooltip('Mais opções').hitTestable(), findsOneWidget);
+      expect(find.byTooltip('Destacar faltantes'), findsOneWidget);
+
+      await tester.tap(searchField());
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Mais opções').hitTestable(), findsNothing);
+      expect(find.byTooltip('Destacar faltantes'), findsNothing);
+      expect(
+        find.text('Digite o nome (2 letras ou mais) ou o número.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Mais opções').hitTestable(), findsOneWidget);
+      expect(find.byTooltip('Destacar faltantes'), findsOneWidget);
+      expect(find.text('Cancelar'), findsNothing);
+    });
+
+    testWidgets('expandido: a AppBar fica durante a busca', (tester) async {
       await pumpFullApp(tester);
       await openShinyDex(tester);
-      await tester.tap(find.byTooltip('Buscar no dex'));
+      await tester.tap(searchField());
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(CloseButton));
+      expect(find.byTooltip('Mais opções').hitTestable(), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+    });
+
+    testWidgets('"Buscar" no teclado fecha o teclado e mantém os resultados', (
+      tester,
+    ) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      await searchFor(tester, 'wiggly');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(searchField()).focusNode!.hasFocus,
+        isFalse,
+      );
+      expect(find.byKey(const ValueKey('search-slot-40')), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+    });
+
+    testWidgets('cancelar sem escolher não muda nada', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await searchFor(tester, 'wiggly');
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('search-slot-40')), findsNothing);
       expect(find.text('HOME 1 · 20/30'), findsOneWidget);
       expect(
         find.text('Selecione um slot para ver os detalhes.'),

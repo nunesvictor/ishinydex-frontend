@@ -9,48 +9,75 @@ import '../../helpers/helpers.dart';
 import '../../helpers/mocks.dart';
 
 void main() {
-  late MockPersonalDexRepository repository;
+  group('SlotSearchResults', () {
+    late MockPersonalDexRepository repository;
 
-  setUp(() => repository = MockPersonalDexRepository());
+    setUp(() => repository = MockPersonalDexRepository());
 
-  Future<void> pump(WidgetTester tester) => pumpWidgetApp(
-    tester,
-    const Scaffold(body: SlotSearch(dexId: 1)),
-    overrides: [personalDexRepositoryProvider.overrideWithValue(repository)],
-  );
+    Future<void> pump(WidgetTester tester, String search) => pumpWidgetApp(
+      tester,
+      Scaffold(
+        body: SlotSearchResults(dexId: 1, search: search, onSelected: (_) {}),
+      ),
+      overrides: [personalDexRepositoryProvider.overrideWithValue(repository)],
+    );
 
-  Future<void> type(WidgetTester tester, String text) async {
-    await tester.enterText(find.byType(TextField), text);
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
-  }
+    testWidgets('pede 2 letras, mas aceita um número de 1 dígito', (
+      tester,
+    ) async {
+      when(() => repository.searchSlots(dexId: 1, search: '6'))
+          .thenAnswer((_) async => const []);
+      const hint = 'Digite o nome (2 letras ou mais) ou o número.';
+      await pump(tester, '');
+      expect(find.text(hint), findsOneWidget);
+      await pump(tester, 'p');
+      expect(find.text(hint), findsOneWidget);
+      await pump(tester, '6');
+      await tester.pumpAndSettle();
+      expect(find.text('Nenhuma forma deste dex encontrada.'), findsOneWidget);
+    });
 
-  testWidgets('pede 2 letras, mas aceita um número de 1 dígito', (
-    tester,
-  ) async {
-    when(() => repository.searchSlots(dexId: 1, search: '6'))
-        .thenAnswer((_) async => const []);
-    await pump(tester);
-    const hint = 'Digite o nome (2 letras ou mais) ou o número.';
-    expect(find.text(hint), findsOneWidget);
-    await type(tester, 'p');
-    expect(find.text(hint), findsOneWidget);
-    await type(tester, '6');
-    expect(find.text('Nenhuma forma deste dex encontrada.'), findsOneWidget);
+    testWidgets('erro com retry', (tester) async {
+      var calls = 0;
+      when(() => repository.searchSlots(dexId: 1, search: 'mew'))
+          .thenAnswer((_) async {
+            if (calls++ == 0) throw const NetworkFailure();
+            return const [];
+          });
+      await pump(tester, 'mew');
+      await tester.pumpAndSettle();
+      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+      expect(find.text('Nenhuma forma deste dex encontrada.'), findsOneWidget);
+    });
   });
 
-  testWidgets('erro com retry', (tester) async {
-    var calls = 0;
-    when(() => repository.searchSlots(dexId: 1, search: 'mew'))
-        .thenAnswer((_) async {
-          if (calls++ == 0) throw const NetworkFailure();
-          return const [];
-        });
-    await pump(tester);
-    await type(tester, 'mew');
-    expect(find.text(const NetworkFailure().message), findsOneWidget);
-    await tester.tap(find.text('Tentar novamente'));
+  testWidgets('SlotSearchBar sem trailing: só "Cancelar" quando ativa', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    addTearDown(controller.dispose);
+    addTearDown(focusNode.dispose);
+    var cancelled = false;
+    Future<void> pump({required bool active}) => pumpWidgetApp(
+      tester,
+      Scaffold(
+        body: SlotSearchBar(
+          controller: controller,
+          focusNode: focusNode,
+          active: active,
+          onChanged: (_) {},
+          onCancel: () => cancelled = true,
+        ),
+      ),
+    );
+    await pump(active: false);
+    expect(find.text('Cancelar'), findsNothing);
+    await pump(active: true);
     await tester.pumpAndSettle();
-    expect(find.text('Nenhuma forma deste dex encontrada.'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    expect(cancelled, isTrue);
   });
 }
