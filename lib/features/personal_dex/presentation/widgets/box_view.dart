@@ -5,6 +5,9 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_grid.dart';
 
+/// Margem em volta da grade.
+const boxViewPadding = 8.0;
+
 /// Carrega os slots de uma box e exibe a grade.
 class BoxView extends ConsumerWidget {
   const BoxView({
@@ -30,7 +33,7 @@ class BoxView extends ConsumerWidget {
         .when(
           skipLoadingOnRefresh: true,
           data: (slots) => Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(boxViewPadding),
             child: BoxGrid(
               slots: slots,
               selectedSlotId: selectedSlotId,

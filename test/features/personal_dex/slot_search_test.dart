@@ -52,33 +52,4 @@ void main() {
       expect(find.text('Nenhuma forma deste dex encontrada.'), findsOneWidget);
     });
   });
-
-  testWidgets('SlotSearchBar sem trailing: só "Cancelar" quando ativa', (
-    tester,
-  ) async {
-    final controller = TextEditingController();
-    final focusNode = FocusNode();
-    addTearDown(controller.dispose);
-    addTearDown(focusNode.dispose);
-    var cancelled = false;
-    Future<void> pump({required bool active}) => pumpWidgetApp(
-      tester,
-      Scaffold(
-        body: SlotSearchBar(
-          controller: controller,
-          focusNode: focusNode,
-          active: active,
-          onChanged: (_) {},
-          onCancel: () => cancelled = true,
-          onClear: () {},
-        ),
-      ),
-    );
-    await pump(active: false);
-    expect(find.text('Cancelar'), findsNothing);
-    await pump(active: true);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancelar'));
-    expect(cancelled, isTrue);
-  });
 }

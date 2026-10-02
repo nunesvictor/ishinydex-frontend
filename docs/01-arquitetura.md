@@ -200,22 +200,23 @@ Um usuário pode ter vários dexes.
 
 A busca (`GET /slots/?personal_dex=&search=`, com debounce) não fica num
 diálogo: o Safari do iOS só abre o teclado com um toque no próprio campo (ver
-`02-conceitos-flutter.md`). O campo está sempre na tela, em
-[`slot_search.dart`](../lib/features/personal_dex/presentation/widgets/slot_search.dart):
+`02-conceitos-flutter.md`). Como a tela inicial do iPhone, ela é uma pílula
+"Buscar"
+([`SlotSearchPill`](../lib/features/personal_dex/presentation/widgets/slot_search.dart))
+16 px abaixo da grade da box, em todos os tamanhos de tela (nas telas maiores,
+centralizada na coluna da grade). O conjunto grade + pílula fica centralizado
+no espaço livre. A posição vem do tamanho da grade (`boxGridSize`, o mesmo
+cálculo do `BoxGrid`): a área das boxes marca o lugar, e a página o mede
+depois do layout.
 
-- **Celular:** como a tela inicial do iPhone, uma pílula "Buscar"
-  (`SlotSearchPill`) fica centralizada logo acima da barra inferior, no
-  alcance do polegar. A pílula é o próprio campo: ao ganhar o foco, ela anima
-  até o topo com um `AnimatedPositioned` e vira a barra de busca, a AppBar
-  recolhe e os resultados abrem por trás. O campo nunca é recriado, só muda
-  de lugar, então o foco e o teclado continuam durante a animação.
-- **Telas maiores:** uma barra no topo (`SlotSearchBar`), sempre visível.
-
-Com foco ou texto, a busca fica **ativa**: os resultados
-(`SlotSearchResults`) cobrem as boxes, o campo vira uma pílula com borda e
-aparece "Cancelar". "Buscar" no teclado só o fecha; os resultados ficam até
-"Cancelar". O "x" do campo (como no inventário) apaga o texto e mantém o foco,
-para buscar outra coisa.
+A pílula é o próprio campo. Ao ganhar o foco, ela anima até o topo com um
+`AnimatedPositioned` e vira a barra de busca (no celular, na largura da tela;
+nas telas maiores, até 560 px, centralizada), a AppBar recolhe e os resultados
+(`SlotSearchResults`) abrem por trás. O campo nunca é recriado, só muda de
+lugar, então o foco e o teclado continuam durante a animação. Ativa, a busca
+mostra "Cancelar", que leva a pílula de volta. "Buscar" no teclado só o fecha;
+os resultados ficam até "Cancelar". O "x" do campo (como no inventário) apaga
+o texto e mantém o foco, para buscar outra coisa.
 
 Escolher um resultado fecha a busca, leva à box do slot e o seleciona; no
 compacto, também abre o bottom sheet. O `PageView` ignora o `onPageChanged` da
