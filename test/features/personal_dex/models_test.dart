@@ -123,7 +123,7 @@ void main() {
         acceptedBalls: ['poke-ball', 'premier-ball'],
         generations: ['generation-vii'],
         types: ['water', 'flying'],
-        categories: [HuntCategory.legendary, HuntCategory.ultraBeast],
+        categories: [SpeciesCategory.legendary, SpeciesCategory.ultraBeast],
         search: ' tapu ',
         includeLocked: true,
       );
@@ -152,8 +152,8 @@ void main() {
       expect(HuntReason.fromParam('foo'), isNull);
       expect(ShinyLock.fromParam('unobtainable'), ShinyLock.unobtainable);
       expect(ShinyLock.fromParam(null), isNull);
-      expect(HuntCategory.ultraBeast.param, 'ultra-beast');
-      expect(HuntCategory.regular.label, 'Comum');
+      expect(SpeciesCategory.ultraBeast.param, 'ultra-beast');
+      expect(SpeciesCategory.regular.label, 'Comum');
       expect(ShinyLock.unobtainable.label, 'Shiny impossível');
     });
   });

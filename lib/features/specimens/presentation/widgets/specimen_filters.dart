@@ -5,6 +5,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -158,6 +159,21 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                               ),
                             )
                           : null,
+                    ),
+                ]),
+              ),
+              _Section(
+                title: 'Categoria',
+                child: _chips([
+                  for (final category in SpeciesCategory.values)
+                    FilterChip(
+                      label: Text(category.label),
+                      selected: _draft.categories.contains(category),
+                      onSelected: (on) => _update(
+                        _draft.copyWith(
+                          categories: _toggle(_draft.categories, category, on),
+                        ),
+                      ),
                     ),
                 ]),
               ),
@@ -631,6 +647,11 @@ class ActiveFilterChips extends ConsumerWidget {
         (
           'Geração ${q.generations.map(generationNumber).join(', ')}',
           q.copyWith(generations: const []),
+        ),
+      if (q.categories.isNotEmpty)
+        (
+          summarize([for (final c in q.categories) c.label])!,
+          q.copyWith(categories: const []),
         ),
       if (q.originMarks.isNotEmpty)
         (

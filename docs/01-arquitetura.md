@@ -329,8 +329,10 @@ A terceira aba lista **todos** os espécimes, depositados ou não:
   `TextEditingController` fica no `State` da página, que também controla o
   debounce), Todos/Disponíveis/Depositados, Shiny, Alfa e GO.
 - **Filtros avançados** na folha "Filtros": ordem, pokébola (e "sem"), OT
-  (e "sem"), natureza, idioma, tipo (até 2, exige os dois), geração, gênero,
-  habilidade e intervalo de captura. Tudo vai num `SpecimenQuery`
+  (e "sem"), natureza, idioma, tipo (até 2, exige os dois), categoria
+  (lendário, mítico, Ultra Beast, bebê, comum; qualquer uma, como nas
+  caçadas: o enum `SpeciesCategory` é o mesmo), geração, gênero, habilidade e
+  intervalo de captura. Tudo vai num `SpecimenQuery`
   (`toQueryParameters()`) para `GET /specimens/`. Paginação por página e
   decisões de layout em [02-conceitos-flutter.md](02-conceitos-flutter.md), 5.5.
 - **Detalhe** ([`SpecimenDetailView`](../lib/features/specimens/presentation/specimen_detail.dart)):

@@ -375,6 +375,9 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     @Default(false) bool withoutOt,
     @Default(<String>[]) List<String> generations,
 
+    /// Qualquer uma das categorias da espécie (como nas caçadas).
+    @Default(<SpeciesCategory>[]) List<SpeciesCategory> categories,
+
     /// Marcas de origem (`paldea`, `go`, `none` = sem marca).
     @Default(<String>[]) List<String> originMarks,
     @Default(<String>[]) List<String> genders,
@@ -423,6 +426,7 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     types.isNotEmpty,
     hasOtFilter,
     generations.isNotEmpty,
+    categories.isNotEmpty,
     originMarks.isNotEmpty,
     genders.isNotEmpty,
     natures.isNotEmpty,
@@ -458,6 +462,8 @@ abstract class SpecimenQuery with _$SpecimenQuery {
       if (types.isNotEmpty) 'type': join(types),
       if (hasOtFilter) 'ot': join([...ots, if (withoutOt) noneParam]),
       if (generations.isNotEmpty) 'generation': join(generations),
+      if (categories.isNotEmpty)
+        'category': join(categories.map((c) => c.param)),
       if (originMarks.isNotEmpty) 'origin_mark': join(originMarks),
       if (genders.isNotEmpty) 'gender': join(genders),
       if (natures.isNotEmpty) 'nature': join(natures),

@@ -436,6 +436,20 @@ void main() {
         await all(const SpecimenQuery(generations: ['generation-ii'])),
         isEmpty,
       );
+      // Categoria: o seed só tem espécies comuns.
+      expect(
+        (await all(const SpecimenQuery(categories: [SpeciesCategory.regular])))
+            .length,
+        everything.length,
+      );
+      expect(
+        await all(
+          const SpecimenQuery(
+            categories: [SpeciesCategory.legendary, SpeciesCategory.mythical],
+          ),
+        ),
+        isEmpty,
+      );
       // Gênero: o seed também tem fêmeas; o filtro traz exatamente elas.
       expect(await ids(const SpecimenQuery(genders: ['female'])), {
         for (final s in everything)
@@ -1174,13 +1188,13 @@ void main() {
           id: 150,
           name: 'mewtwo',
           types: ['psychic'],
-          category: HuntCategory.legendary,
+          category: SpeciesCategory.legendary,
         )
         ..addForm(
           id: 793,
           name: 'nihilego',
           types: ['rock', 'poison'],
-          category: HuntCategory.ultraBeast,
+          category: SpeciesCategory.ultraBeast,
         );
       final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
       fake.addBox(dexId: dex, name: 'HOME 1', formIds: [1, 150, 793]);
@@ -1196,14 +1210,15 @@ void main() {
       expect(
         await run(
           const HuntQuery(
-            categories: [HuntCategory.legendary, HuntCategory.ultraBeast],
+            categories: [SpeciesCategory.legendary, SpeciesCategory.ultraBeast],
           ),
         ),
         ['mewtwo', 'nihilego'],
       );
-      expect(await run(const HuntQuery(categories: [HuntCategory.regular])), [
-        'bulbasaur',
-      ]);
+      expect(
+        await run(const HuntQuery(categories: [SpeciesCategory.regular])),
+        ['bulbasaur'],
+      );
       expect(await run(const HuntQuery(search: ' MEW')), ['mewtwo']);
       expect(await run(const HuntQuery(search: '793')), ['nihilego']);
       // Nome como se escreve: vira slug.
