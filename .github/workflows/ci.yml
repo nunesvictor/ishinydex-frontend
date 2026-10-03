@@ -25,13 +25,27 @@ jobs:
           channel: stable
           cache: true
 
+      # build_runner incremental: o grafo (.dart_tool) e os arquivos gerados
+      # voltam do cache, e só o que mudou é regerado. A chave muda com o
+      # código; sem acerto exato, vale o cache mais recente da mesma
+      # pubspec.lock (o build_runner confere tudo pelo conteúdo).
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .dart_tool
+            lib/**/*.g.dart
+            lib/**/*.freezed.dart
+          key: build-runner-${{ hashFiles('pubspec.lock') }}-${{ hashFiles('lib/**/*.dart', 'build.yaml') }}
+          restore-keys: build-runner-${{ hashFiles('pubspec.lock') }}-
+
       - run: flutter pub get
-      - run: dart run build_runner build
+      - run: dart run build_runner build -d
       - run: dart format --set-exit-if-changed lib test tool integration_test test_driver
       - run: flutter analyze
       - run: flutter test --coverage
       - run: dart run tool/check_coverage.dart
-      - run: flutter build web --release
+      # O build web de release fica com o job "Imagem Docker", que builda o
+      # app (com wasm) igual ao deploy.
 
   integration-web:
     name: Teste de integração (Chrome)
@@ -45,8 +59,21 @@ jobs:
           channel: stable
           cache: true
 
+      # build_runner incremental: o grafo (.dart_tool) e os arquivos gerados
+      # voltam do cache, e só o que mudou é regerado. A chave muda com o
+      # código; sem acerto exato, vale o cache mais recente da mesma
+      # pubspec.lock (o build_runner confere tudo pelo conteúdo).
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .dart_tool
+            lib/**/*.g.dart
+            lib/**/*.freezed.dart
+          key: build-runner-${{ hashFiles('pubspec.lock') }}-${{ hashFiles('lib/**/*.dart', 'build.yaml') }}
+          restore-keys: build-runner-${{ hashFiles('pubspec.lock') }}-
+
       - run: flutter pub get
-      - run: dart run build_runner build
+      - run: dart run build_runner build -d
 
       # O runner do Ubuntu já traz Chrome e um chromedriver compatível.
       - name: Iniciar chromedriver
