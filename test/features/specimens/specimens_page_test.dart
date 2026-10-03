@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
-import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
+import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
@@ -24,6 +24,19 @@ Future<List<Specimen>> allSpecimens(FakeBackend backend) async =>
       page: 1,
       pageSize: 500,
     )).results;
+
+/// Escolhe a situação [label] no menu do chip "Situação".
+Future<void> pickStatus(WidgetTester tester, String label) async {
+  await tester.tap(find.byType(MenuChip));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.descendant(
+      of: find.byType(RadioMenuButton<SpecimenStatus>),
+      matching: find.text(label),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
 
 /// Abre o menu "Ações da seleção" e escolhe [label].
 Future<void> openBulkAction(WidgetTester tester, String label) async {
@@ -91,15 +104,14 @@ void main() {
       await tester.tap(find.widgetWithText(FilterChip, 'Shiny'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Depositados'));
-      await tester.pumpAndSettle();
+      await pickStatus(tester, 'Registrados');
       expect(specimenTile(saur.id), findsNothing);
-      await tester.tap(find.text('Disponíveis'));
-      await tester.pumpAndSettle();
+      expect(find.widgetWithText(MenuChip, 'Registrados'), findsOneWidget);
+      await pickStatus(tester, 'Disponíveis');
       expect(specimenTile(shinyBulba.id), findsNothing);
       expect(specimenTile(saur.id), findsOneWidget);
-      await tester.tap(find.text('Todos'));
-      await tester.pumpAndSettle();
+      await pickStatus(tester, 'Todos');
+      expect(find.widgetWithText(MenuChip, 'Situação'), findsOneWidget);
 
       // Alfa e GO: só os que têm cada marca (seed: 💢 nas formas 1, 6, 11…;
       // 📱 nas múltiplas de 7).
@@ -112,7 +124,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilterChip, 'GO'));
       await tester.pumpAndSettle();
       expect(specimenTile(shinyBulba.id), findsNothing);
-      expect(find.text(goEmoji), findsWidgets);
+      expect(find.byType(GoIcon), findsWidgets);
       await tester.tap(find.widgetWithText(FilterChip, 'GO'));
       await tester.pumpAndSettle();
 
@@ -261,6 +273,49 @@ void main() {
   });
 
   group('compacto', () {
+    testWidgets('chips só com o ícone, nome no tooltip; sem rolar de lado', (
+      tester,
+    ) async {
+      final backend = FakeBackend.seeded();
+      final specimens = await allSpecimens(backend);
+      await pumpFullApp(tester, size: compactSize, backend: backend);
+      await openSpecimensTab(tester);
+
+      for (final label in ['Shiny', 'Alfa', 'GO']) {
+        expect(find.widgetWithText(FilterChip, label), findsNothing);
+      }
+      expect(
+        find.descendant(
+          of: find.byType(FilterChip),
+          matching: find.byType(ShinyIcon),
+        ),
+        findsOneWidget,
+      );
+      // A linha de filtros quebra em vez de rolar.
+      expect(
+        find.ancestor(
+          of: find.byTooltip('Só shiny'),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is SingleChildScrollView &&
+                w.scrollDirection == Axis.horizontal,
+          ),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.byTooltip('Só shiny'));
+      await tester.pumpAndSettle();
+      final shiny = specimens.where((s) => s.isShiny).length;
+      expect(
+        find.text('$shiny de ${specimens.length} espécimes'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byTooltip('Só shiny'));
+      await tester.pumpAndSettle();
+      expect(find.text('${specimens.length} espécimes'), findsOneWidget);
+    });
+
     testWidgets('detalhe em tela própria e libertar volta à lista', (
       tester,
     ) async {

@@ -174,6 +174,7 @@ class _Details extends ConsumerWidget {
                     key: ValueKey('tabs-${specimen.id}'),
                     formId: form.id,
                     summary: summary,
+                    nature: specimen.nature,
                   ),
               ],
             ),

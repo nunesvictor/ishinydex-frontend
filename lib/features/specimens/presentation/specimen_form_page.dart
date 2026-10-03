@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
@@ -246,7 +246,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             _captureDate(),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
-              secondary: const Text(shinyEmoji, style: TextStyle(fontSize: 20)),
+              secondary: const ShinyIcon(size: 24, semanticLabel: null),
               title: const Text('Shiny'),
               value: _draft.isShiny,
               onChanged: (v) =>
@@ -262,7 +262,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
-              secondary: const Text(goEmoji, style: TextStyle(fontSize: 20)),
+              secondary: const GoIcon(size: 24, semanticLabel: null),
               title: const Text('Veio do Pokémon GO'),
               value: _draft.isFromGo,
               onChanged: (v) =>

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';

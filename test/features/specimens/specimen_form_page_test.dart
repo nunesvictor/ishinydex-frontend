@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
-import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -89,9 +88,9 @@ void main() {
     // Shiny e Pokémon GO com os emojis do admin, alfa com o ícone do HOME,
     // cada um no seu switch.
     for (final (icon, title) in [
-      (find.text(shinyEmoji), 'Shiny'),
+      (find.byType(ShinyIcon), 'Shiny'),
       (find.byType(AlphaIcon), 'Alfa'),
-      (find.text(goEmoji), 'Veio do Pokémon GO'),
+      (find.byType(GoIcon), 'Veio do Pokémon GO'),
     ]) {
       expect(
         find.descendant(
@@ -267,7 +266,7 @@ void main() {
         await tester.drag(find.byType(ListView), const Offset(0, -3000));
         await tester.pumpAndSettle();
         expect(find.text('obs antiga'), findsOneWidget);
-        expect(find.text(goEmoji), findsOneWidget);
+        expect(find.byType(GoIcon), findsOneWidget);
         await tester.tap(find.text('Salvar'));
         await tester.pumpAndSettle();
 

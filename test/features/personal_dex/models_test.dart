@@ -126,6 +126,7 @@ void main() {
         categories: [SpeciesCategory.legendary, SpeciesCategory.ultraBeast],
         search: ' tapu ',
         includeLocked: true,
+        situation: HuntSituation.missing,
       );
       expect(query.toQueryParameters(), {
         'reasons': 'no_shiny,from_go,pokeball',
@@ -135,6 +136,7 @@ void main() {
         'category': 'legendary,ultra-beast',
         'search': 'tapu',
         'include_locked': true,
+        'registered': false,
       });
       expect(query.scopeCount, 4);
       expect(
@@ -143,7 +145,13 @@ void main() {
           reasons: [HuntReason.noShiny, HuntReason.fromGo, HuntReason.pokeball],
           acceptedBalls: ['poke-ball', 'premier-ball'],
           search: ' tapu ',
+          situation: HuntSituation.missing,
         ),
+      );
+      expect(
+        const HuntQuery(situation: HuntSituation.registered)
+            .toQueryParameters()['registered'],
+        true,
       );
     });
 

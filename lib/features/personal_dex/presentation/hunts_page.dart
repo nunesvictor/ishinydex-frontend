@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
+import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
@@ -18,9 +19,9 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Caçadas de um shiny dex: o que ainda falta, ou não serve, em shiny.
 ///
-/// Os motivos (sem shiny, shiny do GO, pokébola fora da lista) ficam sempre
-/// à vista, em chips; o escopo (categoria, geração, tipo) fica na folha de
-/// filtros. Tocar num item empilha o dex naquela box, com o slot aberto: o
+/// Os motivos (sem shiny, shiny do GO, pokébola fora da lista) e a situação
+/// do slot (faltando ou registrado) ficam à vista, em chips com menu; o
+/// escopo (categoria, geração, tipo) fica na folha de filtros. Tocar num item empilha o dex naquela box, com o slot aberto: o
 /// voltar retorna para cá, com os filtros intactos.
 class HuntsPage extends ConsumerStatefulWidget {
   const HuntsPage({required this.dexId, super.key});
@@ -86,8 +87,9 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
   );
 }
 
-/// Busca + botão Filtros numa linha; motivos numa linha de chips; e, só com
-/// escopo ativo, os chips removíveis dele. Mesmo desenho do inventário.
+/// Busca + botão Filtros numa linha; Motivos e Situação em chips com menu;
+/// e, só com escopo ativo, os chips removíveis dele. Mesmo desenho do
+/// inventário.
 class _Filters extends ConsumerWidget {
   const _Filters({
     required this.query,
@@ -112,6 +114,10 @@ class _Filters extends ConsumerWidget {
       ),
     );
   }
+
+  /// O `onChanged` do checkbox de menu recebe `bool?`.
+  ValueChanged<bool?>? _check(ValueChanged<bool>? toggle) =>
+      toggle == null ? null : (on) => toggle(on!);
 
   /// Ligar o motivo "pokébola" pede as bolas aceitas; sem nenhuma, não liga.
   Future<void> _togglePokeball(
@@ -142,31 +148,67 @@ class _Filters extends ConsumerWidget {
     final count = query.scopeCount;
     final balls = summarize(labelsOf(query.acceptedBalls, options.pokeball));
     final pokeballOn = _isOn(HuntReason.pokeball);
-    final reasons = <Widget>[
-      FilterChip(
-        avatar: const Text(shinyEmoji),
-        label: Text(HuntReason.noShiny.label),
-        tooltip: 'Slot vazio ou com espécime não shiny',
-        selected: _isOn(HuntReason.noShiny),
-        onSelected: _toggler(HuntReason.noShiny),
+    final first = query.reasons.first;
+    final more = query.reasons.length - 1;
+    final chips = <Widget>[
+      MenuChip(
+        label: more > 0 ? '${first.label} +$more' : first.label,
+        tooltip: 'Motivos',
+        // Sempre há pelo menos um motivo: o chip está sempre "ativo".
+        selected: true,
+        menuChildren: [
+          const MenuHeader('Motivos (qualquer um; pelo menos um)'),
+          CheckboxMenuButton(
+            value: _isOn(HuntReason.noShiny),
+            closeOnActivate: false,
+            onChanged: _check(_toggler(HuntReason.noShiny)),
+            child: MenuOptionText(
+              HuntReason.noShiny.label,
+              'Slot vazio ou com espécime não shiny',
+              leading: const ShinyIcon(size: 18, semanticLabel: null),
+            ),
+          ),
+          CheckboxMenuButton(
+            value: _isOn(HuntReason.fromGo),
+            closeOnActivate: false,
+            onChanged: _check(_toggler(HuntReason.fromGo)),
+            child: MenuOptionText(
+              HuntReason.fromGo.label,
+              'Shiny que veio do Pokémon GO',
+              leading: const GoIcon(size: 18, semanticLabel: null),
+            ),
+          ),
+          // Ligar pede as bolas aceitas, num diálogo: o menu fecha.
+          CheckboxMenuButton(
+            value: pokeballOn,
+            onChanged: pokeballOn && query.reasons.length == 1
+                ? null
+                : (on) => _togglePokeball(context, options, on!),
+            child: MenuOptionText(
+              pokeballOn && balls != null
+                  ? 'Pokébola fora de: $balls'
+                  : 'Pokébola fora das escolhidas',
+              'Shiny numa pokébola que não é a da caçada',
+              leading: const Icon(Icons.catching_pokemon, size: 18),
+            ),
+          ),
+        ],
       ),
-      FilterChip(
-        avatar: const Text(goEmoji),
-        label: Text(HuntReason.fromGo.label),
-        tooltip: 'Shiny que veio do Pokémon GO',
-        selected: _isOn(HuntReason.fromGo),
-        onSelected: _toggler(HuntReason.fromGo),
-      ),
-      FilterChip(
-        avatar: const Icon(Icons.catching_pokemon),
-        label: Text(
-          pokeballOn && balls != null ? 'Fora de: $balls' : 'Pokébola…',
-        ),
-        tooltip: 'Shiny numa pokébola fora das escolhidas',
-        selected: pokeballOn,
-        onSelected: pokeballOn && query.reasons.length == 1
-            ? null
-            : (on) => _togglePokeball(context, options, on),
+      MenuChip(
+        label: query.situation == HuntSituation.all
+            ? 'Situação'
+            : query.situation.label,
+        selected: query.situation != HuntSituation.all,
+        menuChildren: [
+          const MenuHeader('Situação do slot'),
+          for (final situation in HuntSituation.values)
+            RadioMenuButton<HuntSituation>(
+              value: situation,
+              groupValue: query.situation,
+              onChanged: (s) => onChanged(query.copyWith(situation: s!)),
+              child: MenuOptionText(situation.label, situation.hint),
+            ),
+        ],
       ),
     ];
     return Column(
@@ -178,11 +220,8 @@ class _Filters extends ConsumerWidget {
             spacing: 4,
             children: [
               Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Buscar por nome ou número',
-                    prefixIcon: Icon(Icons.search),
-                  ),
+                child: SearchField(
+                  hintText: 'Nome ou número',
                   onChanged: onSearchChanged,
                 ),
               ),
@@ -203,14 +242,8 @@ class _Filters extends ConsumerWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          // No celular, uma linha rolável (altura fixa); nos demais
-          // tamanhos, os chips quebram linha.
-          child: WindowSize.of(context).isCompact
-              ? SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(spacing: 8, children: reasons),
-                )
-              : Wrap(spacing: 8, runSpacing: 8, children: reasons),
+          // Os grupos ficam em chips com menu: cabe numa linha, sem rolar.
+          child: Wrap(spacing: 8, runSpacing: 8, children: chips),
         ),
         ActiveHuntFilterChips(query: query, onChanged: onChanged),
       ],

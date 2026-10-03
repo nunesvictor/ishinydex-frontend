@@ -1119,6 +1119,19 @@ void main() {
       expect(page.results.first.reasons, [HuntReason.noShiny]);
     });
 
+    test('situação: faltando (vazio) e registrados (com espécime)', () async {
+      const go = [HuntReason.noShiny, HuntReason.fromGo];
+      final all = await names(const HuntQuery(reasons: go));
+      final missing = await names(
+        const HuntQuery(reasons: go, situation: HuntSituation.missing),
+      );
+      final registered = await names(
+        const HuntQuery(reasons: go, situation: HuntSituation.registered),
+      );
+      expect((missing.length, registered.length), (19, 6));
+      expect({...missing, ...registered}, {...all});
+    });
+
     test('espécime não shiny também é caçada', () async {
       final fake = FakeBackend()..addForm(id: 1, name: 'bulbasaur');
       final dex = fake.addDex(name: 'Shiny', isShinyDex: true);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 
 /// Uma linha no estilo do HOME: pokébola, nome (ou apelido) e os selos em
@@ -47,9 +47,9 @@ class SpecimenHeadline extends StatelessWidget {
     final badges = [
       if (gender == 'male') emoji(maleEmoji, 'Macho'),
       if (gender == 'female') emoji(femaleEmoji, 'Fêmea'),
-      if (isShiny) emoji(shinyEmoji, 'Shiny'),
+      if (isShiny) ShinyIcon(size: ballSize),
       if (isAlpha) AlphaIcon(size: ballSize),
-      if (isFromGo) emoji(goEmoji, 'Pokémon GO'),
+      if (isFromGo) GoIcon(size: ballSize),
     ];
     return Row(
       mainAxisAlignment: center

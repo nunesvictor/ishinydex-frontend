@@ -188,6 +188,22 @@ enum HuntReason {
       values.where((r) => r.param == value).firstOrNull;
 }
 
+/// Situação do slot nas caçadas: vazio (falta registrar) ou com um espécime
+/// que ainda não serve (não shiny, do GO, pokébola errada).
+enum HuntSituation {
+  all('Todos', 'Vazios e registrados'),
+  missing('Faltando', 'Slot vazio: falta registrar', param: false),
+  registered('Registrados', 'Com espécime, mas sem o shiny certo', param: true);
+
+  HuntSituation(this.label, this.hint, {this.param});
+
+  final String label;
+  final String hint;
+
+  /// Valor de `registered` na API; `null` não filtra.
+  final bool? param;
+}
+
 /// Categoria da espécie, nos filtros das caçadas e do inventário.
 enum SpeciesCategory {
   legendary('legendary', 'Lendário'),
@@ -278,6 +294,7 @@ abstract class HuntQuery with _$HuntQuery {
     @Default(<SpeciesCategory>[]) List<SpeciesCategory> categories,
     @Default('') String search,
     @Default(false) bool includeLocked,
+    @Default(HuntSituation.all) HuntSituation situation,
   }) = _HuntQuery;
 
   const HuntQuery._();
@@ -290,9 +307,13 @@ abstract class HuntQuery with _$HuntQuery {
     includeLocked,
   ].where((active) => active).length;
 
-  /// Limpa o escopo, mantendo motivos e busca.
-  HuntQuery clearScope() =>
-      HuntQuery(reasons: reasons, acceptedBalls: acceptedBalls, search: search);
+  /// Limpa o escopo, mantendo motivos, situação e busca.
+  HuntQuery clearScope() => HuntQuery(
+    reasons: reasons,
+    acceptedBalls: acceptedBalls,
+    search: search,
+    situation: situation,
+  );
 
   /// Parâmetros da API. `reasons` vai sempre: sem ele, a API usaria o
   /// padrão, e não o que está na tela.
@@ -308,6 +329,7 @@ abstract class HuntQuery with _$HuntQuery {
         'category': join(categories.map((c) => c.param)),
       if (search.isNotEmpty) 'search': search,
       if (includeLocked) 'include_locked': true,
+      'registered': ?situation.param,
     };
   }
 }

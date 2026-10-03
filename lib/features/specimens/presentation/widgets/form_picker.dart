@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -64,12 +65,9 @@ class _FormPickerState extends ConsumerState<FormPicker> {
           children: [
             const CloseButton(),
             Expanded(
-              child: TextField(
+              child: SearchField(
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Buscar forma pelo nome',
-                  prefixIcon: Icon(Icons.search),
-                ),
+                hintText: 'Buscar forma pelo nome',
                 onChanged: _onChanged,
               ),
             ),

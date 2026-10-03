@@ -11,9 +11,25 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 /// traça os polígonos com coordenadas calculadas (seno e cosseno de cada
 /// vértice), sem biblioteca de gráficos.
 class BaseStatsChart extends StatelessWidget {
-  const BaseStatsChart({required this.stats, super.key});
+  const BaseStatsChart({required this.stats, this.nature, super.key});
 
   final List<FormStat> stats;
+
+  /// Natureza do espécime registrado: o stat que ela aumenta fica vermelho
+  /// com ↑ e o que diminui, azul com ↓, como nos jogos. Sem espécime (ou
+  /// natureza), o hexágono é só o da forma.
+  final Choice? nature;
+
+  /// Cores dos jogos para os stats da natureza, mais claras no tema escuro.
+  static Color increasedColor(Brightness brightness) =>
+      brightness == Brightness.dark
+      ? const Color(0xFFEF9A9A)
+      : const Color(0xFFC62828);
+
+  static Color decreasedColor(Brightness brightness) =>
+      brightness == Brightness.dark
+      ? const Color(0xFF90CAF9)
+      : const Color(0xFF1565C0);
 
   /// Escala fixa: dá para comparar o hexágono de Pokémon diferentes. Quase
   /// nenhum status base passa disso (os que passam encostam na borda).
@@ -48,6 +64,16 @@ class BaseStatsChart extends StatelessWidget {
         byName[name] ?? FormStat(stat: name, baseStat: 0),
     ];
     final total = stats.fold(0, (sum, stat) => sum + stat.baseStat);
+    final nature = this.nature;
+    final up = nature?.increased;
+    final down = nature?.decreased;
+    final upColor = increasedColor(theme.brightness);
+    final downColor = decreasedColor(theme.brightness);
+    String effect(String stat) => stat == up
+        ? ', aumentado pela natureza'
+        : stat == down
+        ? ', diminuído pela natureza'
+        : '';
     final ev = [
       for (final stat in stats)
         if (stat.effort > 0) '${stat.effort} EV de ${stat.label}',
@@ -56,8 +82,10 @@ class BaseStatsChart extends StatelessWidget {
       spacing: 4,
       children: [
         Semantics(
-          label: [for (final stat in vertices) '${stat.label} ${stat.baseStat}']
-              .join(', '),
+          label: [
+            for (final stat in vertices)
+              '${stat.label} ${stat.baseStat}${effect(stat.stat)}',
+          ].join('; '),
           child: CustomPaint(
             size: const Size(300, 252),
             painter: _HexagonPainter(
@@ -68,9 +96,20 @@ class BaseStatsChart extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               value: theme.textTheme.labelLarge!,
+              increased: up,
+              decreased: down,
+              increasedColor: upColor,
+              decreasedColor: downColor,
             ),
           ),
         ),
+        if (nature != null)
+          _NatureCaption(
+            nature: nature,
+            byName: byName,
+            upColor: upColor,
+            downColor: downColor,
+          ),
         Text.rich(
           TextSpan(
             children: [
@@ -97,6 +136,10 @@ class _HexagonPainter extends CustomPainter {
     required this.fill,
     required this.label,
     required this.value,
+    required this.increased,
+    required this.decreased,
+    required this.increasedColor,
+    required this.decreasedColor,
   });
 
   final List<FormStat> stats;
@@ -104,6 +147,10 @@ class _HexagonPainter extends CustomPainter {
   final Color fill;
   final TextStyle label;
   final TextStyle value;
+  final String? increased;
+  final String? decreased;
+  final Color increasedColor;
+  final Color decreasedColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -151,11 +198,21 @@ class _HexagonPainter extends CustomPainter {
       );
 
     for (var i = 0; i < 6; i++) {
+      final stat = stats[i];
+      final (arrow, color) = stat.stat == increased
+          ? (' ↑', increasedColor)
+          : stat.stat == decreased
+          ? (' ↓', decreasedColor)
+          : ('', null);
+      // O stat afetado ganha a cor e o peso do valor, para saltar à vista.
+      final bold = color == null
+          ? null
+          : TextStyle(color: color, fontWeight: FontWeight.bold);
       final text = TextPainter(
         text: TextSpan(
           children: [
-            TextSpan(text: '${stats[i].label}\n', style: label),
-            TextSpan(text: '${stats[i].baseStat}', style: value),
+            TextSpan(text: '${stat.label}$arrow\n', style: label.merge(bold)),
+            TextSpan(text: '${stat.baseStat}', style: value.merge(bold)),
           ],
         ),
         textAlign: TextAlign.center,
@@ -166,7 +223,56 @@ class _HexagonPainter extends CustomPainter {
     }
   }
 
+  // A lista de vértices é nova a cada build e o desenho é barato: sempre
+  // repinta, em vez de comparar campo a campo.
   @override
-  bool shouldRepaint(_HexagonPainter old) =>
-      old.stats != stats || old.fill != fill || old.grid != grid;
+  bool shouldRepaint(_HexagonPainter old) => true;
+}
+
+/// "Natureza Modest  ↑ Atq. Esp.  ↓ Ataque"; nas neutras, "(neutra)".
+class _NatureCaption extends StatelessWidget {
+  const _NatureCaption({
+    required this.nature,
+    required this.byName,
+    required this.upColor,
+    required this.downColor,
+  });
+
+  final Choice nature;
+  final Map<String, FormStat> byName;
+  final Color upColor;
+  final Color downColor;
+
+  String _label(String stat) =>
+      (byName[stat] ?? FormStat(stat: stat, baseStat: 0)).label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final up = nature.increased;
+    final down = nature.decreased;
+    TextStyle colored(Color color) =>
+        TextStyle(color: color, fontWeight: FontWeight.w500);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: 'Natureza ',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          TextSpan(
+            text: nature.label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          if (up != null)
+            TextSpan(text: '   ↑ ${_label(up)}', style: colored(upColor)),
+          if (down != null)
+            TextSpan(text: '   ↓ ${_label(down)}', style: colored(downColor)),
+          if (up == null && down == null) const TextSpan(text: ' (neutra)'),
+        ],
+      ),
+      style: theme.textTheme.bodyMedium,
+      textAlign: TextAlign.center,
+    );
+  }
 }

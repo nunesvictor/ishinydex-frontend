@@ -46,7 +46,7 @@ void main() {
         find.textContaining('dá 2 EV de HP e 1 EV de Defesa'),
         findsOneWidget,
       );
-      expect(find.bySemanticsLabel(RegExp('HP 255, Ataque 0')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('HP 255; Ataque 0')), findsOneWidget);
       // Outros status: o painter se redesenha (shouldRepaint).
       await pumpWidgetApp(
         tester,
@@ -55,6 +55,103 @@ void main() {
         ),
       );
       expect(find.textContaining(' · dá'), findsNothing);
+    });
+  });
+
+  group('BaseStatsChart com natureza', () {
+    const stats = [
+      FormStat(stat: 'hp', baseStat: 78),
+      FormStat(stat: 'attack', baseStat: 84),
+      FormStat(stat: 'special-attack', baseStat: 109),
+    ];
+    const modest = Choice(
+      value: 'modest',
+      label: 'Modest',
+      increased: 'special-attack',
+      decreased: 'attack',
+    );
+
+    testWidgets('aumentado em vermelho com ↑, diminuído em azul com ↓', (
+      tester,
+    ) async {
+      await pumpWidgetApp(
+        tester,
+        const Center(
+          child: BaseStatsChart(stats: stats, nature: modest),
+        ),
+      );
+      expect(
+        find.bySemanticsLabel(
+          RegExp(
+            'Ataque 84, diminuído pela natureza.*'
+            'Atq. Esp. 109, aumentado pela natureza',
+          ),
+        ),
+        findsOneWidget,
+      );
+      final caption = tester.widget<RichText>(
+        find.descendant(
+          of: find.byType(Text),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is RichText &&
+                w.text.toPlainText().startsWith('Natureza Modest'),
+          ),
+        ),
+      );
+      expect(caption.text.toPlainText(), contains('↑ Atq. Esp.'));
+      expect(caption.text.toPlainText(), contains('↓ Ataque'));
+      final spans = <TextSpan>[];
+      caption.text.visitChildren((span) {
+        if (span is TextSpan) spans.add(span);
+        return true;
+      });
+      Color? colorOf(String text) =>
+          spans.firstWhere((s) => s.text?.contains(text) ?? false).style?.color;
+      expect(colorOf('↑'), BaseStatsChart.increasedColor(Brightness.light));
+      expect(colorOf('↓'), BaseStatsChart.decreasedColor(Brightness.light));
+
+      // Outra natureza: o painter se redesenha.
+      await pumpWidgetApp(
+        tester,
+        const Center(
+          child: BaseStatsChart(
+            stats: stats,
+            nature: Choice(
+              value: 'adamant',
+              label: 'Adamant',
+              increased: 'attack',
+              decreased: 'special-attack',
+            ),
+          ),
+        ),
+      );
+      expect(find.textContaining('Natureza Adamant'), findsOneWidget);
+    });
+
+    testWidgets('natureza neutra não pinta nada', (tester) async {
+      await pumpWidgetApp(
+        tester,
+        const Center(
+          child: BaseStatsChart(
+            stats: stats,
+            nature: Choice(value: 'hardy', label: 'Hardy'),
+          ),
+        ),
+      );
+      expect(find.textContaining('Natureza Hardy (neutra)'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('natureza')), findsNothing);
+    });
+
+    test('no tema escuro, cores mais claras', () {
+      expect(
+        BaseStatsChart.increasedColor(Brightness.dark),
+        isNot(BaseStatsChart.increasedColor(Brightness.light)),
+      );
+      expect(
+        BaseStatsChart.decreasedColor(Brightness.dark),
+        isNot(BaseStatsChart.decreasedColor(Brightness.light)),
+      );
     });
   });
 
