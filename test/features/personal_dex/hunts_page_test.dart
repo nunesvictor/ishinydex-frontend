@@ -189,7 +189,7 @@ void main() {
     tester,
   ) async {
     final fake = FakeBackend()
-      ..addForm(id: 1, name: 'keldeo', shinyLock: ShinyLock.distroOnly);
+      ..addForm(id: 1, name: 'keldeo', shinyLock: ShinyLockType.distroOnly);
     final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
     final normal = fake.addDex(name: 'Normal');
     fake

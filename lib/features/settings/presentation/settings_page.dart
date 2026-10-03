@@ -36,6 +36,13 @@ class SettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.go(Routes.saves),
           ),
+          ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: const Text('Shiny locks'),
+            subtitle: const Text('Formas sem shiny, ou só por distribuição'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go(Routes.shinyLocks),
+          ),
           const _CaptureDateFormatSetting(),
           const Divider(),
           ListTile(
