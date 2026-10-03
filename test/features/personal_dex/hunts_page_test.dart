@@ -7,7 +7,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -37,12 +37,38 @@ Future<void> _openHunts(WidgetTester tester) async {
 
 Finder _chip(String label) => find.widgetWithText(FilterChip, label);
 
-/// Toca num chip de motivo, rolando a linha até ele (no celular, a linha é
-/// rolável e o último chip começa fora da tela).
-Future<void> _tapChip(WidgetTester tester, String label) async {
-  await tester.ensureVisible(_chip(label));
+/// Abre o menu "Motivos" e toca no motivo [label]; se o menu continuar
+/// aberto (os motivos simples não o fecham), fecha tocando no chip.
+Future<void> _tapReason(WidgetTester tester, String label) async {
+  await tester.tap(find.byTooltip('Motivos'));
   await tester.pumpAndSettle();
-  await tester.tap(_chip(label));
+  await tester.tap(
+    find.descendant(
+      of: find.byType(CheckboxMenuButton),
+      matching: find.textContaining(label),
+    ),
+  );
+  await tester.pumpAndSettle();
+  if (find.byType(CheckboxMenuButton).evaluate().isNotEmpty) {
+    await tester.tap(find.byTooltip('Motivos'));
+    await tester.pumpAndSettle();
+  }
+}
+
+/// Escolhe a situação [label] no menu "Situação".
+Future<void> _pickSituation(
+  WidgetTester tester,
+  String chip,
+  String label,
+) async {
+  await tester.tap(_chip(chip));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.descendant(
+      of: find.byType(RadioMenuButton<HuntSituation>),
+      matching: find.text(label),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -132,46 +158,72 @@ void main() {
     await pumpFullApp(tester, size: compactSize);
     await _openHunts(tester);
 
-    await _tapChip(tester, 'Shiny do GO');
+    await _tapReason(tester, 'Shiny do GO');
     expect(find.text('25 para caçar'), findsOneWidget);
-    await _tapChip(tester, 'Sem shiny');
+    expect(_chip('Sem shiny +1'), findsOneWidget);
+    await _tapReason(tester, 'Sem shiny');
     expect(find.text('6 para caçar'), findsOneWidget);
-    // O GO aparece como emoji no título, como no inventário.
+    expect(_chip('Shiny do GO'), findsOneWidget);
+    // O GO aparece como a marca de origem no título, como no inventário.
     expect(
-      find.descendant(of: find.byType(HuntTile), matching: find.text(goEmoji)),
+      find.descendant(of: find.byType(HuntTile), matching: find.byType(GoIcon)),
       findsWidgets,
     );
     // Único motivo marcado: não dá para desmarcar.
-    await _tapChip(tester, 'Shiny do GO');
+    await _tapReason(tester, 'Shiny do GO');
     expect(find.text('6 para caçar'), findsOneWidget);
 
     // Pokébola: cancelar ou não escolher nenhuma não liga o motivo.
-    await _tapChip(tester, 'Pokébola…');
+    await _tapReason(tester, 'Pokébola fora das escolhidas');
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
-    await _tapChip(tester, 'Pokébola…');
+    await _tapReason(tester, 'Pokébola fora das escolhidas');
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(find.text('6 para caçar'), findsOneWidget);
 
-    await _tapChip(tester, 'Pokébola…');
+    await _tapReason(tester, 'Pokébola fora das escolhidas');
     await tester.tap(find.text('Poké Ball'));
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    expect(_chip('Fora de: Poké Ball'), findsOneWidget);
     // GO (6) + shinies em Dream Ball (20), com 3 nos dois.
     expect(find.text('23 para caçar'), findsOneWidget);
     expect(find.textContaining('Outra pokébola'), findsWidgets);
+    await tester.tap(find.byTooltip('Motivos'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pokébola fora de: Poké Ball'), findsOneWidget);
+    await tester.tap(find.byTooltip('Motivos'));
+    await tester.pumpAndSettle();
 
-    await _tapChip(tester, 'Shiny do GO');
+    await _tapReason(tester, 'Shiny do GO');
     expect(find.text('20 para caçar'), findsOneWidget);
     // Agora a pokébola é o único motivo: não sai.
-    await _tapChip(tester, 'Fora de: Poké Ball');
+    await _tapReason(tester, 'Pokébola fora de');
     expect(find.text('20 para caçar'), findsOneWidget);
-    await _tapChip(tester, 'Sem shiny');
-    await _tapChip(tester, 'Fora de: Poké Ball');
+    await _tapReason(tester, 'Sem shiny');
+    await _tapReason(tester, 'Pokébola fora de');
     expect(find.text('19 para caçar'), findsOneWidget);
   });
+
+  for (final size in [compactSize, expandedSize]) {
+    testWidgets('situação: faltando e registrados (${size.width.toInt()}px)', (
+      tester,
+    ) async {
+      await pumpFullApp(tester, size: size);
+      await _openHunts(tester);
+      await _tapReason(tester, 'Shiny do GO');
+      expect(find.text('25 para caçar'), findsOneWidget);
+
+      // Os 19 slots vazios e os 6 shinies do GO já registrados.
+      await _pickSituation(tester, 'Situação', 'Faltando');
+      expect(find.text('19 para caçar'), findsOneWidget);
+      await _pickSituation(tester, 'Faltando', 'Registrados');
+      expect(find.text('6 para caçar'), findsOneWidget);
+      await _pickSituation(tester, 'Registrados', 'Todos');
+      expect(find.text('25 para caçar'), findsOneWidget);
+      expect(_chip('Situação'), findsOneWidget);
+    });
+  }
 
   testWidgets('busca espera parar de digitar', (tester) async {
     await pumpFullApp(tester, size: compactSize);
@@ -274,10 +326,10 @@ void main() {
       Finder inTile(Finder finder) =>
           find.descendant(of: find.byType(HuntTile), matching: finder);
       expect(inTile(find.text('Vovó')), findsOneWidget);
-      for (final emoji in [femaleEmoji, shinyEmoji, goEmoji]) {
-        expect(inTile(find.text(emoji)), findsOneWidget);
+      expect(inTile(find.text(femaleEmoji)), findsOneWidget);
+      for (final icon in [ShinyIcon, AlphaIcon, GoIcon]) {
+        expect(inTile(find.byType(icon)), findsOneWidget);
       }
-      expect(inTile(find.byType(AlphaIcon)), findsOneWidget);
       expect(
         inTile(
           find.byWidgetPredicate(

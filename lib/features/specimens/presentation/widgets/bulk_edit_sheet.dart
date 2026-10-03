@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
@@ -187,7 +188,7 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
                 ),
               ),
               _FlagRow(
-                icon: const Text(shinyEmoji),
+                icon: const ShinyIcon(semanticLabel: null),
                 label: 'Shiny',
                 edit: _changes.isShiny,
                 onChanged: (edit) => _update(_changes.copyWith(isShiny: edit)),
@@ -199,7 +200,7 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
                 onChanged: (edit) => _update(_changes.copyWith(isAlpha: edit)),
               ),
               _FlagRow(
-                icon: const Text(goEmoji),
+                icon: const GoIcon(semanticLabel: null),
                 label: 'GO',
                 edit: _changes.isFromGo,
                 onChanged: (edit) => _update(_changes.copyWith(isFromGo: edit)),
@@ -525,12 +526,9 @@ class _EditPickerDialogState extends State<_EditPickerDialog> {
             if (widget.choices.length >= _searchFrom)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Buscar',
-                    prefixIcon: Icon(Icons.search),
-                    isDense: true,
-                  ),
+                child: SearchField(
+                  hintText: 'Buscar',
+                  dense: true,
                   onChanged: (text) => setState(() => _search = text),
                 ),
               ),

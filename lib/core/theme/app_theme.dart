@@ -29,8 +29,10 @@ abstract final class AppTheme {
         color: scheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
+      // Padrão dos campos de formulário: contorno com cantos de 12 (os
+      // estados de foco e erro herdam o formato). Buscas usam `SearchField`.
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

@@ -38,7 +38,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/core/router/app_router.dart](../lib/core/router/app_router.dart) | Rotas e redirecionamento de login |
 | [lib/core/responsive/](../lib/core/responsive/) | `WindowSize` (breakpoints) e `AdaptiveShell` (NavigationBar/Rail) |
 | [lib/core/theme/app_theme.dart](../lib/core/theme/app_theme.dart) | Tema Material 3 |
-| [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação, `OriginMarkChip`/`OriginMarkIcon` (marca de origem), `AlphaIcon` (selo de alfa do HOME) |
+| [lib/core/widgets/](../lib/core/widgets/) | `PokemonSprite` (imagem com fallback), `ProgressBadge`, views de loading/erro/vazio, diálogo de confirmação, `OriginMarkChip`/`OriginMarkIcon` (marca de origem), `ShinyIcon`/`AlphaIcon`/`GoIcon` (ícones do HOME com emoji de reserva), `SearchField` (busca em pílula), `MenuChip` (chip de filtro com menu) |
 | [lib/core/utils/origin_mark.dart](../lib/core/utils/origin_mark.dart) | `OriginMark`: slug da API → nome e ícone da marca de origem (a regra fica no backend) |
 | [assets/](../assets/) | Arquivos empacotados no app (`pubspec.yaml` → `flutter: assets:`); hoje, os ícones das marcas de origem (fonte em `assets/README.md`) |
 | [lib/features/auth/](../lib/features/auth/) | Login por token, armazenamento seguro do token, `AuthController` |

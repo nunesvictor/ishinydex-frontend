@@ -25,4 +25,10 @@ O app pinta o branco com a cor do tema (`OriginMarkIcon`, em `lib/core/widgets/o
 
 Selo de alfa do Pokémon HOME/Legends: Arceus (58×61, colorido), baixado da Bulbagarden Archives como `Alpha_icon.png` ("Icon used in summary screen of Alpha Pokémon"; artigo [Alpha Pokémon](https://bulbapedia.bulbagarden.net/wiki/Alpha_Pok%C3%A9mon)). Não confundir com `Alpha_Mark.png`, a marca "Former Alpha" de Scarlet/Violet. Mesma ressalva de propriedade das marcas de origem.
 
-Usado por `AlphaIcon` (`lib/core/widgets/alpha_icon.dart`), que volta ao emoji 💢 se o asset falhar.
+Usado por `AlphaIcon` (`lib/core/widgets/mark_icons.dart`), que volta ao emoji 💢 se o asset falhar.
+
+## Ícone de shiny (`icons/shiny.png`)
+
+As duas estrelas laranja que marcam um shiny no Pokémon HOME (44×44, colorido), baixadas da Bulbagarden Archives como [`ShinyHOMEStar.png`](https://archives.bulbagarden.net/wiki/File:ShinyHOMEStar.png) ("Image of the star indicating a Shiny Pokémon from the mobile version of Pokémon HOME"; artigo [Shiny Pokémon](https://bulbapedia.bulbagarden.net/wiki/Shiny_Pok%C3%A9mon)). Mesma ressalva de propriedade das marcas de origem.
+
+Usado por `ShinyIcon` (`lib/core/widgets/mark_icons.dart`), que volta ao emoji ✨ se o asset falhar. O "veio do GO" usa a marca de origem `go.png` pelo `GoIcon`, com o 📱 de reserva.

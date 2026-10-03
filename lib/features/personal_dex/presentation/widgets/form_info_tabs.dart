@@ -18,6 +18,7 @@ class FormInfoTabs extends ConsumerStatefulWidget {
     this.summaryLabel = 'Espécime',
     this.dexId,
     this.onOpenSlot,
+    this.nature,
     super.key,
   });
 
@@ -30,6 +31,10 @@ class FormInfoTabs extends ConsumerStatefulWidget {
   /// Ver [SpeciesInfo].
   final int? dexId;
   final ValueChanged<Slot>? onOpenSlot;
+
+  /// Natureza do espécime (valor da API), para o hexágono dos status;
+  /// `null` sem espécime.
+  final String? nature;
 
   @override
   ConsumerState<FormInfoTabs> createState() => _FormInfoTabsState();
@@ -56,7 +61,9 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
       ),
       switch (_tab) {
         _Tab.summary => widget.summary,
-        _Tab.stats => _withForm((form) => BaseStatsChart(stats: form.stats)),
+        _Tab.stats => _withForm(
+          (form) => BaseStatsChart(stats: form.stats, nature: _nature()),
+        ),
         _Tab.species => _withForm(
           (form) => SpeciesInfo(
             form: form,
@@ -67,6 +74,14 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
       },
     ],
   );
+
+  /// A natureza entre as opções da API (com os stats que ela muda).
+  Choice? _nature() {
+    final value = widget.nature;
+    if (value == null) return null;
+    final natures = ref.watch(specimenOptionsProvider).value?.nature;
+    return natures?.where((n) => n.value == value).firstOrNull;
+  }
 
   /// O detalhe da forma (`GET /forms/{id}/`), com carregamento e erro
   /// contidos na aba.

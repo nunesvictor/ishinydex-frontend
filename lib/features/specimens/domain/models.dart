@@ -248,6 +248,11 @@ abstract class Choice with _$Choice {
     required String value,
     required String label,
     String? spriteUrl,
+
+    /// Só nas naturezas: o stat que ela aumenta e o que diminui (nomes de
+    /// [FormStat.stat]); `null` nas neutras.
+    String? increased,
+    String? decreased,
   }) = _Choice;
 
   factory Choice.fromJson(Map<String, dynamic> json) => _$ChoiceFromJson(json);

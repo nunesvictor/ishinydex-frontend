@@ -5,6 +5,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
@@ -551,12 +552,9 @@ class _ChoicePickerDialogState extends State<_ChoicePickerDialog> {
             if (widget.choices.length >= _searchFrom)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Buscar',
-                    prefixIcon: Icon(Icons.search),
-                    isDense: true,
-                  ),
+                child: SearchField(
+                  hintText: 'Buscar',
+                  dense: true,
                   onChanged: (text) => setState(() => _search = text),
                 ),
               ),

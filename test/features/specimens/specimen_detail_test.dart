@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -85,11 +86,11 @@ void main() {
         expect(find.text('Bulbasaur · #0001'), findsOneWidget);
         // Cabeçalho: nome e selos em emoji, na mesma linha.
         expect(find.text('Bulbasaur'), findsOneWidget);
-        expect(find.text(shinyEmoji), findsOneWidget);
-        expect(find.text(goEmoji), findsOneWidget);
+        expect(find.byType(ShinyIcon), findsOneWidget);
+        expect(find.byType(GoIcon), findsOneWidget);
         expect(find.text(maleEmoji), findsOneWidget);
         expect(
-          tester.getCenter(find.text(shinyEmoji)).dy,
+          tester.getCenter(find.byType(ShinyIcon)).dy,
           moreOrLessEquals(
             tester.getCenter(find.text('Bulbasaur')).dy,
             epsilon: 2,

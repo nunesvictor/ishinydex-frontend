@@ -8,10 +8,12 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
+import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
@@ -404,9 +406,17 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
   }
 }
 
+/// Rótulo e explicação de cada situação, no menu "Situação".
+const Map<SpecimenStatus, (String, String)> _statusLabels = {
+  SpecimenStatus.all: ('Todos', 'Com ou sem slot'),
+  SpecimenStatus.available: ('Disponíveis', 'Fora de qualquer slot'),
+  SpecimenStatus.deposited: ('Registrados', 'Depositados num slot de dex'),
+};
+
 /// Barra de filtros pensada para o celular: busca + botão Filtros numa
-/// linha; filtros rápidos numa linha rolável (altura fixa); e, só quando há
-/// filtros avançados ativos, uma linha com os chips removíveis deles.
+/// linha; filtros rápidos numa linha que não rola de lado (Situação num
+/// menu; shiny, alfa e GO só com o ícone); e, só quando há filtros
+/// avançados ativos, uma linha com os chips removíveis deles.
 class _Filters extends StatelessWidget {
   const _Filters({
     required this.query,
@@ -433,6 +443,7 @@ class _Filters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = query.advancedCount;
+    final compact = WindowSize.of(context).isCompact;
     final quick = <Widget>[
       // No modo de seleção, o primeiro chip lista só os marcados.
       if (selectedCount > 0)
@@ -442,41 +453,56 @@ class _Filters extends StatelessWidget {
           selected: onlySelected,
           onSelected: onOnlySelectedChanged,
         ),
-      SegmentedButton<SpecimenStatus>(
-        showSelectedIcon: false,
-        segments: const [
-          ButtonSegment(value: SpecimenStatus.all, label: Text('Todos')),
-          ButtonSegment(
-            value: SpecimenStatus.available,
-            label: Text('Disponíveis'),
-          ),
-          ButtonSegment(
-            value: SpecimenStatus.deposited,
-            label: Text('Depositados'),
-          ),
+      MenuChip(
+        label: query.status == SpecimenStatus.all
+            ? 'Situação'
+            : _statusLabels[query.status]!.$1,
+        selected: query.status != SpecimenStatus.all,
+        menuChildren: [
+          const MenuHeader('Situação no dex'),
+          for (final MapEntry(key: status, value: (label, hint))
+              in _statusLabels.entries)
+            RadioMenuButton<SpecimenStatus>(
+              value: status,
+              groupValue: query.status,
+              onChanged: (s) => onChanged(query.copyWith(status: s!)),
+              child: MenuOptionText(label, hint),
+            ),
         ],
-        selected: {query.status},
-        onSelectionChanged: (s) => onChanged(query.copyWith(status: s.single)),
       ),
-      FilterChip(
-        avatar: const Text(shinyEmoji),
-        label: const Text('Shiny'),
-        selected: query.shinyOnly,
-        onSelected: (v) => onChanged(query.copyWith(shinyOnly: v)),
-      ),
-      FilterChip(
-        avatar: const AlphaIcon(size: 18, semanticLabel: null),
-        label: const Text('Alfa'),
-        selected: query.alphaOnly,
-        onSelected: (v) => onChanged(query.copyWith(alphaOnly: v)),
-      ),
-      FilterChip(
-        avatar: const Text(goEmoji),
-        label: const Text('GO'),
-        tooltip: 'Veio do Pokémon GO',
-        selected: query.fromGoOnly,
-        onSelected: (v) => onChanged(query.copyWith(fromGoOnly: v)),
-      ),
+      // No celular, só o ícone (o nome fica no tooltip e no leitor de tela);
+      // com espaço, ícone + nome.
+      for (final (icon, label, tooltip, on, apply) in [
+        (
+          const ShinyIcon(size: 18, semanticLabel: null),
+          'Shiny',
+          'Só shiny',
+          query.shinyOnly,
+          (bool v) => query.copyWith(shinyOnly: v),
+        ),
+        (
+          const AlphaIcon(size: 18, semanticLabel: null),
+          'Alfa',
+          'Só alfa',
+          query.alphaOnly,
+          (bool v) => query.copyWith(alphaOnly: v),
+        ),
+        (
+          const GoIcon(size: 18, semanticLabel: null),
+          'GO',
+          'Veio do Pokémon GO',
+          query.fromGoOnly,
+          (bool v) => query.copyWith(fromGoOnly: v),
+        ),
+      ])
+        FilterChip(
+          avatar: compact ? null : icon,
+          label: compact ? icon : Text(label),
+          tooltip: tooltip,
+          showCheckmark: !compact,
+          selected: on,
+          onSelected: (v) => onChanged(apply(v)),
+        ),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -487,25 +513,11 @@ class _Filters extends StatelessWidget {
             spacing: 4,
             children: [
               Expanded(
-                // Reconstrói só o campo quando o texto muda, para o "x"
-                // aparecer apenas com algo digitado.
-                child: ValueListenableBuilder(
-                  valueListenable: searchController,
-                  builder: (context, value, _) => TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Apelido, forma ou nº da dex',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: value.text.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: 'Limpar busca',
-                              onPressed: onSearchCleared,
-                              icon: const Icon(Icons.clear),
-                            ),
-                    ),
-                    onChanged: onSearchChanged,
-                  ),
+                child: SearchField(
+                  controller: searchController,
+                  hintText: 'Apelido, forma ou nº da dex',
+                  onChanged: onSearchChanged,
+                  onCleared: onSearchCleared,
                 ),
               ),
               IconButton(
@@ -525,19 +537,14 @@ class _Filters extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          // No celular, uma linha rolável (altura fixa); nos demais tamanhos
-          // não falta espaço vertical, então os chips quebram linha.
-          child: WindowSize.of(context).isCompact
-              ? SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(spacing: 8, children: quick),
-                )
-              : Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: quick,
-                ),
+          // Nunca rola de lado: grupos de opções ficam num chip com menu e,
+          // se ainda faltar largura, os chips quebram linha.
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: quick,
+          ),
         ),
         ActiveFilterChips(query: query, onChanged: onChanged),
       ],

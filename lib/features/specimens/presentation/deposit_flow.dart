@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -226,9 +226,7 @@ class _SpecimenTile extends StatelessWidget {
                 ],
               ),
             ),
-      trailing: specimen.isShiny
-          ? const Text(shinyEmoji, semanticsLabel: 'Shiny')
-          : null,
+      trailing: specimen.isShiny ? const ShinyIcon() : null,
       onTap: onTap,
     );
   }

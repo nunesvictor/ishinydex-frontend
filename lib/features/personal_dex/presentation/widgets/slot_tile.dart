@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
@@ -31,10 +30,11 @@ class SlotTile extends StatelessWidget {
     super.key,
   });
 
-  /// A partir deste tamanho, ✨ e 💢 ficam lado a lado; abaixo, empilhados.
+  /// A partir deste tamanho, os selos de shiny e alfa ficam lado a lado;
+  /// abaixo, empilhados.
   static const badgesInRowMinSize = 64.0;
 
-  /// Abaixo deste tamanho não cabe o segundo selo: fica só o ✨.
+  /// Abaixo deste tamanho não cabe o segundo selo: fica só o de shiny.
   static const alphaMinSize = 40.0;
 
   final Slot slot;
@@ -71,10 +71,9 @@ class SlotTile extends StatelessWidget {
               final size = constraints.biggest.shortestSide;
               // Folga interna proporcional: os selos nunca encostam na borda.
               final inset = size * 0.06;
-              final badgeStyle = TextStyle(fontSize: size * 0.16);
               final badges = [
                 if (specimen != null && specimen.isShiny)
-                  Text(shinyEmoji, semanticsLabel: 'Shiny', style: badgeStyle),
+                  ShinyIcon(size: size * 0.18),
                 if (specimen != null &&
                     specimen.isAlpha &&
                     size >= SlotTile.alphaMinSize)
@@ -97,7 +96,7 @@ class SlotTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Canto superior esquerdo: selos juntos (✨ e 💢). Os cantos
+                  // Canto superior esquerdo: selos juntos (shiny e alfa). Os cantos
                   // livres (topo-direito, base-esquerda) ficam para ícones
                   // futuros, como a geração.
                   if (badges.isNotEmpty)

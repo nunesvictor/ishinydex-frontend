@@ -428,6 +428,37 @@ viram Cupertino no iOS:
 | Switches | `SwitchListTile.adaptive` |
 | Carregamento | `CircularProgressIndicator.adaptive` |
 
+### Campos de texto: um padrão só
+
+Todo campo segue um de dois estilos, para o app não misturar campos com e
+sem cantos arredondados:
+
+- **Formulários** (cadastro, filtros, diálogos, login, selects): contorno
+  com cantos de 12. Ele vem do tema (`inputDecorationTheme` em
+  [`app_theme.dart`](../lib/core/theme/app_theme.dart)): o `border` do tema
+  vale para todos os `TextField`, `TextFormField` e `DropdownMenu`, e os
+  estados de foco e erro herdam o formato, só trocando a cor. Nenhuma tela
+  precisa repetir a borda.
+- **Buscas**: uma pílula preenchida, o
+  [`SearchField`](../lib/core/widgets/search_field.dart), com a lupa e o "x"
+  de limpar. A forma diferente avisa que ali é busca, não cadastro.
+
+### Filtros sem rolagem de lado: chips com menu
+
+No inventário e nas caçadas, um grupo de opções (Situação, Motivos) ocupa
+**um chip só**, com ▾, que abre um menu: o
+[`MenuChip`](../lib/core/widgets/menu_chip.dart), feito sobre o `MenuAnchor`
+do Material 3. O `MenuAnchor` desenha o menu numa camada por cima da tela,
+ancorado no chip, e o `builder` recebe o `MenuController` usado para abrir e
+fechar. Os itens são `RadioMenuButton` (uma opção) ou `CheckboxMenuButton`
+(várias; `closeOnActivate: false` deixa o menu aberto para marcar mais de
+uma).
+
+Os liga/desliga (shiny, alfa, GO) viram, no celular, chips **só com o
+ícone**: o nome fica no `tooltip`, que também é o que o leitor de tela fala.
+Com espaço, voltam a ter ícone e texto. A linha usa `Wrap`: se mesmo assim
+faltar largura, ela quebra em vez de rolar de lado.
+
 ### Selects: `DropdownMenu`
 
 Os campos de escolha do cadastro de specimen usam o
@@ -483,9 +514,11 @@ não usa biblioteca de gráficos. Um `CustomPaint` recebe um `CustomPainter`,
 cujo `paint(canvas, size)` desenha direto no `Canvas`: cada vértice é
 calculado com seno e cosseno (ângulos de 60° a partir do topo), os polígonos
 saem de um `Path` e os rótulos de um `TextPainter`. O `shouldRepaint` diz ao
-Flutter quando redesenhar (só se os status ou as cores mudarem). Para o
+Flutter quando redesenhar; aqui é sempre, porque o desenho é barato. Para o
 leitor de tela, o desenho fica dentro de um `Semantics` com os valores em
-texto.
+texto. Com um espécime registrado, a natureza dele pinta o stat aumentado de
+vermelho (↑) e o diminuído de azul (↓), como nos jogos; os nomes dos stats
+vêm das opções de natureza da API (`increased`/`decreased`).
 
 ### Imagens do próprio app: assets
 
@@ -500,7 +533,13 @@ são **assets**.
 3. Na tela, `Image.asset('assets/origin_marks/paldea.png')` carrega pelo
    caminho.
 
-Os ícones do HOME são **glifos brancos** com fundo transparente. O
+Shiny, alfa e "veio do GO" também usam imagens do HOME no lugar dos
+emojis: `ShinyIcon`, `AlphaIcon` e `GoIcon`
+([mark_icons.dart](../lib/core/widgets/mark_icons.dart)). As três estendem
+um `MarkIcon` com `Image.asset` e `errorBuilder`: se a imagem não carregar,
+aparece o emoji de reserva (✨, 💢, 📱).
+
+As marcas de origem são **glifos brancos** com fundo transparente. O
 `OriginMarkIcon` ([origin_mark_chip.dart](../lib/core/widgets/origin_mark_chip.dart))
 passa `color` + `colorBlendMode: BlendMode.srcIn`: a imagem vira uma
 "máscara", e o Flutter pinta os pixels visíveis com a cor do `IconTheme` (a

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 
@@ -32,7 +31,7 @@ void main() {
   testWidgets('célula grande: ✨ e 💢 lado a lado', (tester) async {
     await pumpTile(tester, 120, shinyAlpha);
     expect(find.byKey(const ValueKey('badges-row')), findsOneWidget);
-    expect(find.text(shinyEmoji), findsOneWidget);
+    expect(find.byType(ShinyIcon), findsOneWidget);
     expect(find.byType(AlphaIcon), findsOneWidget);
   });
 
@@ -44,7 +43,7 @@ void main() {
 
   testWidgets('célula muito pequena: só o ✨', (tester) async {
     await pumpTile(tester, 32, shinyAlpha);
-    expect(find.text(shinyEmoji), findsOneWidget);
+    expect(find.byType(ShinyIcon), findsOneWidget);
     expect(find.byType(AlphaIcon), findsNothing);
   });
 
@@ -55,6 +54,6 @@ void main() {
       slot.copyWith(specimen: slot.specimen!.copyWith(isShiny: false)),
     );
     expect(find.byKey(const ValueKey('badges-row')), findsNothing);
-    expect(find.text(shinyEmoji), findsNothing);
+    expect(find.byType(ShinyIcon), findsNothing);
   });
 }

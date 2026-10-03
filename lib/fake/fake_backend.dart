@@ -312,9 +312,25 @@ class FakeBackend
       Choice(value: 'genderless', label: 'Sem gênero'),
     ],
     nature: [
-      Choice(value: 'adamant', label: 'Adamant'),
-      Choice(value: 'modest', label: 'Modest'),
-      Choice(value: 'timid', label: 'Timid'),
+      Choice(
+        value: 'adamant',
+        label: 'Adamant',
+        increased: 'attack',
+        decreased: 'special-attack',
+      ),
+      Choice(
+        value: 'modest',
+        label: 'Modest',
+        increased: 'special-attack',
+        decreased: 'attack',
+      ),
+      Choice(
+        value: 'timid',
+        label: 'Timid',
+        increased: 'speed',
+        decreased: 'attack',
+      ),
+      Choice(value: 'hardy', label: 'Hardy'),
     ],
     type: [
       Choice(value: 'normal', label: 'Normal', spriteUrl: '$_typeBase/1.png'),
@@ -966,7 +982,8 @@ class FakeBackend
   }
 
   /// Como a API: só shiny dex (senão 400); motivos somados (OU), escopo
-  /// combinado (E), tipos "qualquer um", shiny impossível fora por padrão;
+  /// combinado (E), tipos "qualquer um", shiny impossível fora por padrão,
+  /// situação (vazio ou com espécime) só com `registered`;
   /// cada item traz todos os seus motivos. Página fora do intervalo → 404.
   @override
   Future<Paginated<Hunt>> fetchHunts(
@@ -997,6 +1014,8 @@ class FakeBackend
       final category = _categories[formId] ?? SpeciesCategory.regular;
       final matches =
           reasons.any(query.reasons.contains) &&
+          (query.situation.param == null ||
+              query.situation.param == (slot.specimenId != null)) &&
           (query.includeLocked || lock != ShinyLockType.unobtainable) &&
           (query.generations.isEmpty ||
               query.generations.contains(_generationOf(form.pokeapiId))) &&

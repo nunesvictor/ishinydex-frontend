@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
@@ -75,7 +76,7 @@ void main() {
       // Marca de origem do GO (ícone + nome), no lugar do antigo 📱.
       expect(find.text('GO'), findsOneWidget);
       expect(find.byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);
-      expect(find.text(goEmoji), findsNothing);
+      expect(find.byType(GoIcon), findsNothing);
       // O ícone fica na mesma linha do nome.
       expect(
         tester.getCenter(find.text(maleEmoji)).dy,

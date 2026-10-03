@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/progress_badge.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -92,7 +92,7 @@ class _DexCard extends StatelessWidget {
                   if (dex.isShinyDex)
                     const Padding(
                       padding: EdgeInsets.only(right: 8),
-                      child: Text(shinyEmoji, semanticsLabel: 'Dex shiny'),
+                      child: ShinyIcon(semanticLabel: 'Dex shiny'),
                     ),
                   Expanded(
                     child: Text(

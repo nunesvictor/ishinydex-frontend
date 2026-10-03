@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
-import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/widgets/alpha_icon.dart';
+import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -87,7 +86,7 @@ void main() {
       backend: backend,
       slot: await slotAt(5),
     );
-    expect(find.text(shinyEmoji), findsOneWidget);
+    expect(find.byType(ShinyIcon), findsOneWidget);
     await tester.tap(find.text('Charizard'));
     await tester.pumpAndSettle();
     expect(results, [true]);

@@ -131,6 +131,7 @@ class SlotDetailPanel extends ConsumerWidget {
                   summary: _Summary(slot: current, full: full),
                   dexId: current.personalDex,
                   onOpenSlot: onOpenSlot,
+                  nature: full?.nature,
                 ),
               ],
             ),
