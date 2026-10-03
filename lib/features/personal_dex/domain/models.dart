@@ -225,6 +225,21 @@ enum ShinyLockType {
 /// Sem `fromJson` gerado: na API o slot vem "achatado" (os campos do slot e,
 /// ao lado, `reasons` e `shiny_lock`), então [Hunt.parse] monta o objeto à
 /// mão. Uma `factory` com corpo não vira um "caso" novo no freezed.
+/// Resultado de "Depositar automaticamente"
+/// (`POST /personal-dexes/{id}/link-specimens/`): os [slots] que recebem um
+/// espécime (já com ele) e quantos slots vazios ficaram sem ([missing]).
+@freezed
+abstract class LinkResult with _$LinkResult {
+  const factory LinkResult({
+    required int linked,
+    required int missing,
+    @Default(<Slot>[]) List<Slot> slots,
+  }) = _LinkResult;
+
+  factory LinkResult.fromJson(Map<String, dynamic> json) =>
+      _$LinkResultFromJson(json);
+}
+
 @freezed
 abstract class Hunt with _$Hunt {
   const factory Hunt({

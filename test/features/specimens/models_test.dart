@@ -300,4 +300,52 @@ void main() {
       2,
     ]);
   });
+
+  test('FormDetail: status e dados da espécie; rótulos dos status', () {
+    final form = FormDetail.fromJson({
+      ...formDetailJson,
+      'stats': [
+        {'stat': 'hp', 'base_stat': 45, 'effort': 0},
+        {'stat': 'special-attack', 'base_stat': 65, 'effort': 1},
+      ],
+      'gender_rate': 1,
+      'capture_rate': 45,
+      'hatch_counter': 20,
+      'height': 7,
+      'weight': 69,
+      'debut_versions': ['red', 'blue'],
+      'evolution_chain': [
+        [formRefJson],
+        [formRefJson],
+      ],
+      'other_forms': [formRefJson],
+    });
+    expect(form.stats.last.effort, 1);
+    expect(form.genderRate, 1);
+    expect(form.evolutionChain.length, 2);
+    expect(form.otherForms.single.name, 'rattata-alola');
+    expect(
+      [
+        for (final stat in [
+          'hp',
+          'attack',
+          'defense',
+          'special-attack',
+          'special-defense',
+          'speed',
+          'accuracy',
+        ])
+          FormStat(stat: stat, baseStat: 1).label,
+      ],
+      [
+        'HP',
+        'Ataque',
+        'Defesa',
+        'Atq. Esp.',
+        'Def. Esp.',
+        'Velocidade',
+        'Accuracy',
+      ],
+    );
+  });
 }

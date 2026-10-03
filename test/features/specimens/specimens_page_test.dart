@@ -25,9 +25,9 @@ Future<List<Specimen>> allSpecimens(FakeBackend backend) async =>
       pageSize: 500,
     )).results;
 
-/// Abre o menu "Mais ações" do modo de seleção e escolhe [label].
+/// Abre o menu "Ações da seleção" e escolhe [label].
 Future<void> openBulkAction(WidgetTester tester, String label) async {
-  await tester.tap(find.byTooltip('Mais ações'));
+  await tester.tap(find.byTooltip('Ações da seleção'));
   await tester.pumpAndSettle();
   await tester.tap(find.text(label));
 }
@@ -170,7 +170,6 @@ void main() {
       await tester.tap(specimenTile(bulba.id));
       await tester.pumpAndSettle();
       expect(find.text('Depositado'), findsOneWidget);
-      expect(find.text('Ver no dex'), findsOneWidget);
 
       await tester.tap(find.text('Editar espécime'));
       await tester.pumpAndSettle();
@@ -179,14 +178,17 @@ void main() {
       expect(find.text('Espécime atualizado.'), findsOneWidget);
       expect(find.text('Bulba'), findsWidgets);
 
-      // Voltar do formulário sem salvar não muda nada.
+      // Voltar do formulário sem salvar não muda nada. (A mensagem cobriria
+      // a barra de ações.)
+      ScaffoldMessenger.of(tester.element(find.byType(Scaffold).last))
+          .removeCurrentSnackBar();
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Editar espécime'));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(CloseButton));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Ver no dex'));
-      await tester.pumpAndSettle();
+      await tapMoreAction(tester, 'Ver no dex');
       // Abriu o dex na box do slot, com o slot selecionado.
       expect(find.text('Shiny Living Dex'), findsWidgets);
       expect(find.text('HOME 1 · 20/30'), findsOneWidget);
@@ -203,8 +205,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Disponível'), findsOneWidget);
 
-      await tester.tap(find.text('Libertar'));
-      await tester.pumpAndSettle();
+      await tapMoreAction(tester, 'Libertar');
       expect(find.text('Libertar Saur?'), findsOneWidget);
       expect(find.textContaining('slot ficará faltante'), findsNothing);
       await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
@@ -280,11 +281,10 @@ void main() {
       expect(find.byTooltip('Limpar busca'), findsOneWidget);
       await tester.tap(specimenTile(saur.id));
       await tester.pumpAndSettle();
-      expect(find.text('Espécime'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'Espécime'), findsOneWidget);
       expect(find.byType(SpecimensPage), findsNothing);
 
-      await tester.tap(find.text('Libertar'));
-      await tester.pumpAndSettle();
+      await tapMoreAction(tester, 'Libertar');
       await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
       await tester.pumpAndSettle();
       expect(find.byType(SpecimensPage), findsOneWidget);

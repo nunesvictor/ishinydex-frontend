@@ -475,6 +475,18 @@ novo e a `duration`, sem `AnimationController`. Na busca do dex:
 - `AnimatedSwitcher` faz o "Cancelar" e o painel de resultados aparecerem e
   sumirem com fade.
 
+### Desenho próprio: `CustomPainter`
+
+O hexágono dos status base
+([base_stats_chart.dart](../lib/features/personal_dex/presentation/widgets/base_stats_chart.dart))
+não usa biblioteca de gráficos. Um `CustomPaint` recebe um `CustomPainter`,
+cujo `paint(canvas, size)` desenha direto no `Canvas`: cada vértice é
+calculado com seno e cosseno (ângulos de 60° a partir do topo), os polígonos
+saem de um `Path` e os rótulos de um `TextPainter`. O `shouldRepaint` diz ao
+Flutter quando redesenhar (só se os status ou as cores mudarem). Para o
+leitor de tela, o desenho fica dentro de um `Semantics` com os valores em
+texto.
+
 ### Imagens do próprio app: assets
 
 Sprites de Pokémon e pokébolas vêm do backend (`Image.network`, dentro do

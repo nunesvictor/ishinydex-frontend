@@ -106,9 +106,42 @@ Regras de negócio que vêm do backend e que o app trata:
 - **Token inválido/expirado**: 401 faz o `AuthInterceptor` chamar
   `AuthController.expire()`, e o router leva de volta ao login.
 
-## Editar e libertar
+## Painel do slot e detalhe do espécime
 
-O slot registrado tem só duas ações, como no Pokémon HOME:
+O painel do slot
+([slot_detail_panel.dart](../lib/features/personal_dex/presentation/widgets/slot_detail_panel.dart))
+e o detalhe do espécime no inventário
+([specimen_detail.dart](../lib/features/specimens/presentation/specimen_detail.dart))
+seguem o mesmo padrão, para as ações não empilharem botões:
+
+- **Barra fixa no rodapé** (`DetailActionBar`, em
+  [action_sheet.dart](../lib/core/widgets/action_sheet.dart)): só a ação
+  principal (Depositar num slot faltante; Editar espécime num registrado) e
+  **⋯ Mais ações**. O conteúdo rola por cima dela.
+- **Mais ações** abre uma folha de ações (`showActionSheet`, padrão do iOS):
+  Ver no dex (inventário), Enviar para jogo ou Trazer de volta ao HOME
+  (`locationAction`), Retirar do slot e, separada e em vermelho, Libertar.
+  Ações novas entram ali sem a tela crescer.
+- **Abas** (`FormInfoTabs`): o resumo ("Espécime"; "Forma" num slot
+  faltante), **Status** e **Espécie**. A altura fica a da aba aberta, e não a
+  soma de tudo.
+  - **Status** (`BaseStatsChart`): os status base num hexágono desenhado com
+    `CustomPainter`, como nos jogos (HP no topo e, no sentido horário,
+    Ataque, Defesa, Velocidade, Def. Esp. e Atq. Esp.), com escala fixa até
+    200, o total e o EV que o Pokémon dá.
+  - **Espécie** (`SpeciesInfo`): linha evolutiva e outras formas (Mega,
+    Gigantamax, regionais) com sprite, e uma grade com gênero, taxa de
+    captura, ciclos de ovo, estreia, altura e peso. No dex, tocar numa forma
+    leva ao slot dela (`formSlotsProvider` →
+    `GET /slots/?personal_dex=&form=`), e a que não está no dex fica
+    esmaecida; no inventário, elas só aparecem.
+  - Os dados vêm do detalhe da forma (`formDetailProvider` →
+    `GET /forms/{id}/`), com carregamento e erro contidos na aba.
+
+Na tela larga do inventário, o botão flutuante "Novo espécime" fica embaixo
+da lista (à esquerda), para não cobrir a barra do detalhe.
+
+## Editar, libertar e retirar
 
 - **Editar espécime:** abre o `SpecimenFormPage` com `specimenId`. Ele
   carrega o specimen (`specimenProvider` → `GET /specimens/{id}/`), preenche
@@ -120,8 +153,23 @@ O slot registrado tem só duas ações, como no Pokémon HOME:
   destrutivo ("não pode ser desfeita"). `SlotActions.release` chama
   `DELETE /specimens/{id}/`: o cadastro é apagado e o slot fica faltante.
 
-Não existe mais "retirar" (desvincular sem apagar) no app. O endpoint
-`/slots/{id}/withdraw/` continua no backend, mas o app não o usa.
+- **Retirar do slot:** tira o espécime do slot sem apagá-lo
+  (`SlotActions.withdraw` → `POST /slots/{id}/withdraw/`): ele volta ao
+  inventário como disponível, e o slot fica faltante. Como nada é apagado,
+  não há confirmação; a mensagem tem **Desfazer**, que deposita de novo no
+  mesmo slot.
+
+## Depositar automaticamente
+
+Menu ⋮ do dex → **Depositar automaticamente**
+([auto_deposit_sheet.dart](../lib/features/personal_dex/presentation/widgets/auto_deposit_sheet.dart)):
+espécimes do inventário que estão sem slot vão para os slots vazios do dex
+(`POST /personal-dexes/{id}/link-specimens/`, a mesma regra do comando
+`link_specimens` do backend). A folha mostra antes a prévia
+(`linkPreviewProvider`, com `dry_run`): quantos e onde, com o selo "Não
+shiny" nas exceções de um shiny dex, e a opção **Só espécimes shiny**
+(`strict`). "Depositar N" confirma e recarrega boxes, contagens e caçadas
+(`SlotActions.linkSpecimens`).
 
 ## Data de captura
 
@@ -296,7 +344,7 @@ Pokémon num save, o espécime tem uma **localização**: `location` (um
   direito (`OriginMark.fromVersion`: a marca de origem do jogo do save).
 - **Ações** ([location_flow.dart](../lib/features/specimens/presentation/location_flow.dart)),
   reaproveitadas no painel do slot, no detalhe do espécime, na seleção do
-  inventário (menu "Mais ações") e na tela "Fora do HOME":
+  inventário (menu "Ações da seleção") e na tela "Fora do HOME":
   - *Enviar para jogo…*: escolhe o save numa folha. Sem saves, explica e
     oferece abrir Meus saves.
   - *Trazer de volta*: pergunta "Voltou igual / Evoluiu…". Se evoluiu,

@@ -44,6 +44,25 @@ abstract interface class PersonalDexRepository {
 
   Future<Slot> deposit({required int slotId, required int specimenId});
 
+  /// Tira o espécime do slot sem apagá-lo: ele volta ao inventário,
+  /// disponível, e o slot fica faltante.
+  Future<Slot> withdraw(int slotId);
+
+  /// Slots de [dexId] com estas formas (onde cada uma está no dex).
+  Future<List<Slot>> fetchSlotsByForms({
+    required int dexId,
+    required List<int> formIds,
+  });
+
+  /// Depositar automaticamente: espécimes livres nos slots vazios do dex,
+  /// preferindo o brilho do dex; [strict] só aceita ele. Com [dryRun], só a
+  /// prévia (nada é salvo).
+  Future<LinkResult> linkSpecimens(
+    int dexId, {
+    bool strict = false,
+    bool dryRun = false,
+  });
+
   /// Uma página da lista de caçadas de um shiny dex, na ordem das boxes.
   Future<Paginated<Hunt>> fetchHunts(
     int dexId,

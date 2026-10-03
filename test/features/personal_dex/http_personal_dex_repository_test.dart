@@ -236,4 +236,44 @@ void main() {
     expect(page.count, 1);
     expect(page.results.single.reasons, [HuntReason.noShiny]);
   });
+
+  test('retirar, slots por forma e depositar automaticamente', () async {
+    adapter
+      ..onPost(
+        'slots/1/withdraw/',
+        (server) => server.reply(200, missingSlotJson),
+      )
+      ..onGet(
+        'slots/',
+        (server) => server.reply(200, {
+          'count': 1,
+          'next': null,
+          'previous': null,
+          'results': [registeredSlotJson],
+        }),
+        queryParameters: {'personal_dex': 1, 'form': '1,2', 'page_size': 100},
+      )
+      ..onPost(
+        'personal-dexes/1/link-specimens/',
+        (server) => server.reply(200, {
+          'linked': 1,
+          'missing': 2,
+          'slots': [registeredSlotJson],
+        }),
+        data: {'strict': true, 'dry_run': true},
+      );
+
+    expect((await repository.withdraw(1)).specimen, isNull);
+    expect(
+      (await repository.fetchSlotsByForms(dexId: 1, formIds: [1, 2])).length,
+      1,
+    );
+    final result = await repository.linkSpecimens(
+      1,
+      strict: true,
+      dryRun: true,
+    );
+    expect((result.linked, result.missing), (1, 2));
+    expect(result.slots.single.specimen, isNotNull);
+  });
 }

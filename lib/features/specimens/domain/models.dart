@@ -167,6 +167,35 @@ abstract class FormAbility with _$FormAbility {
       _$FormAbilityFromJson(json);
 }
 
+/// Status base do Pokémon (`stat` como na PokéAPI: `hp`, `attack`...).
+/// [effort] é o EV que ele dá ao ser derrotado.
+@freezed
+abstract class FormStat with _$FormStat {
+  const factory FormStat({
+    required String stat,
+    required int baseStat,
+    @Default(0) int effort,
+  }) = _FormStat;
+
+  const FormStat._();
+
+  factory FormStat.fromJson(Map<String, dynamic> json) =>
+      _$FormStatFromJson(json);
+
+  /// Nome do status como nos jogos em português.
+  String get label => switch (stat) {
+    'hp' => 'HP',
+    'attack' => 'Ataque',
+    'defense' => 'Defesa',
+    'special-attack' => 'Atq. Esp.',
+    'special-defense' => 'Def. Esp.',
+    'speed' => 'Velocidade',
+    _ => prettifyName(stat),
+  };
+}
+
+/// Detalhe da forma (`GET /forms/{id}/`): tipos, habilidades, status base e
+/// os dados da espécie (linha evolutiva, outras formas, gênero...).
 @freezed
 abstract class FormDetail with _$FormDetail {
   const factory FormDetail({
@@ -179,9 +208,34 @@ abstract class FormDetail with _$FormDetail {
     int? nationalNumber,
     @Default(<FormType>[]) List<FormType> types,
     @Default(<FormAbility>[]) List<FormAbility> abilities,
+    @Default(<FormStat>[]) List<FormStat> stats,
+
+    /// Chance de fêmea em oitavos (0 = só macho, 8 = só fêmea); -1 = sem
+    /// gênero.
+    int? genderRate,
+    int? captureRate,
+
+    /// Ciclos de ovo.
+    int? hatchCounter,
+
+    /// Decímetros e hectogramas, como na PokéAPI.
+    int? height,
+    int? weight,
+
+    /// Versões do grupo em que a forma estreou (`red-japan`...).
+    @Default(<String>[]) List<String> debutVersions,
+
+    /// Estágios da linha evolutiva (ramificações no mesmo estágio); vazio se
+    /// a espécie não evolui nem vem de outra.
+    @Default(<List<FormRef>>[]) List<List<FormRef>> evolutionChain,
+
+    /// Demais formas da espécie (Mega, Gigantamax, regionais).
+    @Default(<FormRef>[]) List<FormRef> otherForms,
     @Default(false) bool isShinylocked,
     @Default(false) bool isDistroOnly,
   }) = _FormDetail;
+
+  const FormDetail._();
 
   factory FormDetail.fromJson(Map<String, dynamic> json) =>
       _$FormDetailFromJson(json);

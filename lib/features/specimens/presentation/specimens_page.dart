@@ -38,7 +38,7 @@ class SpecimensPage extends ConsumerStatefulWidget {
   ConsumerState<SpecimensPage> createState() => _SpecimensPageState();
 }
 
-/// Ações do menu "Mais ações" do modo de seleção.
+/// Ações do menu "Ações da seleção" (modo de seleção).
 enum _BulkAction { send, bringBack, release }
 
 class _SpecimensPageState extends ConsumerState<SpecimensPage> {
@@ -163,7 +163,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
                 ),
                 // Menos usadas: no menu, para caber no celular.
                 PopupMenuButton<_BulkAction>(
-                  tooltip: 'Mais ações',
+                  tooltip: 'Ações da seleção',
                   onSelected: (action) => switch (action) {
                     _BulkAction.send => _bulkMove(toHome: false),
                     _BulkAction.bringBack => _bulkMove(toHome: true),
@@ -205,6 +205,11 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
                 ),
               ],
             ),
+      // Nas telas maiores, o botão fica embaixo da lista (à esquerda): à
+      // direita ele cobriria a barra de ações do detalhe.
+      floatingActionButtonLocation: size.isCompact
+          ? FloatingActionButtonLocation.endFloat
+          : FloatingActionButtonLocation.startFloat,
       floatingActionButton: _selecting
           ? null
           : FloatingActionButton.extended(

@@ -47,6 +47,7 @@ void main() {
           onDeposit: () {},
           onEdit: () {},
           onRelease: () {},
+          onWithdraw: () {},
         ),
       ),
       size: size,

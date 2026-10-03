@@ -12,6 +12,7 @@ import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/auto_deposit_sheet.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_grid.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigator.dart';
@@ -296,7 +297,12 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
             icon: const Icon(Icons.track_changes),
           ),
         _missingToggle(context),
-        if (dex != null) DexMenu(dex: dex, onShowProgress: _openGenerations),
+        if (dex != null)
+          DexMenu(
+            dex: dex,
+            onShowProgress: _openGenerations,
+            onAutoDeposit: () => _autoDeposit(dex),
+          ),
       ],
     );
   }
@@ -400,6 +406,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
         onDeposit: () => _deposit(_selectedSlot(box)!),
         onEdit: () => _edit(_selectedSlot(box)!),
         onRelease: () => _release(_selectedSlot(box)!),
+        onWithdraw: () => _withdraw(_selectedSlot(box)!),
+        onOpenSlot: _goToSlot,
+        fillHeight: true,
       ),
     );
     return Row(
@@ -611,11 +620,62 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
               Navigator.of(sheetContext).pop();
               unawaited(_release(slot!));
             },
+            onWithdraw: () {
+              Navigator.of(sheetContext).pop();
+              unawaited(_withdraw(slot!));
+            },
+            // Outra forma da linha evolutiva: fecha este sheet e abre o do
+            // slot dela (na box certa).
+            onOpenSlot: (other) {
+              Navigator.of(sheetContext).pop();
+              _goToSlot(other);
+            },
           ),
         );
       },
     ),
   );
+
+  /// Retira o espécime do slot (ele fica disponível no inventário). A
+  /// mensagem tem "Desfazer", que o deposita de novo no mesmo slot.
+  Future<void> _withdraw(Slot slot) async {
+    final specimen = slot.specimen!;
+    final actions = ref.read(slotActionsProvider);
+    try {
+      await actions.withdraw(slot);
+    } on AppFailure catch (failure) {
+      _notify(failure.message);
+      return;
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${specimen.displayName} retirado do slot.'),
+          action: SnackBarAction(
+            label: 'Desfazer',
+            onPressed: () async {
+              try {
+                await actions.deposit(slot, specimenId: specimen.id);
+              } on AppFailure catch (failure) {
+                _notify(failure.message);
+              }
+            },
+          ),
+        ),
+      );
+  }
+
+  Future<void> _autoDeposit(PersonalDex dex) async {
+    final result = await showAutoDepositSheet(context, dex: dex);
+    if (result == null) return;
+    _notify(
+      result.linked == 1
+          ? '1 espécime depositado.'
+          : '${result.linked} espécimes depositados.',
+    );
+  }
 
   Future<void> _deposit(Slot slot) async {
     final deposited = await showDepositFlow(
