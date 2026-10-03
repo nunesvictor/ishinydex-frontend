@@ -5,7 +5,10 @@ import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
+import 'package:ishinydex/features/local/data/local_data_storage.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';
@@ -59,6 +62,74 @@ void main() {
     adapter.onGet(_url, (server) => server.reply(404, null));
 
     expect(await catalogOverrides(_demo, dio), isEmpty);
+  });
+
+  group('modo local', () {
+    const local = Env(apiBaseUrl: 'x', useFakeApi: false, localData: true);
+
+    test('sem armazenamento informado, usa o shared_preferences', () async {
+      SharedPreferences.setMockInitialValues({});
+      adapter.onGet(_url, (server) => server.reply(200, catalogJson()));
+      final overrides = await catalogOverrides(
+        const Env(
+          apiBaseUrl: 'x',
+          useFakeApi: false,
+          localData: true,
+          catalogUrl: _url,
+        ),
+        dio,
+      );
+      expect(overrides, hasLength(2));
+    });
+
+    test('sem CATALOG_URL não abre', () {
+      expect(() => catalogOverrides(local, dio), throwsA(isA<StateError>()));
+    });
+
+    testWidgets('carrega os dados salvos e grava depois de cada uso', (
+      tester,
+    ) async {
+      adapter.onGet(_url, (server) => server.reply(200, catalogJson()));
+      final storage = InMemoryLocalDataStorage();
+      final overrides = await tester.runAsync(
+        () => localOverrides(
+          local,
+          dio,
+          _url,
+          storage,
+          saveDelay: const Duration(milliseconds: 10),
+        ),
+      );
+      final container = createContainer(overrides: overrides!);
+      final backend = container.read(fakeBackendProvider);
+      expect(backend.randomIds, true);
+      expect(container.read(catalogLoadProvider), isNotNull);
+
+      await tester.runAsync(() async {
+        await backend.createTrainer(name: 'Ash', trainerId: '123456');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      expect(storage.data, contains('"trainerId":"123456"'));
+
+      // Reabrir: os dados voltam.
+      final reopened = await tester.runAsync(
+        () => catalogOverrides(
+          const Env(
+            apiBaseUrl: 'x',
+            useFakeApi: false,
+            localData: true,
+            catalogUrl: _url,
+          ),
+          dio,
+          storage: storage,
+        ),
+      );
+      final again = createContainer(overrides: reopened!);
+      final trainers = await tester.runAsync(
+        () => again.read(fakeBackendProvider).fetchTrainers(),
+      );
+      expect(trainers!.single.trainerId, '123456');
+    });
   });
 
   group('FakeBackend.fromCatalog', () {

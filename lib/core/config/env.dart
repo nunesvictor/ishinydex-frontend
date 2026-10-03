@@ -8,6 +8,7 @@ class Env {
     this.appVersion = 'dev',
     this.catalogUrl,
     this.spritesBaseUrl = defaultSpritesBaseUrl,
+    this.localData = false,
   });
 
   /// [base] é o endereço da página (`Uri.base`); serve para resolver uma
@@ -21,6 +22,9 @@ class Env {
       base ?? Uri.base,
     ),
     useFakeApi: const bool.fromEnvironment('USE_FAKE_API'),
+    // Como no APP_VERSION: sem --dart-define, o lint acha redundante.
+    // ignore: avoid_redundant_argument_values
+    localData: const bool.fromEnvironment('LOCAL_DATA'),
     // Sem --dart-define, a constante vale 'dev' e o lint a acha redundante;
     // num build com APP_VERSION, não é.
     // ignore: avoid_redundant_argument_values
@@ -46,6 +50,14 @@ class Env {
 
   final String apiBaseUrl;
   final bool useFakeApi;
+
+  /// Modo local (`LOCAL_DATA`): sem servidor nem login; os dados ficam no
+  /// aparelho, e o catálogo (`CATALOG_URL`) é obrigatório.
+  final bool localData;
+
+  /// Os repositórios usam o backend em memória: na demonstração e no modo
+  /// local.
+  bool get usesLocalBackend => useFakeApi || localData;
 
   /// Versão do build (a tag do repositório, ex. `v1.0.0`), passada pelo
   /// `Dockerfile`; `dev` em builds locais.

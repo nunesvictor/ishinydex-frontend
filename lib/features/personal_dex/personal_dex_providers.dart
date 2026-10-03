@@ -11,7 +11,9 @@ import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.d
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 final personalDexRepositoryProvider = Provider<PersonalDexRepository>((ref) {
-  if (ref.watch(envProvider).useFakeApi) return ref.watch(fakeBackendProvider);
+  if (ref.watch(envProvider).usesLocalBackend) {
+    return ref.watch(fakeBackendProvider);
+  }
   return HttpPersonalDexRepository(ref.watch(dioProvider));
 });
 

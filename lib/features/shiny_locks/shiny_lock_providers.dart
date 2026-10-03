@@ -9,7 +9,9 @@ import 'package:ishinydex/features/shiny_locks/domain/shiny_lock_repository.dart
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 final shinyLockRepositoryProvider = Provider<ShinyLockRepository>((ref) {
-  if (ref.watch(envProvider).useFakeApi) return ref.watch(fakeBackendProvider);
+  if (ref.watch(envProvider).usesLocalBackend) {
+    return ref.watch(fakeBackendProvider);
+  }
   return HttpShinyLockRepository(ref.watch(dioProvider));
 });
 

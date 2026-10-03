@@ -20,15 +20,22 @@ class SettingsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Ajustes')),
       body: ListView(
         children: [
-          ListTile(
-            leading: const Icon(Icons.dns_outlined),
-            title: const Text('Servidor'),
-            subtitle: Text(
-              env.useFakeApi
-                  ? 'Modo demonstração (dados fake)'
-                  : env.apiBaseUrl,
+          if (env.localData)
+            const ListTile(
+              leading: Icon(Icons.smartphone_outlined),
+              title: Text('Dados'),
+              subtitle: Text('Neste aparelho'),
+            )
+          else
+            ListTile(
+              leading: const Icon(Icons.dns_outlined),
+              title: const Text('Servidor'),
+              subtitle: Text(
+                env.useFakeApi
+                    ? 'Modo demonstração (dados fake)'
+                    : env.apiBaseUrl,
+              ),
             ),
-          ),
           ListTile(
             leading: const Icon(Icons.videogame_asset_outlined),
             title: const Text('Meus saves'),
@@ -45,22 +52,24 @@ class SettingsPage extends ConsumerWidget {
           ),
           const _CaptureDateFormatSetting(),
           const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sair'),
-            onTap: () async {
-              final confirmed = await showConfirmDialog(
-                context,
-                title: 'Sair?',
-                message: 'Você precisará entrar novamente.',
-                confirmLabel: 'Sair',
-                destructive: true,
-              );
-              if (confirmed) {
-                await ref.read(authControllerProvider.notifier).logout();
-              }
-            },
-          ),
+          // No modo local não há conta: nada de "Sair".
+          if (!env.localData)
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sair'),
+              onTap: () async {
+                final confirmed = await showConfirmDialog(
+                  context,
+                  title: 'Sair?',
+                  message: 'Você precisará entrar novamente.',
+                  confirmLabel: 'Sair',
+                  destructive: true,
+                );
+                if (confirmed) {
+                  await ref.read(authControllerProvider.notifier).logout();
+                }
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('Sobre o iShinyDex'),
