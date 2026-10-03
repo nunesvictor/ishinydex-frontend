@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -52,6 +53,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
+                    if (ref.watch(envProvider).useFakeApi) ...[
+                      const _DemoNotice(),
+                      const SizedBox(height: 16),
+                    ],
                     TextFormField(
                       controller: _username,
                       decoration: const InputDecoration(labelText: 'Usuário'),
@@ -97,4 +102,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   static String? _required(String? value) =>
       value == null || value.trim().isEmpty ? 'Campo obrigatório' : null;
+}
+
+/// Modo demonstração: explica que qualquer login entra e nada é guardado.
+class _DemoNotice extends StatelessWidget {
+  const _DemoNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      color: scheme.secondaryContainer,
+      child: const Padding(
+        padding: EdgeInsets.all(12),
+        child: Row(
+          spacing: 12,
+          children: [
+            Icon(Icons.science_outlined),
+            Expanded(
+              child: Text(
+                'Demonstração: entre com qualquer usuário e senha. Os dados '
+                'são fictícios e somem ao recarregar a página.',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
