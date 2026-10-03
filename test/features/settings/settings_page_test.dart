@@ -7,17 +7,22 @@ import 'package:ishinydex/features/settings/presentation/settings_page.dart';
 import '../../helpers/helpers.dart';
 
 void main() {
-  testWidgets('mostra a URL da API real', (tester) async {
+  testWidgets('mostra a URL da API real e a versão', (tester) async {
     await pumpWidgetApp(
       tester,
       const SettingsPage(),
       overrides: [
         envProvider.overrideWithValue(
-          const Env(apiBaseUrl: 'http://server/api', useFakeApi: false),
+          const Env(
+            apiBaseUrl: 'http://server/api',
+            useFakeApi: false,
+            appVersion: 'v1.0.0',
+          ),
         ),
       ],
     );
     expect(find.text('http://server/api'), findsOneWidget);
+    expect(find.text('v1.0.0'), findsOneWidget);
   });
 
   testWidgets('sair com confirmação volta para o login', (tester) async {
