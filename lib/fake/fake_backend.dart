@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
@@ -132,7 +134,11 @@ class FakeBackend
         PersonalDexRepository,
         SpecimenRepository,
         ShinyLockRepository {
-  FakeBackend({this.latency = Duration.zero, this.catalog});
+  FakeBackend({
+    this.latency = Duration.zero,
+    this.catalog,
+    this.randomIds = false,
+  });
 
   /// Dados de demonstração: um dex shiny (2 boxes) e um dex normal (1 box).
   factory FakeBackend.seeded({Duration latency = Duration.zero}) {
@@ -184,6 +190,39 @@ class FakeBackend
       );
     }
     return backend.._seedUserData(catalog.defaultDex);
+  }
+
+  /// Backend local (modo local) com o [catalog]: formas, opções e shiny
+  /// locks padrão do pacote e os dados do usuário de [records] (vazios num
+  /// aparelho novo), com ids aleatórios.
+  factory FakeBackend.local(
+    Catalog catalog, {
+    Map<String, List<Map<String, dynamic>>> records = const {},
+  }) {
+    final backend = FakeBackend(catalog: catalog, randomIds: true);
+    for (final id in catalog.formIds) {
+      backend._forms[id] = catalog.formDetail(id);
+      backend._genderRates[id] = catalog.genderRate(id) ?? 4;
+      backend._categories[id] = catalog.category(id);
+      if (catalog.evolvesFromForm(id) case final from?) {
+        backend._evolvesFrom[id] = from;
+      }
+    }
+    if (records.isEmpty) {
+      // Aparelho novo: os shiny locks padrão do catálogo.
+      for (final lock in catalog.shinyLocks) {
+        backend.addShinyLock(
+          caption: lock.caption,
+          description: lock.description,
+          lockType: lock.lockType,
+          active: lock.active,
+          formIds: lock.forms.where(catalog.hasForm).toList(),
+        );
+      }
+    } else {
+      backend._restore(records);
+    }
+    return backend;
   }
 
   /// Treinadores, saves, um shiny dex com todas as [forms] (30 por box), um
@@ -253,11 +292,243 @@ class FakeBackend
     }
   }
 
+  /// Tipos de registro do arquivo de dados, na ordem em que se restauram
+  /// (cada um só referencia os anteriores).
+  static const recordTypes = [
+    'trainers',
+    'saves',
+    'dexes',
+    'boxes',
+    'shinyLocks',
+    'specimens',
+    'slots',
+  ];
+
+  /// Registros que citam formas fora do catálogo atual: não entram no app,
+  /// mas voltam no próximo [records], para nada se perder.
+  final _orphans = <String, List<Map<String, dynamic>>>{};
+
+  static String? _date(DateTime? value) =>
+      value?.toIso8601String().substring(0, 10);
+
+  /// Os dados do usuário em registros canônicos: só ids e valores, nada
+  /// derivado (sprites, contagens, marca de origem). É o conteúdo do
+  /// arquivo de dados (modo local, exportar/importar e sync).
+  Map<String, List<Map<String, dynamic>>> get records => {
+    'trainers': [
+      for (final t in _trainers.values)
+        {
+          'id': t.id,
+          'name': t.name,
+          'trainerId': t.trainerId,
+          'version': t.version,
+        },
+    ],
+    'saves': [
+      for (final s in _saves.values)
+        {'id': s.id, 'trainer': s.trainer.id, 'label': s.label},
+    ],
+    'dexes': [
+      for (final d in _dexes.values)
+        {
+          'id': d.id,
+          'name': d.name,
+          'isShinyDex': d.isShinyDex,
+          'forceNewBox': d.forceNewBox,
+        },
+    ],
+    'boxes': [
+      for (final b in _boxes.values)
+        {'id': b.id, 'name': b.name, 'position': b.position},
+    ],
+    'shinyLocks': [
+      for (final l in _shinyLocks.values)
+        {
+          'id': l.id,
+          'caption': l.caption,
+          'description': l.description,
+          'lockType': l.lockType.param,
+          'active': l.active,
+          'forms': [for (final f in l.forms) f.id],
+        },
+      ...?_orphans['shinyLocks'],
+    ],
+    'specimens': [
+      for (final s in _specimens.values)
+        {
+          'id': s.id,
+          'form': s.form,
+          'nickname': s.nickname,
+          'ability': s.ability,
+          'language': s.language,
+          'gender': s.gender,
+          'nature': s.nature,
+          'isAlpha': s.isAlpha,
+          'isShiny': s.isShiny,
+          'isFromGo': s.isFromGo,
+          'capturedAt': _date(s.capturedAt),
+          'pokeball': s.pokeball,
+          'observation': s.observation,
+          'ot': s.ot,
+          'location': s.location?.id,
+          'locationSince': _date(s.locationSince),
+        },
+      ...?_orphans['specimens'],
+    ],
+    'slots': [
+      for (final s in _slots.values)
+        {
+          'id': s.id,
+          'box': s.box.id,
+          'row': s.row,
+          'col': s.col,
+          'dex': s.dexId,
+          'form': s.formId,
+          'specimen': s.specimenId,
+        },
+      ...?_orphans['slots'],
+    ],
+  };
+
+  void _restore(Map<String, List<Map<String, dynamic>>> records) {
+    List<Map<String, dynamic>> of(String type) => records[type] ?? const [];
+    DateTime? date(Object? value) =>
+        value == null ? null : DateTime.parse(value as String);
+    for (final t in of('trainers')) {
+      final id = t['id'] as int;
+      _trainers[id] = Trainer(
+        id: id,
+        name: t['name'] as String,
+        trainerId: t['trainerId'] as String,
+        version: t['version'] as String?,
+      );
+    }
+    for (final s in of('saves')) {
+      final id = s['id'] as int;
+      _saves[id] = Save(
+        id: id,
+        trainer: _trainers[s['trainer'] as int]!,
+        label: s['label'] as String,
+      );
+    }
+    for (final d in of('dexes')) {
+      final id = d['id'] as int;
+      _dexes[id] = PersonalDex(
+        id: id,
+        name: d['name'] as String,
+        total: 0,
+        registered: 0,
+        isShinyDex: d['isShinyDex'] as bool,
+        forceNewBox: d['forceNewBox'] as bool,
+      );
+    }
+    for (final b in of('boxes')) {
+      final id = b['id'] as int;
+      _boxes[id] = BoxRef(
+        id: id,
+        name: b['name'] as String,
+        position: b['position'] as int,
+      );
+    }
+    for (final l in of('shinyLocks')) {
+      final forms = [for (final f in l['forms'] as List) f as int];
+      if (!forms.every(_forms.containsKey)) {
+        (_orphans['shinyLocks'] ??= []).add(l);
+        continue;
+      }
+      final id = l['id'] as int;
+      _shinyLocks[id] = ShinyLock(
+        id: id,
+        caption: l['caption'] as String,
+        description: l['description'] as String?,
+        lockType:
+            ShinyLockType.fromParam(l['lockType'] as String) ??
+            ShinyLockType.unobtainable,
+        active: l['active'] as bool,
+        forms: _lockForms(forms),
+      );
+    }
+    for (final s in of('specimens')) {
+      final form = _forms[s['form'] as int];
+      if (form == null) {
+        (_orphans['specimens'] ??= []).add(s);
+        continue;
+      }
+      final id = s['id'] as int;
+      final ot = s['ot'] as int?;
+      final pokeball = s['pokeball'] as String?;
+      _specimens[id] = Specimen(
+        id: id,
+        form: form.id,
+        formRef: _formRef(form),
+        formName: form.name,
+        nickname: s['nickname'] as String?,
+        ability: s['ability'] as String?,
+        language: s['language'] as String?,
+        gender: s['gender'] as String?,
+        nature: s['nature'] as String?,
+        isAlpha: s['isAlpha'] as bool,
+        isShiny: s['isShiny'] as bool,
+        isFromGo: s['isFromGo'] as bool,
+        capturedAt: date(s['capturedAt']),
+        pokeball: pokeball,
+        pokeballSpriteUrl: _ballSprite(pokeball),
+        observation: s['observation'] as String?,
+        ot: ot,
+        location: _saves[s['location']],
+        locationSince: date(s['locationSince']),
+      ).withOrigin(_originMarkOf, _otVersion(ot));
+    }
+    for (final s in of('slots')) {
+      final form = s['form'] as int?;
+      if (form != null && !_forms.containsKey(form)) {
+        (_orphans['slots'] ??= []).add(s);
+        continue;
+      }
+      final id = s['id'] as int;
+      final specimen = s['specimen'] as int?;
+      _slots[id] = _SlotRecord(
+        id: id,
+        box: _boxes[s['box'] as int]!,
+        row: s['row'] as int,
+        col: s['col'] as int,
+        dexId: s['dex'] as int?,
+        formId: form,
+      )..specimenId = _specimens.containsKey(specimen) ? specimen : null;
+    }
+  }
+
   final Duration latency;
 
   /// Catálogo real (modo demonstração com `CATALOG_URL`); `null` no seed
   /// fixo dos testes.
   final Catalog? catalog;
+
+  /// Ids aleatórios de 53 bits (cabem num `int` do JavaScript), para
+  /// aparelhos sem rede não gerarem o mesmo id (modo local). Sem isso, o
+  /// próximo id é o maior + 1, como no banco.
+  final bool randomIds;
+
+  /// Chamado a cada uso do backend (leitura ou escrita), antes da operação:
+  /// o modo local agenda a gravação a partir daqui.
+  void Function()? onAccess;
+
+  final _random = Random();
+
+  // Constantes, e não `1 << 32`: no navegador, os operadores de bits do
+  // JavaScript trabalham com 32 bits, e `1 << 32` dá 0.
+  static const _twoTo32 = 4294967296;
+  static const _twoTo21 = 2097152;
+
+  int _newId(Iterable<int> used) {
+    if (!randomIds) return used.fold(0, max) + 1;
+    final taken = used.toSet();
+    while (true) {
+      final id =
+          _random.nextInt(_twoTo32) * _twoTo21 + _random.nextInt(_twoTo21);
+      if (id > 0 && !taken.contains(id)) return id;
+    }
+  }
 
   final _forms = <int, FormDetail>{};
   final _dexes = <int, PersonalDex>{};
@@ -270,7 +541,6 @@ class FakeBackend
   /// Shiny locks cadastrados. Como na API, são eles que dão o
   /// `isShinylocked`/`isDistroOnly` das formas e o `shiny_lock` das caçadas.
   final _shinyLocks = <int, ShinyLock>{};
-  var _nextShinyLockId = 1;
 
   /// Forma → forma da qual evolui (no backend, `evolves_from_species`).
   final _evolvesFrom = <int, int>{};
@@ -282,9 +552,6 @@ class FakeBackend
   /// Categoria da espécie de cada forma (no backend, vem dos campos da
   /// espécie e da habilidade Beast Boost).
   final _categories = <int, SpeciesCategory>{};
-
-  int _nextSlotId = 1;
-  int _nextSpecimenId = 1;
 
   /// Grupo de versão de cada versão (a marca de origem depende dele).
   static final Map<String, String> versionGroups = {
@@ -431,7 +698,7 @@ class FakeBackend
     String? description,
     bool active = true,
   }) {
-    final id = _nextShinyLockId++;
+    final id = _newId(_shinyLocks.keys);
     _shinyLocks[id] = ShinyLock(
       id: id,
       caption: caption,
@@ -505,7 +772,7 @@ class FakeBackend
     required String trainerId,
     String? version,
   }) {
-    final id = _trainers.length + 1;
+    final id = _newId(_trainers.keys);
     _trainers[id] = Trainer(
       id: id,
       name: name,
@@ -518,7 +785,7 @@ class FakeBackend
   /// Cria um save do treinador [trainerId] (sem validar a versão: os
   /// testes montam o cenário à vontade).
   int addSave({required int trainerId, String label = ''}) {
-    final id = _saves.length + 1;
+    final id = _newId(_saves.keys);
     _saves[id] = Save(id: id, trainer: _trainers[trainerId]!, label: label);
     return id;
   }
@@ -535,7 +802,7 @@ class FakeBackend
   }
 
   int addDex({required String name, bool isShinyDex = false}) {
-    final id = _dexes.length + 1;
+    final id = _newId(_dexes.keys);
     _dexes[id] = PersonalDex(
       id: id,
       name: name,
@@ -553,11 +820,12 @@ class FakeBackend
     required String name,
     required List<int> formIds,
   }) {
-    final id = _boxes.length + 1;
-    final box = BoxRef(id: id, name: name, position: id);
+    final id = _newId(_boxes.keys);
+    final position = _boxes.values.map((b) => b.position).fold(0, max) + 1;
+    final box = BoxRef(id: id, name: name, position: position);
     _boxes[id] = box;
     for (var index = 0; index < 30; index++) {
-      final slotId = _nextSlotId++;
+      final slotId = _newId(_slots.keys);
       final hasForm = index < formIds.length;
       _slots[slotId] = _SlotRecord(
         id: slotId,
@@ -599,7 +867,7 @@ class FakeBackend
     int? ot,
     DateTime? capturedAt,
   }) {
-    final id = _nextSpecimenId++;
+    final id = _newId(_specimens.keys);
     final form = _forms[formId]!;
     _specimens[id] = Specimen(
       id: id,
@@ -646,9 +914,12 @@ class FakeBackend
     return [for (final id in _dexes.keys) _dexWithCounts(id)];
   }
 
-  /// No fake, o "conjunto padrão" são todas as formas cadastradas.
-  List<FormDetail> get _defaultForms =>
-      _forms.values.toList()..sort((a, b) => a.id.compareTo(b.id));
+  /// O conjunto padrão de um dex novo: o `defaultDex` do catálogo; no seed
+  /// fixo, todas as formas cadastradas.
+  List<FormDetail> get _defaultForms => switch (catalog) {
+    final catalog? => [for (final id in catalog.defaultDex) ?_forms[id]],
+    null => _forms.values.toList()..sort((a, b) => a.id.compareTo(b.id)),
+  };
 
   /// Limite de boxes (o do HOME); os testes podem baixar.
   int maxBoxes = homeMaxBoxes;
@@ -669,7 +940,7 @@ class FakeBackend
         position < 30 && index < forms.length;
         position++
       ) {
-        if (forceNewBox && position > 0 && _startsGeneration(forms[index])) {
+        if (forceNewBox && position > 0 && _startsGeneration(forms, index)) {
           break;
         }
         index++;
@@ -715,10 +986,21 @@ class FakeBackend
     );
   }
 
-  static bool _startsGeneration(FormDetail form) => const [
-    'chikorita', 'treecko', 'turtwig', 'victini', //
-    'chespin', 'rowlet', 'grookey', 'sprigatito',
-  ].contains(form.name);
+  /// A forma [index] abre uma geração nova: com catálogo, a geração da
+  /// espécie muda em relação à anterior (como no backend); no seed fixo, os
+  /// iniciais de cada geração.
+  bool _startsGeneration(List<FormDetail> forms, int index) {
+    final catalog = this.catalog;
+    if (catalog == null) {
+      return const [
+        'chikorita', 'treecko', 'turtwig', 'victini', //
+        'chespin', 'rowlet', 'grookey', 'sprigatito',
+      ].contains(forms[index].name);
+    }
+    return index > 0 &&
+        catalog.generation(forms[index].id) !=
+            catalog.generation(forms[index - 1].id);
+  }
 
   @override
   Future<DexPreview> previewNewDex({required bool forceNewBox}) async {
@@ -775,7 +1057,7 @@ class FakeBackend
       final slots = _slots.values.where((s) => s.box.id == box.id).toList();
       for (final (position, slot) in slots.indexed) {
         if (index >= forms.length) break;
-        if (forceNewBox && position > 0 && _startsGeneration(forms[index])) {
+        if (forceNewBox && position > 0 && _startsGeneration(forms, index)) {
           break;
         }
         slot
@@ -1128,7 +1410,7 @@ class FakeBackend
       });
     }
     _validateAbility(form, draft.ability);
-    final id = _nextSpecimenId++;
+    final id = _newId(_specimens.keys);
     final specimen = Specimen(
       id: id,
       form: form.id,
@@ -1594,6 +1876,7 @@ class FakeBackend
   String? _otVersion(int? ot) => _trainers[ot]?.version;
 
   Future<void> _delay() async {
+    onAccess?.call();
     if (latency > Duration.zero) await Future<void>.delayed(latency);
   }
 

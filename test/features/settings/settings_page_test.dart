@@ -25,6 +25,23 @@ void main() {
     expect(find.text('Versão v1.0.0'), findsOneWidget);
   });
 
+  testWidgets('modo local: "Dados neste aparelho" e sem "Sair"', (
+    tester,
+  ) async {
+    await pumpWidgetApp(
+      tester,
+      const SettingsPage(),
+      overrides: [
+        envProvider.overrideWithValue(
+          const Env(apiBaseUrl: 'x', useFakeApi: false, localData: true),
+        ),
+      ],
+    );
+    expect(find.text('Neste aparelho'), findsOneWidget);
+    expect(find.text('Servidor'), findsNothing);
+    expect(find.text('Sair'), findsNothing);
+  });
+
   testWidgets('sair com confirmação volta para o login', (tester) async {
     await pumpFullApp(tester, size: compactSize);
     await tester.tap(find.text('Ajustes'));

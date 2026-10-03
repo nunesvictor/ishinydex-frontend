@@ -576,3 +576,25 @@ String pokeball(FieldEdit<String> edit) => switch (edit) {
 ```
 
 📚 [Tour da linguagem Dart](https://dart.dev/language)
+
+## 11. Modo local: dados no aparelho
+
+Com `LOCAL_DATA=true`, o app não usa servidor. O `FakeBackend`, que já
+seguia todas as regras da API para a demonstração e os testes, vira o
+backend de verdade (`FakeBackend.local`), alimentado pelo catálogo.
+
+- **Persistência por comparação.** Cada uso do backend chama `onAccess`,
+  que agenda (`SaveScheduler`, 500 ms depois do último uso) uma gravação.
+  O `LocalStore` tira um retrato canônico dos registros (`records`: só ids e
+  valores, nada derivado) e compara com o último salvo: registro novo ou
+  alterado ganha `updatedAt`; registro sumido vira marca em `deleted`.
+  Nenhuma regra do app precisa saber que existe persistência, e o sync terá
+  a data de cada registro para juntar dois aparelhos.
+- **Ids aleatórios de 53 bits.** Dois aparelhos sem rede não podem gerar o
+  mesmo id. 53 bits é o maior inteiro exato de um `double`, que é o que um
+  `int` vira no navegador. Atenção: lá, os operadores de bits do JavaScript
+  trabalham com 32 bits (`1 << 32` dá `0`); por isso o código usa
+  constantes.
+- **`WidgetsFlutterBinding.ensureInitialized()`** no `main`: plugins como o
+  `shared_preferences` falam com a plataforma por canais, que só existem
+  depois do binding. Fora do `runApp`, é preciso pedir antes.

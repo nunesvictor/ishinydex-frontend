@@ -46,6 +46,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/features/specimens/](../lib/features/specimens/) | Inventário (aba Espécimes), seletor de specimens para depósito, formulário de cadastro/edição (`ChoiceSelect`: select digitável com sprites), cadastro de treinador |
 | [lib/features/settings/](../lib/features/settings/) | Servidor atual e logout |
 | [lib/features/catalog/](../lib/features/catalog/) | Pacote do catálogo (`catalog.json`, gerado pelo backend): `Catalog` monta `FormRef`, `FormDetail`, opções e versões a partir dele, com as regras da API; carregado na inicialização com `CATALOG_URL` (`catalogOverrides`) |
+| [lib/features/local/](../lib/features/local/) | Modo local (`LOCAL_DATA`): o arquivo de dados (`LocalStore`, com `updatedAt` por registro e marcas de exclusão, nascidos por comparação a cada gravação), o armazenamento (`shared_preferences`) e o `SaveScheduler`. O backend é o `FakeBackend.local`, com as mesmas regras da API |
 | [lib/features/shiny_locks/](../lib/features/shiny_locks/) | Cadastro de shiny locks (Ajustes → Shiny locks): lista, criar, editar e apagar (`ShinyLockActions`) |
 | [lib/fake/fake_backend.dart](../lib/fake/fake_backend.dart) | Backend em memória que segue as mesmas regras da API real |
 

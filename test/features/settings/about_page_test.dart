@@ -51,6 +51,20 @@ void main() {
     expect(find.textContaining('Catálogo'), findsNothing);
   });
 
+  testWidgets('modo local: os dados ficam neste aparelho', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const AboutPage(),
+      overrides: [
+        envProvider.overrideWithValue(
+          const Env(apiBaseUrl: 'x', useFakeApi: false, localData: true),
+        ),
+      ],
+    );
+    expect(find.textContaining('ficam neste aparelho'), findsOneWidget);
+    expect(find.textContaining('servidor configurado'), findsNothing);
+  });
+
   testWidgets('com o catálogo: versão e tempo de carga', (tester) async {
     await pumpWidgetApp(
       tester,

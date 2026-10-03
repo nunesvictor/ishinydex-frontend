@@ -51,6 +51,22 @@ void main() {
       );
     }
 
+    test('modo local: já entra, sem login', () async {
+      final container = createContainer(
+        overrides: [
+          envProvider.overrideWithValue(
+            const Env(apiBaseUrl: 'x', useFakeApi: false, localData: true),
+          ),
+          tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
+        ],
+      );
+      expect(
+        await container.read(authControllerProvider.future),
+        AuthController.localToken,
+      );
+      expect(container.read(authRepositoryProvider), isA<FakeBackend>());
+    });
+
     test('build lê o token salvo', () async {
       final container = make(token: 'saved');
       expect(await container.read(authControllerProvider.future), 'saved');

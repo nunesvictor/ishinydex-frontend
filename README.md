@@ -66,6 +66,7 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 | `API_BASE_URL` | `http://localhost:8008/api` | Endereço da API do backend. Aceita URL relativa (`/api`), resolvida contra o endereço da página. |
 | `USE_FAKE_API` | `false` | `true` usa o backend fake em memória ([lib/fake/fake_backend.dart](lib/fake/fake_backend.dart)) |
 | `CATALOG_URL` | (vazio) | Com `USE_FAKE_API`, o `catalog.json` (pacote do backend) que a demonstração passa a usar: formas, opções e versões reais. Relativo à página, como a API. |
+| `LOCAL_DATA` | `false` | Modo local: sem servidor nem login; os dados ficam no aparelho (`shared_preferences`). Exige `CATALOG_URL`. |
 | `SPRITES_BASE_URL` | raw do PokeAPI/sprites | Base dos caminhos de sprite do catálogo |
 | `APP_VERSION` | `dev` | Versão mostrada em Ajustes → Sobre (a tag, no build) |
 

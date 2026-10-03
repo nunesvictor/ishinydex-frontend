@@ -10,7 +10,9 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
 
 final specimenRepositoryProvider = Provider<SpecimenRepository>((ref) {
-  if (ref.watch(envProvider).useFakeApi) return ref.watch(fakeBackendProvider);
+  if (ref.watch(envProvider).usesLocalBackend) {
+    return ref.watch(fakeBackendProvider);
+  }
   return HttpSpecimenRepository(ref.watch(dioProvider));
 });
 

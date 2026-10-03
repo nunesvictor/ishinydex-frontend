@@ -21,7 +21,7 @@ final dioProvider = Provider<Dio>((ref) {
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  if (ref.watch(envProvider).useFakeApi) {
+  if (ref.watch(envProvider).usesLocalBackend) {
     return ref.watch(fakeBackendProvider);
   }
   return HttpAuthRepository(ref.watch(dioProvider));
@@ -35,8 +35,14 @@ final authControllerProvider = AsyncNotifierProvider<AuthController, String?>(
 class AuthController extends AsyncNotifier<String?> {
   TokenStorage get _storage => ref.read(tokenStorageProvider);
 
+  /// No modo local não há login: o app já abre "entrado".
+  static const localToken = 'local';
+
   @override
-  Future<String?> build() => _storage.read();
+  Future<String?> build() async {
+    if (ref.read(envProvider).localData) return localToken;
+    return await _storage.read();
+  }
 
   Future<void> login({
     required String username,

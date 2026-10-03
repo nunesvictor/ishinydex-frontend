@@ -10,6 +10,10 @@ const _demoData =
     'Esta é uma demonstração: os dados são fictícios, ficam só na memória '
     'do navegador e somem ao recarregar a página.';
 const _demoNothingSent = 'Nada do que você faz aqui é enviado a lugar nenhum.';
+const _localData =
+    'Seus dados ficam neste aparelho, no armazenamento do navegador (no '
+    'iPhone e no iPad, no do app instalado na Tela de Início). Quem mantém o '
+    'projeto não recebe nem guarda nada.';
 
 String _serverData(String url) =>
     'Seus dados ficam no servidor configurado ($url). Quem mantém o projeto '
@@ -72,7 +76,9 @@ class AboutPage extends ConsumerWidget {
                 ),
               const SizedBox(height: 24),
               section('Privacidade', [
-                if (env.useFakeApi) ...[
+                if (env.localData)
+                  _localData
+                else if (env.useFakeApi) ...[
                   _demoData,
                   _demoNothingSent,
                 ] else
