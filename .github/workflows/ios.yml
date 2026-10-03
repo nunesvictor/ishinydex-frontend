@@ -1,5 +1,7 @@
 # Gera um .ipa SEM assinatura para instalar via sideload (AltStore/Sideloadly).
-# Roda só manualmente ou em tags v* para economizar minutos de macOS.
+# Só manual: o app nativo foi descartado (ishinydex#10) e as releases com
+# binários estão em ishinydex#50. Nas tags v*, falhava por falta do secret
+# API_BASE_URL.
 name: iOS (.ipa)
 
 on:
@@ -8,8 +10,6 @@ on:
       api_base_url:
         description: "URL da API (opcional; aparece nos logs públicos — prefira o secret API_BASE_URL)"
         required: false
-  push:
-    tags: ['v*']
 
 env:
   FLUTTER_VERSION: 3.47.2
