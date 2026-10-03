@@ -10,6 +10,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
+import 'package:ishinydex/features/settings/presentation/about_page.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
 import 'package:ishinydex/features/shiny_locks/presentation/shiny_locks_page.dart';
 import 'package:ishinydex/features/specimens/presentation/away_page.dart';
@@ -29,6 +30,9 @@ abstract final class Routes {
 
   /// Ajustes → Shiny locks.
   static const shinyLocks = '$settings/shiny-locks';
+
+  /// Ajustes → Sobre o iShinyDex.
+  static const about = '$settings/about';
 
   /// Espécimes fora do HOME, por save.
   static const away = '$specimens/away';
@@ -183,6 +187,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'shiny-locks',
                     builder: (context, state) => const ShinyLocksPage(),
+                  ),
+                  GoRoute(
+                    path: 'about',
+                    builder: (context, state) => const AboutPage(),
                   ),
                 ],
               ),

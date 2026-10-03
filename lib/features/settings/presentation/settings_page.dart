@@ -63,8 +63,10 @@ class SettingsPage extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('Versão'),
-            subtitle: Text(env.appVersion),
+            title: const Text('Sobre o iShinyDex'),
+            subtitle: Text('Versão ${env.appVersion}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go(Routes.about),
           ),
         ],
       ),

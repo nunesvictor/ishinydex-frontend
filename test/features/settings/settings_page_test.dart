@@ -22,7 +22,7 @@ void main() {
       ],
     );
     expect(find.text('http://server/api'), findsOneWidget);
-    expect(find.text('v1.0.0'), findsOneWidget);
+    expect(find.text('Versão v1.0.0'), findsOneWidget);
   });
 
   testWidgets('sair com confirmação volta para o login', (tester) async {
