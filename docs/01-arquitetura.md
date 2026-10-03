@@ -45,6 +45,7 @@ que usa um **repositório**, que é uma interface. Por isso é possível:
 | [lib/features/personal_dex/](../lib/features/personal_dex/) | Dexes, boxes, slots; depositar, editar e libertar (`SlotActions`) |
 | [lib/features/specimens/](../lib/features/specimens/) | Inventário (aba Espécimes), seletor de specimens para depósito, formulário de cadastro/edição (`ChoiceSelect`: select digitável com sprites), cadastro de treinador |
 | [lib/features/settings/](../lib/features/settings/) | Servidor atual e logout |
+| [lib/features/shiny_locks/](../lib/features/shiny_locks/) | Cadastro de shiny locks (Ajustes → Shiny locks): lista, criar, editar e apagar (`ShinyLockActions`) |
 | [lib/fake/fake_backend.dart](../lib/fake/fake_backend.dart) | Backend em memória que segue as mesmas regras da API real |
 
 ## O caminho de um dado: da API até a tela
@@ -312,6 +313,29 @@ Pokémon num save, o espécime tem uma **localização**: `location` (um
   no app (`AwayPage.group`).
 - **Filtro** "Onde está" na folha do inventário: no HOME, fora ou um save
   (`location` da API).
+
+## Shiny locks
+
+Formas sem shiny (`unobtainable`) ou com shiny só por distribuição
+(`distro-only`) são cadastradas à mão, em **Ajustes → Shiny locks**, na
+feature [`shiny_locks`](../lib/features/shiny_locks/):
+
+- **Lista** ([shiny_locks_page.dart](../lib/features/shiny_locks/presentation/shiny_locks_page.dart)):
+  ordem alfabética, filtro por tipo com a contagem, ícone do tipo (cadeado ou
+  presente), as primeiras formas e o total. Inativos ficam esmaecidos, com o
+  selo "Inativo".
+- **Cadastro** ([shiny_lock_form_page.dart](../lib/features/shiny_locks/presentation/shiny_lock_form_page.dart)):
+  a mesma tela cria e edita (tela cheia, no Navigator raiz). Nome,
+  descrição, tipo (`SegmentedButton`), ativo e formas, adicionadas pelo
+  seletor de forma do cadastro de espécime. Os erros da API (nome repetido,
+  sem formas) aparecem nos campos, e mexer num campo tira o erro dele.
+- **Depois de salvar ou apagar**, `ShinyLockActions` invalida a lista, as
+  caçadas (o aviso e o "incluir shiny impossível") e o `formDetailProvider`
+  (o aviso no painel do slot e no cadastro de espécime). Na API, só os locks
+  **ativos** valem; no `FakeBackend`, os avisos das formas também vêm dos
+  locks cadastrados (o seed tem um de exemplo, no Pikachu).
+
+O enum do tipo é o `ShinyLockType`, o mesmo das caçadas (`Hunt.shinyLock`).
 
 ## Inventário (aba Espécimes)
 

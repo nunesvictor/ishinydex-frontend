@@ -103,7 +103,7 @@ void main() {
       expect(hunt.slot.id, 20);
       expect(hunt.slot.isMissing, true);
       expect(hunt.reasons, [HuntReason.noShiny, HuntReason.pokeball]);
-      expect(hunt.shinyLock, ShinyLock.distroOnly);
+      expect(hunt.shinyLock, ShinyLockType.distroOnly);
       final plain = Hunt.parse({
         ...missingSlotJson,
         'reasons': <String>[],
@@ -150,11 +150,14 @@ void main() {
     test('rótulos e parâmetros dos enums', () {
       expect(HuntReason.fromParam('from_go'), HuntReason.fromGo);
       expect(HuntReason.fromParam('foo'), isNull);
-      expect(ShinyLock.fromParam('unobtainable'), ShinyLock.unobtainable);
-      expect(ShinyLock.fromParam(null), isNull);
+      expect(
+        ShinyLockType.fromParam('unobtainable'),
+        ShinyLockType.unobtainable,
+      );
+      expect(ShinyLockType.fromParam(null), isNull);
       expect(SpeciesCategory.ultraBeast.param, 'ultra-beast');
       expect(SpeciesCategory.regular.label, 'Comum');
-      expect(ShinyLock.unobtainable.label, 'Shiny impossível');
+      expect(ShinyLockType.unobtainable.label, 'Shiny impossível');
     });
   });
 }

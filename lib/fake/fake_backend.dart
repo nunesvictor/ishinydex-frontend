@@ -4,6 +4,8 @@ import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/features/auth/data/auth_repository.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
+import 'package:ishinydex/features/shiny_locks/domain/models.dart';
+import 'package:ishinydex/features/shiny_locks/domain/shiny_lock_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
 
@@ -124,7 +126,11 @@ class _SlotRecord {
 
 /// Backend em memória que segue as regras da API real.
 class FakeBackend
-    implements AuthRepository, PersonalDexRepository, SpecimenRepository {
+    implements
+        AuthRepository,
+        PersonalDexRepository,
+        SpecimenRepository,
+        ShinyLockRepository {
   FakeBackend({this.latency = Duration.zero});
 
   /// Dados de demonstração: um dex shiny (2 boxes) e um dex normal (1 box).
@@ -189,7 +195,15 @@ class FakeBackend
     final away = backend._slots.values.firstWhere(
       (s) => s.dexId == livingDex && s.formId == 2,
     );
-    backend.moveTo(away.specimenId!, scarlet, since: DateTime(2026, 3, 12));
+    backend
+      ..moveTo(away.specimenId!, scarlet, since: DateTime(2026, 3, 12))
+      // Um shiny lock de exemplo (só por distribuição), para a tela de
+      // cadastro e o aviso nas caçadas.
+      ..addShinyLock(
+        caption: 'Pikachu de evento',
+        lockType: ShinyLockType.distroOnly,
+        formIds: const [25],
+      );
     // Boxes livres: dá para criar um dex novo na demonstração.
     for (var i = 4; i <= 6; i++) {
       backend.addFreeBox('HOME $i');
@@ -206,6 +220,11 @@ class FakeBackend
   final _specimens = <int, Specimen>{};
   final _trainers = <int, Trainer>{};
   final _saves = <int, Save>{};
+
+  /// Shiny locks cadastrados. Como na API, são eles que dão o
+  /// `isShinylocked`/`isDistroOnly` das formas e o `shiny_lock` das caçadas.
+  final _shinyLocks = <int, ShinyLock>{};
+  var _nextShinyLockId = 1;
 
   /// Forma → forma da qual evolui (no backend, `evolves_from_species`).
   final _evolvesFrom = <int, int>{};
@@ -340,13 +359,55 @@ class FakeBackend
 
   // ---- Seed helpers ----
 
+  /// Cadastra um shiny lock; retorna o id.
+  int addShinyLock({
+    required String caption,
+    required List<int> formIds,
+    ShinyLockType lockType = ShinyLockType.unobtainable,
+    String? description,
+    bool active = true,
+  }) {
+    final id = _nextShinyLockId++;
+    _shinyLocks[id] = ShinyLock(
+      id: id,
+      caption: caption,
+      description: description,
+      lockType: lockType,
+      active: active,
+      forms: _lockForms(formIds),
+    );
+    return id;
+  }
+
+  /// Formas do lock como a API devolve: na ordem da dex nacional.
+  List<FormRef> _lockForms(Iterable<int> formIds) =>
+      [for (final id in formIds) _formRef(_forms[id]!)]..sort(
+        (a, b) => (a.nationalNumber ?? a.pokeapiId).compareTo(
+          b.nationalNumber ?? b.pokeapiId,
+        ),
+      );
+
+  /// Lock ativo da forma; "impossível" vence "só por distribuição".
+  ShinyLockType? _lockOf(int formId) {
+    final types = {
+      for (final lock in _shinyLocks.values)
+        if (lock.active && lock.forms.any((f) => f.id == formId)) lock.lockType,
+    };
+    if (types.contains(ShinyLockType.unobtainable)) {
+      return ShinyLockType.unobtainable;
+    }
+    return types.contains(ShinyLockType.distroOnly)
+        ? ShinyLockType.distroOnly
+        : null;
+  }
+
   void addForm({
     required int id,
     required String name,
     List<String> types = const ['normal'],
     int genderRate = 4,
     SpeciesCategory category = SpeciesCategory.regular,
-    ShinyLock? shinyLock,
+    ShinyLockType? shinyLock,
 
     /// Forma da qual esta evolui (a regra do `evolve`).
     int? evolvesFrom,
@@ -355,8 +416,6 @@ class FakeBackend
     _categories[id] = category;
     if (evolvesFrom != null) _evolvesFrom[id] = evolvesFrom;
     _forms[id] = FormDetail(
-      isShinylocked: shinyLock == ShinyLock.unobtainable,
-      isDistroOnly: shinyLock == ShinyLock.distroOnly,
       id: id,
       name: name,
       pokeapiId: id,
@@ -372,6 +431,9 @@ class FakeBackend
         FormAbility(slot: 3, ability: 'keen-eye', isHidden: true),
       ],
     );
+    if (shinyLock != null) {
+      addShinyLock(caption: name, lockType: shinyLock, formIds: [id]);
+    }
   }
 
   int addTrainer({
@@ -861,16 +923,12 @@ class FakeBackend
       final formId = slot.formId;
       if (slot.dexId != dexId || formId == null) continue;
       final form = _forms[formId]!;
-      final lock = form.isShinylocked
-          ? ShinyLock.unobtainable
-          : form.isDistroOnly
-          ? ShinyLock.distroOnly
-          : null;
+      final lock = _lockOf(formId);
       final reasons = _huntReasons(slot, query.acceptedBalls);
       final category = _categories[formId] ?? SpeciesCategory.regular;
       final matches =
           reasons.any(query.reasons.contains) &&
-          (query.includeLocked || lock != ShinyLock.unobtainable) &&
+          (query.includeLocked || lock != ShinyLockType.unobtainable) &&
           (query.generations.isEmpty ||
               query.generations.contains(_generationOf(form.pokeapiId))) &&
           (query.types.isEmpty ||
@@ -1151,7 +1209,11 @@ class FakeBackend
     await _delay();
     final form = _forms[formId];
     if (form == null) throw const NotFoundFailure();
-    return form;
+    final lock = _lockOf(formId);
+    return form.copyWith(
+      isShinylocked: lock == ShinyLockType.unobtainable,
+      isDistroOnly: lock == ShinyLockType.distroOnly,
+    );
   }
 
   @override
@@ -1535,6 +1597,73 @@ class FakeBackend
           : specimen.isShiny,
     );
   }
+
+  // ---- ShinyLockRepository ----
+
+  @override
+  Future<List<ShinyLock>> fetchShinyLocks() async {
+    await _delay();
+    return _shinyLocks.values.toList()..sort(
+      (a, b) => a.caption.toLowerCase().compareTo(b.caption.toLowerCase()),
+    );
+  }
+
+  @override
+  Future<ShinyLock> createShinyLock(ShinyLockDraft draft) async {
+    await _delay();
+    _validateShinyLock(draft);
+    final id = addShinyLock(
+      caption: draft.caption.trim(),
+      description: _blankToNull(draft.description),
+      lockType: draft.lockType,
+      active: draft.active,
+      formIds: [for (final form in draft.forms) form.id],
+    );
+    return _shinyLocks[id]!;
+  }
+
+  @override
+  Future<ShinyLock> updateShinyLock(int id, ShinyLockDraft draft) async {
+    await _delay();
+    final current = _shinyLocks[id];
+    if (current == null) throw const NotFoundFailure();
+    _validateShinyLock(draft, exceptId: id);
+    return _shinyLocks[id] = current.copyWith(
+      caption: draft.caption.trim(),
+      description: _blankToNull(draft.description),
+      lockType: draft.lockType,
+      active: draft.active,
+      forms: _lockForms([for (final form in draft.forms) form.id]),
+    );
+  }
+
+  @override
+  Future<void> deleteShinyLock(int id) async {
+    await _delay();
+    if (_shinyLocks.remove(id) == null) throw const NotFoundFailure();
+  }
+
+  /// As validações da API: nome obrigatório e único, ao menos uma forma
+  /// existente.
+  void _validateShinyLock(ShinyLockDraft draft, {int? exceptId}) {
+    final caption = draft.caption.trim();
+    final errors = <String, List<String>>{
+      if (caption.isEmpty)
+        'caption': ['Este campo não pode ser em branco.']
+      else if (_shinyLocks.values.any(
+        (l) => l.id != exceptId && l.caption == caption,
+      ))
+        'caption': ['Já existe um shiny lock com este nome.'],
+      if (draft.forms.isEmpty)
+        'forms': ['Esta lista não pode estar vazia.']
+      else if (draft.forms.any((f) => !_forms.containsKey(f.id)))
+        'forms': ['Forma inválida.'],
+    };
+    if (errors.isNotEmpty) throw ValidationFailure(errors);
+  }
+
+  String? _blankToNull(String value) =>
+      value.trim().isEmpty ? null : value.trim();
 
   FormRef _formRef(FormDetail form) => FormRef(
     id: form.id,

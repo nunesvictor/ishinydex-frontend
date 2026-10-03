@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
 import '../helpers/helpers.dart';
@@ -1237,8 +1238,8 @@ void main() {
 
     test('shiny lock: impossível só com includeLocked', () async {
       final fake = FakeBackend()
-        ..addForm(id: 1, name: 'victini', shinyLock: ShinyLock.unobtainable)
-        ..addForm(id: 2, name: 'keldeo', shinyLock: ShinyLock.distroOnly);
+        ..addForm(id: 1, name: 'victini', shinyLock: ShinyLockType.unobtainable)
+        ..addForm(id: 2, name: 'keldeo', shinyLock: ShinyLockType.distroOnly);
       final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
       fake.addBox(dexId: dex, name: 'HOME 1', formIds: [1, 2]);
       final page = await fake.fetchHunts(
@@ -1248,15 +1249,103 @@ void main() {
         pageSize: 10,
       );
       expect([for (final h in page.results) h.slot.form!.name], ['keldeo']);
-      expect(page.results.single.shinyLock, ShinyLock.distroOnly);
+      expect(page.results.single.shinyLock, ShinyLockType.distroOnly);
       final all = await fake.fetchHunts(
         dex,
         const HuntQuery(includeLocked: true),
         page: 1,
         pageSize: 10,
       );
-      expect(all.results.first.shinyLock, ShinyLock.unobtainable);
+      expect(all.results.first.shinyLock, ShinyLockType.unobtainable);
       expect((await fake.fetchForm(1)).isShinylocked, true);
+    });
+
+    test('shiny locks: CRUD, validação e efeito nas formas', () async {
+      final fake = FakeBackend()
+        ..addForm(id: 1, name: 'victini')
+        ..addForm(id: 2, name: 'keldeo');
+      FormRef ref(int id) => FormRef(
+        id: id,
+        name: 'f$id',
+        pokeapiId: id,
+        spriteUrl: '',
+        shinySpriteUrl: '',
+      );
+      expect(await fake.fetchShinyLocks(), isEmpty);
+
+      // Validação: nome em branco ou repetido, sem formas, forma inexistente.
+      Future<ValidationFailure> invalid(Future<void> Function() call) async {
+        try {
+          await call();
+        } on ValidationFailure catch (failure) {
+          return failure;
+        }
+        throw StateError('esperava ValidationFailure');
+      }
+
+      final blank = await invalid(
+        () => fake.createShinyLock(const ShinyLockDraft(caption: ' ')),
+      );
+      expect(blank.errorFor('caption'), isNotNull);
+      expect(blank.errorFor('forms'), isNotNull);
+      final unknown = await invalid(
+        () => fake.createShinyLock(
+          ShinyLockDraft(caption: 'x', forms: [ref(99)]),
+        ),
+      );
+      expect(unknown.errorFor('forms'), 'Forma inválida.');
+
+      final keldeo = await fake.createShinyLock(
+        ShinyLockDraft(
+          caption: ' keldeo ',
+          description: '  ',
+          lockType: ShinyLockType.distroOnly,
+          forms: [ref(2)],
+        ),
+      );
+      expect(keldeo.caption, 'keldeo');
+      expect(keldeo.description, isNull);
+      expect((await fake.fetchForm(2)).isDistroOnly, true);
+      final victini = await fake.createShinyLock(
+        ShinyLockDraft(caption: 'Victini', forms: [ref(1), ref(2)]),
+      );
+      // Ordem alfabética, sem diferenciar maiúsculas; formas pela dex.
+      expect(
+        [for (final l in await fake.fetchShinyLocks()) l.caption],
+        ['keldeo', 'Victini'],
+      );
+      expect([for (final f in victini.forms) f.id], [1, 2]);
+      // "Impossível" vence "só por distribuição" na mesma forma.
+      expect((await fake.fetchForm(2)).isShinylocked, true);
+      expect((await fake.fetchForm(2)).isDistroOnly, false);
+
+      final duplicate = await invalid(
+        () => fake.updateShinyLock(
+          victini.id,
+          ShinyLockDraft(caption: 'keldeo', forms: [ref(1)]),
+        ),
+      );
+      expect(duplicate.errorFor('caption'), isNotNull);
+
+      // Inativo não vale; a forma que saiu fica sem lock.
+      final edited = await fake.updateShinyLock(
+        victini.id,
+        ShinyLockDraft(caption: 'Victini', active: false, forms: [ref(1)]),
+      );
+      expect(edited.active, false);
+      expect((await fake.fetchForm(1)).isShinylocked, false);
+      expect((await fake.fetchForm(2)).isDistroOnly, true);
+
+      await fake.deleteShinyLock(keldeo.id);
+      expect((await fake.fetchForm(2)).isDistroOnly, false);
+      await expectLater(
+        fake.deleteShinyLock(keldeo.id),
+        throwsA(isA<NotFoundFailure>()),
+      );
+      await expectLater(
+        fake.updateShinyLock(keldeo.id, const ShinyLockDraft()),
+        throwsA(isA<NotFoundFailure>()),
+      );
     });
 
     test('paginação, dex normal e inexistente', () async {

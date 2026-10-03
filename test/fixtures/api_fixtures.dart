@@ -164,3 +164,14 @@ const trainerPageJson = <String, dynamic>{
     {'id': 12, 'name': 'Ash', 'trainer_id': '123456', 'version': 'ultra-moon'},
   ],
 };
+
+/// `GET /shiny-locks/{id}/` (shape de `docs/plans/frontend-api.md` no
+/// backend).
+const shinyLockJson = <String, dynamic>{
+  'id': 25,
+  'caption': 'Treasures of Ruin',
+  'description': null,
+  'lock_type': 'distro-only',
+  'active': true,
+  'forms': [formRefJson],
+};

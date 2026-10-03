@@ -202,20 +202,20 @@ enum SpeciesCategory {
   final String label;
 }
 
-/// Shiny lock da forma, como a API informa em `shiny_lock`.
-enum ShinyLock {
+/// Tipo do shiny lock (o `lock_type` da API; nas caçadas, `shiny_lock`).
+enum ShinyLockType {
   /// Ainda dá para conseguir, por distribuição (evento).
   distroOnly('distro-only', 'Só por distribuição'),
 
   /// Impossível de obter shiny; só aparece com "incluir impossíveis".
   unobtainable('unobtainable', 'Shiny impossível');
 
-  ShinyLock(this.param, this.label);
+  ShinyLockType(this.param, this.label);
 
   final String param;
   final String label;
 
-  static ShinyLock? fromParam(String? value) =>
+  static ShinyLockType? fromParam(String? value) =>
       values.where((l) => l.param == value).firstOrNull;
 }
 
@@ -230,7 +230,7 @@ abstract class Hunt with _$Hunt {
   const factory Hunt({
     required Slot slot,
     required List<HuntReason> reasons,
-    ShinyLock? shinyLock,
+    ShinyLockType? shinyLock,
   }) = _Hunt;
 
   const Hunt._();
@@ -241,7 +241,7 @@ abstract class Hunt with _$Hunt {
       for (final value in json['reasons'] as List<dynamic>)
         ?HuntReason.fromParam(value as String),
     ],
-    shinyLock: ShinyLock.fromParam(json['shiny_lock'] as String?),
+    shinyLock: ShinyLockType.fromParam(json['shiny_lock'] as String?),
   );
 }
 

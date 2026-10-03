@@ -42,6 +42,10 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | POST | `/api/saves/` | `createSave` (`{trainer, label}`; só OT de jogo que recebe do HOME) |
 | PATCH | `/api/saves/{id}/` | `updateSave` (só `label`) |
 | DELETE | `/api/saves/{id}/` | `deleteSave` (com espécimes no save → 400) |
+| GET | `/api/shiny-locks/` | `fetchShinyLocks` (ordem alfabética, sem paginação: `{id, caption, description, lock_type, active, forms: FormRef[]}`) |
+| POST | `/api/shiny-locks/` | `createShinyLock` (`ShinyLockDraft.toJson()`: `forms` por id, ao menos uma; `caption` único) |
+| PATCH | `/api/shiny-locks/{id}/` | `updateShinyLock` (mesmo corpo) |
+| DELETE | `/api/shiny-locks/{id}/` | `deleteShinyLock` (as formas continuam) |
 | POST | `/api/specimens/transfer/` | `transfer` (`{"ids": [...], "save": id \| null}` → `{"transferred": n}`; `null` = de volta ao HOME) |
 | POST | `/api/specimens/{id}/evolve/` | `evolve` (`{"form": id}`: evoluiu fora do HOME; sai do slot) |
 
