@@ -79,7 +79,7 @@ void main() {
         ),
         dio,
       );
-      expect(overrides, hasLength(2));
+      expect(overrides, hasLength(3));
     });
 
     test('sem CATALOG_URL não abre', () {
