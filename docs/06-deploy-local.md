@@ -90,6 +90,7 @@ sprites com o endereço que o navegador usou
 | --- | --- | --- |
 | `BACKEND_URL` (ambiente do container) | definido pelo compose principal (`http://backend:8000`) | Backend para onde o nginx repassa a API |
 | `WEB_WASM` (build arg) | `true` | Gera também o build em WebAssembly. `false` volta ao build só JavaScript (no compose principal: `X_WEB_WASM`) |
+| `APP_VERSION` (build arg) | `dev` | Versão mostrada em Ajustes (a tag, ex. `v1.0.0`). Com SemVer, vira também `--build-name`/`--build-number` (no compose principal: `X_APP_VERSION`, preenchida pelo `git describe --tags`) |
 
 A porta publicada (`X_WEB_PORT`, padrão `8090`) e o dia a dia (atualizar,
 logs, backup) ficam no repositório principal: veja o README e o `CLAUDE.md`

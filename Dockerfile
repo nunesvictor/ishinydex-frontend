@@ -36,8 +36,20 @@ ARG API_BASE_URL=/api
 # Edge), JavaScript nos demais (Safari, Firefox), que o --wasm gera junto.
 # WEB_WASM=false volta ao build só JavaScript.
 ARG WEB_WASM=true
+# APP_VERSION: a tag do repositório (ex. v1.0.0 ou, entre releases, a saída
+# do `git describe --tags`, como v1.0.0-3-gabc1234). Aparece em Ajustes. Com
+# SemVer, também vira --build-name (MAJOR.MINOR.PATCH) e --build-number
+# (MAJOR*10000 + MINOR*100 + PATCH, sempre crescente, como o Android exige).
+ARG APP_VERSION=dev
 RUN if [ "${WEB_WASM}" = "true" ]; then wasm="--wasm"; else wasm=""; fi \
-    && flutter build web --release ${wasm} --dart-define=API_BASE_URL=${API_BASE_URL}
+    && core=$(echo "${APP_VERSION}" | sed -nE 's/^v?([0-9]+)\.([0-9]+)\.([0-9]+).*/\1 \2 \3/p') \
+    && if [ -n "${core}" ]; then \
+         set -- ${core}; \
+         names="--build-name=$1.$2.$3 --build-number=$(( $1 * 10000 + $2 * 100 + $3 ))"; \
+       else names=""; fi \
+    && flutter build web --release ${wasm} ${names} \
+         --dart-define=API_BASE_URL=${API_BASE_URL} \
+         --dart-define=APP_VERSION=${APP_VERSION}
 
 # Cache-busting (issue #5): hash do código e dos assets vira o prefixo v/<hash>/
 # de onde o flutter_bootstrap.js carrega o app (ver web/flutter_bootstrap.js).

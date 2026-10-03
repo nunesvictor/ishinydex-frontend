@@ -7,6 +7,7 @@ void main() {
     final env = ProviderContainer().read(envProvider);
     expect(env.apiBaseUrl, 'http://localhost:8008/api');
     expect(env.useFakeApi, false);
+    expect(env.appVersion, 'dev');
   });
 
   test('fromEnvironment aceita a página base', () {

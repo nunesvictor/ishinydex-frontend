@@ -61,6 +61,11 @@ class SettingsPage extends ConsumerWidget {
               }
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('Versão'),
+            subtitle: Text(env.appVersion),
+          ),
         ],
       ),
     );
