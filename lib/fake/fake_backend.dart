@@ -390,6 +390,25 @@ class FakeBackend
     ],
   };
 
+  /// Troca todos os dados do usuário pelos de [records] (importar, sync),
+  /// mantendo o catálogo e esta mesma instância (os providers continuam
+  /// apontando para ela).
+  void replaceRecords(Map<String, List<Map<String, dynamic>>> records) {
+    for (final map in [
+      _trainers,
+      _saves,
+      _dexes,
+      _boxes,
+      _slots,
+      _specimens,
+      _shinyLocks,
+      _orphans,
+    ]) {
+      map.clear();
+    }
+    _restore(records);
+  }
+
   void _restore(Map<String, List<Map<String, dynamic>>> records) {
     List<Map<String, dynamic>> of(String type) => records[type] ?? const [];
     DateTime? date(Object? value) =>

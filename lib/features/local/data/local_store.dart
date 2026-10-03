@@ -44,8 +44,18 @@ class LocalStore {
   Future<Records> load() async {
     final raw = await storage.read();
     if (raw == null) return const {};
-    final file = jsonDecode(raw) as Map<String, dynamic>;
-    if (file['kind'] != kind) {
+    return adopt(parse(raw));
+  }
+
+  /// Valida um arquivo de dados (salvo, importado ou do sync).
+  static Map<String, dynamic> parse(String raw) {
+    final Object? file;
+    try {
+      file = jsonDecode(raw);
+    } on FormatException {
+      throw const FormatException('Não é um arquivo de dados do iShinyDex.');
+    }
+    if (file is! Map<String, dynamic> || file['kind'] != kind) {
       throw const FormatException('Não é um arquivo de dados do iShinyDex.');
     }
     if ((file['schemaVersion'] as int) > schemaVersion) {
@@ -53,6 +63,15 @@ class LocalStore {
         'Os dados foram salvos por uma versão mais nova do app.',
       );
     }
+    return file;
+  }
+
+  /// Passa a considerar [file] o último estado salvo (datas e exclusões) e
+  /// devolve os registros dele, sem as datas.
+  Records adopt(Map<String, dynamic> file) {
+    _stamps.clear();
+    deleted.clear();
+    _lastRecords = null;
     final records = <String, List<Map<String, dynamic>>>{};
     for (final MapEntry(key: type, value: list)
         in (file['records'] as Map<String, dynamic>).entries) {
@@ -71,7 +90,7 @@ class LocalStore {
     }
     for (final MapEntry(key: type, value: ids)
         in (file['deleted'] as Map<String, dynamic>).entries) {
-      deleted[type] = (ids as Map<String, dynamic>).cast<String, String>();
+      deleted[type] = {...(ids as Map<String, dynamic>).cast<String, String>()};
     }
     return records;
   }

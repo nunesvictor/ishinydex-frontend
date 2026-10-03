@@ -25,9 +25,7 @@ void main() {
     expect(find.text('Versão v1.0.0'), findsOneWidget);
   });
 
-  testWidgets('modo local: "Dados neste aparelho" e sem "Sair"', (
-    tester,
-  ) async {
+  testWidgets('modo local: sem "Servidor" e sem "Sair"', (tester) async {
     await pumpWidgetApp(
       tester,
       const SettingsPage(),
@@ -37,7 +35,6 @@ void main() {
         ),
       ],
     );
-    expect(find.text('Neste aparelho'), findsOneWidget);
     expect(find.text('Servidor'), findsNothing);
     expect(find.text('Sair'), findsNothing);
   });

@@ -7,6 +7,7 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/data/catalog_loader.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
 import 'package:ishinydex/features/local/data/local_store.dart';
+import 'package:ishinydex/features/local/local_data_providers.dart';
 
 /// Catálogo carregado na inicialização (`main.dart`), quando há
 /// `CATALOG_URL`; `null` sem ele.
@@ -73,5 +74,12 @@ Future<List<Override>> localOverrides(
   return [
     catalogLoadProvider.overrideWithValue(load),
     fakeBackendProvider.overrideWithValue(backend),
+    localDataProvider.overrideWithValue(
+      LocalData(
+        store: store,
+        backend: backend,
+        catalogVersion: load.catalog.version,
+      ),
+    ),
   ];
 }

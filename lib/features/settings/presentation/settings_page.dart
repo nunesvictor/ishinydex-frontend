@@ -7,6 +7,7 @@ import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/auth/auth_providers.dart';
+import 'package:ishinydex/features/local/presentation/local_data_tiles.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 
@@ -20,13 +21,8 @@ class SettingsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Ajustes')),
       body: ListView(
         children: [
-          if (env.localData)
-            const ListTile(
-              leading: Icon(Icons.smartphone_outlined),
-              title: Text('Dados'),
-              subtitle: Text('Neste aparelho'),
-            )
-          else
+          // No modo local não há servidor: "Seus dados" diz onde eles estão.
+          if (!env.localData)
             ListTile(
               leading: const Icon(Icons.dns_outlined),
               title: const Text('Servidor'),
@@ -36,6 +32,7 @@ class SettingsPage extends ConsumerWidget {
                     : env.apiBaseUrl,
               ),
             ),
+          const LocalDataTiles(),
           ListTile(
             leading: const Icon(Icons.videogame_asset_outlined),
             title: const Text('Meus saves'),
