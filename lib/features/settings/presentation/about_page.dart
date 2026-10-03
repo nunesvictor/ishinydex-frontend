@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/features/catalog/catalog_providers.dart';
 
 /// Endereço do código, mostrado (selecionável) em "Sobre".
 const projectUrl = 'https://github.com/nunesvictor/ishinydex';
@@ -60,6 +61,15 @@ class AboutPage extends ConsumerWidget {
                 subtitle: Text('Versão ${env.appVersion}'),
               ),
               const SelectableText(projectUrl),
+              if (ref.watch(catalogLoadProvider) case final load?)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Catálogo ${load.catalog.version} · carregado em '
+                    '${load.elapsed.inMilliseconds} ms',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
               const SizedBox(height: 24),
               section('Privacidade', [
                 if (env.useFakeApi) ...[

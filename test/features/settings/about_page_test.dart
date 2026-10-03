@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/features/catalog/catalog_providers.dart';
+import 'package:ishinydex/features/catalog/data/catalog_loader.dart';
+import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/settings/presentation/about_page.dart';
 
+import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';
 
 void main() {
@@ -44,6 +48,29 @@ void main() {
     );
     expect(find.textContaining('Esta é uma demonstração'), findsOneWidget);
     expect(find.textContaining('Nada do que você faz'), findsOneWidget);
+    expect(find.textContaining('Catálogo'), findsNothing);
+  });
+
+  testWidgets('com o catálogo: versão e tempo de carga', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const AboutPage(),
+      overrides: [
+        envProvider.overrideWithValue(
+          const Env(apiBaseUrl: 'http://x/api', useFakeApi: true),
+        ),
+        catalogLoadProvider.overrideWithValue(
+          CatalogLoad(
+            catalog: Catalog.fromJson(catalogJson(), spriteBase: 'http://s'),
+            elapsed: const Duration(milliseconds: 230),
+          ),
+        ),
+      ],
+    );
+    expect(
+      find.text('Catálogo catalog-2026.10.03 · carregado em 230 ms'),
+      findsOneWidget,
+    );
     expect(find.textContaining('servidor configurado'), findsNothing);
   });
 

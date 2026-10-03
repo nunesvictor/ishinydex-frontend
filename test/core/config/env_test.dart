@@ -8,11 +8,22 @@ void main() {
     expect(env.apiBaseUrl, 'http://localhost:8008/api');
     expect(env.useFakeApi, false);
     expect(env.appVersion, 'dev');
+    expect(env.catalogUrl, isNull);
+    expect(env.spritesBaseUrl, Env.defaultSpritesBaseUrl);
   });
 
   test('fromEnvironment aceita a página base', () {
     final env = Env.fromEnvironment(base: Uri.parse('http://x:1/'));
     expect(env.apiBaseUrl, 'http://localhost:8008/api');
+  });
+
+  test('resolveCatalogUrl: vazio é sem catálogo; relativo usa a página', () {
+    final page = Uri.parse('https://x.github.io/ishinydex/#/dexes');
+    expect(Env.resolveCatalogUrl('', page), isNull);
+    expect(
+      Env.resolveCatalogUrl('catalog/catalog.json', page),
+      'https://x.github.io/ishinydex/catalog/catalog.json',
+    );
   });
 
   group('resolveApiBaseUrl', () {
