@@ -57,7 +57,7 @@ RUN if [ "${WEB_WASM}" = "true" ]; then wasm="--wasm"; else wasm=""; fi \
 RUN version=$({ find build/web -maxdepth 1 -type f -name 'main.dart.*' -print0; \
         find build/web/assets -type f -print0; } \
         | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-12) \
-    && sed -i "s/__BUILD_VERSION__/${version}/" build/web/flutter_bootstrap.js \
+    && sed -i "s/__BUILD_VERSION__/${version}/" build/web/flutter_bootstrap.js build/web/sw.js \
     && grep -q "v/\${buildVersion}/" build/web/flutter_bootstrap.js \
     && grep -q "'${version}'" build/web/flutter_bootstrap.js \
     && echo "build version: ${version}"
