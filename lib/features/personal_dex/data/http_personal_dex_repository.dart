@@ -163,4 +163,41 @@ class HttpPersonalDexRepository implements PersonalDexRepository {
         );
         return Slot.fromJson(response.data!);
       });
+
+  @override
+  Future<Slot> withdraw(int slotId) => guardRequest(() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      'slots/$slotId/withdraw/',
+    );
+    return Slot.fromJson(response.data!);
+  });
+
+  @override
+  Future<List<Slot>> fetchSlotsByForms({
+    required int dexId,
+    required List<int> formIds,
+  }) => guardRequest(() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'slots/',
+      queryParameters: {
+        'personal_dex': dexId,
+        'form': formIds.join(','),
+        'page_size': 100,
+      },
+    );
+    return Paginated.fromJson(response.data!, Slot.fromJson).results;
+  });
+
+  @override
+  Future<LinkResult> linkSpecimens(
+    int dexId, {
+    bool strict = false,
+    bool dryRun = false,
+  }) => guardRequest(() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      'personal-dexes/$dexId/link-specimens/',
+      data: {'strict': strict, 'dry_run': dryRun},
+    );
+    return LinkResult.fromJson(response.data!);
+  });
 }

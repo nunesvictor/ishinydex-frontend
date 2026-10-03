@@ -896,6 +896,75 @@ class FakeBackend
     return _toSlot(slot);
   }
 
+  @override
+  Future<Slot> withdraw(int slotId) async {
+    await _delay();
+    final slot = _slots[slotId];
+    if (slot == null) throw const NotFoundFailure();
+    slot.specimenId = null;
+    return _toSlot(slot);
+  }
+
+  @override
+  Future<List<Slot>> fetchSlotsByForms({
+    required int dexId,
+    required List<int> formIds,
+  }) async {
+    await _delay();
+    return [
+      for (final slot in _slots.values)
+        if (slot.dexId == dexId && formIds.contains(slot.formId)) _toSlot(slot),
+    ];
+  }
+
+  /// Como a API (e o comando `link_specimens`): espécimes livres nos slots
+  /// vazios com forma, na ordem das boxes, preferindo o brilho do dex; sem
+  /// [strict], usa o outro quando não há. Com [dryRun], só a prévia.
+  @override
+  Future<LinkResult> linkSpecimens(
+    int dexId, {
+    bool strict = false,
+    bool dryRun = false,
+  }) async {
+    await _delay();
+    final dex = _dexes[dexId];
+    if (dex == null) throw const NotFoundFailure();
+    final taken = {
+      for (final slot in _slots.values)
+        if (slot.specimenId != null) slot.specimenId,
+    };
+    final free = [
+      for (final specimen in _specimens.values)
+        if (!taken.contains(specimen.id)) specimen,
+    ]..sort((a, b) => a.id.compareTo(b.id));
+    final linked = <(_SlotRecord, int)>[];
+    var missing = 0;
+    for (final slot in _slots.values) {
+      if (slot.dexId != dexId || slot.formId == null) continue;
+      if (slot.specimenId != null) continue;
+      Specimen? pick({required bool shiny}) => free
+          .where((s) => s.form == slot.formId && s.isShiny == shiny)
+          .firstOrNull;
+      final specimen =
+          pick(shiny: dex.isShinyDex) ??
+          (strict ? null : pick(shiny: !dex.isShinyDex));
+      if (specimen == null) {
+        missing++;
+        continue;
+      }
+      free.remove(specimen);
+      linked.add((slot, specimen.id));
+    }
+    final slots = <Slot>[];
+    for (final (slot, specimenId) in linked) {
+      final previous = slot.specimenId;
+      slot.specimenId = specimenId;
+      slots.add(_toSlot(slot));
+      if (dryRun) slot.specimenId = previous;
+    }
+    return LinkResult(linked: linked.length, missing: missing, slots: slots);
+  }
+
   /// Como a API: só shiny dex (senão 400); motivos somados (OU), escopo
   /// combinado (E), tipos "qualquer um", shiny impossível fora por padrão;
   /// cada item traz todos os seus motivos. Página fora do intervalo → 404.
@@ -1213,7 +1282,63 @@ class FakeBackend
     return form.copyWith(
       isShinylocked: lock == ShinyLockType.unobtainable,
       isDistroOnly: lock == ShinyLockType.distroOnly,
+      // Dados da espécie: no fake, valores de exemplo (mas estáveis) e a
+      // linha evolutiva montada a partir do `evolvesFrom` do seed.
+      stats: [
+        for (final (i, stat) in _statNames.indexed)
+          FormStat(
+            stat: stat,
+            baseStat: 40 + (formId * (i + 3) * 7) % 80,
+            effort: i == formId % 6 ? 2 : 0,
+          ),
+      ],
+      genderRate: _genderRates[formId] ?? 4,
+      captureRate: 45,
+      hatchCounter: 20,
+      height: 5 + formId % 15,
+      weight: 60 + formId * 13 % 900,
+      debutVersions: const ['red', 'blue'],
+      evolutionChain: _evolutionChain(formId),
     );
+  }
+
+  /// Formas que evoluem de alguma das [forms].
+  List<int> _evolutionsOf(List<int> forms) => [
+    for (final entry in _evolvesFrom.entries)
+      if (forms.contains(entry.value)) entry.key,
+  ]..sort();
+
+  static const _statNames = [
+    'hp',
+    'attack',
+    'defense',
+    'special-attack',
+    'special-defense',
+    'speed',
+  ];
+
+  /// Estágios da linha evolutiva de [formId], como a API: da forma base
+  /// até as últimas; vazio se ela não evolui nem vem de outra.
+  List<List<FormRef>> _evolutionChain(int formId) {
+    var root = formId;
+    var from = _evolvesFrom[root];
+    while (from != null) {
+      root = from;
+      from = _evolvesFrom[root];
+    }
+    final stages = <List<int>>[
+      [root],
+    ];
+    var next = _evolutionsOf(stages.last);
+    while (next.isNotEmpty) {
+      stages.add(next);
+      next = _evolutionsOf(next);
+    }
+    if (stages.length == 1) return const [];
+    return [
+      for (final stage in stages)
+        [for (final id in stage) _formRef(_forms[id]!)],
+    ];
   }
 
   @override

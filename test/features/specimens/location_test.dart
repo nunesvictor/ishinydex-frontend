@@ -86,7 +86,7 @@ void main() {
     final backend = await pumpFullApp(tester);
     await _go(tester, Routes.dex(1, boxId: 1, slotId: 1));
 
-    await _tap(tester, find.text('Enviar para jogo…'));
+    await tapMoreAction(tester, 'Enviar para jogo…');
     expect(find.text('Enviar para qual save?'), findsOneWidget);
     await _tap(tester, find.text('Scarlet · Switch'));
     expect(find.text('1 espécime enviado para Scarlet · Switch.'), findsOne);
@@ -97,14 +97,18 @@ void main() {
     expect(slot.specimen!.location!.id, 1);
 
     // Desistir do diálogo não muda nada.
-    await _tap(tester, find.text('Trazer de volta ao HOME'));
+    await tapMoreAction(tester, 'Trazer de volta ao HOME');
     await _tap(tester, find.text('Cancelar'));
     expect(find.text('Em Scarlet · Switch'), findsOneWidget);
 
-    await _tap(tester, find.text('Trazer de volta ao HOME'));
+    await tapMoreAction(tester, 'Trazer de volta ao HOME');
     expect(find.text('Bulbasaur voltou para o HOME'), findsOneWidget);
     await _tap(tester, find.text('Voltou igual'));
     expect(find.text('1 espécime de volta ao HOME.'), findsOneWidget);
+    // De volta: na folha, a ação é de novo "Enviar para jogo…".
+    await _dismissSnackBar(tester);
+    await tester.tap(find.byTooltip('Mais ações'));
+    await tester.pumpAndSettle();
     expect(find.text('Enviar para jogo…'), findsOneWidget);
     expect((await backend.fetchSlot(1)).specimen!.location, isNull);
   });
@@ -120,12 +124,12 @@ void main() {
     expect(find.textContaining('Desde '), findsOneWidget);
 
     // Fechar o seletor de forma não muda nada.
-    await _tap(tester, find.text('Trazer de volta ao HOME'));
+    await tapMoreAction(tester, 'Trazer de volta ao HOME');
     await _tap(tester, find.text('Evoluiu…'));
     await _tap(tester, find.byType(CloseButton));
     expect(find.text('Em Scarlet · Switch'), findsOneWidget);
 
-    await _tap(tester, find.text('Trazer de volta ao HOME'));
+    await tapMoreAction(tester, 'Trazer de volta ao HOME');
     await _tap(tester, find.text('Evoluiu…'));
     await _pickForm(tester, 'charmander', 4);
     expect(
@@ -134,7 +138,7 @@ void main() {
     );
     expect((await backend.fetchSpecimen(id)).form, 2);
 
-    await _tap(tester, find.text('Trazer de volta ao HOME'));
+    await tapMoreAction(tester, 'Trazer de volta ao HOME');
     await _tap(tester, find.text('Evoluiu…'));
     await _pickForm(tester, 'venusaur', 3);
     expect(find.textContaining('Evoluiu para Venusaur'), findsOneWidget);
@@ -151,12 +155,12 @@ void main() {
     await pumpFullApp(tester, size: compactSize, backend: fake);
     await _go(tester, Routes.specimen(id));
 
-    await _tap(tester, find.text('Enviar para jogo…'));
+    await tapMoreAction(tester, 'Enviar para jogo…');
     expect(find.text('Nenhum save cadastrado'), findsOneWidget);
     await _tap(tester, find.text('Agora não'));
     expect(find.text('Nenhum save cadastrado'), findsNothing);
 
-    await _tap(tester, find.text('Enviar para jogo…'));
+    await tapMoreAction(tester, 'Enviar para jogo…');
     await _tap(tester, find.text('Abrir Meus saves'));
     expect(find.widgetWithText(AppBar, 'Meus saves'), findsOneWidget);
     expect(find.textContaining('Nenhum save cadastrado.'), findsOneWidget);
@@ -403,7 +407,7 @@ void main() {
     }
 
     Future<void> menu(String label) async {
-      await _tap(tester, find.byTooltip('Mais ações'));
+      await _tap(tester, find.byTooltip('Ações da seleção'));
       await _tap(tester, find.text(label));
     }
 
@@ -452,8 +456,23 @@ void main() {
     Future<void> pump(WidgetTester tester, {required bool away}) =>
         pumpWidgetApp(
           tester,
+          // A ação da folha "Mais ações", num botão.
           Scaffold(
-            body: LocationActions(specimenId: 7, name: 'Bulba', away: away),
+            body: Consumer(
+              builder: (context, ref, _) {
+                final action = locationAction(
+                  context,
+                  ref,
+                  specimenId: 7,
+                  name: 'Bulba',
+                  away: away,
+                );
+                return TextButton(
+                  onPressed: action.onSelected,
+                  child: Text(action.label),
+                );
+              },
+            ),
           ),
           overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
         );

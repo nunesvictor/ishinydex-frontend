@@ -21,6 +21,9 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | DELETE | `/api/personal-dexes/{id}/` | `deleteDex` (libera os slots; os espécimes continuam, disponíveis) |
 | GET | `/api/slots/?personal_dex=&box=` | `fetchSlots` (os slots **do dex** na box, sem paginação; os livres ficam de fora — ver abaixo) |
 | POST | `/api/slots/{id}/deposit/` | `deposit` (`{"specimen_id": n}`) |
+| POST | `/api/slots/{id}/withdraw/` | `withdraw` (retirar do slot sem apagar o espécime) |
+| GET | `/api/slots/?personal_dex=&form=1,2&page_size=100` | `fetchSlotsByForms` (onde as formas da linha evolutiva estão no dex) |
+| POST | `/api/personal-dexes/{id}/link-specimens/` | `linkSpecimens` (`{"strict", "dry_run"}` → `{linked, missing, slots}`: depositar automaticamente e a prévia) |
 | GET | `/api/specimens/?form_id=&available=true&page_size=100` | `fetchAvailable` |
 | GET | `/api/specimens/?page=&page_size=20&search=&available=&is_shiny=&pokeball=&type=&ot=&generation=&origin_mark=&ordering=...` | `fetchSpecimens` (inventário; só os filtros usados vão na URL, listas separadas por vírgula; ver `SpecimenQuery.toQueryParameters`) |
 | GET | `/api/forms/?search=&page_size=30` | `searchForms` (seletor de forma do cadastro avulso) |
@@ -34,7 +37,7 @@ Com o backend rodando, a documentação interativa (Swagger) fica em
 | PATCH | `/api/specimens/bulk/` | `bulkUpdate` (`{"ids": [...], "changes": {...}}` → `{"updated": n}`; conflito de gênero → `GenderConflictFailure`) |
 | POST | `/api/specimens/bulk-release/` | `bulkRelease` (`{"ids": [...]}` → `{"released": n}`; tudo ou nada) |
 | GET | `/api/specimens/options/` | `fetchOptions` (idiomas, gêneros, naturezas, pokébolas, tipos, gerações e marcas de origem; pokébolas e tipos trazem `sprite_url`) |
-| GET | `/api/forms/{id}/` | `fetchForm` (habilidades da forma) |
+| GET | `/api/forms/{id}/` | `fetchForm` (tipos, habilidades, status base e dados da espécie: linha evolutiva, outras formas, gênero, captura, ovos, altura, peso e estreia) |
 | GET | `/api/trainers/?page_size=100` | `fetchTrainers` |
 | POST | `/api/trainers/` | `createTrainer` (`{name, trainer_id, version?}`; nome + ID únicos) |
 | GET | `/api/versions/` | `fetchVersions` (versões de jogo em ordem de lançamento, sem paginação) |

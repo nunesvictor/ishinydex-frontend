@@ -160,4 +160,14 @@ void main() {
       expect(ShinyLockType.unobtainable.label, 'Shiny impossível');
     });
   });
+
+  test('LinkResult.fromJson', () {
+    final result = LinkResult.fromJson({
+      'linked': 1,
+      'missing': 0,
+      'slots': [registeredSlotJson],
+    });
+    expect(result.slots.single.id, result.slots.first.id);
+    expect(result.linked, 1);
+  });
 }

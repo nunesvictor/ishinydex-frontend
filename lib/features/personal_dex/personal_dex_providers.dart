@@ -90,6 +90,31 @@ final FutureProviderFamily<Paginated<Hunt>, HuntPageKey> huntPageProvider =
           ),
     );
 
+typedef FormSlotsKey = ({int dexId, String formIds});
+
+/// Slots de um dex com estas formas (`formIds` da chave: ids por
+/// vírgula, para a chave do provider comparar por valor). A aba Espécie do
+/// painel usa para saber quais formas da linha evolutiva estão no dex.
+final FutureProviderFamily<List<Slot>, FormSlotsKey> formSlotsProvider =
+    FutureProvider.autoDispose.family<List<Slot>, FormSlotsKey>(
+      (ref, key) => ref
+          .watch(personalDexRepositoryProvider)
+          .fetchSlotsByForms(
+            dexId: key.dexId,
+            formIds: [for (final id in key.formIds.split(',')) int.parse(id)],
+          ),
+    );
+
+typedef LinkPreviewKey = ({int dexId, bool strict});
+
+/// Prévia de "Depositar automaticamente" (nada é salvo).
+final FutureProviderFamily<LinkResult, LinkPreviewKey> linkPreviewProvider =
+    FutureProvider.autoDispose.family<LinkResult, LinkPreviewKey>(
+      (ref, key) => ref
+          .watch(personalDexRepositoryProvider)
+          .linkSpecimens(key.dexId, strict: key.strict, dryRun: true),
+    );
+
 final slotActionsProvider = Provider<SlotActions>(SlotActions.new);
 
 final dexActionsProvider = Provider<DexActions>(DexActions.new);
@@ -141,6 +166,23 @@ class SlotActions {
     );
     _refresh(slot);
     return updated;
+  }
+
+  /// Retira o specimen do slot sem apagá-lo: ele volta ao inventário,
+  /// disponível, e o slot fica faltante. Desfazer = [deposit] de novo.
+  Future<void> withdraw(Slot slot) async {
+    await _repository.withdraw(slot.id);
+    _ref.invalidate(specimenProvider(slot.specimen!.id));
+    _refresh(slot);
+  }
+
+  /// Depositar automaticamente no dex [dexId]; recarrega tudo que mostra
+  /// slots e contagens.
+  Future<LinkResult> linkSpecimens(int dexId, {required bool strict}) async {
+    final result = await _repository.linkSpecimens(dexId, strict: strict);
+    specimensChanged();
+    _ref.invalidate(linkPreviewProvider);
+    return result;
   }
 
   /// Liberta (apaga) o specimen do slot; o slot fica faltante.

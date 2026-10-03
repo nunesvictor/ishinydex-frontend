@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
+import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -242,31 +243,24 @@ Future<void> bringBack(
   }
 }
 
-/// Botões da localização: "Trazer de volta" (fora do HOME) ou "Enviar para
-/// jogo…" (no HOME). Para o detalhe do espécime e o painel do slot.
-class LocationActions extends ConsumerWidget {
-  const LocationActions({
-    required this.specimenId,
-    required this.name,
-    required this.away,
-    super.key,
-  });
-
-  final int specimenId;
-  final String name;
-  final bool away;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => away
-      ? FilledButton.tonalIcon(
-          onPressed: () =>
-              bringBack(context, ref, specimenId: specimenId, name: name),
-          icon: const Icon(Icons.flight_land),
-          label: const Text('Trazer de volta ao HOME'),
-        )
-      : OutlinedButton.icon(
-          onPressed: () => sendToGame(context, ref, [specimenId]),
-          icon: const Icon(Icons.flight_takeoff),
-          label: const Text('Enviar para jogo…'),
-        );
-}
+/// Ação da localização para a folha "Mais ações": "Trazer de volta ao
+/// HOME" (fora do HOME) ou "Enviar para jogo…" (no HOME). Para o detalhe do
+/// espécime e o painel do slot.
+SheetAction locationAction(
+  BuildContext context,
+  WidgetRef ref, {
+  required int specimenId,
+  required String name,
+  required bool away,
+}) => away
+    ? SheetAction(
+        icon: Icons.flight_land,
+        label: 'Trazer de volta ao HOME',
+        onSelected: () =>
+            bringBack(context, ref, specimenId: specimenId, name: name),
+      )
+    : SheetAction(
+        icon: Icons.flight_takeoff,
+        label: 'Enviar para jogo…',
+        onSelected: () => sendToGame(context, ref, [specimenId]),
+      );

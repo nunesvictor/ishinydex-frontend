@@ -111,7 +111,7 @@ void main() {
       expect(find.text(const NotFoundFailure().message), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
-      expect(find.text('Ver no dex'), findsOneWidget);
+      expect(find.text('Editar espécime'), findsOneWidget);
     });
 
     testWidgets('ver no dex: slot sem dex e falha da API', (tester) async {
@@ -123,14 +123,12 @@ void main() {
       });
       await pumpDetail(tester);
 
-      await tester.tap(find.text('Ver no dex'));
-      await tester.pumpAndSettle();
+      await tapMoreAction(tester, 'Ver no dex');
       expect(
         find.text('O slot deste espécime não pertence a um dex.'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Ver no dex'));
-      await tester.pumpAndSettle();
+      await tapMoreAction(tester, 'Ver no dex');
       expect(find.text(const NetworkFailure().message), findsOneWidget);
     });
 
@@ -138,8 +136,7 @@ void main() {
       when(() => specimens.release(1))
           .thenThrow(ValidationFailure(const {}, detail: 'Não pode.'));
       final released = await pumpDetail(tester);
-      await tester.tap(find.text('Libertar'));
-      await tester.pumpAndSettle();
+      await tapMoreAction(tester, 'Libertar');
       // Depositado: o aviso fala do slot.
       expect(find.textContaining('slot ficará faltante'), findsOneWidget);
       await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
@@ -148,12 +145,43 @@ void main() {
       expect(released, isEmpty);
     });
 
+    testWidgets('retirar do slot e desfazer, com falhas', (tester) async {
+      final slot = Slot.fromJson(registeredSlotJson);
+      var withdraws = 0;
+      when(() => dexes.withdraw(1)).thenAnswer((_) async {
+        if (withdraws++ == 0) throw const NetworkFailure();
+        return slot;
+      });
+      var deposits = 0;
+      when(() => dexes.deposit(slotId: 1, specimenId: 1)).thenAnswer((_) async {
+        if (deposits++ == 0) throw const ServerFailure();
+        return slot;
+      });
+      await pumpDetail(tester);
+
+      await tapMoreAction(tester, 'Retirar do slot');
+      expect(find.text(const NetworkFailure().message), findsOneWidget);
+
+      await tapMoreAction(tester, 'Retirar do slot');
+      expect(find.textContaining('retirado do slot.'), findsOneWidget);
+      await tester.tap(find.text('Desfazer'));
+      await tester.pumpAndSettle();
+      expect(find.text(const ServerFailure().message), findsOneWidget);
+
+      await tapMoreAction(tester, 'Retirar do slot');
+      await tester.tap(find.text('Desfazer'));
+      await tester.pumpAndSettle();
+      verify(() => dexes.deposit(slotId: 1, specimenId: 1)).called(2);
+    });
+
     testWidgets('sem formRef não oferece editar', (tester) async {
       when(() => specimens.fetchSpecimen(1))
           .thenAnswer((_) async => const Specimen(id: 1, form: 1));
       await pumpDetail(tester);
       expect(find.text('Editar espécime'), findsNothing);
       expect(find.text('Disponível'), findsOneWidget);
+      // Sem ação principal, "Mais ações" ocupa a barra.
+      expect(find.widgetWithText(OutlinedButton, 'Mais ações'), findsOneWidget);
     });
   });
 
