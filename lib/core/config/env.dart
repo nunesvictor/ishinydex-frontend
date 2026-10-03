@@ -6,6 +6,8 @@ class Env {
     required this.apiBaseUrl,
     required this.useFakeApi,
     this.appVersion = 'dev',
+    this.catalogUrl,
+    this.spritesBaseUrl = defaultSpritesBaseUrl,
   });
 
   /// [base] é o endereço da página (`Uri.base`); serve para resolver uma
@@ -26,7 +28,21 @@ class Env {
       'APP_VERSION',
       defaultValue: 'dev',
     ),
+    catalogUrl: resolveCatalogUrl(
+      const String.fromEnvironment('CATALOG_URL'),
+      base ?? Uri.base,
+    ),
+    // Mesmo caso do APP_VERSION: sem --dart-define, o lint acha redundante.
+    // ignore: avoid_redundant_argument_values
+    spritesBaseUrl: const String.fromEnvironment(
+      'SPRITES_BASE_URL',
+      defaultValue: defaultSpritesBaseUrl,
+    ),
   );
+
+  /// Pasta `sprites/` do repositório PokeAPI/sprites (libera CORS).
+  static const defaultSpritesBaseUrl =
+      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites';
 
   final String apiBaseUrl;
   final bool useFakeApi;
@@ -34,6 +50,17 @@ class Env {
   /// Versão do build (a tag do repositório, ex. `v1.0.0`), passada pelo
   /// `Dockerfile`; `dev` em builds locais.
   final String appVersion;
+
+  /// Pacote do catálogo (`catalog.json`); com ele, o modo demonstração usa
+  /// os dados de referência reais. Relativo à página, como a API.
+  final String? catalogUrl;
+
+  /// Base dos caminhos de sprite do catálogo.
+  final String spritesBaseUrl;
+
+  /// `CATALOG_URL` vazio → sem catálogo; senão, como a [resolveApiBaseUrl].
+  static String? resolveCatalogUrl(String raw, Uri base) =>
+      raw.isEmpty ? null : resolveApiBaseUrl(raw, base);
 
   /// URL absoluta é usada como está; relativa é resolvida contra [base].
   /// Ex.: `/api` em `http://192.168.0.10:8090/#/dexes` →

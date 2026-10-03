@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/features/auth/data/auth_repository.dart';
+import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
@@ -131,7 +132,7 @@ class FakeBackend
         PersonalDexRepository,
         SpecimenRepository,
         ShinyLockRepository {
-  FakeBackend({this.latency = Duration.zero});
+  FakeBackend({this.latency = Duration.zero, this.catalog});
 
   /// Dados de demonstração: um dex shiny (2 boxes) e um dex normal (1 box).
   factory FakeBackend.seeded({Duration latency = Duration.zero}) {
@@ -146,35 +147,85 @@ class FakeBackend
       );
     }
     backend
-      ..addTrainer(name: 'Ash', trainerId: '123456', version: 'scarlet')
-      ..addTrainer(name: 'Ash', trainerId: '654321')
-      // Outras origens, para a demonstração mostrar várias marcas.
-      ..addTrainer(name: 'Rei', trainerId: '111111', version: 'legends-arceus')
-      ..addTrainer(name: 'Ash', trainerId: '222222', version: 'legends-za');
-    final shinyDex = backend.addDex(name: 'Shiny Living Dex', isShinyDex: true);
-    final livingDex = backend.addDex(name: 'Living Dex');
-    final forms = [for (var id = 1; id <= _speciesNames.length; id++) id];
-    backend
-      ..addBox(dexId: shinyDex, name: 'HOME 1', formIds: forms.sublist(0, 30))
-      ..addBox(dexId: shinyDex, name: 'HOME 2', formIds: forms.sublist(30))
-      ..addBox(dexId: livingDex, name: 'HOME 3', formIds: forms.sublist(0, 30));
-    for (final slot in backend._slots.values) {
+      .._seedUserData([for (var id = 1; id <= _speciesNames.length; id++) id])
+      // Um shiny lock de exemplo (só por distribuição), para a tela de
+      // cadastro e o aviso nas caçadas.
+      ..addShinyLock(
+        caption: 'Pikachu de evento',
+        lockType: ShinyLockType.distroOnly,
+        formIds: const [25],
+      );
+    return backend;
+  }
+
+  /// Demonstração com o catálogo real (`CATALOG_URL`): formas, opções,
+  /// versões e shiny locks do pacote; dados do usuário fictícios, com um
+  /// shiny dex do dex padrão inteiro.
+  factory FakeBackend.fromCatalog(
+    Catalog catalog, {
+    Duration latency = Duration.zero,
+  }) {
+    final backend = FakeBackend(latency: latency, catalog: catalog);
+    for (final id in catalog.formIds) {
+      backend._forms[id] = catalog.formDetail(id);
+      backend._genderRates[id] = catalog.genderRate(id) ?? 4;
+      backend._categories[id] = catalog.category(id);
+      if (catalog.evolvesFromForm(id) case final from?) {
+        backend._evolvesFrom[id] = from;
+      }
+    }
+    for (final lock in catalog.shinyLocks) {
+      backend.addShinyLock(
+        caption: lock.caption,
+        description: lock.description,
+        lockType: lock.lockType,
+        active: lock.active,
+        formIds: lock.forms.where(catalog.hasForm).toList(),
+      );
+    }
+    return backend.._seedUserData(catalog.defaultDex);
+  }
+
+  /// Treinadores, saves, um shiny dex com todas as [forms] (30 por box), um
+  /// living dex com as 30 primeiras, espécimes e três boxes livres.
+  void _seedUserData(List<int> forms) {
+    addTrainer(name: 'Ash', trainerId: '123456', version: 'scarlet');
+    addTrainer(name: 'Ash', trainerId: '654321');
+    // Outras origens, para a demonstração mostrar várias marcas.
+    addTrainer(name: 'Rei', trainerId: '111111', version: 'legends-arceus');
+    addTrainer(name: 'Ash', trainerId: '222222', version: 'legends-za');
+    final shinyDex = addDex(name: 'Shiny Living Dex', isShinyDex: true);
+    final livingDex = addDex(name: 'Living Dex');
+    var box = 0;
+    for (var i = 0; i < forms.length; i += 30) {
+      addBox(
+        dexId: shinyDex,
+        name: 'HOME ${++box}',
+        formIds: forms.sublist(i, (i + 30).clamp(0, forms.length)),
+      );
+    }
+    addBox(
+      dexId: livingDex,
+      name: 'HOME ${++box}',
+      formIds: forms.sublist(0, 30.clamp(0, forms.length)),
+    );
+    for (final slot in _slots.values) {
       final formId = slot.formId;
       if (formId == null) continue;
       final shiny = slot.dexId == shinyDex;
       if (formId % 3 == 0) {
         // Faltante: deixa um specimen disponível em alguns casos.
         if (shiny && formId.isEven) {
-          backend.addSpecimen(formId: formId, isShiny: true);
+          addSpecimen(formId: formId, isShiny: true);
         }
         continue;
       }
-      final specimen = backend.addSpecimen(
+      final specimen = addSpecimen(
         formId: formId,
         isShiny: shiny,
         isAlpha: formId % 5 == 1,
         isFromGo: formId % 7 == 0,
-        gender: _seedGender(backend._forms[formId]!, backend._genderRates),
+        gender: _seedGender(_forms[formId]!, _genderRates),
         // Alguns sem natureza, como cadastros antigos.
         nature: formId % 4 == 0 ? null : _seedNatures[formId % 3],
         pokeball: formId.isEven ? 'dream-ball' : 'poke-ball',
@@ -188,30 +239,25 @@ class FakeBackend
       );
       slot.specimenId = specimen;
     }
-    backend.addSpecimen(formId: 3, nickname: 'Saur');
+    addSpecimen(formId: forms[2], nickname: 'Saur');
     // Saves: o Scarlet (com um Pokémon do Living Dex fora do HOME) e o Z-A.
-    final scarlet = backend.addSave(trainerId: 1, label: 'Switch');
-    backend.addSave(trainerId: 4);
-    final away = backend._slots.values.firstWhere(
-      (s) => s.dexId == livingDex && s.formId == 2,
+    final scarlet = addSave(trainerId: 1, label: 'Switch');
+    addSave(trainerId: 4);
+    final away = _slots.values.firstWhere(
+      (s) => s.dexId == livingDex && s.formId == forms[1],
     );
-    backend
-      ..moveTo(away.specimenId!, scarlet, since: DateTime(2026, 3, 12))
-      // Um shiny lock de exemplo (só por distribuição), para a tela de
-      // cadastro e o aviso nas caçadas.
-      ..addShinyLock(
-        caption: 'Pikachu de evento',
-        lockType: ShinyLockType.distroOnly,
-        formIds: const [25],
-      );
+    moveTo(away.specimenId!, scarlet, since: DateTime(2026, 3, 12));
     // Boxes livres: dá para criar um dex novo na demonstração.
-    for (var i = 4; i <= 6; i++) {
-      backend.addFreeBox('HOME $i');
+    for (var i = 1; i <= 3; i++) {
+      addFreeBox('HOME ${box + i}');
     }
-    return backend;
   }
 
   final Duration latency;
+
+  /// Catálogo real (modo demonstração com `CATALOG_URL`); `null` no seed
+  /// fixo dos testes.
+  final Catalog? catalog;
 
   final _forms = <int, FormDetail>{};
   final _dexes = <int, PersonalDex>{};
@@ -245,7 +291,7 @@ class FakeBackend
     for (final v in gameVersions) v.name: v.versionGroup,
   };
 
-  List<GameVersion> get versions => gameVersions;
+  List<GameVersion> get versions => catalog?.versions ?? gameVersions;
 
   static const gameVersions = [
     GameVersion(
@@ -300,7 +346,9 @@ class FakeBackend
     ),
   ];
 
-  final options = const SpecimenOptions(
+  SpecimenOptions get options => catalog?.options ?? _seedOptions;
+
+  static const _seedOptions = SpecimenOptions(
     language: [
       Choice(value: 'pt-br', label: 'Português brasileiro'),
       Choice(value: 'en', label: 'Inglês'),
@@ -568,7 +616,7 @@ class FakeBackend
       pokeballSpriteUrl: _ballSprite(pokeball),
       ot: ot,
       capturedAt: capturedAt,
-    ).withOrigin(_otVersion(ot));
+    ).withOrigin(_originMarkOf, _otVersion(ot));
     return id;
   }
 
@@ -1099,7 +1147,7 @@ class FakeBackend
       pokeballSpriteUrl: _ballSprite(draft.pokeball),
       observation: draft.observation,
       ot: draft.ot,
-    ).withOrigin(_otVersion(draft.ot));
+    ).withOrigin(_originMarkOf, _otVersion(draft.ot));
     _specimens[id] = specimen;
     return specimen;
   }
@@ -1210,7 +1258,7 @@ class FakeBackend
       isAlpha: pick(c.isAlpha, s.isAlpha) ?? s.isAlpha,
       isFromGo: pick(c.isFromGo, s.isFromGo) ?? s.isFromGo,
     );
-    return changed.withOrigin(switch (c.ot) {
+    return changed.withOrigin(_originMarkOf, switch (c.ot) {
       Keep() => s.originVersion,
       SetTo(:final value) => _otVersion(value),
     });
@@ -1220,9 +1268,14 @@ class FakeBackend
   Future<List<FormRef>> searchForms(String search) async {
     await _delay();
     final text = slugSearch(search.trim().toLowerCase());
+    // Como a API: um número busca pelo id da forma ou pelo nº nacional.
+    final number = int.tryParse(search.trim());
     return [
       for (final form in _forms.values)
-        if (form.name.contains(text)) _formRef(form),
+        if (number == null
+            ? form.name.contains(text)
+            : form.pokeapiId == number || form.nationalNumber == number)
+          _formRef(form),
     ].take(30).toList();
   }
 
@@ -1255,8 +1308,8 @@ class FakeBackend
     );
     // O jogo de origem só muda quando o OT muda (como no backend).
     final updated = draft.ot == specimen.ot
-        ? edited.withOrigin(specimen.originVersion)
-        : edited.withOrigin(_otVersion(draft.ot));
+        ? edited.withOrigin(_originMarkOf, specimen.originVersion)
+        : edited.withOrigin(_originMarkOf, _otVersion(draft.ot));
     _specimens[specimenId] = updated;
     return updated;
   }
@@ -1298,9 +1351,13 @@ class FakeBackend
     final form = _forms[formId];
     if (form == null) throw const NotFoundFailure();
     final lock = _lockOf(formId);
-    return form.copyWith(
+    final locked = form.copyWith(
       isShinylocked: lock == ShinyLockType.unobtainable,
       isDistroOnly: lock == ShinyLockType.distroOnly,
+    );
+    // Com o catálogo, o detalhe já é o real.
+    if (catalog != null) return locked;
+    return locked.copyWith(
       // Dados da espécie: no fake, valores de exemplo (mas estáveis) e a
       // linha evolutiva montada a partir do `evolvesFrom` do seed.
       stats: [
@@ -1819,8 +1876,14 @@ class FakeBackend
     shinySpriteUrl: form.shinySpriteUrl,
   );
 
-  String? _ballSprite(String? ball) =>
-      ball == null ? null : '$_spriteBase/items/$ball.png';
+  String? _ballSprite(String? ball) => ball == null
+      ? null
+      : catalog?.itemSprite(ball) ?? '$_spriteBase/items/$ball.png';
+
+  /// Marca de origem do jogo: a do catálogo, ou a tabela do seed.
+  String? _originMarkOf(String? version) => catalog != null
+      ? catalog!.originMarkOf(version)
+      : _originMarkByVersionGroup[versionGroups[version]];
 }
 
 /// Gêneros possíveis para a forma (mesma regra do backend,
@@ -1864,11 +1927,9 @@ const _originMarkByVersionGroup = {
 extension on Specimen {
   /// Com o jogo de origem [version] e a marca calculada como no backend:
   /// GO tem prioridade; senão, a marca do grupo da versão; senão nenhuma.
-  Specimen withOrigin(String? version) {
-    final group = FakeBackend.versionGroups[version];
-    return copyWith(
-      originVersion: version,
-      originMark: isFromGo ? 'go' : _originMarkByVersionGroup[group],
-    );
-  }
+  Specimen withOrigin(String? Function(String?) markOf, String? version) =>
+      copyWith(
+        originVersion: version,
+        originMark: isFromGo ? 'go' : markOf(version),
+      );
 }
