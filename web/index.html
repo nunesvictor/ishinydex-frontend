@@ -34,5 +34,12 @@
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+  <!-- Cache offline (web/sw.js): depois de um uso online, o app abre sem
+       internet. Relativo ao <base href>, então vale no Pages e no Docker. -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>

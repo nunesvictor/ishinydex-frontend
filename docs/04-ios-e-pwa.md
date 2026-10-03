@@ -48,6 +48,26 @@ hora em que o atalho é criado.
 Uso real testado em 30/09/2026. A decisão de não usar HTTPS está em
 [ishinydex#10](https://github.com/nunesvictor/ishinydex/issues/10).
 
+### No GitHub Pages (modo local): HTTPS e offline
+
+No Pages (`https://nunesvictor.github.io/ishinydex/`), com HTTPS, o
+navegador libera o **service worker**. O nosso ([web/sw.js](../web/sw.js))
+guarda cada arquivo do app na primeira vez que ele é usado, sem lista fixa:
+
+- versionados (`v/<hash>/`, `canvaskit/`): **cache primeiro**, porque nunca
+  mudam (um build novo tem outro hash);
+- o resto do site (`index.html`, `flutter_bootstrap.js`, manifesto,
+  `catalog/catalog.json`): **rede primeiro**, com o cache de reserva, então
+  uma versão nova chega assim que há internet;
+- sprites: cache primeiro, num cache próprio que sobrevive às versões;
+- `/api/`, `/admin/` e o que não é GET nunca passam pelo cache.
+
+O cache tem a versão do build no nome (`__BUILD_VERSION__`, trocado no build
+como no `flutter_bootstrap.js`); ao ativar uma versão nova, fica também a
+anterior, para o app abrir offline mesmo logo depois de uma atualização.
+Depois de um uso online, o app abre e funciona **sem internet**, porque os
+dados já estão no aparelho.
+
 ### O que funciona e o que não funciona sem HTTPS
 
 Em HTTP (fora de `localhost`), o navegador não libera recursos de "contexto
