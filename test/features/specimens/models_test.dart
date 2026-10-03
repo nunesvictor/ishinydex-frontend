@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -143,6 +144,7 @@ void main() {
       ots: const [1, 3],
       withoutOt: true,
       generations: const ['generation-i', 'generation-iv'],
+      categories: const [SpeciesCategory.legendary, SpeciesCategory.mythical],
       originMarks: const ['paldea', 'none'],
       genders: const ['female'],
       natures: const ['jolly'],
@@ -162,6 +164,7 @@ void main() {
       'type': 'water,flying',
       'ot': '1,3,none',
       'generation': 'generation-i,generation-iv',
+      'category': 'legendary,mythical',
       'origin_mark': 'paldea,none',
       'gender': 'female',
       'nature': 'jolly',
@@ -175,7 +178,7 @@ void main() {
     expect(const SpecimenQuery(withoutOt: true).toQueryParameters(), {
       'ot': 'none',
     });
-    expect(full.advancedCount, 11);
+    expect(full.advancedCount, 12);
 
     final cleared = full.clearAdvanced();
     expect(cleared.advancedCount, 0);

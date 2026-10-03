@@ -85,7 +85,7 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
               _Section(
                 title: 'Categoria',
                 children: [
-                  for (final category in HuntCategory.values)
+                  for (final category in SpeciesCategory.values)
                     FilterChip(
                       label: Text(category.label),
                       selected: _draft.categories.contains(category),

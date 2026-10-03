@@ -188,15 +188,15 @@ enum HuntReason {
       values.where((r) => r.param == value).firstOrNull;
 }
 
-/// Categoria da espécie nos filtros de caçadas.
-enum HuntCategory {
+/// Categoria da espécie, nos filtros das caçadas e do inventário.
+enum SpeciesCategory {
   legendary('legendary', 'Lendário'),
   mythical('mythical', 'Mítico'),
   ultraBeast('ultra-beast', 'Ultra Beast'),
   baby('baby', 'Bebê'),
   regular('regular', 'Comum');
 
-  HuntCategory(this.param, this.label);
+  SpeciesCategory(this.param, this.label);
 
   final String param;
   final String label;
@@ -260,7 +260,7 @@ abstract class HuntQuery with _$HuntQuery {
 
     /// Qualquer um dos tipos (diferente do inventário, que exige todos).
     @Default(<String>[]) List<String> types,
-    @Default(<HuntCategory>[]) List<HuntCategory> categories,
+    @Default(<SpeciesCategory>[]) List<SpeciesCategory> categories,
     @Default('') String search,
     @Default(false) bool includeLocked,
   }) = _HuntQuery;

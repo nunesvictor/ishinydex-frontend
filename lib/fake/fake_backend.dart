@@ -216,7 +216,7 @@ class FakeBackend
 
   /// Categoria da espécie de cada forma (no backend, vem dos campos da
   /// espécie e da habilidade Beast Boost).
-  final _categories = <int, HuntCategory>{};
+  final _categories = <int, SpeciesCategory>{};
 
   int _nextSlotId = 1;
   int _nextSpecimenId = 1;
@@ -345,7 +345,7 @@ class FakeBackend
     required String name,
     List<String> types = const ['normal'],
     int genderRate = 4,
-    HuntCategory category = HuntCategory.regular,
+    SpeciesCategory category = SpeciesCategory.regular,
     ShinyLock? shinyLock,
 
     /// Forma da qual esta evolui (a regra do `evolve`).
@@ -867,7 +867,7 @@ class FakeBackend
           ? ShinyLock.distroOnly
           : null;
       final reasons = _huntReasons(slot, query.acceptedBalls);
-      final category = _categories[formId] ?? HuntCategory.regular;
+      final category = _categories[formId] ?? SpeciesCategory.regular;
       final matches =
           reasons.any(query.reasons.contains) &&
           (query.includeLocked || lock != ShinyLock.unobtainable) &&
@@ -1397,6 +1397,10 @@ class FakeBackend
             (query.withoutOt && s.ot == null)) &&
         query.types.every(formTypes.contains) &&
         inList(query.generations, _generationOf(form.pokeapiId)) &&
+        inList(
+          query.categories,
+          _categories[s.form] ?? SpeciesCategory.regular,
+        ) &&
         inList(query.originMarks, s.originMark ?? SpecimenQuery.noneParam) &&
         inList(query.genders, s.gender) &&
         inList(query.natures, s.nature) &&

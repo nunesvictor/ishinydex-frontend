@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -121,6 +122,9 @@ void main() {
       );
       await tapInSheet(tester, find.widgetWithText(FilterChip, 'Voador'));
 
+      // Categoria: qualquer uma das marcadas, como nas caçadas.
+      await tapInSheet(tester, find.widgetWithText(FilterChip, 'Lendário'));
+      await tapInSheet(tester, find.widgetWithText(FilterChip, 'Ultra Beast'));
       await tapInSheet(tester, find.widgetWithText(FilterChip, 'I'));
       // Marca de origem: chip com o ícone da marca; "sem marca", sem ícone.
       final paldea = find.widgetWithText(FilterChip, 'SV');
@@ -182,6 +186,7 @@ void main() {
           languages: ['ja'],
           types: ['fire', 'flying'],
           generations: ['generation-i'],
+          categories: [SpeciesCategory.legendary, SpeciesCategory.ultraBeast],
           originMarks: ['paldea', 'none'],
           genders: ['female'],
           ability: 'keen',
@@ -330,6 +335,7 @@ void main() {
         types: const ['fire', 'flying'],
         ots: const [2, 99],
         generations: const ['generation-i', 'generation-iv'],
+        categories: const [SpeciesCategory.legendary, SpeciesCategory.baby],
         originMarks: const ['go', 'none'],
         genders: const ['female'],
         natures: const ['modest', 'timid'],
@@ -346,6 +352,7 @@ void main() {
         'Fogo / Voador': query.copyWith(types: const []),
         'OT: Ash +1': query.copyWith(ots: const []),
         'Geração I, IV': query.copyWith(generations: const []),
+        'Lendário +1': query.copyWith(categories: const []),
         'Origem: GO +1': query.copyWith(originMarks: const []),
         'Fêmea': query.copyWith(genders: const []),
         'Modest +1': query.copyWith(natures: const []),
