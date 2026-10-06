@@ -38,6 +38,17 @@ class LocalData {
   final FakeBackend backend;
   final String catalogVersion;
 
+  /// Chamado quando os dados do aparelho mudam e são gravados (edição ou
+  /// importação); o sync usa para enviar as mudanças.
+  void Function()? onChanged;
+
+  /// Grava, se algo mudou desde a última gravação, e avisa [onChanged].
+  Future<void> save() async {
+    if (await store.save(backend.records, catalog: catalogVersion)) {
+      onChanged?.call();
+    }
+  }
+
   /// O arquivo atual, com as datas em dia.
   Map<String, dynamic> currentFile() =>
       store.file(backend.records, catalog: catalogVersion);
@@ -74,11 +85,17 @@ class LocalData {
   }
 
   /// Passa a usar [file] (ou a junção dele com os dados do aparelho, com
-  /// [merge]) e grava.
-  Future<void> import(Map<String, dynamic> file, {required bool merge}) async {
+  /// [merge]) e grava. [notify]: avisar [onChanged] (o sync, que também
+  /// importa, não precisa ser avisado do que ele mesmo fez).
+  Future<void> import(
+    Map<String, dynamic> file, {
+    required bool merge,
+    bool notify = true,
+  }) async {
     final next = merge ? mergeDataFiles(currentFile(), file) : file;
     backend.replaceRecords(store.adopt(next));
     await store.save(backend.records, catalog: catalogVersion);
+    if (notify) onChanged?.call();
   }
 }
 
@@ -109,9 +126,14 @@ class LocalDataActions {
     return (name: picked.name, file: LocalData.read(picked.bytes));
   }
 
-  /// Importa e recarrega tudo que a tela mostra.
-  Future<void> import(Map<String, dynamic> file, {required bool merge}) async {
-    await _data.import(file, merge: merge);
+  /// Importa e recarrega tudo que a tela mostra ([notify]: ver
+  /// [LocalData.import]).
+  Future<void> import(
+    Map<String, dynamic> file, {
+    required bool merge,
+    bool notify = true,
+  }) async {
+    await _data.import(file, merge: merge, notify: notify);
     _ref.read(slotActionsProvider).specimensChanged();
     _ref
       ..invalidate(trainersProvider)

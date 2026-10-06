@@ -8,6 +8,8 @@ import 'package:ishinydex/core/widgets/progress_badge.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/new_dex_page.dart';
+import 'package:ishinydex/features/sync/presentation/sync_page.dart';
+import 'package:ishinydex/features/sync/sync_providers.dart';
 
 /// Lista de PersonalDex com o progresso de cada um.
 class DexListPage extends ConsumerWidget {
@@ -17,7 +19,11 @@ class DexListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dexes = ref.watch(dexListProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('PersonalDex')),
+      appBar: AppBar(
+        title: const Text('PersonalDex'),
+        // Estado do sync com o Dropbox (só aparece conectado).
+        actions: const [SyncStatusButton()],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         // As abas ficam vivas juntas: cada botão precisa da sua hero tag.
         heroTag: 'new-dex',
@@ -33,7 +39,11 @@ class DexListPage extends ConsumerWidget {
                     '"Novo PersonalDex".',
               )
             : RefreshIndicator.adaptive(
-                onRefresh: () => ref.refresh(dexListProvider.future),
+                // Puxar a lista também sincroniza (com o Dropbox conectado).
+                onRefresh: () async {
+                  await ref.read(syncControllerProvider.notifier).sync();
+                  return await ref.refresh(dexListProvider.future);
+                },
                 child: GridView.builder(
                   // Espaço embaixo para o botão "Novo PersonalDex".
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
