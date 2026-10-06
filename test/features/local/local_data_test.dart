@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker_platform_interface/file_picker_platform_interface.dart';
+import 'package:file_picker_web/src/file_picker_web_options.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -17,17 +18,22 @@ import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';
 
 final class _MemoryFile extends PlatformFile {
-  _MemoryFile(this.name, this.bytes);
+  _MemoryFile(this.name, this.bytes, {this.unreadable = false});
 
   @override
   final String name;
   final Uint8List bytes;
 
+  /// Simula um arquivo que o navegador não consegue ler.
+  final bool unreadable;
+
   @override
   Uri get uri => Uri.parse('memory:$name');
 
   @override
-  XFile get xFile => XFile.fromData(bytes, name: name);
+  XFile get xFile => unreadable
+      ? XFile('/arquivo/que/nao/existe/$name')
+      : XFile.fromData(bytes, name: name);
 
   @override
   int? lengthSync() => bytes.length;
@@ -44,6 +50,7 @@ final class _MemoryFile extends PlatformFile {
 
 class _FakePicker extends FilePickerPlatform with MockPlatformInterfaceMixin {
   PlatformFile? picked;
+  WebOptions? webOptions;
   ({String name, Uint8List bytes, String mime})? saved;
 
   @override
@@ -59,7 +66,10 @@ class _FakePicker extends FilePickerPlatform with MockPlatformInterfaceMixin {
     WindowsOptions windowsOptions = const WindowsOptions(),
     LinuxOptions linuxOptions = const LinuxOptions(),
     WebOptions webOptions = const WebOptions(),
-  }) async => picked;
+  }) async {
+    this.webOptions = webOptions;
+    return picked;
+  }
 
   @override
   Future<Uri?> saveFile({
@@ -173,6 +183,26 @@ void main() {
       final picked = await FilePickerDataFileIo().pick();
       expect(picked?.name, 'a.json');
       expect(picked?.bytes, [7]);
+    });
+
+    test('no web, não desiste quando a janela recupera o foco', () async {
+      await FilePickerDataFileIo().pick();
+      final options = picker.webOptions! as FilePickerWebOptions;
+      expect(options.cancelUploadOnWindowBlur, isFalse);
+    });
+
+    test('arquivo ilegível vira FormatException', () async {
+      picker.picked = _MemoryFile('a.json', Uint8List(0), unreadable: true);
+      await expectLater(
+        FilePickerDataFileIo().pick(),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            'Não foi possível ler a.json.',
+          ),
+        ),
+      );
     });
   });
 }
