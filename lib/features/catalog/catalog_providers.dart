@@ -32,7 +32,7 @@ Future<List<Override>> catalogOverrides(
       env,
       dio,
       url,
-      storage ?? PrefsLocalDataStorage(),
+      storage ?? const PrefsLocalDataStorage(),
     );
   }
   if (!env.useFakeApi || url == null) return const [];

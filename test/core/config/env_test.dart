@@ -10,6 +10,20 @@ void main() {
     expect(env.appVersion, 'dev');
     expect(env.catalogUrl, isNull);
     expect(env.spritesBaseUrl, Env.defaultSpritesBaseUrl);
+    expect(env.dropboxAppKey, isNull);
+    expect(env.syncAvailable, isFalse);
+  });
+
+  test('sincronização: só no modo local e com a app key', () {
+    Env env({bool local = true, String? key = 'k'}) => Env(
+      apiBaseUrl: '',
+      useFakeApi: false,
+      localData: local,
+      dropboxAppKey: key,
+    );
+    expect(env().syncAvailable, isTrue);
+    expect(env(local: false).syncAvailable, isFalse);
+    expect(env(key: null).syncAvailable, isFalse);
   });
 
   test('fromEnvironment aceita a página base', () {
