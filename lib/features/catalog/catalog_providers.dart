@@ -66,20 +66,15 @@ Future<List<Override>> localOverrides(
   final load = await loadCatalog(dio, url: url, spriteBase: env.spritesBaseUrl);
   final store = LocalStore(storage);
   final backend = FakeBackend.local(load.catalog, records: await store.load());
-  final scheduler = SaveScheduler(
-    delay: saveDelay,
-    save: () => store.save(backend.records, catalog: load.catalog.version),
+  final data = LocalData(
+    store: store,
+    backend: backend,
+    catalogVersion: load.catalog.version,
   );
-  backend.onAccess = scheduler.schedule;
+  backend.onAccess = SaveScheduler(delay: saveDelay, save: data.save).schedule;
   return [
     catalogLoadProvider.overrideWithValue(load),
     fakeBackendProvider.overrideWithValue(backend),
-    localDataProvider.overrideWithValue(
-      LocalData(
-        store: store,
-        backend: backend,
-        catalogVersion: load.catalog.version,
-      ),
-    ),
+    localDataProvider.overrideWithValue(data),
   ];
 }

@@ -17,6 +17,7 @@ import 'package:ishinydex/features/specimens/presentation/away_page.dart';
 import 'package:ishinydex/features/specimens/presentation/saves_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
+import 'package:ishinydex/features/sync/presentation/sync_page.dart';
 
 abstract final class Routes {
   static const splash = '/splash';
@@ -30,6 +31,9 @@ abstract final class Routes {
 
   /// Ajustes → Shiny locks.
   static const shinyLocks = '$settings/shiny-locks';
+
+  /// Ajustes → Sincronização com o Dropbox (só no modo local com a app key).
+  static const sync = '$settings/sync';
 
   /// Ajustes → Sobre o iShinyDex.
   static const about = '$settings/about';
@@ -191,6 +195,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'about',
                     builder: (context, state) => const AboutPage(),
+                  ),
+                  GoRoute(
+                    path: 'sync',
+                    builder: (context, state) => const SyncPage(),
                   ),
                 ],
               ),

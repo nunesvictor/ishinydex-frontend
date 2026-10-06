@@ -79,6 +79,7 @@ Future<FakeBackend> pumpFullApp(
   FakeBackend? backend,
   LastDexStorage? lastDex,
   DateFormatStorage? dateFormat,
+  Env env = fakeEnv,
   List<Override> overrides = const [],
 }) async {
   final fake = backend ?? FakeBackend.seeded();
@@ -87,7 +88,7 @@ Future<FakeBackend> pumpFullApp(
     ProviderScope(
       retry: noRetry,
       overrides: [
-        envProvider.overrideWithValue(fakeEnv),
+        envProvider.overrideWithValue(env),
         fakeBackendProvider.overrideWithValue(fake),
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage(token)),
         lastDexStorageProvider.overrideWithValue(

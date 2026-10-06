@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:ishinydex/features/sync/presentation/sync_lifecycle.dart';
 
 /// Desliga o retry automático do Riverpod 3: as telas têm botão
 /// "Tentar novamente" e os erros de validação não devem ser repetidos.
@@ -25,10 +26,14 @@ class IShinyDexApp extends ConsumerWidget {
     // na barra de status (relógio, bateria). O do MaterialApp usa sempre o
     // tema claro; este, abaixo dele, usa a cor do AppBar do tema em uso e é
     // refeito quando o sistema troca entre claro e escuro.
-    builder: (context, child) => Title(
-      title: 'iShinyDex',
-      color: Theme.of(context).colorScheme.surface,
-      child: child!,
+    // O SyncLifecycle sincroniza com o Dropbox ao abrir e ao voltar ao app
+    // (sem Dropbox neste build, não faz nada).
+    builder: (context, child) => SyncLifecycle(
+      child: Title(
+        title: 'iShinyDex',
+        color: Theme.of(context).colorScheme.surface,
+        child: child!,
+      ),
     ),
   );
 }

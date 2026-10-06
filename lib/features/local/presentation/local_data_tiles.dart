@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/features/local/local_data_providers.dart';
+import 'package:ishinydex/features/sync/presentation/sync_page.dart';
+import 'package:ishinydex/features/sync/sync_providers.dart';
 
 /// Ajustes → "Seus dados" (modo local): exportar e importar o arquivo de
 /// dados. Fora do modo local, não aparece.
@@ -26,6 +29,7 @@ class LocalDataTiles extends ConsumerWidget {
             ),
           ),
         ),
+        if (ref.watch(envProvider).syncAvailable) const SyncTile(),
         ListTile(
           leading: const Icon(Icons.download_outlined),
           title: const Text('Exportar dados'),
@@ -63,6 +67,7 @@ class LocalDataTiles extends ConsumerWidget {
       builder: (_) => ImportDialog(
         name: picked!.name,
         summary: LocalData.summarize(picked.file),
+        syncing: ref.read(syncControllerProvider).connected,
       ),
     );
     if (merge == null) return;
@@ -81,10 +86,18 @@ class LocalDataTiles extends ConsumerWidget {
 /// Confirma a importação, com o resumo do arquivo; devolve `true` para
 /// juntar e `false` para substituir (`null`: cancelou).
 class ImportDialog extends StatefulWidget {
-  const ImportDialog({required this.name, required this.summary, super.key});
+  const ImportDialog({
+    required this.name,
+    required this.summary,
+    this.syncing = false,
+    super.key,
+  });
 
   final String name;
   final DataFileSummary summary;
+
+  /// Dropbox conectado: o resultado também vai para lá.
+  final bool syncing;
 
   @override
   State<ImportDialog> createState() => _ImportDialogState();
@@ -102,50 +115,63 @@ class _ImportDialogState extends State<ImportDialog> {
         '$n ${n == 1 ? one : many}';
     return AlertDialog(
       title: const Text('Importar dados?'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Card(
-            margin: EdgeInsets.zero,
-            child: ListTile(
-              title: Text(widget.name),
-              subtitle: Text(
-                '${plural(s.dexes, 'dex', 'dexes')} · '
-                '${plural(s.specimens, 'espécime', 'espécimes')} · '
-                '${plural(s.saves, 'save', 'saves')}\n'
-                'Exportado em $when',
+      // Rola em telas baixas (celular deitado).
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Card(
+              margin: EdgeInsets.zero,
+              child: ListTile(
+                title: Text(widget.name),
+                subtitle: Text(
+                  '${plural(s.dexes, 'dex', 'dexes')} · '
+                  '${plural(s.specimens, 'espécime', 'espécimes')} · '
+                  '${plural(s.saves, 'save', 'saves')}\n'
+                  'Exportado em $when',
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          RadioGroup<bool>(
-            groupValue: _merge,
-            onChanged: (value) => setState(() => _merge = value!),
-            child: const Column(
-              children: [
-                RadioListTile(
-                  value: false,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Substituir os dados deste aparelho'),
-                  subtitle: Text('O aparelho fica exatamente como o arquivo.'),
-                ),
-                RadioListTile(
-                  value: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Juntar com os dados deste aparelho'),
-                  subtitle: Text(
-                    'Registro a registro, vale a mudança mais recente.',
+            const SizedBox(height: 8),
+            RadioGroup<bool>(
+              groupValue: _merge,
+              onChanged: (value) => setState(() => _merge = value!),
+              child: const Column(
+                children: [
+                  RadioListTile(
+                    value: false,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Substituir os dados deste aparelho'),
+                    subtitle: Text(
+                      'O aparelho fica exatamente como o arquivo.',
+                    ),
                   ),
-                ),
-              ],
+                  RadioListTile(
+                    value: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Juntar com os dados deste aparelho'),
+                    subtitle: Text(
+                      'Registro a registro, vale a mudança mais recente.',
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(
-            'Dica: exporte antes, para ter como voltar.',
-            style: theme.textTheme.bodySmall,
-          ),
-        ],
+            if (widget.syncing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'Com o Dropbox ligado, o resultado também vai para lá.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            Text(
+              'Dica: exporte antes, para ter como voltar.',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(

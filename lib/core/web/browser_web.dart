@@ -53,3 +53,11 @@ Future<PickedFile?> pickFileInPage({required String accept}) {
   input.click();
   return completer.future;
 }
+
+/// Sai do app para [url], na mesma janela (no iPhone e no iPad, o login do
+/// Dropbox volta para o app instalado só assim; ishinydex#53).
+void openUrl(String url) => web.window.location.assign(url);
+
+/// Troca o endereço na barra sem recarregar (tira o `?code=` da volta do
+/// login, para um recarregamento não tentar usá-lo de novo).
+void replaceUrl(String url) => web.window.history.replaceState(null, '', url);
