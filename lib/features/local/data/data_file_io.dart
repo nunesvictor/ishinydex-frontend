@@ -1,10 +1,6 @@
-import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
-// Só as opções do web: a biblioteca inteira depende do navegador e não
-// carrega nos testes (VM).
-// ignore: implementation_imports
-import 'package:file_picker_web/src/file_picker_web_options.dart';
+import 'package:flutter/foundation.dart';
+import 'package:ishinydex/core/web/browser.dart' as browser;
 
 /// Baixar e escolher o arquivo de dados (exportar/importar).
 abstract interface class DataFileIo {
@@ -17,8 +13,17 @@ abstract interface class DataFileIo {
   Future<({String name, Uint8List bytes})?> pick();
 }
 
-/// Pelo plugin `file_picker`, que funciona no navegador e no iOS.
+/// Pelo plugin `file_picker`; no navegador, a escolha é pelo seletor próprio
+/// ([browser.pickFileInPage]): com o do plugin, o Safari do iOS nunca
+/// entregava o arquivo escolhido (ishinydex-frontend#120).
 class FilePickerDataFileIo implements DataFileIo {
+  FilePickerDataFileIo({
+    Future<browser.PickedFile?> Function({required String accept})? pickInPage,
+  }) : _pickInPage = pickInPage ?? (kIsWeb ? browser.pickFileInPage : null);
+
+  final Future<browser.PickedFile?> Function({required String accept})?
+  _pickInPage;
+
   @override
   Future<void> save(String name, Uint8List bytes) async {
     await FilePicker.saveFile(
@@ -30,14 +35,12 @@ class FilePickerDataFileIo implements DataFileIo {
 
   @override
   Future<({String name, Uint8List bytes})?> pick() async {
+    if (_pickInPage case final pickInPage?) {
+      return await pickInPage(accept: '.json,application/json');
+    }
     final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['json'],
-      // Por padrão, o picker do web desiste se a janela recupera o foco e a
-      // escolha não chega em 500 ms. No iOS, um arquivo do iCloud ainda está
-      // sendo baixado nessa hora: a escolha chega depois e era ignorada.
-      // Desistir de verdade continua funcionando (evento `cancel` do input).
-      webOptions: const FilePickerWebOptions(cancelUploadOnWindowBlur: false),
     );
     if (file == null) return null;
     try {
