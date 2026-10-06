@@ -15,9 +15,9 @@ const _localData =
     'iPhone e no iPad, no do app instalado na Tela de Início). Quem mantém o '
     'projeto não recebe nem guarda nada.';
 
-String _serverData(String url) =>
-    'Seus dados ficam no servidor configurado ($url). Quem mantém o projeto '
-    'não recebe nem guarda nada.';
+const _syncData =
+    'Se você ligar a sincronização, uma cópia vai para a pasta do app no seu '
+    'Dropbox, direto do aparelho, sem passar por nenhum outro servidor.';
 
 const _trademarks =
     'Pokémon e os nomes, imagens e marcas relacionados são propriedade da '
@@ -76,13 +76,13 @@ class AboutPage extends ConsumerWidget {
                 ),
               const SizedBox(height: 24),
               section('Privacidade', [
-                if (env.localData)
-                  _localData
-                else if (env.useFakeApi) ...[
+                if (env.localData) ...[
+                  _localData,
+                  if (env.syncAvailable) _syncData,
+                ] else ...[
                   _demoData,
                   _demoNothingSent,
-                ] else
-                  _serverData(env.apiBaseUrl),
+                ],
               ]),
               section('Aviso legal', [_trademarks, _fanProject, _sources]),
             ],

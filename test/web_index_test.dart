@@ -31,16 +31,13 @@ void main() {
     expect(html, contains('body { background-color: $dark; }'));
   });
 
-  test('service worker: registrado, versionado e sem a API no cache', () {
+  test('service worker: registrado, versionado e só GET no cache', () {
     final html = File('web/index.html').readAsStringSync();
     final sw = File('web/sw.js').readAsStringSync();
-    final docker = File('Dockerfile').readAsStringSync();
 
     expect(html, contains("navigator.serviceWorker.register('sw.js')"));
     // A versão é trocada no build, como no flutter_bootstrap.js.
     expect(sw, contains("const VERSION = '__BUILD_VERSION__';"));
-    expect(docker, contains('build/web/flutter_bootstrap.js build/web/sw.js'));
-    expect(sw, contains(r'/\/(api|admin)\//'));
     expect(sw, contains("if (request.method !== 'GET') return;"));
   });
 }

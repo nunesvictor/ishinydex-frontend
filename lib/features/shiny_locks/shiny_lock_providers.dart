@@ -1,19 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
-import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
-import 'package:ishinydex/features/shiny_locks/data/http_shiny_lock_repository.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/domain/shiny_lock_repository.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-final shinyLockRepositoryProvider = Provider<ShinyLockRepository>((ref) {
-  if (ref.watch(envProvider).usesLocalBackend) {
-    return ref.watch(fakeBackendProvider);
-  }
-  return HttpShinyLockRepository(ref.watch(dioProvider));
-});
+/// O backend local: os dados do aparelho (modo local) ou de exemplo
+/// (demonstração).
+final shinyLockRepositoryProvider = Provider<ShinyLockRepository>(
+  (ref) => ref.watch(fakeBackendProvider),
+);
 
 final FutureProvider<List<ShinyLock>> shinyLocksProvider =
     FutureProvider.autoDispose<List<ShinyLock>>(

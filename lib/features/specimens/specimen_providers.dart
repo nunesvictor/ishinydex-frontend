@@ -1,20 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
-import 'package:ishinydex/features/auth/auth_providers.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
-import 'package:ishinydex/features/specimens/data/http_specimen_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
 
-final specimenRepositoryProvider = Provider<SpecimenRepository>((ref) {
-  if (ref.watch(envProvider).usesLocalBackend) {
-    return ref.watch(fakeBackendProvider);
-  }
-  return HttpSpecimenRepository(ref.watch(dioProvider));
-});
+/// O backend local: os dados do aparelho (modo local) ou de exemplo
+/// (demonstração).
+final specimenRepositoryProvider = Provider<SpecimenRepository>(
+  (ref) => ref.watch(fakeBackendProvider),
+);
 
 final FutureProviderFamily<List<Specimen>, int> availableSpecimensProvider =
     FutureProvider.autoDispose.family<List<Specimen>, int>(

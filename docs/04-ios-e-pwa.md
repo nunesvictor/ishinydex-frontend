@@ -1,5 +1,11 @@
 # iPhone: atalho do Safari (PWA) e .ipa
 
+> **Desatualizado em parte:** desde a v2.0.0 o app não tem servidor (sem
+> login, sem API; os dados ficam no aparelho, com sync opcional pelo
+> Dropbox). Trechos sobre login, token, API, Docker e nginx descrevem o
+> modelo antigo. A revisão está em
+> [ishinydex#49](https://github.com/nunesvictor/ishinydex/issues/49).
+
 Há dois jeitos de ter o app no iPhone:
 
 | | **Atalho do Safari / PWA** (o que usamos) | **.ipa nativo (sideload)** |
@@ -22,7 +28,7 @@ guia).
 
 Build e hospedagem já estão resolvidos pelo compose do repositório principal
 [ishinydex](https://github.com/nunesvictor/ishinydex) (nginx em `:8090`, app
-compilado com `API_BASE_URL=/api`, ver [06-deploy-local.md](06-deploy-local.md)).
+compilado com `API_BASE_URL=/api`, guia de deploy local, removido na v2.0.0).
 Não precisa de mais nada: nem HTTPS, nem domínio, nem build separado.
 
 ### 2. Instalar no iPhone
@@ -77,7 +83,7 @@ seguro": **service worker** e **WebCrypto**.
 | --- | --- | --- |
 | Tela cheia, ícone e nome na Tela de Início | ✅ funciona | — |
 | Login e uso normal do app | ✅ funciona | — |
-| Atualização a cada deploy | ✅ automática (o `flutter_bootstrap.js` é sempre revalidado; ver [06-deploy-local.md](06-deploy-local.md)) | — |
+| Atualização a cada deploy | ✅ automática (o `flutter_bootstrap.js` é sempre revalidado; guia de deploy local, removido na v2.0.0) | — |
 | Token salvo | ✅ no `localStorage` ([`PrefsTokenStorage`](../lib/features/auth/data/token_storage.dart)), porque o armazenamento seguro da web depende de WebCrypto | Não: o app só é acessível na rede de casa |
 | Uso **offline** | ❌ (precisa de service worker) | Não: sem o backend não há dados para mostrar |
 | Cache do app para abrir sem rede | ❌ (service worker) | Não, pelo mesmo motivo |

@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/responsive/adaptive_shell.dart';
-import 'package:ishinydex/core/widgets/async_views.dart';
-import 'package:ishinydex/features/auth/auth_providers.dart';
-import 'package:ishinydex/features/auth/presentation/login_page.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
@@ -20,8 +17,8 @@ import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
 
 abstract final class Routes {
-  static const splash = '/splash';
-  static const login = '/login';
+  /// Entrada do app: redireciona para o último dex usado ([homeLocation]).
+  static const home = '/';
   static const dexes = '/dexes';
   static const specimens = '/specimens';
   static const settings = '/settings';
@@ -56,24 +53,8 @@ abstract final class Routes {
   static String specimen(int id) => '$specimens/$id';
 }
 
-/// Decide para onde ir conforme o estado de autenticação.
-String? authRedirect(AsyncValue<String?> auth, String location) {
-  // Login em andamento: fica na tela de login.
-  if (auth.isLoading && location == Routes.login) return null;
-  // Ainda lendo o token salvo.
-  if (!auth.hasValue && !auth.hasError) {
-    return location == Routes.splash ? null : Routes.splash;
-  }
-  final loggedIn = auth.value != null;
-  if (!loggedIn) return location == Routes.login ? null : Routes.login;
-  if (location == Routes.login || location == Routes.splash) {
-    return Routes.dexes;
-  }
-  return null;
-}
-
-/// Ao entrar no app ([authRedirect] mandou para [Routes.dexes]), abre o
-/// último dex usado (ou o único); se não der para decidir, fica na lista.
+/// Ao entrar no app ([Routes.home]), abre o último dex usado (ou o único);
+/// se não der para decidir, fica na lista.
 Future<String> homeLocation(Ref ref) async {
   try {
     final dexId = await resolveHomeDexId(
@@ -88,31 +69,13 @@ Future<String> homeLocation(Ref ref) async {
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final refresh = ValueNotifier(0);
-  ref
-    ..listen(authControllerProvider, (_, _) => refresh.value++)
-    ..onDispose(refresh.dispose);
-
   final router = GoRouter(
-    initialLocation: Routes.splash,
-    refreshListenable: refresh,
-    // Síncrono na maioria das vezes; só consulta a API (Future) ao entrar
-    // no app, para decidir qual dex abrir.
-    redirect: (context, state) {
-      final target = authRedirect(
-        ref.read(authControllerProvider),
-        state.matchedLocation,
-      );
-      return target == Routes.dexes ? homeLocation(ref) : target;
-    },
+    initialLocation: Routes.home,
     routes: [
+      // A entrada: decide qual dex abrir (consulta o backend local).
       GoRoute(
-        path: Routes.splash,
-        builder: (context, state) => const Scaffold(body: LoadingView()),
-      ),
-      GoRoute(
-        path: Routes.login,
-        builder: (context, state) => const LoginPage(),
+        path: Routes.home,
+        redirect: (context, state) => homeLocation(ref),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) =>

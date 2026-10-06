@@ -1,21 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
-import 'package:ishinydex/features/auth/auth_providers.dart';
-import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-final personalDexRepositoryProvider = Provider<PersonalDexRepository>((ref) {
-  if (ref.watch(envProvider).usesLocalBackend) {
-    return ref.watch(fakeBackendProvider);
-  }
-  return HttpPersonalDexRepository(ref.watch(dioProvider));
-});
+/// O backend local: os dados do aparelho (modo local) ou de exemplo
+/// (demonstração).
+final personalDexRepositoryProvider = Provider<PersonalDexRepository>(
+  (ref) => ref.watch(fakeBackendProvider),
+);
 
 final lastDexStorageProvider = Provider<LastDexStorage>(
   (ref) => PrefsLastDexStorage(),

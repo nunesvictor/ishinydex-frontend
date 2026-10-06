@@ -44,8 +44,7 @@ jobs:
       - run: flutter analyze
       - run: flutter test --coverage
       - run: dart run tool/check_coverage.dart
-      # O build web de release fica com o job "Imagem Docker", que builda o
-      # app (com wasm) igual ao deploy.
+      # O build web de release fica com o job "Build web", como o do Pages.
 
   integration-web:
     name: Teste de integração (Chrome)
@@ -85,51 +84,35 @@ jobs:
           --target=integration_test/app_test.dart
           -d web-server --browser-name=chrome --headless
 
-  # Check obrigatório: roda sempre, mas só builda quando muda algo que entra
-  # na imagem (e sempre na main). A cada bump, a "Stack completa" do
-  # ishinydex também builda a imagem.
-  docker:
-    name: Imagem Docker
+  # O build de release do navegador, como o do GitHub Pages (modo local,
+  # com wasm): pega o que só falha ao compilar para a web (código de
+  # navegador, como o lib/core/web/browser_web.dart, que os testes na VM
+  # não carregam).
+  build-web:
+    name: Build web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dorny/paths-filter@v3
-        id: changes
+
+      - uses: subosito/flutter-action@v2
         with:
-          filters: |
-            image:
-              - Dockerfile
-              - .dockerignore
-              - deploy/**
-              - web/**
-              - pubspec.yaml
-              - pubspec.lock
-              - .github/workflows/ci.yml
-      - name: Nada que entre na imagem mudou
-        if: github.event_name == 'pull_request' && steps.changes.outputs.image != 'true'
-        run: echo "Build da imagem pulado neste PR."
-      - if: github.event_name != 'pull_request' || steps.changes.outputs.image == 'true'
-        uses: docker/setup-buildx-action@v3
-      - if: github.event_name != 'pull_request' || steps.changes.outputs.image == 'true'
-        uses: docker/build-push-action@v6
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # Mesmo cache do build_runner do job de integração.
+      - uses: actions/cache@v4
         with:
-          context: .
-          push: false
-          load: true
-          tags: ishinydex-frontend:ci
-          # Só a main exporta o cache (no PR, a exportação levava ~4,5 min e
-          # o cache não serve a ninguém depois do squash); os PRs leem o dela.
-          cache-from: type=gha
-          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max' || '' }}
-      # O nginx precisa subir e servir o app mesmo sem backend (issue #46):
-      # / responde 200 e as rotas do backend, 502.
-      - name: Imagem sobe sem backend
-        if: github.event_name != 'pull_request' || steps.changes.outputs.image == 'true'
-        run: |
-          docker run -d --name web -p 8090:80 -e BACKEND_URL=http://backend:8000 ishinydex-frontend:ci
-          for i in $(seq 1 20); do curl -fs -o /dev/null http://localhost:8090/ && break; sleep 1; done
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/)" = 200
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/api/)" = 502
-      - name: Logs do nginx
-        if: failure()
-        run: docker logs web
+          path: |
+            .dart_tool
+            lib/**/*.g.dart
+            lib/**/*.freezed.dart
+          key: build-runner-${{ hashFiles('pubspec.lock') }}-${{ hashFiles('lib/**/*.dart', 'build.yaml') }}
+          restore-keys: build-runner-${{ hashFiles('pubspec.lock') }}-
+
+      - run: flutter pub get
+      - run: dart run build_runner build -d
+      - run: >-
+          flutter build web --release --wasm
+          --dart-define=LOCAL_DATA=true
+          --dart-define=CATALOG_URL=catalog/catalog.json

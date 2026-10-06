@@ -9,11 +9,11 @@
 //   ícones, catalog/catalog.json): rede primeiro, com o cache de reserva.
 // - Sprites (raw do PokeAPI/sprites, com CORS): cache primeiro, num cache
 //   que sobrevive às versões do app.
-// - Nunca passam pelo cache: o que não é GET, /api/ e /admin/.
+// - Nunca passa pelo cache: o que não é GET (o Dropbox, por exemplo).
 'use strict';
 
-// Trocado pelo hash do build (Dockerfile e tool/build_pages.sh do
-// repositório principal), como no flutter_bootstrap.js.
+// Trocado pelo hash do build (tool/build_pages.sh do repositório
+// principal), como no flutter_bootstrap.js.
 const VERSION = '__BUILD_VERSION__';
 const APP_CACHE = `ishinydex-app-${VERSION}`;
 const SPRITES_CACHE = 'ishinydex-sprites';
@@ -54,7 +54,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin !== self.location.origin) return;
-  if (/\/(api|admin)\//.test(url.pathname)) return;
 
   if (/\/(v\/[0-9a-f]+|canvaskit)\//.test(url.pathname)) {
     event.respondWith(cacheFirst(APP_CACHE, request));

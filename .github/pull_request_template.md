@@ -7,6 +7,5 @@ Closes #
 ## Checklist
 - [ ] CI verde (format, analyze, testes, cobertura de 100%, build web, integração)
 - [ ] Telas novas ou alteradas testadas em `compactSize` e `expandedSize`
-- [ ] Regras novas da API também no `lib/fake/fake_backend.dart`
 - [ ] `docs/` atualizado se a arquitetura mudou
-- [ ] Depende do backend? PR do backend vinculado (e mergeado antes)
+- [ ] Depende do catálogo? PR do backend vinculado (e mergeado antes)

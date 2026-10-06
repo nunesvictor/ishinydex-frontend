@@ -21,12 +21,7 @@ import 'fake_dropbox.dart';
 
 const _page = 'https://x.github.io/app/';
 
-const _syncEnv = Env(
-  apiBaseUrl: '',
-  useFakeApi: false,
-  localData: true,
-  dropboxAppKey: 'chave',
-);
+const _syncEnv = Env(localData: true, dropboxAppKey: 'chave');
 
 class _FakeBrowser implements Browser {
   @override
@@ -140,10 +135,7 @@ void main() {
   testWidgets('sem app key ou fora do modo local, não há sincronização', (
     tester,
   ) async {
-    await pumpApp(
-      tester,
-      env: const Env(apiBaseUrl: '', useFakeApi: false, localData: true),
-    );
+    await pumpApp(tester, env: const Env(localData: true));
     await tester.tap(find.text('Ajustes'));
     await tester.pumpAndSettle();
     expect(find.text('Exportar dados'), findsOneWidget);

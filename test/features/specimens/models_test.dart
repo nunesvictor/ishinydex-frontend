@@ -21,6 +21,20 @@ void main() {
     );
   });
 
+  test('Save.fromJson, com o treinador', () {
+    final save = Save.fromJson({
+      'id': 1,
+      'label': 'Switch',
+      'trainer': {
+        'id': 2,
+        'name': 'Ash',
+        'trainer_id': '123456',
+        'version': 'scarlet',
+      },
+    });
+    expect((save.label, save.trainer.name), ('Switch', 'Ash'));
+  });
+
   test('Specimen.displayName', () {
     expect(const Specimen(id: 1, form: 1, nickname: 'Bu').displayName, 'Bu');
     expect(const Specimen(id: 2, form: 1).displayName, 'Specimen #2');

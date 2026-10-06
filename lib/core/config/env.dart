@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Configuração de build, lida via `--dart-define`.
+///
+/// O app não tem servidor: os dados ficam no aparelho (modo local,
+/// `LOCAL_DATA`) ou são de exemplo (demonstração, sem `LOCAL_DATA`).
 class Env {
   const Env({
-    required this.apiBaseUrl,
-    required this.useFakeApi,
     this.appVersion = 'dev',
     this.catalogUrl,
     this.spritesBaseUrl = defaultSpritesBaseUrl,
@@ -12,17 +13,9 @@ class Env {
     this.dropboxAppKey,
   });
 
-  /// [base] é o endereço da página (`Uri.base`); serve para resolver uma
-  /// `API_BASE_URL` relativa, como `/api` no deploy com nginx.
+  /// [base] é o endereço da página (`Uri.base`); serve para resolver um
+  /// `CATALOG_URL` relativo, como `catalog/catalog.json` no GitHub Pages.
   factory Env.fromEnvironment({Uri? base}) => Env(
-    apiBaseUrl: resolveApiBaseUrl(
-      const String.fromEnvironment(
-        'API_BASE_URL',
-        defaultValue: 'http://localhost:8008/api',
-      ),
-      base ?? Uri.base,
-    ),
-    useFakeApi: const bool.fromEnvironment('USE_FAKE_API'),
     // Como no APP_VERSION: sem --dart-define, o lint acha redundante.
     // ignore: avoid_redundant_argument_values
     localData: const bool.fromEnvironment('LOCAL_DATA'),
@@ -52,23 +45,17 @@ class Env {
   static const defaultSpritesBaseUrl =
       'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites';
 
-  final String apiBaseUrl;
-  final bool useFakeApi;
-
-  /// Modo local (`LOCAL_DATA`): sem servidor nem login; os dados ficam no
-  /// aparelho, e o catálogo (`CATALOG_URL`) é obrigatório.
+  /// Modo local (`LOCAL_DATA`): os dados ficam no aparelho, e o catálogo
+  /// (`CATALOG_URL`) é obrigatório. Sem ele, a demonstração, com dados de
+  /// exemplo que somem ao recarregar.
   final bool localData;
 
-  /// Os repositórios usam o backend em memória: na demonstração e no modo
-  /// local.
-  bool get usesLocalBackend => useFakeApi || localData;
-
-  /// Versão do build (a tag do repositório, ex. `v1.0.0`), passada pelo
-  /// `Dockerfile`; `dev` em builds locais.
+  /// Versão do build (a tag do repositório, ex. `v2.0.0`); `dev` em builds
+  /// locais.
   final String appVersion;
 
-  /// Pacote do catálogo (`catalog.json`); com ele, o modo demonstração usa
-  /// os dados de referência reais. Relativo à página, como a API.
+  /// Pacote do catálogo (`catalog.json`); com ele, a demonstração usa os
+  /// dados de referência reais. Relativo à página.
   final String? catalogUrl;
 
   /// Base dos caminhos de sprite do catálogo.
@@ -83,14 +70,14 @@ class Env {
   /// [dropboxAppKey].
   bool get syncAvailable => localData && dropboxAppKey != null;
 
-  /// `CATALOG_URL` vazio → sem catálogo; senão, como a [resolveApiBaseUrl].
+  /// `CATALOG_URL` vazio → sem catálogo; senão, como a [resolveUrl].
   static String? resolveCatalogUrl(String raw, Uri base) =>
-      raw.isEmpty ? null : resolveApiBaseUrl(raw, base);
+      raw.isEmpty ? null : resolveUrl(raw, base);
 
   /// URL absoluta é usada como está; relativa é resolvida contra [base].
-  /// Ex.: `/api` em `http://192.168.0.10:8090/#/dexes` →
-  /// `http://192.168.0.10:8090/api`.
-  static String resolveApiBaseUrl(String raw, Uri base) {
+  /// Ex.: `catalog/catalog.json` em `https://x.github.io/app/#/dexes` →
+  /// `https://x.github.io/app/catalog/catalog.json`.
+  static String resolveUrl(String raw, Uri base) {
     final uri = Uri.parse(raw);
     return uri.hasScheme ? raw : base.resolveUri(uri).toString();
   }

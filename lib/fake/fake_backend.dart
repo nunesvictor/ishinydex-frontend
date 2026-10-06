@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
-import 'package:ishinydex/features/auth/data/auth_repository.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
@@ -127,13 +126,12 @@ class _SlotRecord {
   int? specimenId;
 }
 
-/// Backend em memória que segue as regras da API real.
+/// O backend do app, em memória: as regras de negócio (dexes, boxes,
+/// depósito, caçadas...) que antes ficavam no servidor. No modo local, os
+/// dados vêm do aparelho e voltam para ele ([records]); na demonstração, são
+/// de exemplo. O nome ficou do tempo em que imitava a API do servidor.
 class FakeBackend
-    implements
-        AuthRepository,
-        PersonalDexRepository,
-        SpecimenRepository,
-        ShinyLockRepository {
+    implements PersonalDexRepository, SpecimenRepository, ShinyLockRepository {
   FakeBackend({
     this.latency = Duration.zero,
     this.catalog,
@@ -905,24 +903,6 @@ class FakeBackend
       capturedAt: capturedAt,
     ).withOrigin(_originMarkOf, _otVersion(ot));
     return id;
-  }
-
-  // ---- AuthRepository ----
-
-  @override
-  Future<String> login({
-    required String username,
-    required String password,
-  }) async {
-    await _delay();
-    if (username.isEmpty || password.isEmpty) {
-      throw ValidationFailure({
-        ValidationFailure.nonFieldKey: [
-          'Impossível fazer login com as credenciais fornecidas.',
-        ],
-      });
-    }
-    return 'fake-token-$username';
   }
 
   // ---- PersonalDexRepository ----

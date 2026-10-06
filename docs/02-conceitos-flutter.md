@@ -1,5 +1,11 @@
 # Conceitos de Flutter usados no projeto
 
+> **Desatualizado em parte:** desde a v2.0.0 o app não tem servidor (sem
+> login, sem API; os dados ficam no aparelho, com sync opcional pelo
+> Dropbox). Trechos sobre login, token, API, Docker e nginx descrevem o
+> modelo antigo. A revisão está em
+> [ishinydex#49](https://github.com/nunesvictor/ishinydex/issues/49).
+
 Este guia explica, com exemplos do próprio código, os conceitos que você
 precisa para ler e modificar o app. Não é um curso completo de Flutter. Para
 cada tema há um link para a documentação oficial.
