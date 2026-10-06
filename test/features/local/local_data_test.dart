@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker_platform_interface/file_picker_platform_interface.dart';
-import 'package:file_picker_web/src/file_picker_web_options.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/web/browser_stub.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/local/data/data_file_io.dart';
@@ -50,7 +50,7 @@ final class _MemoryFile extends PlatformFile {
 
 class _FakePicker extends FilePickerPlatform with MockPlatformInterfaceMixin {
   PlatformFile? picked;
-  WebOptions? webOptions;
+  int picks = 0;
   ({String name, Uint8List bytes, String mime})? saved;
 
   @override
@@ -67,7 +67,7 @@ class _FakePicker extends FilePickerPlatform with MockPlatformInterfaceMixin {
     LinuxOptions linuxOptions = const LinuxOptions(),
     WebOptions webOptions = const WebOptions(),
   }) async {
-    this.webOptions = webOptions;
+    picks++;
     return picked;
   }
 
@@ -185,10 +185,27 @@ void main() {
       expect(picked?.bytes, [7]);
     });
 
-    test('no web, não desiste quando a janela recupera o foco', () async {
-      await FilePickerDataFileIo().pick();
-      final options = picker.webOptions! as FilePickerWebOptions;
-      expect(options.cancelUploadOnWindowBlur, isFalse);
+    test('no navegador, escolhe pelo seletor próprio', () async {
+      final accepts = <String>[];
+      PickedFile? next;
+      final io = FilePickerDataFileIo(
+        pickInPage: ({required accept}) async {
+          accepts.add(accept);
+          return next;
+        },
+      );
+      expect(await io.pick(), isNull);
+      next = (name: 'b.json', bytes: Uint8List.fromList([9]));
+      final picked = await io.pick();
+      expect(picked?.name, 'b.json');
+      expect(picked?.bytes, [9]);
+      expect(accepts, ['.json,application/json', '.json,application/json']);
+      // O plugin não foi usado.
+      expect(picker.picks, 0);
+    });
+
+    test('fora do navegador, o seletor próprio não existe', () {
+      expect(() => pickFileInPage(accept: '.json'), throwsUnsupportedError);
     });
 
     test('arquivo ilegível vira FormatException', () async {

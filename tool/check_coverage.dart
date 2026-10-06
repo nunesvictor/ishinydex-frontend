@@ -1,10 +1,18 @@
 // Lê coverage/lcov.info e falha se a cobertura de linhas ficar abaixo do
-// mínimo. Arquivos gerados e o main.dart ficam de fora.
+// mínimo. Arquivos gerados, o main.dart e o código que só roda no navegador
+// (browser_web.dart: a VM dos testes não o carrega; browser.dart só o
+// exporta) ficam de fora.
 //
 // Uso: dart run tool/check_coverage.dart [minimo=100]
 import 'dart:io';
 
-const _excluded = ['.g.dart', '.freezed.dart', 'lib/main.dart'];
+const _excluded = [
+  '.g.dart',
+  '.freezed.dart',
+  'lib/main.dart',
+  'lib/core/web/browser.dart',
+  'lib/core/web/browser_web.dart',
+];
 
 void main(List<String> args) {
   final minimum = args.isEmpty ? 100.0 : double.parse(args.first);
