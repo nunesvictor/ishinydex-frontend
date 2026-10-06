@@ -117,8 +117,10 @@ jobs:
           push: false
           load: true
           tags: ishinydex-frontend:ci
+          # Só a main exporta o cache (no PR, a exportação levava ~4,5 min e
+          # o cache não serve a ninguém depois do squash); os PRs leem o dela.
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max' || '' }}
       # O nginx precisa subir e servir o app mesmo sem backend (issue #46):
       # / responde 200 e as rotas do backend, 502.
       - name: Imagem sobe sem backend
