@@ -7,8 +7,6 @@ import 'package:ishinydex/app.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
-import 'package:ishinydex/features/auth/auth_providers.dart';
-import 'package:ishinydex/features/auth/data/token_storage.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
@@ -26,7 +24,8 @@ const mediumSize = Size(800, 900);
 const expandedSize = Size(1400, 900);
 const largeSize = Size(1600, 1000);
 
-const fakeEnv = Env(apiBaseUrl: 'http://test/api', useFakeApi: true);
+/// A demonstração (sem `LOCAL_DATA`).
+const fakeEnv = Env();
 
 Future<void> setScreenSize(WidgetTester tester, Size size) async {
   tester.view
@@ -75,7 +74,6 @@ Future<void> pumpWidgetApp(
 Future<FakeBackend> pumpFullApp(
   WidgetTester tester, {
   Size size = expandedSize,
-  String? token = 'token',
   FakeBackend? backend,
   LastDexStorage? lastDex,
   DateFormatStorage? dateFormat,
@@ -90,7 +88,6 @@ Future<FakeBackend> pumpFullApp(
       overrides: [
         envProvider.overrideWithValue(env),
         fakeBackendProvider.overrideWithValue(fake),
-        tokenStorageProvider.overrideWithValue(InMemoryTokenStorage(token)),
         lastDexStorageProvider.overrideWithValue(
           lastDex ?? InMemoryLastDexStorage(),
         ),

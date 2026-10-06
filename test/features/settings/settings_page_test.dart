@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
@@ -7,55 +6,17 @@ import 'package:ishinydex/features/settings/presentation/settings_page.dart';
 import '../../helpers/helpers.dart';
 
 void main() {
-  testWidgets('mostra a URL da API real e a versão', (tester) async {
+  testWidgets('mostra a versão; sem "Servidor" nem "Sair"', (tester) async {
     await pumpWidgetApp(
       tester,
       const SettingsPage(),
       overrides: [
-        envProvider.overrideWithValue(
-          const Env(
-            apiBaseUrl: 'http://server/api',
-            useFakeApi: false,
-            appVersion: 'v1.0.0',
-          ),
-        ),
+        envProvider.overrideWithValue(const Env(appVersion: 'v2.0.0')),
       ],
     );
-    expect(find.text('http://server/api'), findsOneWidget);
-    expect(find.text('Versão v1.0.0'), findsOneWidget);
-  });
-
-  testWidgets('modo local: sem "Servidor" e sem "Sair"', (tester) async {
-    await pumpWidgetApp(
-      tester,
-      const SettingsPage(),
-      overrides: [
-        envProvider.overrideWithValue(
-          const Env(apiBaseUrl: 'x', useFakeApi: false, localData: true),
-        ),
-      ],
-    );
+    expect(find.text('Versão v2.0.0'), findsOneWidget);
     expect(find.text('Servidor'), findsNothing);
     expect(find.text('Sair'), findsNothing);
-  });
-
-  testWidgets('sair com confirmação volta para o login', (tester) async {
-    await pumpFullApp(tester, size: compactSize);
-    await tester.tap(find.text('Ajustes'));
-    await tester.pumpAndSettle();
-    expect(find.text('Modo demonstração (dados fake)'), findsOneWidget);
-
-    await tester.tap(find.text('Sair'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancelar'));
-    await tester.pumpAndSettle();
-    expect(find.text('Servidor'), findsOneWidget);
-
-    await tester.tap(find.text('Sair'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Sair'));
-    await tester.pumpAndSettle();
-    expect(find.text('Entrar'), findsOneWidget);
   });
 
   for (final size in [compactSize, expandedSize]) {

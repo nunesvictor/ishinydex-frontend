@@ -5,8 +5,7 @@ import 'package:ishinydex/core/config/env.dart';
 void main() {
   test('valores padrão sem --dart-define', () {
     final env = ProviderContainer().read(envProvider);
-    expect(env.apiBaseUrl, 'http://localhost:8008/api');
-    expect(env.useFakeApi, false);
+    expect(env.localData, isFalse);
     expect(env.appVersion, 'dev');
     expect(env.catalogUrl, isNull);
     expect(env.spritesBaseUrl, Env.defaultSpritesBaseUrl);
@@ -15,12 +14,8 @@ void main() {
   });
 
   test('sincronização: só no modo local e com a app key', () {
-    Env env({bool local = true, String? key = 'k'}) => Env(
-      apiBaseUrl: '',
-      useFakeApi: false,
-      localData: local,
-      dropboxAppKey: key,
-    );
+    Env env({bool local = true, String? key = 'k'}) =>
+        Env(localData: local, dropboxAppKey: key);
     expect(env().syncAvailable, isTrue);
     expect(env(local: false).syncAvailable, isFalse);
     expect(env(key: null).syncAvailable, isFalse);
@@ -28,7 +23,7 @@ void main() {
 
   test('fromEnvironment aceita a página base', () {
     final env = Env.fromEnvironment(base: Uri.parse('http://x:1/'));
-    expect(env.apiBaseUrl, 'http://localhost:8008/api');
+    expect(env.catalogUrl, isNull);
   });
 
   test('resolveCatalogUrl: vazio é sem catálogo; relativo usa a página', () {
@@ -40,20 +35,20 @@ void main() {
     );
   });
 
-  group('resolveApiBaseUrl', () {
-    final page = Uri.parse('http://192.168.0.10:8090/#/dexes/1');
+  group('resolveUrl', () {
+    final page = Uri.parse('https://x.github.io/ishinydex/#/dexes/1');
 
     test('URL absoluta é mantida', () {
       expect(
-        Env.resolveApiBaseUrl('https://api.exemplo.com/api', page),
-        'https://api.exemplo.com/api',
+        Env.resolveUrl('https://cdn.exemplo.com/catalog.json', page),
+        'https://cdn.exemplo.com/catalog.json',
       );
     });
 
-    test('URL relativa usa a origem da página', () {
+    test('URL relativa usa a página', () {
       expect(
-        Env.resolveApiBaseUrl('/api', page),
-        'http://192.168.0.10:8090/api',
+        Env.resolveUrl('/catalog.json', page),
+        'https://x.github.io/catalog.json',
       );
     });
   });

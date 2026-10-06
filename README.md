@@ -1,27 +1,19 @@
 # iShinyDex — Frontend
 
-App Flutter para controlar o **PersonalDex** do [`ishinydex-backend`](../ishinydex-backend):
-ver as boxes (no mesmo layout do Pokémon HOME), acompanhar o progresso e
-**depositar** specimens nos slots.
+O app do iShinyDex, em Flutter: o **PersonalDex** no mesmo layout de boxes
+do Pokémon HOME, o progresso de cada dex e o **depósito** de espécimes nos
+slots.
+
+> **Quer usar o app?** Ele roda no navegador e se instala no iPhone, no iPad
+> e no PC, sem servidor. O guia está no repositório principal,
+> [**ishinydex**](https://github.com/nunesvictor/ishinydex). Aqui fica o
+> código do app e o desenvolvimento dele.
 
 - 🌐 **Web responsiva**: desktop (3 painéis), tablet (2 painéis) e celular (swipe entre boxes).
-- 🐳 **Imagem Docker**: nginx servindo o app e repassando a API, usada pelo repositório principal; acesso por `http://<ip-do-pc>:8090` no PC e no celular.
-- 📱 **iPhone**: atalho do Safari na Tela de Início (abre em tela cheia, por HTTP na rede local); app nativo via `.ipa` gerado no GitHub Actions como alternativa.
+- 💾 **Sem servidor**: os dados ficam no aparelho (modo local); exportar e importar em Ajustes.
+- ☁️ **Sync opcional com o Dropbox**: os mesmos dados no PC, no iPhone e no iPad.
+- 📴 **Funciona offline** (service worker próprio) e se instala como PWA.
 - ✅ **100% de cobertura de testes** (unitários, de widget e de integração no navegador).
-
-> **Este repositório não é para deploy.** Para instalar e rodar o iShinyDex
-> (backend + frontend), clone o repositório principal
-> [**ishinydex**](https://github.com/nunesvictor/ishinydex), que traz este
-> código como submodule e sobe tudo com um comando:
->
-> ```bash
-> git clone --recurse-submodules https://github.com/nunesvictor/ishinydex.git
-> cd ishinydex && cp .env.example .env   # troque os change-me
-> docker compose up -d --build           # app em http://<ip-do-pc>:8090
-> ```
->
-> O `Dockerfile` e o `deploy/nginx/` daqui são usados por esse compose. Aqui
-> fica o código do frontend e o desenvolvimento dele (`flutter run`).
 
 ## Início rápido
 
@@ -32,11 +24,12 @@ navegador Chromium (Chrome, Brave, Edge).
 flutter pub get
 dart run build_runner build  # gera os arquivos *.g.dart e *.freezed.dart
 
-# Sem backend (dados de demonstração em memória, qualquer usuário/senha entra):
-flutter run -d chrome --dart-define=USE_FAKE_API=true
+# Demonstração (dados de exemplo em memória, somem ao recarregar):
+flutter run -d chrome
 
-# Com o backend de desenvolvimento rodando (docker compose up no ishinydex-backend, :8008):
-flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
+# Modo local (dados no navegador), com o catálogo publicado:
+flutter run -d chrome --dart-define=LOCAL_DATA=true \
+  --dart-define=CATALOG_URL=https://<usuário>.github.io/ishinydex/catalog/catalog.json
 ```
 
 > **Por que o `build_runner`?** Os modelos usam geração de código (`freezed` e
@@ -48,7 +41,7 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 
 | O que | Comando |
 | --- | --- |
-| Rodar no navegador | `flutter run -d chrome --dart-define=USE_FAKE_API=true` |
+| Rodar no navegador | `flutter run -d chrome` |
 | Gerar código (uma vez) | `dart run build_runner build` |
 | Gerar código (observando mudanças) | `dart run build_runner watch` |
 | Analisar (lints) | `flutter analyze` |
@@ -56,17 +49,15 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 | Testes | `flutter test` |
 | Testes + cobertura | `flutter test --coverage && dart run tool/check_coverage.dart` |
 | Teste de integração (web) | veja [docs/03-testes.md](docs/03-testes.md#teste-de-integração-no-navegador) |
-| Build web | `flutter build web --dart-define=API_BASE_URL=https://.../api` |
-| Imagem Docker / deploy | pelo repositório principal (veja [docs/06-deploy-local.md](docs/06-deploy-local.md)) |
+| Publicar | pelo repositório principal: tag `v*` → GitHub Pages |
 
 ### Configuração (`--dart-define`)
 
 | Variável | Padrão | Uso |
 | --- | --- | --- |
-| `API_BASE_URL` | `http://localhost:8008/api` | Endereço da API do backend. Aceita URL relativa (`/api`), resolvida contra o endereço da página. |
-| `USE_FAKE_API` | `false` | `true` usa o backend fake em memória ([lib/fake/fake_backend.dart](lib/fake/fake_backend.dart)) |
-| `CATALOG_URL` | (vazio) | Com `USE_FAKE_API`, o `catalog.json` (pacote do backend) que a demonstração passa a usar: formas, opções e versões reais. Relativo à página, como a API. |
-| `LOCAL_DATA` | `false` | Modo local: sem servidor nem login; os dados ficam no aparelho (`shared_preferences`). Exige `CATALOG_URL`. |
+| `LOCAL_DATA` | `false` | Modo local: os dados ficam no aparelho (`shared_preferences`). Exige `CATALOG_URL`. Sem ele, a demonstração. |
+| `CATALOG_URL` | (vazio) | O `catalog.json` (gerado pelo [ishinydex-backend](https://github.com/nunesvictor/ishinydex-backend)): formas, opções e versões. Relativo à página. Na demonstração é opcional (sem ele, um seed fixo). |
+| `DROPBOX_APP_KEY` | (vazio) | App key do seu app do Dropbox: liga a sincronização no modo local. Sem ela, o build sai sem sync. |
 | `SPRITES_BASE_URL` | raw do PokeAPI/sprites | Base dos caminhos de sprite do catálogo |
 | `APP_VERSION` | `dev` | Versão mostrada em Ajustes → Sobre (a tag, no build) |
 
@@ -75,29 +66,33 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8008/api
 Leia nesta ordem se você está começando com Flutter:
 
 1. [**Conceitos de Flutter usados no projeto**](docs/02-conceitos-flutter.md): widgets, estado, Riverpod, rotas, freezed, com exemplos tirados do código.
-2. [**Arquitetura**](docs/01-arquitetura.md): como as pastas se organizam, o caminho de um dado da API até a tela e como adicionar uma feature.
+2. [**Arquitetura**](docs/01-arquitetura.md): como as pastas se organizam e como adicionar uma feature.
 3. [**Testes**](docs/03-testes.md): tipos de teste, helpers, mocks e o gate de 100% de cobertura.
-4. [**iPhone: atalho do Safari e .ipa**](docs/04-ios-e-pwa.md): como instalar no iPhone, o que funciona sem HTTPS e como o CI gera o `.ipa`.
-5. [**API**](docs/05-api.md): endpoints consumidos e como integrar um novo.
-6. [**Imagem Docker e deploy**](docs/06-deploy-local.md): como a imagem funciona (build, nginx, cache), acesso pela rede e problemas comuns.
+4. [**iPhone e iPad**](docs/04-ios-e-pwa.md): instalar como app da Tela de Início e o `.ipa`.
+
+> Os guias ainda descrevem partes do modo servidor (login, API), que saiu na
+> v2.0.0. A revisão está em
+> [ishinydex#49](https://github.com/nunesvictor/ishinydex/issues/49).
 
 ## Estrutura resumida
 
 ```
 lib/
-  main.dart           # ponto de entrada
+  main.dart           # ponto de entrada: carrega o catálogo e os dados do aparelho
   app.dart            # MaterialApp: tema, idioma, rotas
-  core/               # peças compartilhadas (rede, tema, rotas, responsividade, widgets)
+  core/               # peças compartilhadas (tema, rotas, responsividade, widgets, navegador)
   features/
-    auth/             # login por token
+    catalog/          # catálogo (dados de referência) e a carga dele
+    local/            # dados no aparelho: arquivo, exportar/importar, mescla
+    sync/             # sincronização com o Dropbox
     personal_dex/     # dexes, boxes, slots (visualizar/depositar/editar/libertar)
-    specimens/        # escolher e cadastrar specimens
-    settings/         # ajustes e logout
-  fake/               # backend em memória (testes e demo)
+    specimens/        # escolher e cadastrar espécimes
+    shiny_locks/      # formas sem shiny
+    settings/         # ajustes e "Sobre"
+  fake/               # o backend local: as regras de negócio, em memória
 test/                 # espelha lib/
 integration_test/     # fluxo completo no navegador
 tool/                 # scripts (verificação de cobertura)
-deploy/nginx/         # configuração do nginx da imagem
-Dockerfile            # build multi-stage (Flutter → nginx), usado pelo repositório principal
-.github/workflows/    # CI (testes) e iOS (.ipa)
+web/                  # index.html, service worker, bootstrap versionado
+.github/workflows/    # CI (testes, build web) e iOS (.ipa)
 ```

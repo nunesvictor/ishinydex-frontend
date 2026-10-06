@@ -35,7 +35,7 @@ Future<List<Override>> catalogOverrides(
       storage ?? const PrefsLocalDataStorage(),
     );
   }
-  if (!env.useFakeApi || url == null) return const [];
+  if (url == null) return const [];
   try {
     final load = await loadCatalog(
       dio,

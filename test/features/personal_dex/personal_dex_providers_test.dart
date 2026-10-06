@@ -1,31 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
-import 'package:ishinydex/features/personal_dex/data/http_personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
-import 'package:ishinydex/features/specimens/data/http_specimen_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../../helpers/helpers.dart';
 
 void main() {
-  test('repositórios HTTP quando USE_FAKE_API=false', () {
+  test('os repositórios são o backend local', () {
+    final backend = FakeBackend.seeded();
     final container = createContainer(
-      overrides: [
-        envProvider.overrideWithValue(
-          const Env(apiBaseUrl: 'http://x/api', useFakeApi: false),
-        ),
-      ],
+      overrides: [fakeBackendProvider.overrideWithValue(backend)],
     );
-    expect(
-      container.read(personalDexRepositoryProvider),
-      isA<HttpPersonalDexRepository>(),
-    );
-    expect(
-      container.read(specimenRepositoryProvider),
-      isA<HttpSpecimenRepository>(),
-    );
+    expect(container.read(personalDexRepositoryProvider), same(backend));
+    expect(container.read(specimenRepositoryProvider), same(backend));
   });
 
   group('SlotActions', () {
@@ -35,10 +23,7 @@ void main() {
 
     test('deposit/release atualizam as contagens em cache', () async {
       final container = createContainer(
-        overrides: [
-          envProvider.overrideWithValue(fakeEnv),
-          fakeBackendProvider.overrideWithValue(backend),
-        ],
+        overrides: [fakeBackendProvider.overrideWithValue(backend)],
       );
       const key = (dexId: 1, boxId: 1);
       final listSub = container.listen(dexListProvider, (_, _) {});
@@ -91,10 +76,7 @@ void main() {
 
     test('slot sem personal_dex só invalida a lista', () async {
       final container = createContainer(
-        overrides: [
-          envProvider.overrideWithValue(fakeEnv),
-          fakeBackendProvider.overrideWithValue(backend),
-        ],
+        overrides: [fakeBackendProvider.overrideWithValue(backend)],
       );
       final slot = (await backend.fetchSlots(
         dexId: 1,
@@ -106,10 +88,7 @@ void main() {
 
     test('specimenEdited recarrega o specimen e o slot', () async {
       final container = createContainer(
-        overrides: [
-          envProvider.overrideWithValue(fakeEnv),
-          fakeBackendProvider.overrideWithValue(backend),
-        ],
+        overrides: [fakeBackendProvider.overrideWithValue(backend)],
       );
       const key = (dexId: 1, boxId: 1);
       final specimenSub = container.listen(specimenProvider(1), (_, _) {});

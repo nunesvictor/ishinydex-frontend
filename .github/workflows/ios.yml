@@ -1,15 +1,15 @@
 # Gera um .ipa SEM assinatura para instalar via sideload (AltStore/Sideloadly).
 # Só manual: o app nativo foi descartado (ishinydex#10) e as releases com
-# binários estão em ishinydex#50. Nas tags v*, falhava por falta do secret
-# API_BASE_URL.
+# binários estão em ishinydex#50. Gera o app no modo local: o catálogo vem
+# do endereço informado (o do GitHub Pages de quem publica).
 name: iOS (.ipa)
 
 on:
   workflow_dispatch:
     inputs:
-      api_base_url:
-        description: "URL da API (opcional; aparece nos logs públicos — prefira o secret API_BASE_URL)"
-        required: false
+      catalog_url:
+        description: "Endereço do catalog.json (ex.: o catalog/catalog.json do GitHub Pages)"
+        required: true
 
 env:
   FLUTTER_VERSION: 3.47.2
@@ -31,17 +31,13 @@ jobs:
       - run: flutter pub get
       - run: dart run build_runner build
 
-      # Prioridade: input manual > secret API_BASE_URL.
-      # O secret é mascarado nos logs (o repositório é público).
       - name: Build
         env:
-          API_BASE_URL: ${{ inputs.api_base_url || secrets.API_BASE_URL }}
-        run: |
-          if [ -z "$API_BASE_URL" ]; then
-            echo "::error::Defina o secret API_BASE_URL (ou o input api_base_url)."
-            exit 1
-          fi
-          flutter build ios --release --no-codesign --dart-define=API_BASE_URL="$API_BASE_URL"
+          CATALOG_URL: ${{ inputs.catalog_url }}
+        run: >-
+          flutter build ios --release --no-codesign
+          --dart-define=LOCAL_DATA=true
+          --dart-define=CATALOG_URL="$CATALOG_URL"
 
       # Um .ipa é só um zip com o Runner.app dentro de uma pasta Payload/.
       - name: Empacotar .ipa

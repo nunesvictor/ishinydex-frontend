@@ -14,7 +14,7 @@ import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';
 
 const _url = 'https://pages.example/ishinydex/catalog/catalog.json';
-const _demo = Env(apiBaseUrl: 'x', useFakeApi: true, catalogUrl: _url);
+const _demo = Env(catalogUrl: _url);
 
 void main() {
   late Dio dio;
@@ -25,18 +25,8 @@ void main() {
     adapter = DioAdapter(dio: dio);
   });
 
-  test('sem demonstração ou sem CATALOG_URL, nada muda', () async {
-    expect(
-      await catalogOverrides(
-        const Env(apiBaseUrl: 'x', useFakeApi: false, catalogUrl: _url),
-        dio,
-      ),
-      isEmpty,
-    );
-    expect(
-      await catalogOverrides(const Env(apiBaseUrl: 'x', useFakeApi: true), dio),
-      isEmpty,
-    );
+  test('demonstração sem CATALOG_URL: nada muda', () async {
+    expect(await catalogOverrides(const Env(), dio), isEmpty);
     expect(createContainer().read(catalogLoadProvider), isNull);
   });
 
@@ -65,18 +55,13 @@ void main() {
   });
 
   group('modo local', () {
-    const local = Env(apiBaseUrl: 'x', useFakeApi: false, localData: true);
+    const local = Env(localData: true);
 
     test('sem armazenamento informado, usa o shared_preferences', () async {
       SharedPreferences.setMockInitialValues({});
       adapter.onGet(_url, (server) => server.reply(200, catalogJson()));
       final overrides = await catalogOverrides(
-        const Env(
-          apiBaseUrl: 'x',
-          useFakeApi: false,
-          localData: true,
-          catalogUrl: _url,
-        ),
+        const Env(localData: true, catalogUrl: _url),
         dio,
       );
       expect(overrides, hasLength(3));
@@ -114,12 +99,7 @@ void main() {
       // Reabrir: os dados voltam.
       final reopened = await tester.runAsync(
         () => catalogOverrides(
-          const Env(
-            apiBaseUrl: 'x',
-            useFakeApi: false,
-            localData: true,
-            catalogUrl: _url,
-          ),
+          const Env(localData: true, catalogUrl: _url),
           dio,
           storage: storage,
         ),

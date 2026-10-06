@@ -67,17 +67,6 @@ void main() {
     expect(await slow.fetchDexes(), isEmpty);
   });
 
-  test('login', () async {
-    expect(
-      await backend.login(username: 'ash', password: 'x'),
-      'fake-token-ash',
-    );
-    expect(
-      backend.login(username: '', password: ''),
-      _validation(ValidationFailure.nonFieldKey),
-    );
-  });
-
   test('dexes, boxes e slots com contagens', () async {
     final dexes = await backend.fetchDexes();
     expect(dexes.map((d) => d.name), ['Shiny Living Dex', 'Living Dex']);

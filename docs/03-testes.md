@@ -1,5 +1,11 @@
 # Testes
 
+> **Desatualizado em parte:** desde a v2.0.0 o app não tem servidor (sem
+> login, sem API; os dados ficam no aparelho, com sync opcional pelo
+> Dropbox). Trechos sobre login, token, API, Docker e nginx descrevem o
+> modelo antigo. A revisão está em
+> [ishinydex#49](https://github.com/nunesvictor/ishinydex/issues/49).
+
 O projeto exige **100% de cobertura de linhas** em `lib/`, sem contar arquivos
 gerados e o `main.dart`. O CI falha se a cobertura cair ou se algum arquivo de
 `lib/` não for importado por nenhum teste.

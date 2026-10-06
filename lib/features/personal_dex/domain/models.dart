@@ -159,9 +159,6 @@ abstract class GenerationProgress with _$GenerationProgress {
 
   const GenerationProgress._();
 
-  factory GenerationProgress.fromJson(Map<String, dynamic> json) =>
-      _$GenerationProgressFromJson(json);
-
   /// `"generation-iv"` → `"Geração IV"`.
   String get label {
     final gen = generation;
@@ -353,7 +350,4 @@ abstract class DexPreview with _$DexPreview {
     /// em boxes novas.
     BoxRef? firstBox,
   }) = _DexPreview;
-
-  factory DexPreview.fromJson(Map<String, dynamic> json) =>
-      _$DexPreviewFromJson(json);
 }

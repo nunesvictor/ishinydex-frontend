@@ -1,5 +1,11 @@
 # Arquitetura
 
+> **Desatualizado em parte:** desde a v2.0.0 o app não tem servidor (sem
+> login, sem API; os dados ficam no aparelho, com sync opcional pelo
+> Dropbox). Trechos sobre login, token, API, Docker e nginx descrevem o
+> modelo antigo. A revisão está em
+> [ishinydex#49](https://github.com/nunesvictor/ishinydex/issues/49).
+
 ## Visão geral
 
 O código é organizado **por feature** (auth, personal_dex, specimens,
@@ -198,7 +204,7 @@ shiny" nas exceções de um shiny dex, e a opção **Só espécimes shiny**
   escolhido por `createTokenStorage`:
   - **web**: `PrefsTokenStorage` (`localStorage`). O `flutter_secure_storage`
     da web depende de WebCrypto, que não existe em HTTP fora de `localhost`, e
-    o app é acessado pelo IP da rede ([06-deploy-local.md](06-deploy-local.md));
+    o app é acessado pelo IP da rede (guia de deploy local, removido na v2.0.0);
   - **iOS**: `SecureTokenStorage` (Keychain).
 - O `dioProvider` lê o token do `AuthController` a cada requisição.
 

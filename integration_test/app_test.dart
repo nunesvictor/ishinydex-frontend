@@ -5,26 +5,21 @@ import 'package:integration_test/integration_test.dart';
 import 'package:ishinydex/app.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
-import 'package:ishinydex/features/auth/auth_providers.dart';
-import 'package:ishinydex/features/auth/data/token_storage.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 
-/// Fluxo completo no navegador, com o backend fake:
-/// login → abrir dex → selecionar slot faltante → depositar.
+/// Fluxo completo no navegador, na demonstração:
+/// abrir dex → selecionar slot faltante → depositar.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('login e depósito', (tester) async {
+  testWidgets('abrir um dex e depositar', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         retry: noRetry,
         overrides: [
-          envProvider.overrideWithValue(
-            const Env(apiBaseUrl: 'http://fake/api', useFakeApi: true),
-          ),
+          envProvider.overrideWithValue(const Env()),
           fakeBackendProvider.overrideWithValue(FakeBackend.seeded()),
-          tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
           lastDexStorageProvider.overrideWithValue(InMemoryLastDexStorage()),
         ],
         child: const IShinyDexApp(),
@@ -32,11 +27,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'ash');
-    await tester.enterText(find.byType(TextFormField).at(1), 'pikachu');
-    await tester.tap(find.text('Entrar'));
-    await tester.pumpAndSettle();
-
+    // Dois dexes: o app abre na lista.
     await tester.tap(find.text('Shiny Living Dex'));
     await tester.pumpAndSettle();
     expect(find.textContaining('HOME 1'), findsWidgets);
