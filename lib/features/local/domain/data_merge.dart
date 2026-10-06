@@ -84,3 +84,34 @@ Map<String, dynamic> mergeDataFiles(
 }
 
 String _at(Map<String, dynamic> record) => record['updatedAt'] as String;
+
+/// Substitui os dados do aparelho ([local]) por [incoming] (importar →
+/// Substituir): o resultado é o [incoming], com marca de exclusão para cada
+/// registro que só existe no aparelho. Sem as marcas, esses registros
+/// voltariam no próximo sync (o Dropbox e os outros aparelhos ainda os têm);
+/// com elas, a substituição se espalha como qualquer exclusão. A data das
+/// marcas é a do [local] (`savedAt`, agora), que no empate vence.
+Map<String, dynamic> replaceDataFile(
+  Map<String, dynamic> local,
+  Map<String, dynamic> incoming,
+) {
+  final now = local['savedAt'] as String;
+  Set<String> idsOf(Map<String, dynamic> file, String type) => {
+    for (final record
+        in ((file['records'] as Map<String, dynamic>)[type] as List?) ??
+            const [])
+      '${(record as Map<String, dynamic>)['id']}',
+  };
+  final deleted = <String, Map<String, String>>{
+    for (final MapEntry(key: type, value: ids)
+        in (incoming['deleted'] as Map<String, dynamic>).entries)
+      type: {...(ids as Map<String, dynamic>).cast<String, String>()},
+  };
+  for (final type in (local['records'] as Map<String, dynamic>).keys) {
+    final kept = idsOf(incoming, type);
+    for (final id in idsOf(local, type).difference(kept)) {
+      (deleted[type] ??= {})[id] = now;
+    }
+  }
+  return {...incoming, 'deleted': deleted};
+}
