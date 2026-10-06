@@ -82,9 +82,10 @@ void main() {
 
       final useRemote = device();
       await useRemote.data.backend.createTrainer(name: 'Brock', trainerId: '3');
+      // Envia as marcas de exclusão do que havia aqui (o Brock).
       expect(await engine(useRemote).sync(mode: FirstSync.useRemote), (
         pulled: true,
-        pushed: false,
+        pushed: true,
       ));
       expect(await useRemote.trainers(), ['Ash']);
 

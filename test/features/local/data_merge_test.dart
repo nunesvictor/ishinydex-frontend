@@ -91,4 +91,38 @@ void main() {
     );
     expect(_deleted(merged), {'9': _d2, '8': _d1});
   });
+
+  test('substituir: fica o arquivo, e o que só havia aqui vira exclusão', () {
+    final replaced = replaceDataFile(
+      _file(
+        specimens: [_rec(1, 'aqui', _d1), _rec(2, 'teste', _d2)],
+        savedAt: _d3,
+      ),
+      _file(specimens: [_rec(1, 'arquivo', _d1)], deleted: {'9': _d1}),
+    );
+    expect(_names(replaced), ['1:arquivo']);
+    expect(_deleted(replaced), {'9': _d1, '2': _d3});
+    expect(replaced['savedAt'], _d1);
+
+    // No sync, o registro substituído some também do outro lado.
+    final other = _file(specimens: [_rec(2, 'teste', _d2)]);
+    expect(_names(mergeDataFiles(other, replaced)), ['1:arquivo']);
+  });
+
+  test('substituir: tipos que o arquivo não traz também são apagados', () {
+    final replaced = replaceDataFile(
+      {
+        ..._file(savedAt: _d3),
+        'records': {
+          'trainers': [
+            {'id': 5, 'updatedAt': _d1},
+          ],
+        },
+      },
+      {..._file(), 'deleted': <String, dynamic>{}},
+    );
+    expect(replaced['deleted'], {
+      'trainers': {'5': _d3},
+    });
+  });
 }

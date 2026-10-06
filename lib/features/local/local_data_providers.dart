@@ -92,7 +92,10 @@ class LocalData {
     required bool merge,
     bool notify = true,
   }) async {
-    final next = merge ? mergeDataFiles(currentFile(), file) : file;
+    final current = currentFile();
+    final next = merge
+        ? mergeDataFiles(current, file)
+        : replaceDataFile(current, file);
     backend.replaceRecords(store.adopt(next));
     await store.save(backend.records, catalog: catalogVersion);
     if (notify) onChanged?.call();
