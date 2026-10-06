@@ -75,8 +75,8 @@ class Env {
       raw.isEmpty ? null : resolveUrl(raw, base);
 
   /// URL absoluta é usada como está; relativa é resolvida contra [base].
-  /// Ex.: `catalog/catalog.json` em `https://x.github.io/app/#/dexes` →
-  /// `https://x.github.io/app/catalog/catalog.json`.
+  /// Ex.: `catalog/catalog.json` em `https://exemplo.com/app/#/dexes` →
+  /// `https://exemplo.com/app/catalog/catalog.json`.
   static String resolveUrl(String raw, Uri base) {
     final uri = Uri.parse(raw);
     return uri.hasScheme ? raw : base.resolveUri(uri).toString();
