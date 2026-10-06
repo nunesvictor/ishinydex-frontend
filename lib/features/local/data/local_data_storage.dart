@@ -10,16 +10,19 @@ abstract interface class LocalDataStorage {
 /// cabem no limite); no app instalado da Tela de Início do iOS, o
 /// armazenamento é persistente (ishinydex#53).
 class PrefsLocalDataStorage implements LocalDataStorage {
-  static const _key = 'ishinydex.data';
+  /// [key] separa o arquivo de dados (padrão) de outros, como o do sync.
+  const PrefsLocalDataStorage({this.key = 'ishinydex.data'});
+
+  final String key;
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
   @override
-  Future<String?> read() async => (await _prefs).getString(_key);
+  Future<String?> read() async => (await _prefs).getString(key);
 
   @override
   Future<void> write(String data) async {
-    await (await _prefs).setString(_key, data);
+    await (await _prefs).setString(key, data);
   }
 }
 

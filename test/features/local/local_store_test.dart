@@ -174,7 +174,7 @@ void main() {
 
   test('PrefsLocalDataStorage lê e grava', () async {
     SharedPreferences.setMockInitialValues({});
-    final prefs = PrefsLocalDataStorage();
+    const prefs = PrefsLocalDataStorage();
     expect(await prefs.read(), isNull);
     await prefs.write('{"a":1}');
     expect(await prefs.read(), '{"a":1}');

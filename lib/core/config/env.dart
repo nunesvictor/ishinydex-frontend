@@ -9,6 +9,7 @@ class Env {
     this.catalogUrl,
     this.spritesBaseUrl = defaultSpritesBaseUrl,
     this.localData = false,
+    this.dropboxAppKey,
   });
 
   /// [base] é o endereço da página (`Uri.base`); serve para resolver uma
@@ -42,7 +43,10 @@ class Env {
       'SPRITES_BASE_URL',
       defaultValue: defaultSpritesBaseUrl,
     ),
+    dropboxAppKey: _orNull(const String.fromEnvironment('DROPBOX_APP_KEY')),
   );
+
+  static String? _orNull(String raw) => raw.isEmpty ? null : raw;
 
   /// Pasta `sprites/` do repositório PokeAPI/sprites (libera CORS).
   static const defaultSpritesBaseUrl =
@@ -69,6 +73,15 @@ class Env {
 
   /// Base dos caminhos de sprite do catálogo.
   final String spritesBaseUrl;
+
+  /// App key do app do Dropbox de quem publica (pública; o PKCE dispensa o
+  /// app secret). Sem ela, o build não tem sincronização: cada cópia do
+  /// projeto usa o próprio app do Dropbox, ou nenhum.
+  final String? dropboxAppKey;
+
+  /// A sincronização com o Dropbox existe neste build: modo local com
+  /// [dropboxAppKey].
+  bool get syncAvailable => localData && dropboxAppKey != null;
 
   /// `CATALOG_URL` vazio → sem catálogo; senão, como a [resolveApiBaseUrl].
   static String? resolveCatalogUrl(String raw, Uri base) =>
