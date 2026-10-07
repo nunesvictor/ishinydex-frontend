@@ -231,6 +231,10 @@ abstract class FormDetail with _$FormDetail {
 
     /// Demais formas da espécie (Mega, Gigantamax, regionais).
     @Default(<FormRef>[]) List<FormRef> otherForms,
+
+    /// Os jogos do HOME em cuja pokédex a espécie está (vazio sem o
+    /// catálogo).
+    @Default(<GamePokedex>[]) List<GamePokedex> pokedexes,
     @Default(false) bool isShinylocked,
     @Default(false) bool isDistroOnly,
   }) = _FormDetail;
@@ -239,6 +243,41 @@ abstract class FormDetail with _$FormDetail {
 
   factory FormDetail.fromJson(Map<String, dynamic> json) =>
       _$FormDetailFromJson(json);
+}
+
+/// Um jogo do HOME e as pokédex dele em que uma espécie está.
+@freezed
+abstract class GamePokedex with _$GamePokedex {
+  const factory GamePokedex({
+    required String versionGroup,
+
+    /// As versões do jogo que recebem do HOME (`scarlet`, `violet`).
+    required List<String> versions,
+    required List<PokedexEntry> entries,
+  }) = _GamePokedex;
+
+  factory GamePokedex.fromJson(Map<String, dynamic> json) =>
+      _$GamePokedexFromJson(json);
+}
+
+/// A espécie numa pokédex: o nome dela e o número (`null` nas pokédex
+/// especiais, como a da Aventura Dinamax).
+@freezed
+abstract class PokedexEntry with _$PokedexEntry {
+  const factory PokedexEntry({
+    required String label,
+    int? number,
+    @Default(false) bool dlc,
+  }) = _PokedexEntry;
+
+  const PokedexEntry._();
+
+  factory PokedexEntry.fromJson(Map<String, dynamic> json) =>
+      _$PokedexEntryFromJson(json);
+
+  /// "Galar nº 383", "Tundra Coroada nº 139 (DLC)", "Aventura Dinamax (DLC)".
+  String get description =>
+      '$label${number == null ? '' : ' nº $number'}${dlc ? ' (DLC)' : ''}';
 }
 
 /// Opção de um select. Pokébolas e tipos trazem também o [spriteUrl].
@@ -301,7 +340,7 @@ abstract class Trainer with _$Trainer {
 
   String get label {
     final v = version;
-    return '$name ($trainerId)${v == null ? '' : ' · ${prettifyName(v)}'}';
+    return '$name ($trainerId)${v == null ? '' : ' · ${versionLabel(v)}'}';
   }
 }
 
@@ -332,13 +371,15 @@ abstract class Save with _$Save {
   };
 
   /// `"Scarlet"`: o jogo do save.
-  String get game => prettifyName(trainer.version ?? '');
+  String get game => versionLabel(trainer.version ?? '');
+
+  /// De quem é, sem o jogo: o apelido ou o treinador (`"Ash (123456)"`).
+  String get owner =>
+      label.isEmpty ? '${trainer.name} (${trainer.trainerId})' : label;
 
   /// `"Scarlet · Switch Lite"`, ou com o treinador se não houver apelido:
   /// `"Scarlet · Ash (123456)"`.
-  String get title => label.isEmpty
-      ? '$game · ${trainer.name} (${trainer.trainerId})'
-      : '$game · $label';
+  String get title => '$game · $owner';
 }
 
 /// Dias desde [since] até hoje (0 = hoje).
@@ -373,8 +414,8 @@ abstract class GameVersion with _$GameVersion {
   factory GameVersion.fromJson(Map<String, dynamic> json) =>
       _$GameVersionFromJson(json);
 
-  /// `"lets-go-pikachu"` → `"Lets Go Pikachu"`.
-  String get label => prettifyName(name);
+  /// `"legends-za"` → `"Legends: Z-A"` ([versionLabel]).
+  String get label => versionLabel(name);
 }
 
 /// Situação do specimen no inventário.

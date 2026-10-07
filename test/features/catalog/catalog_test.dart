@@ -116,10 +116,83 @@ void main() {
         generation: 'generation-i',
       ),
     );
-    expect(catalog.versions.last.name, 'violet');
-    expect(catalog.transferVersions, {'scarlet', 'violet'});
+    expect(catalog.versions.last.name, 'the-teal-mask-scarlet');
+    expect(catalog.transferVersions, {
+      'scarlet',
+      'violet',
+      'sword',
+      'shield',
+      'brilliant-diamond',
+      'shining-pearl',
+    });
     expect(catalog.originMarkOf('scarlet'), 'paldea');
     expect(catalog.originMarkOf('emerald'), isNull);
     expect(catalog.originMarkOf(null), isNull);
+  });
+
+  group('jogos do HOME', () {
+    String games(int formId) => [
+      for (final game in catalog.pokedexesOf(formId))
+        [
+          game.versions.join('/'),
+          game.entries.map((e) => e.description).join(', '),
+        ].join(': '),
+    ].join(' | ');
+
+    test('pokédex de cada jogo, em ordem de lançamento', () {
+      expect(catalog.hasPokedexes, isTrue);
+      expect(
+        games(133),
+        'sword/shield: Galar nº 5 | scarlet/violet: Paldea nº 1',
+      );
+      // Pokédex especial (sem número) e de DLC.
+      expect(games(150), 'sword/shield: Aventura Dinamax (DLC)');
+      expect(
+        games(172),
+        'brilliant-diamond/shining-pearl: Nacional nº 172 | '
+        'scarlet/violet: Kitakami nº 10 (DLC)',
+      );
+      expect(games(793), isEmpty);
+      // O detalhe da forma traz as mesmas.
+      expect(
+        catalog.formDetail(196).pokedexes.single.versionGroup,
+        'scarlet-violet',
+      );
+    });
+
+    test('forma lançada depois do jogo fica de fora; a de DLC, não', () {
+      // Pichu da DLC de Scarlet/Violet: não no BDSP (anterior), sim em SV.
+      expect(games(10500), 'scarlet/violet: Kitakami nº 10 (DLC)');
+    });
+
+    test('caçável: na pokédex e sem ser exclusiva da outra versão', () {
+      expect(catalog.huntableVersions(133), [
+        'sword',
+        'shield',
+        'scarlet',
+        'violet',
+      ]);
+      expect(catalog.huntableVersions(196), ['scarlet']);
+      expect(catalog.huntableVersions(134), ['sword', 'shield', 'violet']);
+      expect(catalog.huntableVersions(150), ['sword']);
+      expect(catalog.huntableVersions(1), [
+        'brilliant-diamond',
+        'shining-pearl',
+      ]);
+      expect(catalog.huntableVersions(793), isEmpty);
+    });
+
+    test('catálogo antigo: sem pokédex nem exclusivos', () {
+      final old = Catalog.fromJson(
+        catalogJson()
+          ..remove('pokedexes')
+          ..remove('versionExclusives'),
+        spriteBase: _base,
+      );
+      expect(old.hasPokedexes, isFalse);
+      expect(old.pokedexesOf(133), isEmpty);
+      expect(old.huntableVersions(133), isEmpty);
+      expect(old.formDetail(133).pokedexes, isEmpty);
+    });
   });
 }

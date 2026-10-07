@@ -1341,6 +1341,7 @@ class FakeBackend
       final lock = _lockOf(formId);
       final reasons = _huntReasons(slot, query.acceptedBalls);
       final category = _categories[formId] ?? SpeciesCategory.regular;
+      final versions = _huntableVersions(formId);
       final matches =
           reasons.any(query.reasons.contains) &&
           (query.situation.param == null ||
@@ -1351,12 +1352,20 @@ class FakeBackend
           (query.types.isEmpty ||
               form.types.any((t) => query.types.contains(t.type))) &&
           (query.categories.isEmpty || query.categories.contains(category)) &&
+          (query.version == null || versions.contains(query.version)) &&
           (search.isEmpty ||
               (number == null
                   ? form.name.contains(slugSearch(search))
                   : _hasNumber(form, number)));
       if (matches) {
-        hunts.add(Hunt(slot: _toSlot(slot), reasons: reasons, shinyLock: lock));
+        hunts.add(
+          Hunt(
+            slot: _toSlot(slot),
+            reasons: reasons,
+            shinyLock: lock,
+            versions: versions,
+          ),
+        );
       }
     }
     final start = (page - 1) * pageSize;
@@ -1370,6 +1379,15 @@ class FakeBackend
       results: hunts.sublist(start, end.clamp(0, hunts.length)),
     );
   }
+
+  /// Versões em que a forma pode ser caçada (do catálogo; nenhuma sem ele),
+  /// calculadas uma vez por forma.
+  List<String> _huntableVersions(int formId) => switch (catalog) {
+    final catalog? => _huntable[formId] ??= catalog.huntableVersions(formId),
+    null => const [],
+  };
+
+  final _huntable = <int, List<String>>{};
 
   /// Motivos de caçada do slot; `pokeball` só com bolas aceitas, e bola não
   /// informada não conta.

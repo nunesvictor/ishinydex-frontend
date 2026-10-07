@@ -174,6 +174,95 @@ void main() {
       expect(find.text('Sem gênero'), findsOneWidget);
     });
 
+    testWidgets('na pokédex de: os seus saves primeiro, com o selo', (
+      tester,
+    ) async {
+      Save save(int id, String version) => Save(
+        id: id,
+        trainer: Trainer(
+          id: id,
+          name: 'Ash',
+          trainerId: '$id',
+          version: version,
+        ),
+      );
+      final form = FormDetail.fromJson(formDetailJson).copyWith(
+        pokedexes: const [
+          GamePokedex(
+            versionGroup: 'brilliant-diamond-shining-pearl',
+            versions: ['brilliant-diamond', 'shining-pearl'],
+            entries: [PokedexEntry(label: 'Nacional', number: 246)],
+          ),
+          GamePokedex(
+            versionGroup: 'sword-shield',
+            versions: ['sword', 'shield'],
+            entries: [
+              PokedexEntry(label: 'Galar', number: 383),
+              PokedexEntry(label: 'Tundra Coroada', number: 139, dlc: true),
+            ],
+          ),
+          GamePokedex(
+            versionGroup: 'scarlet-violet',
+            versions: ['scarlet', 'violet'],
+            entries: [PokedexEntry(label: 'Paldea', number: 316)],
+          ),
+        ],
+      );
+      await pumpWidgetApp(
+        tester,
+        Scaffold(
+          body: SingleChildScrollView(child: SpeciesInfo(form: form)),
+        ),
+        overrides: [
+          savesProvider.overrideWith(
+            (ref) async => [
+              save(1, 'sword'),
+              save(2, 'scarlet'),
+              save(3, 'violet'),
+            ],
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Na pokédex de'), findsOneWidget);
+      expect(find.text('Seu: Sword'), findsOneWidget);
+      expect(find.text('Seus: Scarlet, Violet'), findsOneWidget);
+      expect(
+        find.text('Galar nº 383 · Tundra Coroada nº 139 (DLC)'),
+        findsOneWidget,
+      );
+      // Os jogos com save seu vêm antes; o BDSP, sem save, por último.
+      double top(String text) => tester.getTopLeft(find.text(text)).dy;
+      expect(top('Sword / Shield'), lessThan(top('Scarlet / Violet')));
+      expect(
+        top('Scarlet / Violet'),
+        lessThan(top('Brilliant Diamond / Shining Pearl')),
+      );
+      expect(
+        find.textContaining('não garante que dá para capturar'),
+        findsOneWidget,
+      );
+    });
+
+    test('pokédex no JSON do detalhe', () {
+      final form = FormDetail.fromJson({
+        ...formDetailJson,
+        'pokedexes': [
+          {
+            'version_group': 'legends-za',
+            'versions': ['legends-za'],
+            'entries': [
+              {'label': 'Hiperespaço', 'dlc': true},
+            ],
+          },
+        ],
+      });
+      final game = form.pokedexes.single;
+      expect(game.versions, ['legends-za']);
+      expect(game.entries.single.description, 'Hiperespaço (DLC)');
+    });
+
     test('genderRatio e decimal', () {
       expect(genderRatio(-1), 'Sem gênero');
       expect(genderRatio(0), 'Só macho');

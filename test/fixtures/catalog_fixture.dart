@@ -1,7 +1,12 @@
 /// Um `catalog.json` pequeno, no formato do `exportcatalog` do backend.
 ///
 /// Bulbasaur → Ivysaur → Venusaur (com a Mega), Eevee → Vaporeon/Espeon
-/// (ramificação), Pichu (bebê), Mewtwo (lendário) e Nihilego (Ultra Beast).
+/// (ramificação), Pichu (bebê, com uma forma lançada na DLC de Scarlet e
+/// Violet), Mewtwo (lendário) e Nihilego (Ultra Beast).
+///
+/// Jogos do HOME: Scarlet/Violet (Paldea, Kitakami na DLC), Sword/Shield
+/// (Galar, Aventura Dinamax na DLC, sem número) e o BDSP (a nacional).
+/// Exclusivos: Espeon em Scarlet, Vaporeon em Violet, Mewtwo em Sword.
 library;
 
 Map<String, dynamic> _form(
@@ -70,6 +75,22 @@ Map<String, dynamic> _species(
   'evolvesFrom': from,
 };
 
+Map<String, dynamic> _dex(
+  String name,
+  String label,
+  String group,
+  Map<String, int?> entries, {
+  String? dlc,
+}) => {
+  'name': name,
+  'label': label,
+  'versionGroups': [group],
+  'dlc': dlc,
+  'entries': [
+    for (final MapEntry(:key, :value) in entries.entries) [key, value],
+  ],
+};
+
 Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
   'schemaVersion': schemaVersion,
   'version': 'catalog-2026.10.03',
@@ -92,6 +113,13 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
     _form(150, 'mewtwo'),
     _form(172, 'pichu', group: 'gold-silver'),
     _form(793, 'nihilego', group: 'sun-moon'),
+    _form(
+      10500,
+      'pichu-teal',
+      formName: 'teal',
+      isDefault: false,
+      group: 'the-teal-mask',
+    ),
   ],
   'pokemon': [
     _pokemon(1, 'bulbasaur'),
@@ -104,6 +132,7 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
     _pokemon(150, 'mewtwo'),
     _pokemon(172, 'pichu'),
     _pokemon(793, 'nihilego', abilities: ['beast-boost']),
+    _pokemon(10500, 'pichu', isDefault: false),
   ],
   'species': [
     _species('bulbasaur', 1),
@@ -159,6 +188,27 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
       'versions': ['emerald'],
       'originMark': null,
     },
+    {
+      'name': 'sword-shield',
+      'generation': 'generation-viii',
+      'order': 20,
+      'versions': ['sword', 'shield'],
+      'originMark': 'galar',
+    },
+    {
+      'name': 'brilliant-diamond-shining-pearl',
+      'generation': 'generation-viii',
+      'order': 23,
+      'versions': ['brilliant-diamond', 'shining-pearl'],
+      'originMark': 'bdsp',
+    },
+    {
+      'name': 'the-teal-mask',
+      'generation': 'generation-ix',
+      'order': 26,
+      'versions': ['the-teal-mask-scarlet'],
+      'originMark': null,
+    },
   ],
   'versions': [
     {
@@ -184,6 +234,27 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
     {'name': 'sun', 'versionGroup': 'sun-moon', 'receivesFromHome': false},
     {'name': 'moon', 'versionGroup': 'sun-moon', 'receivesFromHome': false},
     {'name': 'emerald', 'versionGroup': 'emerald', 'receivesFromHome': false},
+    {'name': 'sword', 'versionGroup': 'sword-shield', 'receivesFromHome': true},
+    {
+      'name': 'shield',
+      'versionGroup': 'sword-shield',
+      'receivesFromHome': true,
+    },
+    {
+      'name': 'brilliant-diamond',
+      'versionGroup': 'brilliant-diamond-shining-pearl',
+      'receivesFromHome': true,
+    },
+    {
+      'name': 'shining-pearl',
+      'versionGroup': 'brilliant-diamond-shining-pearl',
+      'receivesFromHome': true,
+    },
+    {
+      'name': 'the-teal-mask-scarlet',
+      'versionGroup': 'the-teal-mask',
+      'receivesFromHome': false,
+    },
   ],
   'defaultDex': [1, 2, 3, 133, 134, 196, 150, 172, 793],
   'choices': {
@@ -232,6 +303,41 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
       {'value': 'none', 'label': 'Sem marca de origem'},
     ],
   },
+  'pokedexes': [
+    _dex('galar', 'Galar', 'sword-shield', {'eevee': 5, 'vaporeon': 6}),
+    _dex('dynamax-adventure', 'Aventura Dinamax', 'sword-shield', {
+      'mewtwo': null,
+    }, dlc: 'the-crown-tundra'),
+    _dex('bdsp-national', 'Nacional', 'brilliant-diamond-shining-pearl', {
+      'bulbasaur': 1,
+      'pichu': 172,
+    }),
+    _dex('paldea', 'Paldea', 'scarlet-violet', {
+      'eevee': 1,
+      'vaporeon': 2,
+      'espeon': 3,
+    }),
+    _dex('kitakami', 'Kitakami', 'scarlet-violet', {
+      'pichu': 10,
+    }, dlc: 'the-teal-mask'),
+  ],
+  'versionExclusives': [
+    {
+      'version': 'sword',
+      'dlc': 'the-crown-tundra',
+      'forms': [150],
+    },
+    {
+      'version': 'scarlet',
+      'dlc': null,
+      'forms': [196],
+    },
+    {
+      'version': 'violet',
+      'dlc': null,
+      'forms': [134],
+    },
+  ],
   'shinyLocks': [
     {
       'caption': 'Mewtwo de evento',

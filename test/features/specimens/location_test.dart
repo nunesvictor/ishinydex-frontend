@@ -190,7 +190,7 @@ void main() {
       await _go(tester, Routes.settings);
       await _tap(tester, find.text('Meus saves'));
       expect(find.text('Scarlet · Switch'), findsOneWidget);
-      expect(find.text('Legends Za · Ash (222222)'), findsOneWidget);
+      expect(find.text('Legends: Z-A · Ash (222222)'), findsOneWidget);
 
       // Fechar a folha sem escolher não cria nada.
       await _tap(tester, find.text('Adicionar save'));
@@ -200,9 +200,9 @@ void main() {
       // Só o Rei (Legends: Arceus) ainda pode virar save.
       await _tap(tester, find.text('Adicionar save'));
       expect(find.text('Ash (654321)'), findsNothing); // sem versão
-      await _tap(tester, find.text('Rei (111111) · Legends Arceus'));
+      await _tap(tester, find.text('Rei (111111) · Legends: Arceus'));
       expect(
-        find.text('Legends Arceus · Rei (111111) adicionado.'),
+        find.text('Legends: Arceus · Rei (111111) adicionado.'),
         findsOneWidget,
       );
 
@@ -253,14 +253,14 @@ void main() {
       await _tap(tester, find.text('Remover'));
       await _tap(tester, find.widgetWithText(TextButton, 'Remover'));
       expect(find.textContaining('ainda tem espécimes'), findsOneWidget);
-      await _tap(tester, menuOf('Legends Za · Ash (222222)'));
+      await _tap(tester, menuOf('Legends: Z-A · Ash (222222)'));
       await _tap(tester, find.text('Remover'));
       await _tap(tester, find.text('Cancelar'));
-      expect(find.text('Legends Za · Ash (222222)'), findsOneWidget);
-      await _tap(tester, menuOf('Legends Za · Ash (222222)'));
+      expect(find.text('Legends: Z-A · Ash (222222)'), findsOneWidget);
+      await _tap(tester, menuOf('Legends: Z-A · Ash (222222)'));
       await _tap(tester, find.text('Remover'));
       await _tap(tester, find.widgetWithText(TextButton, 'Remover'));
-      expect(find.text('Legends Za · Ash (222222)'), findsNothing);
+      expect(find.text('Legends: Z-A · Ash (222222)'), findsNothing);
     });
 
     testWidgets('falhas: lista, treinadores e renomear', (tester) async {
