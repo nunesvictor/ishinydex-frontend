@@ -182,6 +182,19 @@ void main() {
       expect(catalog.huntableVersions(793), isEmpty);
     });
 
+    test('OT: a forma, ou uma pré-evolução, na pokédex do jogo', () {
+      // Espeon não está no BDSP, nem o Eevee.
+      expect(catalog.originFits(196, 'brilliant-diamond'), isFalse);
+      // Em Sword não está, mas o Eevee está: evoluiu depois.
+      expect(catalog.originFits(196, 'sword'), isTrue);
+      expect(catalog.originFits(134, 'sword'), isTrue);
+      // Exclusivos não contam (Vaporeon de Scarlet: evento).
+      expect(catalog.originFits(134, 'scarlet'), isTrue);
+      // Jogos sem pokédex no catálogo, ou sem OT: sem aviso.
+      expect(catalog.originFits(196, 'red'), isTrue);
+      expect(catalog.originFits(196, null), isTrue);
+    });
+
     test('catálogo antigo: sem pokédex nem exclusivos', () {
       final old = Catalog.fromJson(
         catalogJson()
@@ -193,6 +206,7 @@ void main() {
       expect(old.pokedexesOf(133), isEmpty);
       expect(old.huntableVersions(133), isEmpty);
       expect(old.formDetail(133).pokedexes, isEmpty);
+      expect(old.originFits(196, 'brilliant-diamond'), isTrue);
     });
   });
 }

@@ -243,6 +243,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                 ),
               ],
             ),
+            ?_originWarning(),
             _captureDate(),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
@@ -292,6 +293,53 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                     ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Aviso (não erro) quando o Pokémon não está na pokédex do jogo do OT:
+  /// pode ser um OT errado, ou um evento. Salvar continua valendo.
+  Widget? _originWarning() {
+    final version = [
+      for (final t in _trainers)
+        if (t.id == _draft.ot) t.version,
+    ].firstOrNull;
+    if (version == null ||
+        ref.watch(originFitsProvider)(widget.form.id, version)) {
+      return null;
+    }
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 10,
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 20,
+                color: theme.colorScheme.onTertiaryContainer,
+              ),
+              Expanded(
+                child: Text(
+                  '${prettifyName(widget.form.name)} não está na pokédex de '
+                  '${versionLabel(version)}. Confira o OT, ou ignore se ele '
+                  'veio de evento. Dá para salvar assim mesmo.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onTertiaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
