@@ -1789,6 +1789,22 @@ class FakeBackend
     _saves.remove(saveId);
   }
 
+  /// Para a escolha do destino: se os [ids] podem ir para o [save] (o Let's
+  /// Go só recebe quem tem a marca dele, [Save.requiredMark]) e quantos não
+  /// estão numa pokédex do jogo do save (só um aviso: o HOME aceita alguns
+  /// de fora, como eventos).
+  ({bool allowed, int outside}) transferCheck(List<int> ids, Save save) {
+    final version = save.trainer.version;
+    final mark = save.requiredMark;
+    final specimens = [for (final id in ids) ?_specimens[id]];
+    return (
+      allowed: mark == null || specimens.every((s) => s.originMark == mark),
+      outside: specimens
+          .where((s) => !(catalog?.inGame(s.form, version) ?? true))
+          .length,
+    );
+  }
+
   /// Como `POST /specimens/transfer/`: tudo ou nada; quem já está no
   /// destino não muda (nem a data).
   @override
@@ -1804,6 +1820,11 @@ class FakeBackend
     if (saveId != null && !_saves.containsKey(saveId)) {
       throw ValidationFailure({
         'save': ['Save inexistente.'],
+      });
+    }
+    if (saveId != null && !transferCheck(ids, _saves[saveId]!).allowed) {
+      throw ValidationFailure({
+        'save': ['Só Pokémon com a marca de origem do jogo entram nesse save.'],
       });
     }
     final moving = unique.where((id) => _specimens[id]!.location?.id != saveId);

@@ -65,9 +65,15 @@ void _notify(BuildContext context, String message) =>
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
 
-/// Escolhe o save de destino. Sem nenhum save cadastrado, explica e oferece
-/// abrir Ajustes → Meus saves. `null` = desistiu.
-Future<Save?> pickSave(BuildContext context, WidgetRef ref) async {
+/// Escolhe o save de destino dos [ids]. Sem nenhum save cadastrado, explica
+/// e oferece abrir Ajustes → Meus saves. `null` = desistiu. Um save que não
+/// aceita os espécimes (o Let's Go só recebe quem tem a marca dele) fica
+/// desabilitado; um em cujo jogo eles não estão na pokédex, só avisa.
+Future<Save?> pickSave(
+  BuildContext context,
+  WidgetRef ref,
+  List<int> ids,
+) async {
   final List<Save> saves;
   try {
     saves = await ref.read(savesProvider.future);
@@ -114,16 +120,52 @@ Future<Save?> pickSave(BuildContext context, WidgetRef ref) async {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          for (final save in saves)
-            ListTile(
-              leading: SaveIcon(save),
-              title: Text(save.title),
-              subtitle: Text(save.trainer.label),
-              onTap: () => Navigator.of(context).pop(save),
-            ),
+          for (final save in saves) _saveOption(context, ref, save, ids),
         ],
       ),
     ),
+  );
+}
+
+Widget _saveOption(
+  BuildContext context,
+  WidgetRef ref,
+  Save save,
+  List<int> ids,
+) {
+  final check = ref.read(transferCheckProvider)(ids, save);
+  final warning = !check.allowed
+      ? 'Só Pokémon com a marca de origem do jogo'
+      : switch (check.outside) {
+          0 => null,
+          1 when ids.length == 1 => 'Fora da pokédex de ${save.game}',
+          final n => '$n fora da pokédex de ${save.game}',
+        };
+  return ListTile(
+    enabled: check.allowed,
+    leading: SaveIcon(save),
+    title: Text(save.title),
+    subtitle: warning == null
+        ? Text(save.trainer.label)
+        : Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: '${save.trainer.label}\n'),
+                if (check.allowed)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Icon(
+                      Icons.warning_amber,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                TextSpan(text: check.allowed ? ' $warning' : warning),
+              ],
+            ),
+          ),
+    isThreeLine: warning != null,
+    onTap: () => Navigator.of(context).pop(save),
   );
 }
 
@@ -133,7 +175,7 @@ Future<bool> sendToGame(
   WidgetRef ref,
   List<int> ids,
 ) async {
-  final save = await pickSave(context, ref);
+  final save = await pickSave(context, ref, ids);
   if (save == null || !context.mounted) return false;
   try {
     final moved = await ref

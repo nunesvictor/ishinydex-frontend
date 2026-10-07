@@ -27,6 +27,8 @@ O app pinta o branco com a cor do tema (`OriginMarkIcon`, em `lib/core/widgets/o
 
 | Arquivo | Original |
 | --- | --- |
+| `lets-go-pikachu.png` | `HOME_Let's_Go_Pikachu_icon.png` |
+| `lets-go-eevee.png` | `HOME_Let's_Go_Eevee_icon.png` |
 | `sword.png` | `HOME_Sword_icon.png` |
 | `shield.png` | `HOME_Shield_icon.png` |
 | `brilliant-diamond.png` | `HOME_Brilliant_Diamond_icon.png` |

@@ -374,24 +374,28 @@ class Catalog {
   /// O Pokémon pode ter vindo do jogo [version] (o do OT): a forma, ou uma
   /// pré-evolução dela (evoluiu depois, em outro jogo), está numa pokédex do
   /// jogo. Os exclusivos não contam (há eventos fora da versão), e jogos sem
-  /// pokédex no catálogo (GO, Let's Go, os antigos) sempre servem.
+  /// pokédex no catálogo (GO, os antigos) sempre servem.
   bool originFits(int formId, String? version) {
-    final group = _groupOfVersion[version];
-    if (group == null ||
-        !_pokedexes.any((dex) => dex.versionGroups.contains(group))) {
-      return true;
-    }
     final seen = <int>{};
     for (
       int? id = formId;
       id != null && seen.add(id);
       id = evolvesFromForm(id)
     ) {
-      if (pokedexesOf(id).any((game) => game.versionGroup == group)) {
-        return true;
-      }
+      if (inGame(id, version)) return true;
     }
     return false;
+  }
+
+  /// A forma está numa pokédex do jogo [version] (pode estar num save
+  /// dele); jogos sem pokédex no catálogo sempre servem.
+  bool inGame(int formId, String? version) {
+    final group = _groupOfVersion[version];
+    if (group == null ||
+        !_pokedexes.any((dex) => dex.versionGroups.contains(group))) {
+      return true;
+    }
+    return pokedexesOf(formId).any((game) => game.versionGroup == group);
   }
 
   /// Versões (das que recebem do HOME) em que a forma pode ser caçada: a

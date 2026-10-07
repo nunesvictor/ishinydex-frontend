@@ -497,6 +497,58 @@ void main() {
       expect(find.text('3 espécimes de volta ao HOME.'), findsOneWidget);
     });
 
+    testWidgets("destino: Let's Go desabilitado e aviso da pokédex", (
+      tester,
+    ) async {
+      final lgpe = _save.copyWith(
+        id: 2,
+        trainer: _save.trainer.copyWith(version: 'lets-go-pikachu'),
+      );
+      when(repository.fetchSaves).thenAnswer((_) async => [_save, lgpe]);
+      var ids = [7];
+      var outside = 1;
+      await pumpWidgetApp(
+        tester,
+        Scaffold(
+          body: Consumer(
+            builder: (context, ref, _) => TextButton(
+              onPressed: () => pickSave(context, ref, ids),
+              child: const Text('Enviar'),
+            ),
+          ),
+        ),
+        overrides: [
+          specimenRepositoryProvider.overrideWithValue(repository),
+          transferCheckProvider.overrideWithValue(
+            (ids, save) => save.id == lgpe.id
+                ? (allowed: false, outside: 0)
+                : (allowed: true, outside: outside),
+          ),
+        ],
+      );
+
+      await _tap(tester, find.text('Enviar'));
+      expect(find.textContaining('Fora da pokédex de Scarlet'), findsOne);
+      expect(find.textContaining('marca de origem do jogo'), findsOneWidget);
+      // Desabilitado: tocar não escolhe.
+      await _tap(tester, find.text("Let's Go Pikachu · Switch"));
+      expect(find.text('Enviar para qual save?'), findsOneWidget);
+
+      Future<void> reopen() async {
+        Navigator.of(tester.element(find.text('Enviar para qual save?'))).pop();
+        await tester.pumpAndSettle();
+        await _tap(tester, find.text('Enviar'));
+      }
+
+      ids = [7, 8];
+      outside = 2;
+      await reopen();
+      expect(find.textContaining('2 fora da pokédex de Scarlet'), findsOne);
+      outside = 0;
+      await reopen();
+      expect(find.textContaining('fora da pokédex'), findsNothing);
+    });
+
     testWidgets('enviar: saves e transferência', (tester) async {
       var savesFail = true;
       when(repository.fetchSaves).thenAnswer((_) async {
