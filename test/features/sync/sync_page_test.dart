@@ -23,6 +23,8 @@ const _page = 'https://x.github.io/app/';
 
 const _syncEnv = Env(localData: true, dropboxAppKey: 'chave');
 
+const _pulled = 'Atualizado com as mudanças de outro aparelho.';
+
 class _FakeBrowser implements Browser {
   @override
   Uri page = Uri.parse(_page);
@@ -166,6 +168,8 @@ void main() {
     await tester.pumpAndSettle();
     expect([for (final t in await backend.fetchTrainers()) t.name], ['Misty']);
     expect(find.textContaining('Sincronizado'), findsOneWidget);
+    // A escolha foi do usuário: não há aviso de mudanças.
+    expect(find.text(_pulled), findsNothing);
   });
 
   testWidgets('primeira conexão: cancelar desconecta', (tester) async {
@@ -231,6 +235,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(dropbox.rev, isNot(rev));
     expect(utf8.decode(dropbox.file!), contains('Brock'));
+    // Só enviou: nada chegou de outro aparelho.
+    expect(find.text(_pulled), findsNothing);
   });
 
   testWidgets('ao voltar para o app, sincroniza', (tester) async {
@@ -244,6 +250,18 @@ void main() {
     expect([
       for (final t in await backend.fetchTrainers()) t.name,
     ], contains('Misty'));
+    // A tela se atualizou sozinha; um aviso curto diz por quê.
+    expect(find.text(_pulled), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    expect(find.text(_pulled), findsNothing);
+
+    // De novo, sem nada novo: sem aviso.
+    tester.binding
+      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.text(_pulled), findsNothing);
   });
 
   testWidgets('puxar a lista de dexes sincroniza', (tester) async {

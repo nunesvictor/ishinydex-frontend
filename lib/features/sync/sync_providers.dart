@@ -56,6 +56,7 @@ class SyncState {
     this.error,
     this.connected = false,
     this.firstSync,
+    this.pulls = 0,
   });
 
   final SyncPhase phase;
@@ -68,12 +69,17 @@ class SyncState {
   /// ([SyncController.resolveFirstSync]).
   final FirstSyncChoice? firstSync;
 
+  /// Quantos syncs trouxeram mudanças de outro aparelho (para avisar: cada
+  /// aumento é um aviso).
+  final int pulls;
+
   SyncState copyWith({
     SyncPhase? phase,
     String? account,
     DateTime? lastSync,
     String? error,
     FirstSyncChoice? firstSync,
+    int? pulls,
   }) => SyncState(
     phase: phase ?? this.phase,
     account: account ?? this.account,
@@ -81,6 +87,7 @@ class SyncState {
     error: error,
     connected: connected,
     firstSync: firstSync,
+    pulls: pulls ?? this.pulls,
   );
 }
 
@@ -207,7 +214,7 @@ class SyncController extends Notifier<SyncState> {
       _fail(error);
       return;
     }
-    await sync();
+    await sync(notify: false);
   }
 
   static bool _hasRecords(Map<String, dynamic> file) =>
@@ -219,7 +226,7 @@ class SyncController extends Notifier<SyncState> {
   Future<void> resolveFirstSync(FirstSync? mode) async {
     if (mode == null) return await disconnect();
     state = state.copyWith();
-    await sync(mode: mode);
+    await sync(mode: mode, notify: false);
   }
 
   void _onLocalChange() {
@@ -228,8 +235,13 @@ class SyncController extends Notifier<SyncState> {
   }
 
   /// Um sync agora. Se já houver um em andamento, outro roda logo depois
-  /// (para levar o que mudou no meio).
-  Future<void> sync({FirstSync mode = FirstSync.merge}) async {
+  /// (para levar o que mudou no meio). Se trouxer mudanças de outro
+  /// aparelho, conta em [SyncState.pulls], exceto com [notify] falso (a
+  /// primeira conexão, em que a escolha foi do usuário).
+  Future<void> sync({
+    FirstSync mode = FirstSync.merge,
+    bool notify = true,
+  }) async {
     if (!state.connected) return;
     if (_running) {
       _again = true;
@@ -244,9 +256,10 @@ class SyncController extends Notifier<SyncState> {
         target: _LocalTarget(ref),
       );
       var current = mode;
+      var pulled = false;
       do {
         _again = false;
-        await engine.sync(mode: current);
+        pulled |= (await engine.sync(mode: current)).pulled;
         current = FirstSync.merge;
       } while (_again);
       final now = DateTime.now();
@@ -258,7 +271,11 @@ class SyncController extends Notifier<SyncState> {
           lastSync: now,
         ),
       );
-      state = state.copyWith(phase: SyncPhase.idle, lastSync: now);
+      state = state.copyWith(
+        phase: SyncPhase.idle,
+        lastSync: now,
+        pulls: pulled && notify ? state.pulls + 1 : null,
+      );
     } on Exception catch (error) {
       _fail(error);
     } finally {
