@@ -312,20 +312,72 @@ class SyncStatusIcon extends StatelessWidget {
   }
 }
 
-/// No topo da lista de dexes: o estado do sync; tocar abre Sincronização.
-/// Sem Dropbox conectado, não aparece.
-class SyncStatusButton extends ConsumerWidget {
-  const SyncStatusButton({super.key});
+/// Sync em andamento: uma faixa fina e indeterminada, colada na navegação
+/// (ver `AdaptiveShell.activity`). Só aparece se o sync passar de
+/// [showDelay]: o sync roda alguns segundos depois de cada mudança e costuma
+/// ser rápido, e a faixa não deve piscar a cada toque.
+class SyncActivityBar extends ConsumerStatefulWidget {
+  const SyncActivityBar({super.key});
+
+  static const showDelay = Duration(milliseconds: 500);
+
+  @override
+  ConsumerState<SyncActivityBar> createState() => _SyncActivityBarState();
+}
+
+class _SyncActivityBarState extends ConsumerState<SyncActivityBar> {
+  Timer? _timer;
+  bool _visible = false;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(syncControllerProvider.select((s) => s.phase), (_, phase) {
+      _timer?.cancel();
+      if (phase == SyncPhase.syncing) {
+        _timer = Timer(
+          SyncActivityBar.showDelay,
+          () => setState(() => _visible = true),
+        );
+      } else if (_visible) {
+        setState(() => _visible = false);
+      }
+    });
+    if (!_visible) return const SizedBox.shrink();
+    return const LinearProgressIndicator(
+      minHeight: 3,
+      semanticsLabel: 'Sincronizando',
+    );
+  }
+}
+
+/// Selo no ícone de Ajustes quando o sync tem problema: um ponto neutro sem
+/// conexão (as mudanças ficam guardadas) e um "!" vermelho com erro (ex.: o
+/// acesso ao Dropbox expirou). Em dia, ou sem Dropbox, só o ícone.
+class SyncBadge extends ConsumerWidget {
+  const SyncBadge({required this.child, super.key});
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(syncControllerProvider);
-    if (!state.connected) return const SizedBox.shrink();
-    return IconButton(
-      tooltip: describeSync(state),
-      onPressed: () => context.go(Routes.sync),
-      icon: SyncStatusIcon(phase: state.phase),
-    );
+    final phase = ref.watch(syncControllerProvider.select((s) => s.phase));
+    return switch (phase) {
+      SyncPhase.offline => Badge(
+        backgroundColor: Theme.of(context).colorScheme.outline,
+        child: Semantics(label: 'Sincronização sem conexão', child: child),
+      ),
+      SyncPhase.error => Badge(
+        label: const Text('!'),
+        child: Semantics(label: 'Sincronização com erro', child: child),
+      ),
+      _ => child,
+    };
   }
 }
 
@@ -336,8 +388,13 @@ class SyncTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(syncControllerProvider);
+    final error = state.connected && state.phase == SyncPhase.error;
     return ListTile(
-      leading: const Icon(Icons.cloud_outlined),
+      // Ligada, o ícone mostra o estado (o selo de Ajustes leva até aqui).
+      leading: state.connected
+          ? SyncStatusIcon(phase: state.phase)
+          : const Icon(Icons.cloud_outlined),
+      tileColor: error ? Theme.of(context).colorScheme.errorContainer : null,
       title: const Text('Sincronização'),
       subtitle: Text(describeSync(state)),
       trailing: const Icon(Icons.chevron_right),

@@ -206,18 +206,54 @@ void main() {
     expect(find.text('O login no Dropbox foi recusado.'), findsOneWidget);
   });
 
-  testWidgets('conectado: sincroniza ao abrir e mostra na lista de dexes', (
+  testWidgets('conectado: sincroniza ao abrir e mostra em Ajustes', (
     tester,
   ) async {
     await connected();
     await pumpApp(tester);
     expect(dropbox.file, isNotNull);
-    await tester.tap(find.text('PersonalDex').last);
+    // Em dia: sem selo na navegação.
+    expect(find.byType(Badge), findsNothing);
+    await tester.tap(find.text('Ajustes'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Sincronizado agora há pouco'));
+    expect(find.text('Sincronizado agora há pouco'), findsOneWidget);
+    expect(find.byIcon(Icons.cloud_done_outlined), findsOneWidget);
+    await tester.tap(find.text('Sincronização'));
     await tester.pumpAndSettle();
     expect(find.text('Dropbox de V.'), findsOneWidget);
   });
+
+  for (final size in [compactSize, expandedSize]) {
+    testWidgets('problemas no sync: selo em Ajustes ($size)', (tester) async {
+      await connected();
+      dropbox.offline = true;
+      await pumpApp(tester, size: size);
+      // Sem conexão: só um ponto, sem texto.
+      final dot = tester.widget<Badge>(find.byType(Badge));
+      expect(dot.label, isNull);
+      expect(find.bySemanticsLabel(RegExp('sem conexão')), findsOneWidget);
+
+      dropbox
+        ..offline = false
+        ..revoked = true
+        ..forced = (status: 401, body: {'error_summary': 'expired'});
+      await tester.runAsync(
+        containerOf(tester).read(syncControllerProvider.notifier).sync,
+      );
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(Badge, '!'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('com erro')), findsOneWidget);
+
+      // Em Ajustes, a linha da sincronização mostra o erro.
+      await tester.tap(find.text('Ajustes'));
+      await tester.pumpAndSettle();
+      final tile = tester.widget<ListTile>(
+        find.widgetWithText(ListTile, 'Sincronização'),
+      );
+      expect(tile.tileColor, isNotNull);
+      expect(find.text('Não foi possível sincronizar'), findsOneWidget);
+    });
+  }
 
   testWidgets('mudança no aparelho: sincroniza alguns segundos depois', (
     tester,
