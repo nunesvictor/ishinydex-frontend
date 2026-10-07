@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 
 void main() {
   test('fromSlug: valores da API, desconhecido e nulo', () {
@@ -11,6 +12,14 @@ void main() {
     expect(OriginMark.fromSlug('none'), isNull);
     expect(OriginMark.fromSlug('kanto'), isNull);
     expect(OriginMark.fromSlug(null), isNull);
+  });
+
+  test('fromVersion: todo jogo que vira save tem marca', () {
+    for (final version in Save.transferVersions) {
+      expect(OriginMark.fromVersion(version), isNotNull, reason: version);
+    }
+    expect(OriginMark.fromVersion('lets-go-eevee'), OriginMark.letsGo);
+    expect(OriginMark.fromVersion('red'), isNull);
   });
 
   test('cada marca tem nome e ícone próprios', () {
