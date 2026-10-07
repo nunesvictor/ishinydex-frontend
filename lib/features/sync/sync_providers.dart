@@ -259,7 +259,10 @@ class SyncController extends Notifier<SyncState> {
       var pulled = false;
       do {
         _again = false;
-        pulled |= (await engine.sync(mode: current)).pulled;
+        // Sem `pulled |= (await ...).pulled`: essa forma quebra o build
+        // wasm (o dart2wasm gera um módulo que o wasm-opt não lê).
+        final result = await engine.sync(mode: current);
+        if (result.pulled) pulled = true;
         current = FirstSync.merge;
       } while (_again);
       final now = DateTime.now();
