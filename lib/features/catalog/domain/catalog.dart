@@ -371,6 +371,29 @@ class Catalog {
     ];
   }
 
+  /// O Pokémon pode ter vindo do jogo [version] (o do OT): a forma, ou uma
+  /// pré-evolução dela (evoluiu depois, em outro jogo), está numa pokédex do
+  /// jogo. Os exclusivos não contam (há eventos fora da versão), e jogos sem
+  /// pokédex no catálogo (GO, Let's Go, os antigos) sempre servem.
+  bool originFits(int formId, String? version) {
+    final group = _groupOfVersion[version];
+    if (group == null ||
+        !_pokedexes.any((dex) => dex.versionGroups.contains(group))) {
+      return true;
+    }
+    final seen = <int>{};
+    for (
+      int? id = formId;
+      id != null && seen.add(id);
+      id = evolvesFromForm(id)
+    ) {
+      if (pokedexesOf(id).any((game) => game.versionGroup == group)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Versões (das que recebem do HOME) em que a forma pode ser caçada: a
   /// espécie está numa pokédex do jogo e a forma não é exclusiva da outra
   /// versão (o Koraidon só em Scarlet).

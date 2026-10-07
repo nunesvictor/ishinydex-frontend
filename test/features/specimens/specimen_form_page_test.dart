@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
@@ -39,6 +40,7 @@ void main() {
     Size size = const Size(600, 1600),
     TargetPlatform platform = TargetPlatform.android,
     CaptureDateFormat? dateFormat,
+    List<Override> overrides = const [],
   }) async {
     final results = <Specimen?>[];
     await pumpWidgetApp(
@@ -62,7 +64,10 @@ void main() {
       size: size,
       platform: platform,
       dateFormat: InMemoryDateFormatStorage(dateFormat),
-      overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        specimenRepositoryProvider.overrideWithValue(repository),
+        ...overrides,
+      ],
     );
     await tester.tap(find.text('abrir'));
     await tester.pump();
@@ -75,6 +80,42 @@ void main() {
     await tester.tap(find.text(label).last);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('OT de um jogo em cuja pokédex ele não está: só avisa', (
+    tester,
+  ) async {
+    when(repository.fetchTrainers).thenAnswer(
+      (_) async => const [
+        Trainer(id: 12, name: 'Ash', trainerId: '123456', version: 'scarlet'),
+        Trainer(
+          id: 13,
+          name: 'Rei',
+          trainerId: '333333',
+          version: 'brilliant-diamond',
+        ),
+      ],
+    );
+    await pumpForm(
+      tester,
+      overrides: [
+        originFitsProvider.overrideWithValue(
+          (formId, version) => version != 'brilliant-diamond',
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+    final warning = find.textContaining(
+      'não está na pokédex de Brilliant Diamond',
+    );
+    expect(warning, findsNothing);
+
+    await choose(tester, 'ot', 'Rei (333333) · Brilliant Diamond');
+    expect(warning, findsOneWidget);
+    expect(find.textContaining('Dá para salvar assim mesmo'), findsOneWidget);
+
+    await choose(tester, 'ot', 'Ash (123456) · Scarlet');
+    expect(warning, findsNothing);
+  });
 
   testWidgets('preenche tudo e salva', (tester) async {
     when(() => repository.create(any())).thenAnswer(
