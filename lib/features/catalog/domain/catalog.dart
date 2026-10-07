@@ -25,6 +25,8 @@ class Catalog {
     required this._groupOrder,
     required this._pokedexes,
     required this._exclusives,
+    required this._gameFormIds,
+    required this._gameLocks,
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
@@ -201,6 +203,21 @@ class Catalog {
         }
         return result;
       }(),
+      gameFormIds: {
+        for (final g in _objects(json['gameForms'] ?? const <Object>[]))
+          g['versionGroup'] as String: {
+            for (final id in g['forms'] as List) id as int,
+          },
+      },
+      gameLocks: () {
+        final result = <int, Set<String>>{};
+        for (final l in _objects(json['gameShinyLocks'] ?? const <Object>[])) {
+          for (final id in l['forms'] as List) {
+            (result[id as int] ??= {}).add(l['version'] as String);
+          }
+        }
+        return result;
+      }(),
     );
   }
 
@@ -240,6 +257,29 @@ class Catalog {
 
   /// Versões de que cada forma é exclusiva (pode ser de mais de um jogo).
   final Map<int, Set<String>> _exclusives;
+
+  /// Formas presentes em cada grupo, para as espécies com forma regional
+  /// (vazio em catálogo antigo).
+  final Map<String, Set<int>> _gameFormIds;
+
+  /// Versões em que cada forma não pode ser shiny.
+  final Map<int, Set<String>> _gameLocks;
+
+  /// Grupo → espécies com forma regional listadas nele.
+  late final Map<String, Set<String>> _gameFormSpecies = {
+    for (final MapEntry(key: group, value: ids) in _gameFormIds.entries)
+      group: {
+        for (final id in ids)
+          if (_forms[id] case final form?) ?_pokemonOf(form)?.species,
+      },
+  };
+
+  /// A forma aparece no jogo: espécies com forma regional listadas no grupo
+  /// só valem com as formas listadas (a Ponyta de Galar não está em
+  /// Legends: Arceus, embora a espécie esteja).
+  bool _formInGame(int formId, String species, String group) =>
+      !(_gameFormSpecies[group]?.contains(species) ?? false) ||
+      _gameFormIds[group]!.contains(formId);
 
   /// O catálogo diz em que pokédex cada espécie está (os saves compatíveis).
   bool get hasPokedexes => _pokedexes.isNotEmpty;
@@ -349,7 +389,9 @@ class Catalog {
     for (final dex in _pokedexes) {
       if (!dex.entries.containsKey(species)) continue;
       for (final group in dex.versionGroups) {
-        if (!_existsBy(form, group)) continue;
+        if (!_existsBy(form, group) || !_formInGame(formId, species, group)) {
+          continue;
+        }
         (entries[group] ??= []).add(
           PokedexEntry(
             label: dex.label,
@@ -397,6 +439,10 @@ class Catalog {
     }
     return pokedexesOf(formId).any((game) => game.versionGroup == group);
   }
+
+  /// Versões em que a forma não pode ser shiny (Solgaleo em Scarlet).
+  Set<String> lockedVersions(int formId) =>
+      _gameLocks[formId] ?? const <String>{};
 
   /// Versões (das que recebem do HOME) em que a forma pode ser caçada: a
   /// espécie está numa pokédex do jogo e a forma não é exclusiva da outra

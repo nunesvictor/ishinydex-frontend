@@ -1341,7 +1341,11 @@ class FakeBackend
       final lock = _lockOf(formId);
       final reasons = _huntReasons(slot, query.acceptedBalls);
       final category = _categories[formId] ?? SpeciesCategory.regular;
-      final versions = _huntableVersions(formId);
+      // Sem "incluir shiny locks", some o jogo em que a forma é travada.
+      final versions = [
+        for (final v in _huntableVersions(formId))
+          if (query.includeLocked || !_lockedVersions(formId).contains(v)) v,
+      ];
       final matches =
           reasons.any(query.reasons.contains) &&
           (query.situation.param == null ||
@@ -1388,6 +1392,9 @@ class FakeBackend
   };
 
   final _huntable = <int, List<String>>{};
+
+  Set<String> _lockedVersions(int formId) =>
+      catalog?.lockedVersions(formId) ?? const <String>{};
 
   /// Motivos de caçada do slot; `pokeball` só com bolas aceitas, e bola não
   /// informada não conta.
