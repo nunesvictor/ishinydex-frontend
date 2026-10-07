@@ -138,7 +138,9 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
               SwitchListTile.adaptive(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                 title: const Text('Incluir shiny impossível'),
-                subtitle: const Text('Formas com shiny lock sem distribuição'),
+                subtitle: const Text(
+                  'Shiny lock sem distribuição e jogos em que a forma é travada',
+                ),
                 value: _draft.includeLocked,
                 onChanged: (v) => _update(_draft.copyWith(includeLocked: v)),
               ),

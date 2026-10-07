@@ -6,6 +6,7 @@ import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
 
 import '../../fixtures/catalog_fixture.dart';
@@ -68,12 +69,8 @@ void main() {
       // versão deles (Espeon: Scarlet; Vaporeon: Violet, sem save).
       expect(_icons(tester, 'Espeon'), ['scarlet']);
       expect(_icons(tester, 'Vaporeon'), ['~sword', '~shield', '~violet']);
-      expect(_icons(tester, 'Eevee'), [
-        'scarlet',
-        '~sword',
-        '~shield',
-        '~violet',
-      ]);
+      // Eevee: shiny lock em Scarlet (o catálogo de teste), sem o ícone.
+      expect(_icons(tester, 'Eevee'), ['~sword', '~shield', '~violet']);
       expect(_icons(tester, 'Nihilego'), isEmpty);
 
       await _pickGame(tester, 'Jogo', 'Scarlet');
@@ -90,6 +87,38 @@ void main() {
       expect(find.text('Vaporeon'), findsOneWidget);
     });
   }
+
+  test('incluir shiny locks devolve o jogo travado', () async {
+    final catalog = Catalog.fromJson(
+      catalogJson(),
+      spriteBase: Env.defaultSpritesBaseUrl,
+    );
+    final backend = FakeBackend.fromCatalog(catalog);
+    final dexId = backend.addDex(name: 'Caça', isShinyDex: true);
+    backend.addBox(dexId: dexId, name: 'Caça 1', formIds: const [133]);
+    Future<List<String>> versions(HuntQuery query) async =>
+        (await backend.fetchHunts(
+          dexId,
+          query,
+          page: 1,
+          pageSize: 10,
+        )).results.single.versions;
+
+    expect(await versions(const HuntQuery()), isNot(contains('scarlet')));
+    expect(
+      await versions(const HuntQuery(includeLocked: true)),
+      contains('scarlet'),
+    );
+    expect(
+      (await backend.fetchHunts(
+        dexId,
+        const HuntQuery(version: 'scarlet'),
+        page: 1,
+        pageSize: 10,
+      )).results,
+      isEmpty,
+    );
+  });
 
   testWidgets('sem o catálogo das pokédex: sem o filtro nem ícones', (
     tester,

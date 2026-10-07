@@ -195,6 +195,20 @@ void main() {
       expect(catalog.originFits(196, null), isTrue);
     });
 
+    test('forma regional: só nos jogos em que aparece', () {
+      List<String> groups(int id) => [
+        for (final game in catalog.pokedexesOf(id)) game.versionGroup,
+      ];
+      // A espécie está em Paldea, mas a forma de Galar não aparece lá.
+      expect(groups(134), ['sword-shield', 'scarlet-violet']);
+      expect(groups(10600), ['sword-shield']);
+    });
+
+    test('shiny lock por versão', () {
+      expect(catalog.lockedVersions(133), {'scarlet'});
+      expect(catalog.lockedVersions(1), isEmpty);
+    });
+
     test('save: a própria forma na pokédex do jogo', () {
       expect(catalog.inGame(133, 'sword'), isTrue);
       // Espeon evolui em Sword, mas não está na pokédex dele.
@@ -206,7 +220,9 @@ void main() {
       final old = Catalog.fromJson(
         catalogJson()
           ..remove('pokedexes')
-          ..remove('versionExclusives'),
+          ..remove('versionExclusives')
+          ..remove('gameForms')
+          ..remove('gameShinyLocks'),
         spriteBase: _base,
       );
       expect(old.hasPokedexes, isFalse);
@@ -214,6 +230,7 @@ void main() {
       expect(old.huntableVersions(133), isEmpty);
       expect(old.formDetail(133).pokedexes, isEmpty);
       expect(old.originFits(196, 'brilliant-diamond'), isTrue);
+      expect(old.lockedVersions(133), isEmpty);
     });
   });
 }

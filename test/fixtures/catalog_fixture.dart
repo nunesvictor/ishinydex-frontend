@@ -110,6 +110,13 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
     _form(133, 'eevee'),
     _form(134, 'vaporeon', types: ['water']),
     _form(196, 'espeon', group: 'gold-silver'),
+    _form(
+      10600,
+      'vaporeon-galar',
+      formName: 'galar',
+      isDefault: false,
+      group: 'sword-shield',
+    ),
     _form(150, 'mewtwo'),
     _form(172, 'pichu', group: 'gold-silver'),
     _form(793, 'nihilego', group: 'sun-moon'),
@@ -129,6 +136,7 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
     _pokemon(133, 'eevee'),
     _pokemon(134, 'vaporeon'),
     _pokemon(196, 'espeon'),
+    _pokemon(10600, 'vaporeon', isDefault: false),
     _pokemon(150, 'mewtwo'),
     _pokemon(172, 'pichu'),
     _pokemon(793, 'nihilego', abilities: ['beast-boost']),
@@ -336,6 +344,19 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
       'version': 'violet',
       'dlc': null,
       'forms': [134],
+    },
+  ],
+  // O Vaporeon de Galar (forma regional) não está em Scarlet/Violet.
+  'gameForms': [
+    {
+      'versionGroup': 'scarlet-violet',
+      'forms': [134],
+    },
+  ],
+  'gameShinyLocks': [
+    {
+      'version': 'scarlet',
+      'forms': [133],
     },
   ],
   'shinyLocks': [
