@@ -53,11 +53,14 @@ class SyncEngine {
       final remoteFile = remote == null
           ? null
           : LocalStore.parse(utf8.decode(remote.bytes));
+      final before = target.currentFile();
       if (remoteFile != null &&
           current != FirstSync.useLocal &&
-          !sameData(target.currentFile(), remoteFile)) {
+          !sameData(before, remoteFile)) {
         await target.apply(remoteFile, merge: current == FirstSync.merge);
-        pulled = true;
+        // O Dropbox pode diferir só por não ter as mudanças daqui: juntar
+        // não muda nada neste aparelho, e isso não conta como recebido.
+        if (!sameData(before, target.currentFile())) pulled = true;
       }
       final local = target.currentFile();
       if (remoteFile != null && sameData(local, remoteFile)) {

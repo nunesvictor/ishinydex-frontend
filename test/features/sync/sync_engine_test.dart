@@ -73,6 +73,15 @@ void main() {
     expect(await phone.trainers(), unorderedEquals(['Ash', 'Misty']));
   });
 
+  test('só este aparelho mudou: envia, sem contar como recebido', () async {
+    final phone = device();
+    await phone.data.backend.createTrainer(name: 'Ash', trainerId: '1');
+    await engine(phone).sync();
+    await phone.data.backend.createTrainer(name: 'Brock', trainerId: '3');
+    // O Dropbox difere (não tem o Brock), mas juntar não muda nada aqui.
+    expect(await engine(phone).sync(), (pulled: false, pushed: true));
+  });
+
   test(
     'primeira conexão: usar só os do Dropbox ou só os do aparelho',
     () async {
