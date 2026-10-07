@@ -38,6 +38,7 @@ enum OriginMark {
   /// Marca dos jogos que recebem Pokémon do HOME, pela versão (o selo do
   /// save onde um espécime está): `"scarlet"` → [paldea].
   static OriginMark? fromVersion(String? version) => switch (version) {
+    'lets-go-pikachu' || 'lets-go-eevee' => letsGo,
     'sword' || 'shield' => galar,
     'brilliant-diamond' || 'shining-pearl' => bdsp,
     'legends-arceus' => hisui,
