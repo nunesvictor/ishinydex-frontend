@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-/// Aba "Espécie": linha evolutiva, outras formas e uma grade com gênero,
-/// captura, ciclos de ovo, estreia, altura e peso.
+/// Aba "Espécie": linha evolutiva, outras formas, os jogos do HOME em cuja
+/// pokédex ela está e uma grade com gênero, captura, ciclos de ovo, estreia,
+/// altura e peso.
 ///
 /// Num dex ([dexId]), cada forma da linha evolutiva e das outras formas leva
 /// ao slot dela ([onOpenSlot]); a que não está no dex fica esmaecida. Fora
@@ -130,6 +133,10 @@ class SpeciesInfo extends ConsumerWidget {
             ],
           ),
         ],
+        if (form.pokedexes.isNotEmpty) ...[
+          Text('Na pokédex de', style: theme.textTheme.titleSmall),
+          _Pokedexes(form.pokedexes),
+        ],
         if (facts.isNotEmpty)
           LayoutBuilder(
             builder: (context, constraints) {
@@ -183,6 +190,104 @@ class SpeciesInfo extends ConsumerWidget {
     if (form.height case final height?) ('Altura', '${decimal(height / 10)} m'),
     if (form.weight case final weight?) ('Peso', '${decimal(weight / 10)} kg'),
   ];
+}
+
+/// Os jogos em cuja pokédex a espécie está, com cada pokédex e o número. Os
+/// ícones ficam sempre coloridos (o cinza é das caçadas); os jogos em que o
+/// usuário tem save vêm primeiro, com fundo e um selo.
+class _Pokedexes extends ConsumerWidget {
+  const _Pokedexes(this.games);
+
+  final List<GamePokedex> games;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final owned = {
+      for (final save in ref.watch(savesProvider).value ?? const <Save>[])
+        ?save.trainer.version,
+    };
+    List<String> mine(GamePokedex game) => [
+      ...game.versions.where(owned.contains),
+    ];
+    final ordered = [
+      ...games.where((g) => mine(g).isNotEmpty),
+      ...games.where((g) => mine(g).isEmpty),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 4,
+      children: [
+        for (final game in ordered)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: mine(game).isEmpty
+                  ? null
+                  : theme.colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                spacing: 12,
+                children: [
+                  // Largura de dois ícones: os nomes ficam alinhados.
+                  SizedBox(
+                    width: 47,
+                    child: Row(
+                      spacing: 3,
+                      children: [
+                        for (final version in game.versions) GameIcon(version),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 2,
+                      children: [
+                        Text(
+                          game.versions.map(versionLabel).join(' / '),
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        if (mine(game) case final versions
+                            when versions.isNotEmpty)
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              child: Text(
+                                '${versions.length > 1 ? 'Seus' : 'Seu'}: '
+                                '${versions.map(versionLabel).join(', ')}',
+                                style: theme.textTheme.labelSmall,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          game.entries.map((e) => e.description).join(' · '),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Text(
+          'Estar na pokédex não garante que dá para capturar: pode ser só '
+          'por evolução, troca ou evento.',
+          style: theme.textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
 }
 
 /// Proporção de gênero a partir do `gender_rate` (oitavos de fêmea; -1 =

@@ -22,6 +22,9 @@ class Catalog {
     required this._species,
     required this._originMarks,
     required this._spriteBase,
+    required this._groupOrder,
+    required this._pokedexes,
+    required this._exclusives,
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
@@ -171,6 +174,33 @@ class Catalog {
           for (final v in g.versions) v: g.originMark,
       },
       spriteBase: base,
+      groupOrder: groupOrder,
+      // Catálogos antigos não têm as pokédex nem os exclusivos.
+      pokedexes: [
+        for (final p in _objects(json['pokedexes'] ?? const <Object>[]))
+          _Pokedex(
+            label: p['label'] as String,
+            versionGroups: [
+              for (final g in p['versionGroups'] as List) g as String,
+            ],
+            dlc: p['dlc'] as String?,
+            entries: {
+              for (final e in p['entries'] as List)
+                (e as List)[0] as String: e[1] as int?,
+            },
+          ),
+      ],
+      exclusives: () {
+        final result = <int, Set<String>>{};
+        for (final e in _objects(
+          json['versionExclusives'] ?? const <Object>[],
+        )) {
+          for (final id in e['forms'] as List) {
+            (result[id as int] ??= {}).add(e['version'] as String);
+          }
+        }
+        return result;
+      }(),
     );
   }
 
@@ -201,6 +231,18 @@ class Catalog {
   /// Marca de origem de cada versão (`null`: o jogo não tem marca).
   final Map<String, String?> _originMarks;
   final String _spriteBase;
+
+  /// Ordem de lançamento de cada grupo de versões.
+  final Map<String, int> _groupOrder;
+
+  /// As pokédex dos jogos que recebem do HOME (vazio em catálogo antigo).
+  final List<_Pokedex> _pokedexes;
+
+  /// Versões de que cada forma é exclusiva (pode ser de mais de um jogo).
+  final Map<int, Set<String>> _exclusives;
+
+  /// O catálogo diz em que pokédex cada espécie está (os saves compatíveis).
+  bool get hasPokedexes => _pokedexes.isNotEmpty;
 
   /// Ids de todas as formas, na ordem da dex nacional.
   Iterable<int> get formIds => _forms.keys;
@@ -268,7 +310,79 @@ class Catalog {
           for (final other in _formsOfSpecies[species.name] ?? const <int>[])
             if (other != formId) formRef(other),
       ],
+      pokedexes: pokedexesOf(formId),
     );
+  }
+
+  /// Versões que recebem do HOME, por grupo, na ordem do catálogo.
+  late final Map<String, List<String>> _homeVersions = () {
+    final result = <String, List<String>>{};
+    for (final v in versions) {
+      if (transferVersions.contains(v.name)) {
+        (result[v.versionGroup] ??= []).add(v.name);
+      }
+    }
+    return result;
+  }();
+
+  /// Grupos das DLCs → os grupos dos jogos delas (pelas pokédex das DLCs).
+  late final Map<String, List<String>> _gamesOfDlc = {
+    for (final p in _pokedexes) ?p.dlc: p.versionGroups,
+  };
+
+  /// A forma pode estar no jogo [group]: não foi lançada depois dele (uma
+  /// forma de DLC conta como do jogo da DLC). Não pega tudo (um Meowth de
+  /// Galar passaria no BDSP), mas tira as regionais dos jogos anteriores.
+  bool _existsBy(_Form form, String group) {
+    final debut = form.versionGroup;
+    if (_gamesOfDlc[debut]?.contains(group) ?? false) return true;
+    return (_groupOrder[debut] ?? 0) <= (_groupOrder[group] ?? 0);
+  }
+
+  /// Os jogos do HOME em cuja pokédex a espécie da forma está, na ordem de
+  /// lançamento, com cada pokédex e o número.
+  List<GamePokedex> pokedexesOf(int formId) {
+    final form = _forms[formId]!;
+    final species = _pokemonOf(form)?.species;
+    if (species == null) return const [];
+    final entries = <String, List<PokedexEntry>>{};
+    for (final dex in _pokedexes) {
+      if (!dex.entries.containsKey(species)) continue;
+      for (final group in dex.versionGroups) {
+        if (!_existsBy(form, group)) continue;
+        (entries[group] ??= []).add(
+          PokedexEntry(
+            label: dex.label,
+            number: dex.entries[species],
+            dlc: dex.dlc != null,
+          ),
+        );
+      }
+    }
+    final groups = entries.keys.toList()
+      ..sort((a, b) => (_groupOrder[a] ?? 0).compareTo(_groupOrder[b] ?? 0));
+    return [
+      for (final group in groups)
+        GamePokedex(
+          versionGroup: group,
+          versions: _homeVersions[group] ?? const [],
+          entries: entries[group]!,
+        ),
+    ];
+  }
+
+  /// Versões (das que recebem do HOME) em que a forma pode ser caçada: a
+  /// espécie está numa pokédex do jogo e a forma não é exclusiva da outra
+  /// versão (o Koraidon só em Scarlet).
+  List<String> huntableVersions(int formId) {
+    final exclusive = _exclusives[formId] ?? const <String>{};
+    return [
+      for (final game in pokedexesOf(formId))
+        for (final version in game.versions)
+          if (!game.versions.any(exclusive.contains) ||
+              exclusive.contains(version))
+            version,
+    ];
   }
 
   late final Map<String, String> _groupOfVersion = {
@@ -375,6 +489,24 @@ class Catalog {
 /// Lista de objetos JSON.
 List<Map<String, dynamic>> _objects(Object? value) =>
     (value! as List).cast<Map<String, dynamic>>();
+
+/// Uma pokédex de jogo do HOME: as espécies (pelo nome) e o número de cada
+/// uma (`null` nas pokédex especiais).
+class _Pokedex {
+  const _Pokedex({
+    required this.label,
+    required this.versionGroups,
+    required this.dlc,
+    required this.entries,
+  });
+
+  final String label;
+  final List<String> versionGroups;
+
+  /// O grupo de versões da DLC (`null`: jogo base).
+  final String? dlc;
+  final Map<String, int?> entries;
+}
 
 /// Shiny lock padrão do catálogo; as formas pelo id.
 class CatalogShinyLock {

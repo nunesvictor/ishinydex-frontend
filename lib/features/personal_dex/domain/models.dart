@@ -259,6 +259,11 @@ abstract class Hunt with _$Hunt {
     required Slot slot,
     required List<HuntReason> reasons,
     ShinyLockType? shinyLock,
+
+    /// Versões (das que recebem do HOME) em que a forma pode ser caçada:
+    /// está numa pokédex do jogo e não é exclusiva da outra versão. Vazio
+    /// sem o catálogo.
+    @Default(<String>[]) List<String> versions,
   }) = _Hunt;
 
   const Hunt._();
@@ -292,6 +297,9 @@ abstract class HuntQuery with _$HuntQuery {
     @Default('') String search,
     @Default(false) bool includeLocked,
     @Default(HuntSituation.all) HuntSituation situation,
+
+    /// Só o que dá para caçar nesta versão (a de um save do usuário).
+    String? version,
   }) = _HuntQuery;
 
   const HuntQuery._();
@@ -310,6 +318,7 @@ abstract class HuntQuery with _$HuntQuery {
     acceptedBalls: acceptedBalls,
     search: search,
     situation: situation,
+    version: version,
   );
 
   /// Parâmetros da API. `reasons` vai sempre: sem ele, a API usaria o
@@ -327,6 +336,7 @@ abstract class HuntQuery with _$HuntQuery {
       if (search.isNotEmpty) 'search': search,
       if (includeLocked) 'include_locked': true,
       'registered': ?situation.param,
+      'version': ?version,
     };
   }
 }

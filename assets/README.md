@@ -1,6 +1,6 @@
 # Assets
 
-Fora de `icons/` e `origin_marks/` para não entrar no bundle (o `pubspec.yaml` declara as pastas inteiras).
+Fora de `game_icons/`, `icons/` e `origin_marks/` para não entrar no bundle (o `pubspec.yaml` declara as pastas inteiras).
 
 ## Marcas de origem (`origin_marks/`)
 
@@ -20,6 +20,23 @@ Fora de `icons/` e `origin_marks/` para não entrar no bundle (o `pubspec.yaml` 
 | `go.png` | `GO_icon_HOME.png` |
 
 O app pinta o branco com a cor do tema (`OriginMarkIcon`, em `lib/core/widgets/origin_mark_chip.dart`).
+
+## Ícones de jogo (`game_icons/`)
+
+Ícones dos jogos no Pokémon HOME (128×128, coloridos), baixados da Bulbagarden Archives, categoria [Pokémon HOME game icons](https://archives.bulbagarden.net/wiki/Category:Pok%C3%A9mon_HOME_game_icons). Só os jogos que recebem Pokémon do HOME (os que viram save), com o nome da versão no catálogo. Mesma ressalva de propriedade das marcas de origem.
+
+| Arquivo | Original |
+| --- | --- |
+| `sword.png` | `HOME_Sword_icon.png` |
+| `shield.png` | `HOME_Shield_icon.png` |
+| `brilliant-diamond.png` | `HOME_Brilliant_Diamond_icon.png` |
+| `shining-pearl.png` | `HOME_Shining_Pearl_icon.png` |
+| `legends-arceus.png` | `HOME_Legends_Arceus_icon.png` |
+| `scarlet.png` | `HOME_Scarlet_icon.png` |
+| `violet.png` | `HOME_Violet_icon.png` |
+| `legends-za.png` | `HOME_Legends_Z-A_icon.png` |
+
+Usados por `GameIcon` (`lib/core/widgets/game_icon.dart`), que mostra a sigla do jogo se o asset faltar.
 
 ## Ícone de alfa (`icons/alpha.png`)
 

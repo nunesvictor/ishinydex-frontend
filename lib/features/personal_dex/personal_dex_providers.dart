@@ -13,6 +13,12 @@ final personalDexRepositoryProvider = Provider<PersonalDexRepository>(
   (ref) => ref.watch(fakeBackendProvider),
 );
 
+/// O catálogo diz em que jogos cada espécie está: sem isso (a demonstração
+/// fixa, um catálogo antigo), as caçadas ficam sem o filtro "Jogo".
+final knowsGamesProvider = Provider<bool>(
+  (ref) => ref.watch(fakeBackendProvider).catalog?.hasPokedexes ?? false,
+);
+
 final lastDexStorageProvider = Provider<LastDexStorage>(
   (ref) => PrefsLastDexStorage(),
 );

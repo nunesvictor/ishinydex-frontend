@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -87,8 +89,8 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
   );
 }
 
-/// Busca + botão Filtros numa linha; Motivos e Situação em chips com menu;
-/// e, só com escopo ativo, os chips removíveis dele. Mesmo desenho do
+/// Busca + botão Filtros numa linha; Motivos, Situação e Jogo em chips com
+/// menu; e, só com escopo ativo, os chips removíveis dele. Mesmo desenho do
 /// inventário.
 class _Filters extends ConsumerWidget {
   const _Filters({
@@ -150,6 +152,17 @@ class _Filters extends ConsumerWidget {
     final pokeballOn = _isOn(HuntReason.pokeball);
     final first = query.reasons.first;
     final more = query.reasons.length - 1;
+    // Jogo: só com o catálogo das pokédex e algum save; um item por versão.
+    final saves = ref.watch(knowsGamesProvider)
+        ? ref.watch(savesProvider).value ?? const <Save>[]
+        : const <Save>[];
+    final savesOf = <String, List<Save>>{};
+    for (final save in saves) {
+      if (save.trainer.version case final version?) {
+        (savesOf[version] ??= []).add(save);
+      }
+    }
+    final game = query.version;
     final chips = <Widget>[
       MenuChip(
         label: more > 0 ? '${first.label} +$more' : first.label,
@@ -210,6 +223,35 @@ class _Filters extends ConsumerWidget {
             ),
         ],
       ),
+      if (savesOf.isNotEmpty)
+        MenuChip(
+          label: game == null ? 'Jogo' : versionLabel(game),
+          avatar: game == null ? null : GameIcon(game, size: 18),
+          selected: game != null,
+          menuChildren: [
+            const MenuHeader('Caçável em qual dos seus saves'),
+            RadioMenuButton<String?>(
+              value: null,
+              groupValue: game,
+              onChanged: (_) => onChanged(query.copyWith(version: null)),
+              child: const MenuOptionText(
+                'Todos os jogos',
+                'Sem filtrar por save',
+              ),
+            ),
+            for (final MapEntry(key: version, value: saves) in savesOf.entries)
+              RadioMenuButton<String?>(
+                value: version,
+                groupValue: game,
+                onChanged: (v) => onChanged(query.copyWith(version: v)),
+                child: MenuOptionText(
+                  versionLabel(version),
+                  saves.map((s) => s.owner).join(' · '),
+                  leading: GameIcon(version, size: 24),
+                ),
+              ),
+          ],
+        ),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -405,6 +447,16 @@ class HuntTile extends ConsumerWidget {
             ),
         ],
       ),
+      trailing: hunt.versions.isEmpty
+          ? null
+          : HuntGames(
+              versions: hunt.versions,
+              owned: {
+                for (final save
+                    in ref.watch(savesProvider).value ?? const <Save>[])
+                  ?save.trainer.version,
+              },
+            ),
       // Uma linha só (espaço no celular): a espécie (só se o título mostra
       // um apelido), nº da dex, posição na box e motivos.
       subtitle: Text(
@@ -418,6 +470,47 @@ class HuntTile extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       ),
       onTap: onTap,
+    );
+  }
+}
+
+/// Onde caçar, em até [max] ícones de jogo: os saves do usuário em que dá
+/// (coloridos) e depois os jogos em que ele não tem save (cinza); o resto
+/// vira "+N". Sem ícone: fora das pokédex dos jogos do HOME.
+class HuntGames extends StatelessWidget {
+  const HuntGames({
+    required this.versions,
+    required this.owned,
+    this.max = 4,
+    super.key,
+  });
+
+  final List<String> versions;
+
+  /// As versões dos saves do usuário.
+  final Set<String> owned;
+  final int max;
+
+  @override
+  Widget build(BuildContext context) {
+    final mine = [...versions.where(owned.contains)];
+    final others = [...versions.where((v) => !owned.contains(v))];
+    final room = (max - mine.length).clamp(0, others.length);
+    final rest = others.length - room;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 4,
+      children: [
+        for (final version in mine) GameIcon(version),
+        for (final version in others.take(room)) GameIcon(version, muted: true),
+        if (rest > 0)
+          Text(
+            '+$rest',
+            semanticsLabel: 'mais $rest jogos sem save seu',
+            style: Theme.of(context).textTheme.labelMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.outline),
+          ),
+      ],
     );
   }
 }

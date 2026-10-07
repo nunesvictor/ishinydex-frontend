@@ -108,13 +108,13 @@ void main() {
       // Seed: OT 1 (Scarlet) e 4 (Z-A) já são saves; 2 sem versão; 3 PLA.
       expect((await backend.fetchSaves()).map((s) => s.title), [
         'Scarlet · Switch',
-        'Legends Za · Ash (222222)',
+        'Legends: Z-A · Ash (222222)',
       ]);
       expect(backend.createSave(trainerId: 99), _validation('trainer'));
       expect(backend.createSave(trainerId: 2), _validation('trainer'));
       expect(backend.createSave(trainerId: 1), _validation('trainer'));
       final save = await backend.createSave(trainerId: 3, label: 'Lite');
-      expect(save.title, 'Legends Arceus · Lite');
+      expect(save.title, 'Legends: Arceus · Lite');
     });
 
     test('renomear leva o apelido aos espécimes; apagar', () async {

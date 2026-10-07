@@ -5,6 +5,18 @@ String prettifyName(String raw) => raw
     .map((part) => part[0].toUpperCase() + part.substring(1))
     .join(' ');
 
+/// Nome de uma versão de jogo como o jogo se chama (`legends-za` →
+/// "Legends: Z-A"); as demais, pelo [prettifyName].
+String versionLabel(String version) =>
+    _versionLabels[version] ?? prettifyName(version);
+
+const _versionLabels = {
+  'legends-arceus': 'Legends: Arceus',
+  'legends-za': 'Legends: Z-A',
+  'lets-go-pikachu': "Let's Go Pikachu",
+  'lets-go-eevee': "Let's Go Eevee",
+};
+
 /// Percentual inteiro de [done] sobre [total] (0 quando [total] é 0).
 int percentOf(int done, int total) =>
     total == 0 ? 0 : (done * 100 / total).floor();

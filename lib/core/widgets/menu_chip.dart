@@ -11,10 +11,14 @@ class MenuChip extends StatelessWidget {
     required this.menuChildren,
     this.selected = false,
     this.tooltip,
+    this.avatar,
     super.key,
   });
 
   final String label;
+
+  /// Antes do rótulo (ex.: o ícone do jogo escolhido).
+  final Widget? avatar;
   final bool selected;
   final String? tooltip;
 
@@ -25,6 +29,7 @@ class MenuChip extends StatelessWidget {
   Widget build(BuildContext context) => MenuAnchor(
     menuChildren: menuChildren,
     builder: (context, controller, _) => FilterChip(
+      avatar: avatar,
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [Text(label), const Icon(Icons.arrow_drop_down, size: 18)],
