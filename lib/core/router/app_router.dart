@@ -78,8 +78,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (context, state) => homeLocation(ref),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) =>
-            AdaptiveShell(navigationShell: shell),
+        // O estado do sync fica sempre à vista: a faixa de "sincronizando"
+        // e um selo em Ajustes quando há problema.
+        builder: (context, state, shell) => AdaptiveShell(
+          navigationShell: shell,
+          activity: const SyncActivityBar(),
+          decorateIcon: (index, icon) =>
+              index == settingsDestination ? SyncBadge(child: icon) : icon,
+        ),
         branches: [
           StatefulShellBranch(
             routes: [

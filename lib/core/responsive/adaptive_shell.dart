@@ -32,11 +32,44 @@ const shellDestinations = [
   ),
 ];
 
+/// Índice de Ajustes em [shellDestinations].
+const settingsDestination = 2;
+
 /// Casca de navegação: NavigationBar no compacto, NavigationRail nos demais.
 class AdaptiveShell extends StatelessWidget {
-  const AdaptiveShell({required this.navigationShell, super.key});
+  const AdaptiveShell({
+    required this.navigationShell,
+    required this.activity,
+    required this.decorateIcon,
+    super.key,
+  });
 
   final StatefulNavigationShell navigationShell;
+
+  /// Uma faixa fina sobre o conteúdo, colada na navegação: em cima da barra
+  /// inferior no compacto e no topo do conteúdo nos demais (ex.: o sync em
+  /// andamento). Fica por cima, sem empurrar nada.
+  final Widget activity;
+
+  /// Troca o ícone de um destino (pelo índice em [shellDestinations]), por
+  /// exemplo para pôr um selo.
+  final Widget Function(int index, Widget icon) decorateIcon;
+
+  Widget _icon(int index, IconData icon) => decorateIcon(index, Icon(icon));
+
+  /// O conteúdo com a [activity] por cima, no topo ou embaixo.
+  Widget _body({required bool atBottom}) => Stack(
+    children: [
+      Positioned.fill(child: navigationShell),
+      Positioned(
+        left: 0,
+        right: 0,
+        top: atBottom ? null : 0,
+        bottom: atBottom ? 0 : null,
+        child: activity,
+      ),
+    ],
+  );
 
   void _goTo(int index) => navigationShell.goBranch(
     index,
@@ -48,15 +81,15 @@ class AdaptiveShell extends StatelessWidget {
     final size = WindowSize.of(context);
     if (size.isCompact) {
       return Scaffold(
-        body: navigationShell,
+        body: _body(atBottom: true),
         bottomNavigationBar: NavigationBar(
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: _goTo,
           destinations: [
-            for (final d in shellDestinations)
+            for (final (i, d) in shellDestinations.indexed)
               NavigationDestination(
-                icon: Icon(d.icon),
-                selectedIcon: Icon(d.selectedIcon),
+                icon: _icon(i, d.icon),
+                selectedIcon: _icon(i, d.selectedIcon),
                 label: d.label,
               ),
           ],
@@ -80,16 +113,16 @@ class AdaptiveShell extends StatelessWidget {
               child: Icon(Icons.auto_awesome),
             ),
             destinations: [
-              for (final d in shellDestinations)
+              for (final (i, d) in shellDestinations.indexed)
                 NavigationRailDestination(
-                  icon: Icon(d.icon),
-                  selectedIcon: Icon(d.selectedIcon),
+                  icon: _icon(i, d.icon),
+                  selectedIcon: _icon(i, d.selectedIcon),
                   label: Text(d.label),
                 ),
             ],
           ),
           const VerticalDivider(width: 1),
-          Expanded(child: navigationShell),
+          Expanded(child: _body(atBottom: false)),
         ],
       ),
     );
