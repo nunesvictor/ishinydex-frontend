@@ -360,6 +360,8 @@ abstract class Save with _$Save {
 
   /// Jogos que recebem Pokémon do HOME (só os OTs desses viram save).
   static const transferVersions = {
+    'lets-go-pikachu',
+    'lets-go-eevee',
     'sword',
     'shield',
     'brilliant-diamond',
@@ -369,6 +371,16 @@ abstract class Save with _$Save {
     'violet',
     'legends-za',
   };
+
+  /// Jogos que só recebem Pokémon com uma marca de origem: o Let's Go só
+  /// aceita de volta quem veio dele.
+  static const requiredMarks = {
+    'lets-go-pikachu': 'lets-go',
+    'lets-go-eevee': 'lets-go',
+  };
+
+  /// A marca exigida para entrar no save (ver [requiredMarks]).
+  String? get requiredMark => requiredMarks[trainer.version];
 
   /// `"Scarlet"`: o jogo do save.
   String get game => versionLabel(trainer.version ?? '');

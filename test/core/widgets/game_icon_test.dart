@@ -30,9 +30,9 @@ void main() {
   });
 
   testWidgets('sem o asset (outra versão): a sigla do jogo', (tester) async {
-    await _pump(tester, const GameIcon('lets-go-pikachu'));
+    await _pump(tester, const GameIcon('omega-ruby'));
 
-    expect(find.text('LG'), findsOneWidget);
-    expect(find.bySemanticsLabel("Let's Go Pikachu"), findsOneWidget);
+    expect(find.text('OR'), findsOneWidget);
+    expect(find.bySemanticsLabel('Omega Ruby'), findsOneWidget);
   });
 }

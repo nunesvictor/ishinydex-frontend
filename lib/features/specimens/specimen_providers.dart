@@ -73,7 +73,6 @@ final FutureProvider<List<Trainer>> trainersProvider =
       (ref) => ref.watch(specimenRepositoryProvider).fetchTrainers(),
     );
 
-/// Saves do usuário (Ajustes → Meus saves).
 /// Se o Pokémon (a forma ou uma pré-evolução) está na pokédex do jogo do OT
 /// (`Catalog.originFits`); sem o catálogo, sempre.
 final originFitsProvider = Provider<bool Function(int formId, String? version)>(
@@ -83,6 +82,14 @@ final originFitsProvider = Provider<bool Function(int formId, String? version)>(
   },
 );
 
+/// Se os espécimes podem ir para o save e quantos estão fora da pokédex do
+/// jogo dele (`FakeBackend.transferCheck`).
+final transferCheckProvider =
+    Provider<({bool allowed, int outside}) Function(List<int> ids, Save save)>(
+      (ref) => ref.watch(fakeBackendProvider).transferCheck,
+    );
+
+/// Saves do usuário (Ajustes → Meus saves).
 final FutureProvider<List<Save>> savesProvider =
     FutureProvider.autoDispose<List<Save>>(
       (ref) => ref.watch(specimenRepositoryProvider).fetchSaves(),

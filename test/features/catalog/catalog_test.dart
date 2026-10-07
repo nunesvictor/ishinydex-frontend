@@ -195,6 +195,13 @@ void main() {
       expect(catalog.originFits(196, null), isTrue);
     });
 
+    test('save: a própria forma na pokédex do jogo', () {
+      expect(catalog.inGame(133, 'sword'), isTrue);
+      // Espeon evolui em Sword, mas não está na pokédex dele.
+      expect(catalog.inGame(196, 'sword'), isFalse);
+      expect(catalog.inGame(196, 'red'), isTrue);
+    });
+
     test('catálogo antigo: sem pokédex nem exclusivos', () {
       final old = Catalog.fromJson(
         catalogJson()
