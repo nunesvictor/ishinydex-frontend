@@ -135,15 +135,25 @@ class _Details extends ConsumerWidget {
                   ),
                 if (OriginMark.fromSlug(specimen.originMark) case final mark?)
                   OriginMarkChip(mark),
+                if (specimen.isVisitingChampions)
+                  const Chip(
+                    avatar: ChampionsIcon(size: 18),
+                    label: Text('Visitando o Champions'),
+                  ),
               ],
               fields: fields,
-              footer: switch ((specimen.location, specimen.hunt)) {
-                (null, null) => null,
-                (final save, final hunt) => Column(
+              footer: switch ((
+                specimen.location,
+                specimen.championsSince,
+                specimen.hunt,
+              )) {
+                (null, null, null) => null,
+                (final save, final champions, final hunt) => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (save != null)
                       LocationTile(save: save, since: specimen.locationSince),
+                    if (champions != null) ChampionsTile(since: champions),
                     if (hunt != null)
                       HuntRecordCard(
                         hunt: hunt,
@@ -176,12 +186,13 @@ class _Details extends ConsumerWidget {
                   label: 'Ver no dex',
                   onSelected: () => _openInDex(context, ref),
                 ),
-              locationAction(
+              ...locationActions(
                 context,
                 ref,
-                specimenId: specimen.id,
+                id: specimen.id,
                 name: specimen.displayName,
                 away: specimen.isAway,
+                visiting: specimen.isVisitingChampions,
               ),
               if (specimen.slot case final slotId?)
                 SheetAction(
@@ -190,11 +201,8 @@ class _Details extends ConsumerWidget {
                   subtitle: 'Fica disponível no inventário',
                   onSelected: () => _withdraw(context, ref, slotId),
                 ),
-              SheetAction(
-                icon: Icons.warning_amber_rounded,
-                label: 'Libertar',
-                subtitle: 'Apaga o cadastro (pede confirmação)',
-                destructive: true,
+              releaseAction(
+                visiting: specimen.isVisitingChampions,
                 onSelected: () => _release(context, ref),
               ),
             ],

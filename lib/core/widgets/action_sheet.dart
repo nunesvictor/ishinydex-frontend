@@ -8,6 +8,8 @@ class SheetAction {
     required this.onSelected,
     this.subtitle,
     this.destructive = false,
+    this.enabled = true,
+    this.leading,
   });
 
   final IconData icon;
@@ -18,6 +20,12 @@ class SheetAction {
 
   /// Ações que apagam algo: no fim, separadas e na cor de erro.
   final bool destructive;
+
+  /// Desabilitada: aparece (com o motivo no [subtitle]), mas não responde.
+  final bool enabled;
+
+  /// No lugar do [icon] (ex.: o ícone colorido de um jogo).
+  final Widget? leading;
 
   /// Chamada depois que a folha fecha (pode abrir diálogos e outras folhas).
   final VoidCallback onSelected;
@@ -47,7 +55,8 @@ Future<void> showActionSheet(
       Widget tile(SheetAction action) {
         final color = action.destructive ? theme.colorScheme.error : null;
         return ListTile(
-          leading: Icon(action.icon, color: color),
+          enabled: action.enabled,
+          leading: action.leading ?? Icon(action.icon, color: color),
           title: Text(action.label, style: TextStyle(color: color)),
           subtitle: action.subtitle == null ? null : Text(action.subtitle!),
           onTap: () => Navigator.of(context).pop(action),

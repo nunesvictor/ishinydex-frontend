@@ -53,6 +53,7 @@ class SlotTile extends StatelessWidget {
     final specimen = slot.specimen;
     final ballUrl = specimen?.pokeballSpriteUrl;
     final away = specimen?.location;
+    final visiting = specimen?.isVisitingChampions ?? false;
     return Material(
       color: slot.isRegistered
           ? scheme.surfaceContainerHighest
@@ -90,7 +91,7 @@ class SlotTile extends StatelessWidget {
                     child: Opacity(
                       opacity: slot.isMissing
                           ? 0.35
-                          : away != null
+                          : away != null || visiting
                           ? 0.55
                           : 1,
                       child: PokemonSprite(
@@ -135,6 +136,25 @@ class SlotTile extends StatelessWidget {
                       child: Tooltip(
                         message: 'Em ${away.title}',
                         child: SaveIcon(away, size: size * 0.22),
+                      ),
+                    ),
+                  // Visitando o Champions (#174): como quem está num save,
+                  // com a marca do HOME. Ela é mais larga que alta, por isso
+                  // um pouco maior que a do save para ter o mesmo peso.
+                  if (visiting)
+                    Positioned(
+                      right: inset,
+                      top: inset,
+                      child: Tooltip(
+                        message: 'Visitando o Champions',
+                        child: Image.asset(
+                          'assets/origin_marks/champions.png',
+                          key: const ValueKey('champions-mark'),
+                          width: size * 0.28,
+                          height: size * 0.28,
+                          color: IconTheme.of(context).color,
+                          colorBlendMode: BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   if (ballUrl != null)

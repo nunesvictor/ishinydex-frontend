@@ -82,4 +82,16 @@ void main() {
       expect(find.byTooltip('Caçada em andamento'), findsOne);
     });
   }
+
+  testWidgets('visitando o Champions: a marca no canto', (tester) async {
+    await pumpTile(
+      tester,
+      120,
+      slot.copyWith(
+        specimen: slot.specimen!.copyWith(championsSince: DateTime(2026)),
+      ),
+    );
+    expect(find.byKey(const ValueKey('champions-mark')), findsOne);
+    expect(find.byTooltip('Visitando o Champions'), findsOne);
+  });
 }

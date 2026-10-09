@@ -52,6 +52,9 @@ abstract class SpecimenSummary with _$SpecimenSummary {
     /// continua no slot, que fica reservado para a volta.
     Save? location,
     DateTime? locationSince,
+
+    /// Desde quando visita o Pokémon Champions (#174).
+    DateTime? championsSince,
   }) = _SpecimenSummary;
 
   const SpecimenSummary._();
@@ -64,6 +67,8 @@ abstract class SpecimenSummary with _$SpecimenSummary {
     if (nick != null && nick.isNotEmpty) return nick;
     return prettifyName(formName ?? 'Specimen #$id');
   }
+
+  bool get isVisitingChampions => championsSince != null;
 }
 
 @freezed
