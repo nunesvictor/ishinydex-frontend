@@ -7,7 +7,11 @@ import '../../helpers/helpers.dart';
 void main() {
   test('fromWidth', () {
     expect(WindowSize.fromWidth(599), WindowSize.compact);
-    expect(WindowSize.fromWidth(600), WindowSize.medium);
+    // iPad em retrato (mini 744, A16 820, Pro 11" 834): compacto.
+    expect(WindowSize.fromWidth(744), WindowSize.compact);
+    expect(WindowSize.fromWidth(820), WindowSize.compact);
+    expect(WindowSize.fromWidth(839), WindowSize.compact);
+    expect(WindowSize.fromWidth(840), WindowSize.medium);
     expect(WindowSize.fromWidth(1023), WindowSize.medium);
     expect(WindowSize.fromWidth(1024), WindowSize.expanded);
     expect(WindowSize.fromWidth(1439), WindowSize.expanded);

@@ -20,7 +20,7 @@ Finder ballSprite(Pattern label) => find.byWidgetPredicate(
 
 /// Tamanhos de tela usados nos testes responsivos.
 const compactSize = Size(400, 800);
-const mediumSize = Size(800, 900);
+const mediumSize = Size(900, 900);
 const expandedSize = Size(1400, 900);
 const largeSize = Size(1600, 1000);
 

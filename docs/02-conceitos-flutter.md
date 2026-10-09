@@ -111,13 +111,16 @@ LayoutBuilder(builder: (context, constraints) {
 
 ## 3. Responsividade
 
-O app usa as três classes de largura do Material 3, definidas em
-[`breakpoints.dart`](../lib/core/responsive/breakpoints.dart):
+O app usa as classes de largura do Material 3, definidas em
+[`breakpoints.dart`](../lib/core/responsive/breakpoints.dart). O `compact`
+vai até 840, e não até 600 como no M3: é onde o M3 passa de um painel para
+dois, e assim o iPad em retrato (744–834) fica com o layout do iPhone e os
+painéis só aparecem na paisagem.
 
 | Classe | Largura | Navegação | Página do dex |
 | --- | --- | --- | --- |
-| `compact` | < 600 | `NavigationBar` embaixo | Swipe entre boxes (`PageView`); detalhe em *bottom sheet* |
-| `medium` | 600–1023 | `NavigationRail` à esquerda | Grade + painel de detalhe |
+| `compact` | < 840 | `NavigationBar` embaixo | Swipe entre boxes (`PageView`); detalhe em *bottom sheet* |
+| `medium` | 840–1023 | `NavigationRail` à esquerda | Grade + painel de detalhe |
 | `expanded` | 1024–1439 | `NavigationRail` compacto | Grade + detalhe; lista de boxes recolhível (começa oculta) |
 | `large` | ≥ 1440 | `NavigationRail` estendido | Lista de boxes + grade + detalhe (lista recolhível, começa aberta) |
 
