@@ -14,6 +14,10 @@ import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
+import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
@@ -34,8 +38,13 @@ class HuntsPage extends ConsumerStatefulWidget {
   ConsumerState<HuntsPage> createState() => _HuntsPageState();
 }
 
+/// As abas de Caçadas: o que falta, as caçadas em andamento e as pausadas
+/// (#164).
+enum HuntsTab { missing, active, paused }
+
 class _HuntsPageState extends ConsumerState<HuntsPage> {
   HuntQuery _query = const HuntQuery();
+  HuntsTab _tab = HuntsTab.missing;
   Timer? _debounce;
 
   @override
@@ -56,38 +65,77 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Caçadas')),
-    body: Center(
-      // No PC, uma lista de 1.400 px de largura só espalharia o texto.
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: Column(
-          children: [
-            _Filters(
-              dexId: widget.dexId,
-              query: _query,
-              onSearchChanged: _onSearchChanged,
-              onChanged: _setQuery,
-            ),
-            Expanded(
-              child: HuntList(
-                dexId: widget.dexId,
-                query: _query,
-                onTap: (hunt) => context.push(
-                  Routes.dex(
-                    widget.dexId,
-                    boxId: hunt.slot.box.id,
-                    slotId: hunt.slot.id,
-                  ),
-                ),
-              ),
-            ),
-          ],
+  Widget build(BuildContext context) {
+    final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
+    final active = hunts.where((h) => !h.paused).length;
+    final tabs = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: SegmentedButton<HuntsTab>(
+        key: const ValueKey('hunts-tabs'),
+        showSelectedIcon: false,
+        segments: [
+          const ButtonSegment(value: HuntsTab.missing, label: Text('Faltam')),
+          ButtonSegment(
+            value: HuntsTab.active,
+            label: Text('Em andamento ($active)'),
+          ),
+          ButtonSegment(
+            value: HuntsTab.paused,
+            label: Text('Pausadas (${hunts.length - active})'),
+          ),
+        ],
+        selected: {_tab},
+        onSelectionChanged: (v) => setState(() => _tab = v.single),
+      ),
+    );
+    return Scaffold(
+      appBar: AppBar(title: const Text('Caçadas')),
+      floatingActionButton: _tab == HuntsTab.active
+          ? const StartHuntButton()
+          : null,
+      body: Center(
+        // No PC, uma lista de 1.400 px de largura só espalharia o texto; os
+        // cartões das caçadas, em grade, usam mais.
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: _tab == HuntsTab.missing ? 720 : 1100,
+          ),
+          child: Column(
+            children: [
+              tabs,
+              if (_tab == HuntsTab.missing)
+                ..._missing(context)
+              else
+                Expanded(child: HuntCards(paused: _tab == HuntsTab.paused)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _missing(BuildContext context) => [
+    _Filters(
+      dexId: widget.dexId,
+      query: _query,
+      onSearchChanged: _onSearchChanged,
+      onChanged: _setQuery,
+    ),
+    Expanded(
+      child: HuntList(
+        dexId: widget.dexId,
+        query: _query,
+        onShowActive: () => setState(() => _tab = HuntsTab.active),
+        onTap: (hunt) => context.push(
+          Routes.dex(
+            widget.dexId,
+            boxId: hunt.slot.box.id,
+            slotId: hunt.slot.id,
+          ),
         ),
       ),
     ),
-  );
+  ];
 }
 
 /// Busca + botão Filtros numa linha; Motivos, Situação e Jogo em chips com
@@ -387,12 +435,16 @@ class HuntList extends ConsumerWidget {
     required this.dexId,
     required this.query,
     required this.onTap,
+    this.onShowActive,
     super.key,
   });
 
   final int dexId;
   final HuntQuery query;
   final ValueChanged<Hunt> onTap;
+
+  /// O chip "Em andamento" de um item leva à aba das caçadas.
+  final VoidCallback? onShowActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -426,6 +478,7 @@ class HuntList extends ConsumerWidget {
                   query: query,
                   index: i,
                   onTap: onTap,
+                  onShowActive: onShowActive,
                 ),
               ),
             ),
@@ -447,12 +500,14 @@ class _HuntItem extends ConsumerWidget {
     required this.query,
     required this.index,
     required this.onTap,
+    this.onShowActive,
   });
 
   final int dexId;
   final HuntQuery query;
   final int index;
   final ValueChanged<Hunt> onTap;
+  final VoidCallback? onShowActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -463,6 +518,7 @@ class _HuntItem extends ConsumerWidget {
         HuntTile(
           hunt: page.results[offset],
           onTap: () => onTap(page.results[offset]),
+          onShowActive: onShowActive,
         ),
       // A lista encolheu entre páginas (ex.: depositou um shiny).
       AsyncData() => const SizedBox.shrink(),
@@ -489,10 +545,16 @@ class _HuntItem extends ConsumerWidget {
 /// mostra (pokébola, nome, gênero, ✨, alfa, GO). Slot vazio: só o nome da
 /// forma. Um cadeado indica shiny lock.
 class HuntTile extends ConsumerWidget {
-  const HuntTile({required this.hunt, required this.onTap, super.key});
+  const HuntTile({
+    required this.hunt,
+    required this.onTap,
+    this.onShowActive,
+    super.key,
+  });
 
   final Hunt hunt;
   final VoidCallback onTap;
+  final VoidCallback? onShowActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -536,9 +598,11 @@ class HuntTile extends ConsumerWidget {
             ),
         ],
       ),
-      trailing: hunt.versions.isEmpty
-          ? null
-          : HuntGames(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hunt.versions.isNotEmpty)
+            HuntGames(
               versions: hunt.versions,
               owned: {
                 for (final save
@@ -546,6 +610,9 @@ class HuntTile extends ConsumerWidget {
                   ?save.trainer.version,
               },
             ),
+          ?_huntAction(context, ref, form),
+        ],
+      ),
       // Uma linha só (espaço no celular): a espécie (só se o título mostra
       // um apelido), nº da dex, posição na box e motivos.
       subtitle: Text(
@@ -559,6 +626,27 @@ class HuntTile extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       ),
       onTap: onTap,
+    );
+  }
+
+  /// Caçada em andamento desta forma: o chip que leva à aba; senão, o botão
+  /// "Começar caçada" (desabilitado com um cronômetro rodando).
+  Widget? _huntAction(BuildContext context, WidgetRef ref, FormRef? form) {
+    if (form == null) return null;
+    final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
+    if (hunts.any((h) => !h.paused && h.form == form.id)) {
+      return ActionChip(
+        avatar: const Icon(Icons.track_changes, size: 16),
+        label: const Text('Em andamento'),
+        onPressed: onShowActive,
+      );
+    }
+    return IconButton(
+      tooltip: 'Começar caçada',
+      onPressed: hunts.any((h) => h.running)
+          ? null
+          : () => unawaited(showHuntSheet(context, form: form)),
+      icon: const Icon(Icons.track_changes),
     );
   }
 }

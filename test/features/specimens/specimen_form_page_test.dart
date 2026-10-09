@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
+import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -41,6 +44,7 @@ void main() {
     TargetPlatform platform = TargetPlatform.android,
     CaptureDateFormat? dateFormat,
     List<Override> overrides = const [],
+    ShinyHuntRepository? hunts,
   }) async {
     final results = <Specimen?>[];
     await pumpWidgetApp(
@@ -64,6 +68,7 @@ void main() {
       size: size,
       platform: platform,
       dateFormat: InMemoryDateFormatStorage(dateFormat),
+      hunts: hunts,
       overrides: [
         specimenRepositoryProvider.overrideWithValue(repository),
         ...overrides,
@@ -213,6 +218,37 @@ void main() {
     expect(draft.hunt?.count, 42);
     expect(draft.hunt?.unit, 'encounters');
     expect(draft.hunt?.startedAt, isNotNull);
+  });
+
+  testWidgets('cadastro direto: é o fim da caçada? Não e Sim', (tester) async {
+    when(() => repository.create(any()))
+        .thenAnswer((_) async => const Specimen(id: 99, form: 1));
+    final hunts = FakeBackend.seeded();
+    final open = await hunts.saveShinyHunt(
+      ShinyHunt(id: 0, form: 1, count: 30, startedAt: DateTime(2026, 9)),
+    );
+    await pumpForm(tester, hunts: hunts);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hunt-question')), findsOne);
+    await tester.tap(find.text('Não'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hunt-question')), findsNothing);
+
+    // Reabre: Sim traz os dados e encerra a caçada ao salvar.
+    await tester.pumpWidget(const SizedBox());
+    await pumpForm(tester, hunts: hunts);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sim'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hunt-question')), findsNothing);
+    await tester.tap(find.text('Salvar e depositar'));
+    await tester.pumpAndSettle();
+    final draft =
+        verify(() => repository.create(captureAny())).captured.single
+            as SpecimenDraft;
+    expect(draft.hunt?.count, 30);
+    expect(await hunts.fetchShinyHunts(), isNot(contains(open)));
+    expect(await hunts.fetchShinyHunts(), isEmpty);
   });
 
   testWidgets('novo treinador fica selecionado e vai no cadastro', (

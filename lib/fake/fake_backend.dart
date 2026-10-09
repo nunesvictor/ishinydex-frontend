@@ -6,6 +6,8 @@ import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/domain/shiny_lock_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -132,7 +134,11 @@ class _SlotRecord {
 /// dados vêm do aparelho e voltam para ele ([records]); na demonstração, são
 /// de exemplo. O nome ficou do tempo em que imitava a API do servidor.
 class FakeBackend
-    implements PersonalDexRepository, SpecimenRepository, ShinyLockRepository {
+    implements
+        PersonalDexRepository,
+        SpecimenRepository,
+        ShinyLockRepository,
+        ShinyHuntRepository {
   FakeBackend({
     this.latency = Duration.zero,
     this.catalog,
@@ -296,6 +302,7 @@ class FakeBackend
   static const recordTypes = [
     'trainers',
     'saves',
+    'shinyHunts',
     'dexes',
     'boxes',
     'shinyLocks',
@@ -339,6 +346,23 @@ class FakeBackend
     'boxes': [
       for (final b in _boxes.values)
         {'id': b.id, 'name': b.name, 'position': b.position},
+    ],
+    'shinyHunts': [
+      for (final h in _hunts.values)
+        {
+          'id': h.id,
+          'form': h.form,
+          'paused': h.paused,
+          'save': h.save,
+          'method': h.method,
+          'unit': h.unit,
+          'count': h.count,
+          'accumulatedSeconds': h.accumulatedSeconds,
+          'runningSince': h.runningSince?.toUtc().toIso8601String(),
+          'startedAt': _date(h.startedAt),
+          'pausedAt': _date(h.pausedAt),
+        },
+      ...?_orphans['shinyHunts'],
     ],
     'shinyLocks': [
       for (final l in _shinyLocks.values)
@@ -410,6 +434,7 @@ class FakeBackend
       _slots,
       _specimens,
       _shinyLocks,
+      _hunts,
       _orphans,
     ]) {
       map.clear();
@@ -473,6 +498,31 @@ class FakeBackend
             ShinyLockType.unobtainable,
         active: l['active'] as bool,
         forms: _lockForms(forms),
+      );
+    }
+    for (final h in of('shinyHunts')) {
+      final form = _forms[h['form'] as int];
+      if (form == null) {
+        (_orphans['shinyHunts'] ??= []).add(h);
+        continue;
+      }
+      final id = h['id'] as int;
+      _hunts[id] = ShinyHunt(
+        id: id,
+        form: form.id,
+        formRef: _formRef(form),
+        paused: h['paused'] as bool,
+        save: _saves.containsKey(h['save']) ? h['save'] as int : null,
+        method: h['method'] as String?,
+        unit: h['unit'] as String,
+        count: h['count'] as int,
+        accumulatedSeconds: h['accumulatedSeconds'] as int,
+        runningSince: switch (h['runningSince']) {
+          final String t => DateTime.parse(t).toLocal(),
+          _ => null,
+        },
+        startedAt: date(h['startedAt']),
+        pausedAt: date(h['pausedAt']),
       );
     }
     for (final s in of('specimens')) {
@@ -573,6 +623,7 @@ class FakeBackend
   final _boxes = <int, BoxRef>{};
   final _slots = <int, _SlotRecord>{};
   final _specimens = <int, Specimen>{};
+  final _hunts = <int, ShinyHunt>{};
   final _trainers = <int, Trainer>{};
   final _saves = <int, Save>{};
 
@@ -2254,6 +2305,55 @@ class FakeBackend
           ? formId != null && isShinyDex
           : specimen.isShiny,
     );
+  }
+
+  // ---- ShinyHuntRepository ----
+
+  @override
+  Future<List<ShinyHunt>> fetchShinyHunts() async {
+    await _delay();
+    return [..._hunts.values]..sort((a, b) => a.id.compareTo(b.id));
+  }
+
+  /// Valida a forma, o save e a contagem; só um cronômetro rodando.
+  @override
+  Future<ShinyHunt> saveShinyHunt(ShinyHunt hunt) async {
+    await _delay();
+    final form = _forms[hunt.form];
+    if (form == null) {
+      throw ValidationFailure({
+        'form': ['Forma inválida.'],
+      });
+    }
+    if (hunt.id != 0 && !_hunts.containsKey(hunt.id)) {
+      throw const NotFoundFailure();
+    }
+    if (hunt.save != null && !_saves.containsKey(hunt.save)) {
+      throw ValidationFailure({
+        'save': ['Save inexistente.'],
+      });
+    }
+    if (hunt.count < 0) {
+      throw ValidationFailure({
+        'count': ['A contagem não pode ser negativa.'],
+      });
+    }
+    if (hunt.running &&
+        _hunts.values.any((h) => h.running && h.id != hunt.id)) {
+      throw ValidationFailure({
+        'runningSince': ['Já há um cronômetro rodando: pare-o antes.'],
+      });
+    }
+    final id = hunt.id == 0 ? _newId(_hunts.keys) : hunt.id;
+    final saved = hunt.copyWith(id: id, formRef: _formRef(form));
+    _hunts[id] = saved;
+    return saved;
+  }
+
+  @override
+  Future<void> deleteShinyHunt(int huntId) async {
+    await _delay();
+    if (_hunts.remove(huntId) == null) throw const NotFoundFailure();
   }
 
   // ---- ShinyLockRepository ----

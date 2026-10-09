@@ -11,6 +11,8 @@ import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
+import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 
 /// Sprite de pokébola do `SpecimenHeadline`: o nome da bola fica no rótulo
 /// de acessibilidade, não num texto.
@@ -48,6 +50,9 @@ Future<void> pumpWidgetApp(
   Size size = compactSize,
   TargetPlatform platform = TargetPlatform.android,
   DateFormatStorage? dateFormat,
+
+  /// As caçadas em andamento (#164); por padrão, nenhuma, sem latência.
+  ShinyHuntRepository? hunts,
 }) async {
   await setScreenSize(tester, size);
   await tester.pumpWidget(
@@ -57,6 +62,7 @@ Future<void> pumpWidgetApp(
         dateFormatStorageProvider.overrideWithValue(
           dateFormat ?? InMemoryDateFormatStorage(),
         ),
+        shinyHuntRepositoryProvider.overrideWithValue(hunts ?? FakeBackend()),
         ...overrides,
       ],
       child: MaterialApp(

@@ -9,6 +9,8 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/capture_date_field.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
@@ -24,12 +26,17 @@ class SpecimenFormPage extends ConsumerWidget {
     this.specimenId,
     this.initialShiny = false,
     this.depositAfterSave = true,
+    this.fromHunt,
     super.key,
   });
 
   final FormRef form;
   final int? specimenId;
   final bool initialShiny;
+
+  /// "Encontrei!" de uma caçada (#164): o cadastro vem preenchido por ela,
+  /// que é apagada ao salvar.
+  final ShinyHunt? fromHunt;
 
   /// `false` no cadastro avulso do inventário: o botão diz só "Salvar".
   final bool depositAfterSave;
@@ -64,6 +71,7 @@ class SpecimenFormPage extends ConsumerWidget {
             initial: s,
             initialShiny: initialShiny,
             depositAfterSave: depositAfterSave,
+            fromHunt: fromHunt,
           ),
         (AsyncError(:final error), _, _, _) ||
         (_, AsyncError(:final error), _, _) ||
@@ -92,6 +100,7 @@ class SpecimenForm extends ConsumerStatefulWidget {
     this.initial,
     this.initialShiny = false,
     this.depositAfterSave = true,
+    this.fromHunt,
     super.key,
   });
 
@@ -103,6 +112,7 @@ class SpecimenForm extends ConsumerStatefulWidget {
   final Specimen? initial;
   final bool initialShiny;
   final bool depositAfterSave;
+  final ShinyHunt? fromHunt;
 
   @override
   ConsumerState<SpecimenForm> createState() => _SpecimenFormState();
@@ -113,10 +123,39 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
   late final _observation = TextEditingController(
     text: widget.initial?.observation,
   );
-  late SpecimenDraft _draft = switch (widget.initial) {
-    final Specimen specimen => SpecimenDraft.fromSpecimen(specimen),
-    null => SpecimenDraft(form: widget.form.id, isShiny: widget.initialShiny),
+  late SpecimenDraft _draft = switch ((widget.initial, widget.fromHunt)) {
+    (final Specimen specimen, _) => SpecimenDraft.fromSpecimen(specimen),
+    (null, final ShinyHunt hunt) => _fromHunt(
+      SpecimenDraft(
+        form: widget.form.id,
+        capturedAt: ref.read(shinyHuntActionsProvider).today(),
+      ),
+      hunt,
+    ),
+    (null, null) => SpecimenDraft(
+      form: widget.form.id,
+      isShiny: widget.initialShiny,
+    ),
   };
+
+  /// A caçada que este cadastro encerra (apagada ao salvar).
+  late int? _finishing = widget.fromHunt?.id;
+
+  /// "Não" na pergunta "É o fim da caçada?".
+  bool _huntDismissed = false;
+
+  /// O cadastro com os dados da [hunt]: shiny, o registro da caçada e o OT
+  /// do save dela (se o OT ainda não foi escolhido).
+  SpecimenDraft _fromHunt(SpecimenDraft draft, ShinyHunt hunt) {
+    final save = (ref.read(savesProvider).value ?? const <Save>[])
+        .where((s) => s.id == hunt.save)
+        .firstOrNull;
+    return draft.copyWith(
+      isShiny: true,
+      ot: draft.ot ?? save?.trainer.id,
+      hunt: hunt.toRecord(ref.read(shinyHuntActionsProvider).now()),
+    );
+  }
 
   /// Treinadores do select; os criados aqui entram sem recarregar a tela,
   /// para não perder o que já foi preenchido.
@@ -254,6 +293,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               onChanged: (v) =>
                   setState(() => _draft = _draft.copyWith(isShiny: v)),
             ),
+            ?_huntQuestion(),
             ?_huntRecord(),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
@@ -313,7 +353,8 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     final version = _otVersion;
     final methods = ref.watch(shinyMethodsProvider);
     return HuntRecordSection(
-      key: const ValueKey('hunt-section'),
+      // A resposta "Sim" troca o registro: a seção recomeça com ele.
+      key: ValueKey('hunt-section-$_finishing'),
       value: _draft.hunt,
       methods: methods(version, fromGo: _draft.isFromGo),
       allMethods: methods(null),
@@ -321,6 +362,55 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       capturedAt: _draft.capturedAt,
       errorFor: (field) => _validation?.errorFor(field),
       onChanged: (hunt) => setState(() => _draft = _draft.copyWith(hunt: hunt)),
+    );
+  }
+
+  /// No cadastro direto de um shiny de uma forma com caçada em andamento:
+  /// "É o fim da caçada?". Sim traz os dados dela e a encerra ao salvar.
+  Widget? _huntQuestion() {
+    if (widget.initial != null ||
+        _finishing != null ||
+        _huntDismissed ||
+        !_draft.isShiny) {
+      return null;
+    }
+    final hunt = (ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[])
+        .where((h) => !h.paused && h.form == widget.form.id)
+        .firstOrNull;
+    if (hunt == null) return null;
+    final theme = Theme.of(context);
+    return Card.filled(
+      key: const ValueKey('hunt-question'),
+      color: theme.colorScheme.secondaryContainer,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Você tem uma caçada de ${prettifyName(widget.form.name)} em '
+              'andamento. É o fim dela?',
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => _huntDismissed = true),
+                  child: const Text('Não'),
+                ),
+                TextButton(
+                  onPressed: () => setState(() {
+                    _finishing = hunt.id;
+                    _draft = _fromHunt(_draft, hunt);
+                  }),
+                  child: const Text('Sim'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -465,6 +555,9 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       final saved = initial == null
           ? await repository.create(draft)
           : await repository.update(initial.id, draft);
+      if (_finishing case final huntId?) {
+        await ref.read(shinyHuntActionsProvider).delete(huntId);
+      }
       if (mounted) Navigator.of(context).pop(saved);
     } on AppFailure catch (failure) {
       setState(() {

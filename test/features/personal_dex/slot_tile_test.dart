@@ -57,6 +57,32 @@ void main() {
     expect(find.byType(ShinyIcon), findsNothing);
   });
 
+  for (final dark in [false, true]) {
+    testWidgets('caçada em andamento: o selo (escuro: $dark)', (tester) async {
+      await pumpWidgetApp(
+        tester,
+        Theme(
+          data: dark ? ThemeData.dark() : ThemeData.light(),
+          child: Scaffold(
+            body: Center(
+              child: SizedBox.square(
+                dimension: 80,
+                child: SlotTile(
+                  slot: slot,
+                  selected: false,
+                  hunting: true,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byKey(const ValueKey('hunt-badge')), findsOne);
+      expect(find.byTooltip('Caçada em andamento'), findsOne);
+    });
+  }
+
   testWidgets('visitando o Champions: a marca no canto', (tester) async {
     await pumpTile(
       tester,
