@@ -27,6 +27,26 @@ void main() {
     testWidgets('sem status: só o aviso', (tester) async {
       await pumpWidgetApp(tester, const BaseStatsChart(stats: []));
       expect(find.text('Sem status base para esta forma.'), findsOneWidget);
+      expect(find.textContaining('Natureza'), findsNothing);
+    });
+
+    testWidgets('sem status, com natureza: a natureza continua à vista', (
+      tester,
+    ) async {
+      await pumpWidgetApp(
+        tester,
+        const BaseStatsChart(
+          stats: [],
+          nature: Choice(
+            value: 'modest',
+            label: 'Modest',
+            increased: 'special-attack',
+            decreased: 'attack',
+          ),
+        ),
+      );
+      expect(find.text('Sem status base para esta forma.'), findsOneWidget);
+      expect(find.textContaining('Natureza Modest'), findsOneWidget);
     });
 
     testWidgets('acima da escala encosta na borda; vários EV; redesenha', (
@@ -43,7 +63,7 @@ void main() {
       // Total e os dois EV; os status que faltam valem 0 no hexágono.
       expect(find.textContaining('Total '), findsOneWidget);
       expect(
-        find.textContaining('dá 2 EV de HP e 1 EV de Defesa'),
+        find.textContaining('derrotado, dá 2 EV de HP e 1 EV de Defesa'),
         findsOneWidget,
       );
       expect(find.bySemanticsLabel(RegExp('HP 255; Ataque 0')), findsOneWidget);
@@ -172,6 +192,27 @@ void main() {
       expect(find.text('Forma 6'), findsOneWidget);
       expect(find.text('Linha evolutiva'), findsNothing);
       expect(find.text('Sem gênero'), findsOneWidget);
+      // Sem onOpenForm, tocar não faz nada.
+      final tile = tester.widget<InkWell>(
+        find.byKey(const ValueKey('species-form-5')),
+      );
+      expect(tile.onTap, isNull);
+    });
+
+    testWidgets('fora de um dex, com onOpenForm: a forma tocada abre a ficha', (
+      tester,
+    ) async {
+      final form = FormDetail.fromJson(formDetailJson)
+          .copyWith(otherForms: [_ref(5, formName: 'mega-x')]);
+      final opened = <int>[];
+      await pumpWidgetApp(
+        tester,
+        Scaffold(
+          body: SpeciesInfo(form: form, onOpenForm: (f) => opened.add(f.id)),
+        ),
+      );
+      await tester.tap(find.text('Mega X'));
+      expect(opened, [5]);
     });
 
     testWidgets('na pokédex de: os seus saves primeiro, com o selo', (
@@ -286,13 +327,13 @@ void main() {
     await pumpWidgetApp(
       tester,
       const SingleChildScrollView(
-        child: FormInfoTabs(formId: 1, summary: Text('resumo')),
+        child: FormInfoTabs(formId: 1, header: Text('resumo')),
       ),
       overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
     );
     expect(find.text('resumo'), findsOneWidget);
-
-    await tester.tap(find.text('Status'));
+    // Só duas abas: o Status entrou no resumo.
+    expect(find.text('Status'), findsNothing);
     await tester.pumpAndSettle();
     expect(
       find.text('Não foi possível carregar os detalhes da forma.'),
@@ -301,5 +342,57 @@ void main() {
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(find.byType(BaseStatsChart), findsOneWidget);
+    expect(find.text('Status base'), findsOneWidget);
+  });
+
+  group('FormInfoTabs: cartão de status e campos', () {
+    late MockSpecimenRepository repository;
+
+    setUp(() {
+      repository = MockSpecimenRepository();
+      when(() => repository.fetchForm(1))
+          .thenAnswer((_) async => FormDetail.fromJson(formDetailJson));
+    });
+
+    Future<void> pump(WidgetTester tester, Size size) => pumpWidgetApp(
+      tester,
+      const SingleChildScrollView(
+        child: FormInfoTabs(
+          formId: 1,
+          header: Text('cabeçalho'),
+          fields: Text('campos'),
+          footer: Text('rodapé'),
+        ),
+      ),
+      size: size,
+      overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
+    );
+
+    testWidgets('estreito: cabeçalho, cartão, campos e rodapé, em coluna', (
+      tester,
+    ) async {
+      await pump(tester, compactSize);
+      await tester.pumpAndSettle();
+      double top(Finder f) => tester.getTopLeft(f).dy;
+      expect(
+        top(find.text('cabeçalho')),
+        lessThan(top(find.text('Status base'))),
+      );
+      expect(top(find.text('Status base')), lessThan(top(find.text('campos'))));
+      expect(top(find.text('campos')), lessThan(top(find.text('rodapé'))));
+    });
+
+    testWidgets('largo: o cartão à direita dos campos', (tester) async {
+      await pump(tester, expandedSize);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.text('Status base')).dx,
+        greaterThan(tester.getTopLeft(find.text('campos')).dx),
+      );
+      expect(
+        tester.getTopLeft(find.text('Status base')).dy,
+        tester.getTopLeft(find.byType(StatsCard)).dy + 12,
+      );
+    });
   });
 }

@@ -6,6 +6,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/form_sheet.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
@@ -38,6 +39,8 @@ void main() {
     when(() => specimens.fetchSpecimen(1)).thenAnswer((_) async => _specimen);
     when(specimens.fetchOptions)
         .thenAnswer((_) async => SpecimenOptions.fromJson(optionsJson));
+    when(() => specimens.fetchForm(any()))
+        .thenAnswer((_) async => FormDetail.fromJson(formDetailJson));
     when(specimens.fetchTrainers).thenAnswer(
       (_) async => const [
         Trainer(id: 7, name: 'Ash', trainerId: '123456', version: 'scarlet'),
@@ -74,10 +77,14 @@ void main() {
       testWidgets('mostra os campos com os rótulos da API '
           '(${size.width.toInt()}px)', (tester) async {
         await pumpDetail(tester, size: size);
+        // Habilidade destacada na lista da forma; gênero no cabeçalho;
+        // natureza no cartão de status. Nos campos, só o que é do espécime.
+        expect(find.textContaining('✓ Overgrow'), findsOneWidget);
+        expect(find.text('Habilidade'), findsNothing);
+        expect(find.text('Natureza'), findsNothing);
+        expect(find.text('Gênero'), findsNothing);
+        expect(find.text('Status base'), findsOneWidget);
         // Rótulos das opções (quando a API os tem) ou nome formatado.
-        expect(find.text('Overgrow'), findsOneWidget);
-        expect(find.text('Naughty'), findsOneWidget); // fora das opções
-        expect(find.text('Macho'), findsOneWidget);
         expect(find.text('En'), findsOneWidget);
         expect(find.text('Ash (123456) · Scarlet'), findsOneWidget);
         // Data com ano (o formato "médio" do Material em pt-BR omite o ano).
@@ -101,6 +108,64 @@ void main() {
         expect(find.byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);
       });
     }
+
+    testWidgets('Espécie: a forma tocada abre a ficha, que troca de forma', (
+      tester,
+    ) async {
+      FormRef ref(int id, String name) => FormRef(
+        id: id,
+        name: name,
+        pokeapiId: id,
+        spriteUrl: 'http://x/$id.png',
+        shinySpriteUrl: 'http://x/shiny/$id.png',
+      );
+      final bulbasaur = ref(1, 'bulbasaur');
+      final ivysaur = ref(2, 'ivysaur');
+      final venusaur = ref(3, 'venusaur');
+      final chain = [
+        [bulbasaur],
+        [ivysaur],
+        [venusaur],
+      ];
+      for (final form in [bulbasaur, ivysaur, venusaur]) {
+        when(() => specimens.fetchForm(form.id)).thenAnswer(
+          (_) async => FormDetail.fromJson({
+            ...formDetailJson,
+            'id': form.id,
+            'name': form.name,
+          }).copyWith(evolutionChain: chain),
+        );
+      }
+      await pumpDetail(tester);
+      await tester.tap(find.text('Espécie'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('species-form-2')));
+      await tester.pumpAndSettle();
+      final sheet = find.byType(FormSheet);
+      expect(sheet, findsOneWidget);
+      Finder inSheet(Finder f) => find.descendant(of: sheet, matching: f);
+      expect(inSheet(find.text('Ivysaur')), findsWidgets);
+      expect(
+        inSheet(find.text('#0002 · Grass · Poison · só leitura')),
+        findsOneWidget,
+      );
+      // Sem espécime: aba "Forma", com o hexágono sem natureza.
+      expect(inSheet(find.text('Forma')), findsOneWidget);
+      expect(inSheet(find.text('Status base')), findsOneWidget);
+      expect(inSheet(find.textContaining('Natureza')), findsNothing);
+
+      // Na Espécie da ficha, tocar em outra forma troca a ficha.
+      await tester.tap(inSheet(find.text('Espécie')));
+      await tester.pumpAndSettle();
+      await tester.tap(inSheet(find.byKey(const ValueKey('species-form-3'))));
+      await tester.pumpAndSettle();
+      expect(
+        inSheet(find.text('#0003 · Grass · Poison · só leitura')),
+        findsOneWidget,
+      );
+      expect(find.byType(FormSheet), findsOneWidget);
+    });
 
     testWidgets('erro ao carregar com retry', (tester) async {
       var calls = 0;

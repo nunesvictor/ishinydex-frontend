@@ -4,18 +4,16 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
-import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
-import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
-import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
-import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Detalhes do slot selecionado.
 ///
-/// Em cima, rolando, o cabeçalho e as abas (resumo, status e espécie);
+/// Em cima, rolando, o corpo comum ([DetailBody]: cabeçalho e as abas
+/// Espécime e Espécie);
 /// embaixo, fixa, a barra com a ação principal (Depositar num slot
 /// faltante; Editar num registrado) e "Mais ações": enviar para jogo ou
 /// trazer de volta, retirar do slot e libertar.
@@ -77,63 +75,65 @@ class SlotDetailPanel extends ConsumerWidget {
           fit: fillHeight ? FlexFit.tight : FlexFit.loose,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: PokemonSprite(
-                    url: current.spriteUrl,
-                    size: 112,
-                    semanticLabel: form.displayName,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (specimen == null)
-                  Text(
-                    form.displayName,
-                    style: theme.textTheme.titleLarge,
-                    textAlign: TextAlign.center,
-                  )
-                else
-                  SpecimenHeadline(
-                    name: specimen.displayName,
-                    pokeballSpriteUrl: specimen.pokeballSpriteUrl,
-                    pokeballLabel: specimen.pokeball == null
-                        ? null
-                        : prettifyName(specimen.pokeball!),
-                    gender: full?.gender,
-                    isShiny: specimen.isShiny,
-                    isAlpha: specimen.isAlpha,
-                    style: theme.textTheme.titleLarge,
-                    center: true,
-                  ),
-                Text(
-                  [
-                    if (specimen != null) form.displayName,
-                    form.dexNumber,
-                    if (form.formName.isNotEmpty) prettifyName(form.formName),
-                  ].join(' · '),
-                  style: theme.textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                Text(
+            child: DetailBody(
+              spriteUrl: current.spriteUrl,
+              semanticLabel: form.displayName,
+              title: specimen == null
+                  ? Text(
+                      form.displayName,
+                      style: theme.textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    )
+                  : SpecimenHeadline(
+                      name: specimen.displayName,
+                      pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+                      pokeballLabel: specimen.pokeball == null
+                          ? null
+                          : prettifyName(specimen.pokeball!),
+                      gender: full?.gender,
+                      isShiny: specimen.isShiny,
+                      isAlpha: specimen.isAlpha,
+                      style: theme.textTheme.titleLarge,
+                      center: true,
+                    ),
+              subtitle: [
+                if (specimen != null) form.displayName,
+                form.dexNumber,
+                if (form.formName.isNotEmpty) prettifyName(form.formName),
+              ].join(' · '),
+              caption:
                   '${current.box.name} · linha ${current.row + 1}, '
                   'coluna ${current.col + 1}',
-                  style: theme.textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                FormInfoTabs(
-                  // Uma aba por slot: trocar de slot volta para o resumo.
-                  key: ValueKey('tabs-${current.id}'),
-                  formId: form.id,
-                  summaryLabel: specimen == null ? 'Forma' : 'Espécime',
-                  summary: _Summary(slot: current, full: full),
-                  dexId: current.personalDex,
-                  onOpenSlot: onOpenSlot,
-                  nature: full?.nature,
-                ),
+              formId: form.id,
+              // Uma aba por slot: trocar de slot volta para o resumo.
+              tabsKey: ValueKey('tabs-${current.id}'),
+              summaryLabel: specimen == null ? 'Forma' : 'Espécime',
+              highlightAbility: specimen?.ability,
+              chips: [
+                if (specimen == null)
+                  const Chip(
+                    avatar: Icon(Icons.radio_button_unchecked),
+                    label: Text('Faltante'),
+                  )
+                else ...[
+                  const Chip(
+                    avatar: Icon(Icons.check_circle, color: Colors.green),
+                    label: Text('Registrado'),
+                  ),
+                  if (OriginMark.fromSlug(full?.originMark) case final mark?)
+                    OriginMarkChip(mark),
+                ],
               ],
+              footer: switch (specimen?.location) {
+                final save? => LocationTile(
+                  save: save,
+                  since: specimen!.locationSince,
+                ),
+                null => null,
+              },
+              nature: full?.nature,
+              dexId: current.personalDex,
+              onOpenSlot: onOpenSlot,
             ),
           ),
         ),
@@ -178,63 +178,6 @@ class SlotDetailPanel extends ConsumerWidget {
                   ],
                 ),
         ),
-      ],
-    );
-  }
-}
-
-/// Aba "Espécime" (ou "Forma", num slot faltante): tipos e habilidades,
-/// selos e onde o espécime está, se fora do HOME.
-class _Summary extends ConsumerWidget {
-  const _Summary({required this.slot, required this.full});
-
-  final Slot slot;
-  final Specimen? full;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final specimen = slot.specimen;
-    final nature = choiceLabel(
-      ref.watch(specimenOptionsProvider).value?.nature,
-      full?.nature,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 12,
-      children: [
-        FormDetails(formId: slot.form!.id, highlightAbility: specimen?.ability),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            if (specimen == null)
-              const Chip(
-                avatar: Icon(Icons.radio_button_unchecked),
-                label: Text('Faltante'),
-              )
-            else ...[
-              const Chip(
-                avatar: Icon(Icons.check_circle, color: Colors.green),
-                label: Text('Registrado'),
-              ),
-              if (OriginMark.fromSlug(full?.originMark) case final mark?)
-                OriginMarkChip(mark),
-              if (nature != null)
-                // O ícone sozinho não diz o que é: o tooltip explica
-                // ("Natureza") no hover/toque longo e no leitor de tela.
-                Tooltip(
-                  message: 'Natureza',
-                  child: Chip(
-                    avatar: const Icon(Icons.psychology_outlined),
-                    label: Text(nature),
-                  ),
-                ),
-            ],
-          ],
-        ),
-        if (specimen?.location case final save?)
-          LocationTile(save: save, since: specimen!.locationSince),
       ],
     );
   }

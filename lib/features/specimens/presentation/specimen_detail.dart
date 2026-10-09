@@ -9,10 +9,10 @@ import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
-import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
-import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/form_sheet.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
@@ -35,8 +35,8 @@ class SpecimenDetailPage extends StatelessWidget {
   );
 }
 
-/// Dados completos do specimen, nas abas do detalhe (resumo, status e
-/// espécie), com a barra de ações: Editar e "Mais ações" (Ver no dex,
+/// Dados completos do specimen no corpo comum dos detalhes ([DetailBody]:
+/// abas Espécime e Espécie), com a barra de ações: Editar e "Mais ações" (Ver no dex,
 /// enviar ou trazer de volta, retirar do slot e libertar). Usado na tela
 /// própria (compacto) e no painel ao lado da lista.
 class SpecimenDetailView extends ConsumerWidget {
@@ -79,12 +79,11 @@ class _Details extends ConsumerWidget {
     final trainers = ref.watch(trainersProvider).value;
     final form = specimen.formRef;
     final ot = trainers?.where((t) => t.id == specimen.ot).firstOrNull;
+    // Habilidade, natureza e gênero já aparecem no corpo (lista da forma,
+    // cartão de status e cabeçalho): aqui, só o que é do espécime.
     final fields = <(String, String?)>[
-      ('Habilidade', choiceLabel(null, specimen.ability)),
-      ('Natureza', choiceLabel(options?.nature, specimen.nature)),
-      ('Gênero', choiceLabel(options?.gender, specimen.gender)),
-      ('Idioma', choiceLabel(options?.language, specimen.language)),
       ('Treinador original', ot?.label),
+      ('Idioma', choiceLabel(options?.language, specimen.language)),
       (
         'Data de captura',
         specimen.capturedAt == null
@@ -94,89 +93,59 @@ class _Details extends ConsumerWidget {
       ),
       ('Observação', specimen.observation),
     ];
-    final summary = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            if (specimen.isDeposited)
-              const Chip(
-                avatar: Icon(Icons.inventory_2, color: Colors.green),
-                label: Text('Depositado'),
-              )
-            else
-              const Chip(
-                avatar: Icon(Icons.radio_button_unchecked),
-                label: Text('Disponível'),
-              ),
-            if (OriginMark.fromSlug(specimen.originMark) case final mark?)
-              OriginMarkChip(mark),
-          ],
-        ),
-        const SizedBox(height: 8),
-        for (final (name, value) in fields)
-          if (value != null && value.isNotEmpty)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: Text(name),
-              subtitle: Text(value),
-            ),
-        if (specimen.location case final save?)
-          LocationTile(save: save, since: specimen.locationSince),
-      ],
-    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: PokemonSprite(
-                    url: specimen.spriteUrl,
-                    size: 112,
-                    semanticLabel: specimen.displayName,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SpecimenHeadline(
-                  name: specimen.displayName,
-                  pokeballSpriteUrl: specimen.pokeballSpriteUrl,
-                  pokeballLabel: specimen.pokeball == null
-                      ? null
-                      : prettifyName(specimen.pokeball!),
-                  gender: specimen.gender,
-                  isShiny: specimen.isShiny,
-                  isAlpha: specimen.isAlpha,
-                  isFromGo: specimen.isFromGo,
-                  style: theme.textTheme.titleLarge,
-                  center: true,
-                ),
-                if (form != null)
-                  Text(
-                    '${form.displayName} · ${form.dexNumber}',
-                    style: theme.textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                const SizedBox(height: 12),
-                if (form == null)
-                  summary
+            child: DetailBody(
+              spriteUrl: specimen.spriteUrl,
+              semanticLabel: specimen.displayName,
+              title: SpecimenHeadline(
+                name: specimen.displayName,
+                pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+                pokeballLabel: specimen.pokeball == null
+                    ? null
+                    : prettifyName(specimen.pokeball!),
+                gender: specimen.gender,
+                isShiny: specimen.isShiny,
+                isAlpha: specimen.isAlpha,
+                isFromGo: specimen.isFromGo,
+                style: theme.textTheme.titleLarge,
+                center: true,
+              ),
+              subtitle: form == null
+                  ? null
+                  : '${form.displayName} · ${form.dexNumber}',
+              formId: form?.id,
+              tabsKey: ValueKey('tabs-${specimen.id}'),
+              highlightAbility: specimen.ability,
+              chips: [
+                if (specimen.isDeposited)
+                  const Chip(
+                    avatar: Icon(Icons.inventory_2, color: Colors.green),
+                    label: Text('Depositado'),
+                  )
                 else
-                  // Fora de um dex: a aba Espécie só mostra (não navega).
-                  FormInfoTabs(
-                    key: ValueKey('tabs-${specimen.id}'),
-                    formId: form.id,
-                    summary: summary,
-                    nature: specimen.nature,
+                  const Chip(
+                    avatar: Icon(Icons.radio_button_unchecked),
+                    label: Text('Disponível'),
                   ),
+                if (OriginMark.fromSlug(specimen.originMark) case final mark?)
+                  OriginMarkChip(mark),
               ],
+              fields: fields,
+              footer: switch (specimen.location) {
+                final save? => LocationTile(
+                  save: save,
+                  since: specimen.locationSince,
+                ),
+                null => null,
+              },
+              nature: specimen.nature,
+              // Fora de um dex não há slot: a forma tocada abre a ficha.
+              onOpenForm: (other) => showFormSheet(context, other),
             ),
           ),
         ),

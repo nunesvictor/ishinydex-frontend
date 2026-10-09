@@ -48,13 +48,28 @@ class BaseStatsChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final upColor = increasedColor(theme.brightness);
+    final downColor = decreasedColor(theme.brightness);
     if (stats.isEmpty) {
+      // Sem hexágono, a natureza continua à vista (ela só mora aqui).
       return Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(
-          'Sem status base para esta forma.',
-          style: theme.textTheme.bodySmall,
-          textAlign: TextAlign.center,
+        child: Column(
+          spacing: 8,
+          children: [
+            Text(
+              'Sem status base para esta forma.',
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            if (this.nature case final choice?)
+              _NatureCaption(
+                nature: choice,
+                byName: const {},
+                upColor: upColor,
+                downColor: downColor,
+              ),
+          ],
         ),
       );
     }
@@ -67,8 +82,6 @@ class BaseStatsChart extends StatelessWidget {
     final nature = this.nature;
     final up = nature?.increased;
     final down = nature?.decreased;
-    final upColor = increasedColor(theme.brightness);
-    final downColor = decreasedColor(theme.brightness);
     String effect(String stat) => stat == up
         ? ', aumentado pela natureza'
         : stat == down
@@ -118,7 +131,8 @@ class BaseStatsChart extends StatelessWidget {
                 text: '$total',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              if (ev.isNotEmpty) TextSpan(text: ' · dá ${ev.join(' e ')}'),
+              if (ev.isNotEmpty)
+                TextSpan(text: ' · derrotado, dá ${ev.join(' e ')}'),
             ],
           ),
           style: theme.textTheme.bodyMedium,
