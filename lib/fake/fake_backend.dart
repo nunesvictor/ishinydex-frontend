@@ -1364,7 +1364,7 @@ class FakeBackend
           (query.types.isEmpty ||
               form.types.any((t) => query.types.contains(t.type))) &&
           (query.categories.isEmpty || query.categories.contains(category)) &&
-          (query.version == null || versions.contains(query.version)) &&
+          (query.versions.isEmpty || query.versions.any(versions.contains)) &&
           (search.isEmpty ||
               (number == null
                   ? form.name.contains(slugSearch(search))

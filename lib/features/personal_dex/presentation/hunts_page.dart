@@ -65,6 +65,7 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
         child: Column(
           children: [
             _Filters(
+              dexId: widget.dexId,
               query: _query,
               onSearchChanged: _onSearchChanged,
               onChanged: _setQuery,
@@ -94,11 +95,13 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
 /// inventário.
 class _Filters extends ConsumerWidget {
   const _Filters({
+    required this.dexId,
     required this.query,
     required this.onSearchChanged,
     required this.onChanged,
   });
 
+  final int dexId;
   final HuntQuery query;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<HuntQuery> onChanged;
@@ -162,7 +165,7 @@ class _Filters extends ConsumerWidget {
         (savesOf[version] ??= []).add(save);
       }
     }
-    final game = query.version;
+    final games = query.versions;
     final chips = <Widget>[
       MenuChip(
         label: more > 0 ? '${first.label} +$more' : first.label,
@@ -225,31 +228,58 @@ class _Filters extends ConsumerWidget {
       ),
       if (savesOf.isNotEmpty)
         MenuChip(
-          label: game == null ? 'Jogo' : versionLabel(game),
-          avatar: game == null ? null : GameIcon(game, size: 18),
-          selected: game != null,
+          label: switch (games) {
+            [] => 'Jogo',
+            [final one] => versionLabel(one),
+            [final first, ...] => '${versionLabel(first)} +${games.length - 1}',
+          },
+          avatar: games.isEmpty ? null : _StackedGameIcons(games),
+          selected: games.isNotEmpty,
           menuChildren: [
-            const MenuHeader('Caçável em qual dos seus saves'),
-            RadioMenuButton<String?>(
-              value: null,
-              groupValue: game,
-              onChanged: (_) => onChanged(query.copyWith(version: null)),
+            const MenuHeader('Caçável em algum destes saves'),
+            CheckboxMenuButton(
+              value: games.isEmpty,
+              closeOnActivate: false,
+              // Já sem filtro, não há o que desmarcar.
+              onChanged: games.isEmpty
+                  ? null
+                  : (_) => onChanged(query.copyWith(versions: const [])),
               child: const MenuOptionText(
                 'Todos os jogos',
                 'Sem filtrar por save',
               ),
             ),
             for (final MapEntry(key: version, value: saves) in savesOf.entries)
-              RadioMenuButton<String?>(
-                value: version,
-                groupValue: game,
-                onChanged: (v) => onChanged(query.copyWith(version: v)),
+              CheckboxMenuButton(
+                value: games.contains(version),
+                closeOnActivate: false,
+                onChanged: (on) => onChanged(
+                  query.copyWith(
+                    versions: on!
+                        ? [...games, version]
+                        : [...games.where((v) => v != version)],
+                  ),
+                ),
+                trailingIcon: _GameCount(
+                  dexId: dexId,
+                  query: query.copyWith(versions: [version]),
+                ),
                 child: MenuOptionText(
                   versionLabel(version),
                   saves.map((s) => s.owner).join(' · '),
                   leading: GameIcon(version, size: 24),
                 ),
               ),
+            // Com caixas de seleção o menu não fecha a cada toque. Sem
+            // `onPressed` o botão ficaria desabilitado (e não fecharia);
+            // fechar é o próprio `closeOnActivate`.
+            Align(
+              alignment: Alignment.centerRight,
+              child: MenuItemButton(
+                onPressed: () {},
+                child: const Text('Pronto'),
+              ),
+            ),
           ],
         ),
     ];
@@ -293,6 +323,63 @@ class _Filters extends ConsumerWidget {
   }
 }
 
+/// Os ícones dos jogos marcados, um por cima do outro (até 3), no chip Jogo.
+class _StackedGameIcons extends StatelessWidget {
+  const _StackedGameIcons(this.versions);
+
+  final List<String> versions;
+
+  static const _size = 18.0;
+  static const _step = 8.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = versions.take(3).toList();
+    return SizedBox(
+      width: _size + _step * (shown.length - 1),
+      height: _size,
+      child: Stack(
+        children: [
+          for (final (i, version) in shown.indexed)
+            Positioned(
+              left: _step * i,
+              child: GameIcon(version, size: _size),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Quantas caçadas há em um jogo (com os outros filtros), à direita do item
+/// do menu Jogo.
+class _GameCount extends ConsumerWidget {
+  const _GameCount({required this.dexId, required this.query});
+
+  final int dexId;
+  final HuntQuery query;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final page = ref
+        .watch(huntPageProvider((dexId: dexId, query: query, page: 1)))
+        .value;
+    return Text(
+      page == null ? '' : '${page.count}',
+      style: Theme.of(context).textTheme.bodySmall
+          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    );
+  }
+}
+
+/// `"Scarlet"`, `"Scarlet ou Sword"`, `"Scarlet, Violet ou Sword"`.
+String _gameNames(List<String> versions) {
+  final names = [for (final v in versions) versionLabel(v)];
+  return names.length == 1
+      ? names.single
+      : '${names.sublist(0, names.length - 1).join(', ')} ou ${names.last}';
+}
+
 /// Lista paginada: o total vem da 1ª página e cada item observa só a página
 /// em que está, carregada quando aparece na tela.
 class HuntList extends ConsumerWidget {
@@ -320,7 +407,9 @@ class HuntList extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(
-              '${page.count} para caçar',
+              query.versions.isEmpty
+                  ? '${page.count} para caçar'
+                  : '${page.count} para caçar em ${_gameNames(query.versions)}',
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),

@@ -298,8 +298,9 @@ abstract class HuntQuery with _$HuntQuery {
     @Default(false) bool includeLocked,
     @Default(HuntSituation.all) HuntSituation situation,
 
-    /// Só o que dá para caçar nesta versão (a de um save do usuário).
-    String? version,
+    /// Só o que dá para caçar em alguma destas versões (as dos saves do
+    /// usuário); vazio = qualquer jogo.
+    @Default(<String>[]) List<String> versions,
   }) = _HuntQuery;
 
   const HuntQuery._();
@@ -318,7 +319,7 @@ abstract class HuntQuery with _$HuntQuery {
     acceptedBalls: acceptedBalls,
     search: search,
     situation: situation,
-    version: version,
+    versions: versions,
   );
 
   /// Parâmetros da API. `reasons` vai sempre: sem ele, a API usaria o
@@ -336,7 +337,7 @@ abstract class HuntQuery with _$HuntQuery {
       if (search.isNotEmpty) 'search': search,
       if (includeLocked) 'include_locked': true,
       'registered': ?situation.param,
-      'version': ?version,
+      if (versions.isNotEmpty) 'version': join(versions),
     };
   }
 }
