@@ -34,6 +34,9 @@ abstract interface class SpecimenRepository {
   /// Edita o specimen; a forma não muda.
   Future<Specimen> update(int specimenId, SpecimenDraft draft);
 
+  /// Começa ([visiting]) ou encerra a visita ao Pokémon Champions (#174).
+  Future<Specimen> setChampionsVisit(int specimenId, {required bool visiting});
+
   /// Liberta (apaga) o specimen. Se estava depositado, o slot fica faltante.
   Future<void> release(int specimenId);
 

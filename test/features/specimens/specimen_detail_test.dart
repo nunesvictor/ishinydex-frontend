@@ -252,6 +252,21 @@ void main() {
       expect(find.text('12 ovos'), findsOne);
     });
 
+    testWidgets('visitando o Champions: chip, linha e Libertar travado', (
+      tester,
+    ) async {
+      when(() => specimens.fetchSpecimen(1)).thenAnswer(
+        (_) async => _specimen.copyWith(championsSince: DateTime(2026, 10, 9)),
+      );
+      await pumpDetail(tester);
+      expect(find.text('Visitando o Champions'), findsOne);
+      expect(find.text('No HOME, visitando o Champions'), findsOne);
+      await tester.tap(find.byTooltip('Mais ações'));
+      await tester.pumpAndSettle();
+      expect(find.text('Voltou do Champions'), findsOne);
+      expect(find.text('Não dá enquanto visita o Champions'), findsOne);
+    });
+
     testWidgets('sem formRef não oferece editar', (tester) async {
       when(() => specimens.fetchSpecimen(1))
           .thenAnswer((_) async => const Specimen(id: 1, form: 1));

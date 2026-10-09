@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="currentColor" fill-rule="evenodd">
+  <!-- coroa vazada: três pontas -->
+  <path fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="miter" d="M22 21 L19.5 9.5 L26.5 13.5 L32 4 L37.5 13.5 L44.5 9.5 L42 21"/>
+  <!-- asas: duas penas de cada lado -->
+  <path d="M16.6 25 L3 25 L7.5 30 L4.5 31 L10 36.5 L15.2 36.5 A17 17 0 0 1 16.6 25 Z"/>
+  <path d="M47.4 25 L61 25 L56.5 30 L59.5 31 L54 36.5 L48.8 36.5 A17 17 0 0 0 47.4 25 Z"/>
+  <path d="M15.6 39 L8.5 39 L13 43.5 L17.6 43.5 A17 17 0 0 1 15.6 39 Z"/>
+  <path d="M48.4 39 L55.5 39 L51 43.5 L46.4 43.5 A17 17 0 0 0 48.4 39 Z"/>
+  <!-- anel com a Poké Ball -->
+  <path d="M32 19 A17 17 0 1 1 31.99 19 Z M32 23 A13 13 0 1 0 32.01 23 Z"/>
+  <path d="M19 34.6 H26.7 A5.5 5.5 0 0 1 37.3 34.6 H45 V37.4 H37.3 A5.5 5.5 0 0 1 26.7 37.4 H19 Z M32 32.7 A3.3 3.3 0 1 0 32.01 32.7 Z"/>
+  <!-- faixa e ponta de baixo -->
+  <path d="M19.5 50 A17.5 17.5 0 0 0 44.5 50 L46.5 53 A21 21 0 0 1 17.5 53 Z"/>
+  <path d="M32 55.5 L34.5 59 L32 62.5 L29.5 59 Z"/>
+</svg>

@@ -22,12 +22,15 @@ Fora de `game_icons/`, `icons/` e `origin_marks/` para não entrar no bundle (o 
 
 O app pinta o branco com a cor do tema (`OriginMarkIcon`, em `lib/core/widgets/origin_mark_chip.dart`).
 
+O `champions.png` (o Pokémon que visita o Pokémon Champions, #174) não é marca de origem nem existe nas Archives: é a marca "Has visited Pokémon Champions" do HOME, redesenhada em SVG a partir de uma captura (`champions_mark.svg`, fora do bundle) e exportada no mesmo padrão (64×64, glifo branco).
+
 ## Ícones de jogo (`game_icons/`)
 
 Ícones dos jogos no Pokémon HOME (128×128, coloridos), baixados da Bulbagarden Archives, categoria [Pokémon HOME game icons](https://archives.bulbagarden.net/wiki/Category:Pok%C3%A9mon_HOME_game_icons). Só os jogos ligados ao HOME (os que viram save e o FireRed/LeafGreen do Switch, que só envia), com o nome da versão no catálogo. Mesma ressalva de propriedade das marcas de origem.
 
 | Arquivo | Original |
 | --- | --- |
+| `champions.png` | `HOME_Champions_icon.png` (o Pokémon Champions, que não é save: só o detalhe e as ações da visita) |
 | `firered.png` | `HOME_FireRed_icon.png` |
 | `leafgreen.png` | `HOME_LeafGreen_icon.png` |
 | `lets-go-pikachu.png` | `HOME_Let's_Go_Pikachu_icon.png` |

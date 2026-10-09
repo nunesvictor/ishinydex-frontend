@@ -5,6 +5,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/action_sheet.dart';
+import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -359,24 +360,116 @@ Future<void> bringBack(
   }
 }
 
-/// Ação da localização para a folha "Mais ações": "Trazer de volta ao
-/// HOME" (fora do HOME) ou "Enviar para jogo…" (no HOME). Para o detalhe do
-/// espécime e o painel do slot.
-SheetAction locationAction(
+/// O ícone colorido do Pokémon Champions (o do HOME).
+class ChampionsIcon extends StatelessWidget {
+  const ChampionsIcon({this.size = 24, super.key});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => GameIcon('champions', size: size);
+}
+
+/// "Visitando o Champions · desde 09/10/2026": o Pokémon continua no HOME.
+class ChampionsTile extends StatelessWidget {
+  const ChampionsTile({required this.since, super.key});
+
+  final DateTime since;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    key: const ValueKey('champions-tile'),
+    contentPadding: EdgeInsets.zero,
+    leading: const ChampionsIcon(size: 28),
+    title: const Text('No HOME, visitando o Champions'),
+    subtitle: Text(
+      'Desde ${MaterialLocalizations.of(context).formatCompactDate(since)}'
+      ' · ${awayFor(since)}',
+    ),
+  );
+}
+
+/// Ações de localização para a folha "Mais ações" (detalhe do espécime e
+/// painel do slot): fora do HOME, "Trazer de volta"; visitando o Champions
+/// (#174), "Voltou do Champions" e o envio desabilitado; no HOME, "Enviar
+/// para jogo…" e "Visitar o Champions".
+List<SheetAction> locationActions(
   BuildContext context,
   WidgetRef ref, {
-  required int specimenId,
+  required int id,
   required String name,
   required bool away,
-}) => away
-    ? SheetAction(
+  required bool visiting,
+}) {
+  if (away) {
+    return [
+      SheetAction(
         icon: Icons.flight_land,
         label: 'Trazer de volta ao HOME',
-        onSelected: () =>
-            bringBack(context, ref, specimenId: specimenId, name: name),
-      )
-    : SheetAction(
-        icon: Icons.flight_takeoff,
-        label: 'Enviar para jogo…',
-        onSelected: () => sendToGame(context, ref, [specimenId]),
+        onSelected: () => bringBack(context, ref, specimenId: id, name: name),
+      ),
+    ];
+  }
+  return [
+    if (visiting)
+      SheetAction(
+        icon: Icons.emoji_events,
+        leading: const ChampionsIcon(),
+        label: 'Voltou do Champions',
+        subtitle: 'Libera o envio para saves',
+        onSelected: () => _champions(context, ref, id, visiting: false),
+      ),
+    SheetAction(
+      icon: Icons.flight_takeoff,
+      label: 'Enviar para jogo…',
+      subtitle: visiting ? 'Está visitando o Champions' : null,
+      enabled: !visiting,
+      onSelected: () => sendToGame(context, ref, [id]),
+    ),
+    if (!visiting)
+      SheetAction(
+        icon: Icons.emoji_events,
+        leading: const ChampionsIcon(),
+        label: 'Visitar o Champions',
+        subtitle: 'Continua no HOME; enquanto visita, não vai para saves',
+        onSelected: () => _champions(context, ref, id, visiting: true),
+      ),
+  ];
+}
+
+/// Libertar, desabilitado enquanto visita o Champions.
+SheetAction releaseAction({
+  required bool visiting,
+  required VoidCallback onSelected,
+}) => SheetAction(
+  icon: Icons.warning_amber_rounded,
+  label: 'Libertar',
+  subtitle: visiting
+      ? 'Não dá enquanto visita o Champions'
+      : 'Apaga o cadastro (pede confirmação)',
+  destructive: true,
+  enabled: !visiting,
+  onSelected: onSelected,
+);
+
+Future<void> _champions(
+  BuildContext context,
+  WidgetRef ref,
+  int id, {
+  required bool visiting,
+}) async {
+  try {
+    await ref
+        .read(specimenRepositoryProvider)
+        .setChampionsVisit(id, visiting: visiting);
+    ref.read(slotActionsProvider).specimensChanged();
+    if (context.mounted) {
+      _notify(
+        context,
+        visiting ? 'Visitando o Champions.' : 'Voltou do Champions.',
       );
+    }
+  } on AppFailure catch (failure) {
+    if (context.mounted) _notify(context, failure.message);
+  }
+}

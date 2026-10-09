@@ -454,29 +454,63 @@ void main() {
       registerFallbackValue(<int>[]);
     });
 
-    Future<void> pump(WidgetTester tester, {required bool away}) =>
-        pumpWidgetApp(
-          tester,
-          // A ação da folha "Mais ações", num botão.
-          Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                final action = locationAction(
-                  context,
-                  ref,
-                  specimenId: 7,
-                  name: 'Bulba',
-                  away: away,
-                );
-                return TextButton(
-                  onPressed: action.onSelected,
+    Future<void> pump(
+      WidgetTester tester, {
+      required bool away,
+      bool visiting = false,
+    }) => pumpWidgetApp(
+      tester,
+      // As ações da folha "Mais ações", em botões.
+      Scaffold(
+        body: Consumer(
+          builder: (context, ref, _) => Column(
+            children: [
+              for (final action in locationActions(
+                context,
+                ref,
+                id: 7,
+                name: 'Bulba',
+                away: away,
+                visiting: visiting,
+              ))
+                TextButton(
+                  onPressed: action.enabled ? action.onSelected : null,
                   child: Text(action.label),
-                );
-              },
-            ),
+                ),
+            ],
           ),
-          overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
-        );
+        ),
+      ),
+      overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
+    );
+
+    testWidgets('Champions: visitar e voltar, com falha', (tester) async {
+      var fail = false;
+      when(
+        () => repository.setChampionsVisit(
+          any(),
+          visiting: any(named: 'visiting'),
+        ),
+      ).thenAnswer((_) async {
+        if (fail) throw const ServerFailure();
+        return const Specimen(id: 7, form: 1);
+      });
+      await pump(tester, away: false);
+      expect(find.text('Voltou do Champions'), findsNothing);
+      await _tap(tester, find.text('Visitar o Champions'));
+      verify(() => repository.setChampionsVisit(7, visiting: true)).called(1);
+      expect(find.text('Visitando o Champions.'), findsOne);
+
+      await pump(tester, away: false, visiting: true);
+      expect(find.text('Visitar o Champions'), findsNothing);
+      final send = find.widgetWithText(TextButton, 'Enviar para jogo…');
+      expect(tester.widget<TextButton>(send).onPressed, isNull);
+      await _tap(tester, find.text('Voltou do Champions'));
+      expect(find.text('Voltou do Champions.'), findsOne);
+      fail = true;
+      await _tap(tester, find.text('Voltou do Champions'));
+      expect(find.text(const ServerFailure().message), findsOne);
+    });
 
     testWidgets('plural e save sem marca de origem', (tester) async {
       final noMark = _save.copyWith(
