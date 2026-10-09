@@ -127,6 +127,7 @@ void main() {
         search: ' tapu ',
         includeLocked: true,
         situation: HuntSituation.missing,
+        versions: ['scarlet', 'sword'],
       );
       expect(query.toQueryParameters(), {
         'reasons': 'no_shiny,from_go,pokeball',
@@ -137,6 +138,7 @@ void main() {
         'search': 'tapu',
         'include_locked': true,
         'registered': false,
+        'version': 'scarlet,sword',
       });
       expect(query.scopeCount, 4);
       expect(
@@ -146,6 +148,7 @@ void main() {
           acceptedBalls: ['poke-ball', 'premier-ball'],
           search: ' tapu ',
           situation: HuntSituation.missing,
+          versions: ['scarlet', 'sword'],
         ),
       );
       expect(

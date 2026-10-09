@@ -44,17 +44,37 @@ List<String> _icons(WidgetTester tester, String name) => [
     '${icon.muted ? '~' : ''}${icon.version}',
 ];
 
-Future<void> _pickGame(WidgetTester tester, String chip, String game) async {
+/// Abre o menu do chip [chip], marca ou desmarca os [games] (o menu fica
+/// aberto) e fecha em "Pronto".
+Future<void> _toggleGames(
+  WidgetTester tester,
+  String chip,
+  List<String> games,
+) async {
   await tester.tap(find.widgetWithText(FilterChip, chip));
   await tester.pumpAndSettle();
-  await tester.tap(
-    find.descendant(
-      of: find.byType(RadioMenuButton<String?>),
-      matching: find.text(game),
-    ),
-  );
+  for (final game in games) {
+    await tester.tap(
+      find.descendant(
+        of: find.byType(CheckboxMenuButton),
+        matching: find.text(game),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+  await tester.tap(find.text('Pronto'));
   await tester.pumpAndSettle();
 }
+
+/// A caixa do item [game] do menu Jogo (aberto).
+bool? _checked(WidgetTester tester, String game) => tester
+    .widget<CheckboxMenuButton>(
+      find.ancestor(
+        of: find.text(game),
+        matching: find.byType(CheckboxMenuButton),
+      ),
+    )
+    .value;
 
 void main() {
   for (final size in [compactSize, expandedSize]) {
@@ -73,18 +93,60 @@ void main() {
       expect(_icons(tester, 'Eevee'), ['~sword', '~shield', '~violet']);
       expect(_icons(tester, 'Nihilego'), isEmpty);
 
-      await _pickGame(tester, 'Jogo', 'Scarlet');
+      await _toggleGames(tester, 'Jogo', ['Scarlet']);
       expect(find.widgetWithText(FilterChip, 'Scarlet'), findsOneWidget);
+      expect(find.textContaining('para caçar em Scarlet'), findsOneWidget);
       expect(find.text('Espeon'), findsOneWidget);
       expect(find.text('Vaporeon'), findsNothing);
 
-      // Nenhuma pokédex de Z-A no catálogo da fixture.
-      await _pickGame(tester, 'Scarlet', 'Legends: Z-A');
+      // Vários: quem dá para caçar em qualquer um (Z-A não tem pokédex no
+      // catálogo da fixture, então nada muda na lista).
+      await _toggleGames(tester, 'Scarlet', ['Legends: Z-A']);
+      expect(find.widgetWithText(FilterChip, 'Scarlet +1'), findsOneWidget);
+      expect(
+        find.textContaining('para caçar em Scarlet ou Legends: Z-A'),
+        findsOneWidget,
+      );
+      expect(find.text('Espeon'), findsOneWidget);
+
+      // O menu mostra o que está marcado e quantos há em cada jogo.
+      await tester.tap(find.widgetWithText(FilterChip, 'Scarlet +1'));
+      await tester.pumpAndSettle();
+      expect(_checked(tester, 'Todos os jogos'), isFalse);
+      expect(_checked(tester, 'Scarlet'), isTrue);
+      expect(_checked(tester, 'Legends: Z-A'), isTrue);
+      final zaCount = find.descendant(
+        of: find.ancestor(
+          of: find.text('Legends: Z-A'),
+          matching: find.byType(CheckboxMenuButton),
+        ),
+        matching: find.text('0'),
+      );
+      expect(zaCount, findsOneWidget);
+      await tester.tap(find.text('Pronto'));
+      await tester.pumpAndSettle();
+
+      await _toggleGames(tester, 'Scarlet +1', ['Scarlet']);
       expect(find.text('Nada para caçar com estes filtros.'), findsOneWidget);
 
-      await _pickGame(tester, 'Legends: Z-A', 'Todos os jogos');
+      await _toggleGames(tester, 'Legends: Z-A', ['Todos os jogos']);
       expect(find.widgetWithText(FilterChip, 'Jogo'), findsOneWidget);
       expect(find.text('Vaporeon'), findsOneWidget);
+      // Já sem filtro, "Todos os jogos" fica marcado e desabilitado.
+      await tester.tap(find.widgetWithText(FilterChip, 'Jogo'));
+      await tester.pumpAndSettle();
+      expect(_checked(tester, 'Todos os jogos'), isTrue);
+      expect(
+        tester
+            .widget<CheckboxMenuButton>(
+              find.ancestor(
+                of: find.text('Todos os jogos'),
+                matching: find.byType(CheckboxMenuButton),
+              ),
+            )
+            .onChanged,
+        isNull,
+      );
     });
   }
 
@@ -112,11 +174,21 @@ void main() {
     expect(
       (await backend.fetchHunts(
         dexId,
-        const HuntQuery(version: 'scarlet'),
+        const HuntQuery(versions: ['scarlet']),
         page: 1,
         pageSize: 10,
       )).results,
       isEmpty,
+    );
+    // Vários jogos: basta um deles.
+    expect(
+      (await backend.fetchHunts(
+        dexId,
+        const HuntQuery(versions: ['scarlet', 'sword']),
+        page: 1,
+        pageSize: 10,
+      )).results,
+      hasLength(1),
     );
   });
 

@@ -458,7 +458,10 @@ do Material 3. O `MenuAnchor` desenha o menu numa camada por cima da tela,
 ancorado no chip, e o `builder` recebe o `MenuController` usado para abrir e
 fechar. Os itens são `RadioMenuButton` (uma opção) ou `CheckboxMenuButton`
 (várias; `closeOnActivate: false` deixa o menu aberto para marcar mais de
-uma).
+uma). O chip Jogo das caçadas é desse segundo tipo: marca vários saves (vale
+quem dá para caçar em qualquer um), mostra quantos há em cada jogo no
+`trailingIcon` e termina com um "Pronto" (`MenuItemButton`, que fecha o menu
+por ser um item comum; precisa de um `onPressed`, senão fica desabilitado).
 
 Os liga/desliga (shiny, alfa, GO) viram, no celular, chips **só com o
 ícone**: o nome fica no `tooltip`, que também é o que o leitor de tela fala.
