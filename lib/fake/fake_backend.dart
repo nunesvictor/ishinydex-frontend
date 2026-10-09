@@ -1184,13 +1184,21 @@ class FakeBackend
     final slug = slugSearch(text);
     bool matches(FormDetail form) =>
         number == null ? form.name.contains(slug) : _hasNumber(form, number);
-    return [
-      for (final slot in _slots.values)
-        if (slot.dexId == dexId &&
-            slot.formId != null &&
-            matches(_forms[slot.formId]!))
-          _toSlot(slot),
-    ].take(30).toList();
+    // Por nome, os mais parecidos primeiro: o nome exato, depois os que
+    // começam com o texto, depois os que só o contêm ("mew": Mew antes de
+    // Mewtwo). Dentro de cada grupo, a ordem das boxes.
+    int rank(FormDetail form) => number != null || form.name == slug
+        ? 0
+        : form.name.startsWith(slug)
+        ? 1
+        : 2;
+    final groups = [<_SlotRecord>[], <_SlotRecord>[], <_SlotRecord>[]];
+    for (final slot in _slots.values) {
+      if (slot.dexId != dexId || slot.formId == null) continue;
+      final form = _forms[slot.formId]!;
+      if (matches(form)) groups[rank(form)].add(slot);
+    }
+    return [for (final slot in groups.expand((g) => g).take(30)) _toSlot(slot)];
   }
 
   @override

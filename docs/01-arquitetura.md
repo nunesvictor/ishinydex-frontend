@@ -271,9 +271,19 @@ A pílula é o próprio campo. Ao ganhar o foco, ela anima até o topo com um
 nas telas maiores, até 560 px, centralizada), a AppBar recolhe e os resultados
 (`SlotSearchResults`) abrem por trás. O campo nunca é recriado, só muda de
 lugar, então o foco e o teclado continuam durante a animação. Ativa, a busca
-mostra "Cancelar", que leva a pílula de volta. "Buscar" no teclado só o fecha;
-os resultados ficam até "Cancelar". O "x" do campo (como no inventário) apaga
-o texto e mantém o foco, para buscar outra coisa.
+mostra "Cancelar", que leva a pílula de volta. O "x" do campo (como no
+inventário) apaga o texto e mantém o foco, para buscar outra coisa.
+
+Os resultados vêm por relevância (nome exato, depois os que começam com o
+texto, depois os que só o contêm: "mew" mostra Mew antes de Mewtwo), e o
+primeiro vem destacado. **Enter** (ou "Buscar" no teclado do celular) abre o
+destacado, como um toque. Ele usa o texto do campo na hora, sem esperar o
+debounce: se a lista ainda não chegou, a página marca "abrir quando chegar"
+(`onReady` de `SlotSearchResults`, chamado depois do quadro, porque abrir muda
+a tela). No PC, **↑/↓** movem o destaque (um `CallbackShortcuts` em volta do
+campo pega as setas antes dos atalhos do texto, então o foco fica no campo),
+o mouse também destaca, **Esc** cancela e uma linha embaixo da lista mostra os
+atalhos. No celular, o destacado leva a etiqueta "Buscar abre".
 
 Escolher um resultado fecha a busca, leva à box do slot e o seleciona; no
 compacto, também abre o bottom sheet. O `PageView` ignora o `onPageChanged` da

@@ -817,6 +817,36 @@ void main() {
       expect(humanized.single.form!.name, 'nidoran-f');
     });
 
+    test(
+      'searchSlots: por nome, exato, depois começa com, depois contém',
+      () async {
+        final many = FakeBackend();
+        const forms = {
+          1: 'shadow-mew',
+          2: 'mewtwo',
+          3: 'mew',
+          4: 'mewtwo-mega-x',
+        };
+        for (final MapEntry(key: id, value: name) in forms.entries) {
+          many.addForm(id: id, name: name);
+        }
+        final dex = many.addDex(name: 'Todas');
+        many.addBox(dexId: dex, name: 'B', formIds: forms.keys.toList());
+        final found = await many.searchSlots(dexId: dex, search: 'mew');
+        expect(found.map((s) => s.form!.name), [
+          'mew',
+          'mewtwo',
+          'mewtwo-mega-x',
+          'shadow-mew',
+        ]);
+        // Por número, a ordem das boxes.
+        expect(
+          (await many.searchSlots(dexId: dex, search: '3')).single.form!.name,
+          'mew',
+        );
+      },
+    );
+
     test('fetchGenerations: agrupa pela geração do número', () async {
       final gens = await backend.fetchGenerations(1);
       expect(gens.single.generation, 'generation-i');
