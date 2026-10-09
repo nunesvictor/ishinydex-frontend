@@ -529,7 +529,7 @@ void main() {
 
       await _tap(tester, find.text('Enviar'));
       expect(find.textContaining('Fora da pokédex de Scarlet'), findsOne);
-      expect(find.textContaining('marca de origem do jogo'), findsOneWidget);
+      expect(find.textContaining('(GO Park)'), findsOneWidget);
       // Desabilitado: tocar não escolhe.
       await _tap(tester, find.text("Let's Go Pikachu · Switch"));
       expect(find.text('Enviar para qual save?'), findsOneWidget);

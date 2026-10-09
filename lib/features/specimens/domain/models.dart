@@ -373,7 +373,7 @@ abstract class Save with _$Save {
   };
 
   /// Jogos que só recebem Pokémon com uma marca de origem: o Let's Go só
-  /// aceita de volta quem veio dele.
+  /// aceita de volta quem veio dele (ver [accepts]).
   static const requiredMarks = {
     'lets-go-pikachu': 'lets-go',
     'lets-go-eevee': 'lets-go',
@@ -381,6 +381,23 @@ abstract class Save with _$Save {
 
   /// A marca exigida para entrar no save (ver [requiredMarks]).
   String? get requiredMark => requiredMarks[trainer.version];
+
+  /// Se um Pokémon com a marca de origem [mark] e o OT de [otVersion] pode
+  /// entrar no save. Num jogo com [requiredMark], além da marca dele, vale
+  /// a do GO quando o OT é de um jogo com a mesma marca: é quem foi do GO
+  /// para o Let's Go pelo GO Park e pode voltar a ele.
+  bool accepts(String? mark, String? otVersion) {
+    final required = requiredMark;
+    return required == null ||
+        mark == required ||
+        (mark == 'go' && requiredMarks[otVersion] == required);
+  }
+
+  /// Por que o save recusa um Pokémon (ver [accepts]); `null` = aceita
+  /// qualquer um.
+  String? get restriction => requiredMark == null
+      ? null
+      : "Só Pokémon do Let's Go, ou do GO com OT de Let's Go (GO Park)";
 
   /// `"Scarlet"`: o jogo do save.
   String get game => versionLabel(trainer.version ?? '');

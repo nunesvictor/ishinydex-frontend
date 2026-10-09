@@ -67,7 +67,7 @@ void _notify(BuildContext context, String message) =>
 
 /// Escolhe o save de destino dos [ids]. Sem nenhum save cadastrado, explica
 /// e oferece abrir Ajustes → Meus saves. `null` = desistiu. Um save que não
-/// aceita os espécimes (o Let's Go só recebe quem tem a marca dele) fica
+/// aceita os espécimes (o Let's Go só recebe quem veio dele) fica
 /// desabilitado; um em cujo jogo eles não estão na pokédex, só avisa.
 Future<Save?> pickSave(
   BuildContext context,
@@ -135,7 +135,7 @@ Widget _saveOption(
 ) {
   final check = ref.read(transferCheckProvider)(ids, save);
   final warning = !check.allowed
-      ? 'Só Pokémon com a marca de origem do jogo'
+      ? save.restriction
       : switch (check.outside) {
           0 => null,
           1 when ids.length == 1 => 'Fora da pokédex de ${save.game}',
