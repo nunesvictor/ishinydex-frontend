@@ -6,6 +6,8 @@ import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/active_hunt_tile.dart';
+import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -30,6 +32,7 @@ class SlotDetailPanel extends ConsumerWidget {
     required this.onRelease,
     required this.onWithdraw,
     this.onOpenSlot,
+    this.onShowHunts,
     this.fillHeight = false,
     super.key,
   });
@@ -42,6 +45,10 @@ class SlotDetailPanel extends ConsumerWidget {
 
   /// Abre outro slot do dex (uma forma da linha evolutiva, na aba Espécie).
   final ValueChanged<Slot>? onOpenSlot;
+
+  /// Abre as caçadas ativas (a linha "Caçada em andamento"); `null` fora de
+  /// um shiny dex, onde a linha não aparece.
+  final VoidCallback? onShowHunts;
 
   /// Painel lateral: ocupa a altura toda, com a barra presa embaixo. No
   /// bottom sheet (`false`), o painel tem a altura do conteúdo.
@@ -67,6 +74,12 @@ class SlotDetailPanel extends ConsumerWidget {
     final full = specimen == null
         ? null
         : ref.watch(specimenProvider(specimen.id)).value;
+    // Como o selo da grade: caçada ativa da forma e o slot ainda precisa do
+    // Pokémon (faltante, ou registrado sem ser shiny). Só num shiny dex.
+    final hunting =
+        onShowHunts != null &&
+        ref.watch(huntedFormsProvider).contains(form.id) &&
+        !(specimen?.isShiny ?? false);
     return Column(
       mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,12 +137,17 @@ class SlotDetailPanel extends ConsumerWidget {
                     OriginMarkChip(mark),
                 ],
               ],
-              footer: switch (specimen?.location) {
-                final save? => LocationTile(
-                  save: save,
-                  since: specimen!.locationSince,
+              footer: switch ((specimen?.location, hunting)) {
+                (null, false) => null,
+                (final save, _) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (save != null)
+                      LocationTile(save: save, since: specimen!.locationSince),
+                    if (hunting)
+                      ActiveHuntTile(formId: form.id, onTap: onShowHunts),
+                  ],
                 ),
-                null => null,
               },
               nature: full?.nature,
               dexId: current.personalDex,

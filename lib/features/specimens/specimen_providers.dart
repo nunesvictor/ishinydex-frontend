@@ -99,6 +99,15 @@ final originFitsProvider = Provider<bool Function(int formId, String? version)>(
   },
 );
 
+/// Se a forma pode ser caçada no jogo (`Catalog.huntableIn`); sem o
+/// catálogo, sempre.
+final huntableInProvider = Provider<bool Function(int formId, String? version)>(
+  (ref) {
+    final catalog = ref.watch(fakeBackendProvider).catalog;
+    return (formId, version) => catalog?.huntableIn(formId, version) ?? true;
+  },
+);
+
 /// Quem dos espécimes pode ir para o save, quem fica e os avisos
 /// (`FakeBackend.transferCheck`).
 final transferCheckProvider =

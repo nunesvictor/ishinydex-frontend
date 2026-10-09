@@ -56,6 +56,12 @@ void main() {
       version: 'scarlet',
     );
     saveId = (await backend.createSave(trainerId: ot)).id;
+    final sword = backend.addTrainer(
+      name: 'Ash',
+      trainerId: '2',
+      version: 'sword',
+    );
+    await backend.createSave(trainerId: sword);
   });
 
   Future<ShinyHunt> add(ShinyHunt hunt) => backend.saveShinyHunt(hunt);
@@ -73,6 +79,8 @@ void main() {
       fakeBackendProvider.overrideWithValue(backend),
       clockProvider.overrideWithValue(() => _now),
       shinyMethodsProvider.overrideWithValue((_, {fromGo = false}) => _methods),
+      // Nenhuma forma pode ser caçada em Sword.
+      huntableInProvider.overrideWithValue((_, version) => version != 'sword'),
     ],
   );
 
@@ -230,6 +238,8 @@ void main() {
     expect(find.text('Começar caçada'), findsWidgets);
 
     await tap(tester, find.byKey(const ValueKey('field-hunt-save')));
+    // Só os saves de jogos onde a forma pode ser caçada.
+    expect(find.textContaining('Sword'), findsNothing);
     await tap(tester, find.textContaining('Scarlet').last);
     // Encontro aleatório aceita a unidade padrão (encontros): ela fica.
     await tap(tester, find.byKey(const ValueKey('field-hunt-method')));
@@ -239,7 +249,7 @@ void main() {
     expect(find.text('resets'), findsOne);
     await tap(tester, find.byKey(const ValueKey('field-hunt-method')));
     await tap(tester, find.text('Encontro aleatório').last);
-    await tap(tester, find.text('horas (cronômetro)'));
+    await tap(tester, find.text('horas'));
     await tap(tester, find.byTooltip('Limpar o início'));
     expect(find.text('Opcional; dá para preencher depois'), findsOne);
     await tap(tester, find.text('Início'));
@@ -254,17 +264,12 @@ void main() {
     expect(created.unit, 'hours');
     expect(created.startedAt, DateTime(2026, 10, 9));
 
-    // Com um cronômetro rodando, não começa outra.
+    // Com um cronômetro rodando, não começa outra: o botão some.
     await backend.saveShinyHunt(created.copyWith(runningSince: _now));
     await tester.pumpWidget(const SizedBox());
     await pump(tester, const Scaffold(floatingActionButton: StartHuntButton()));
     await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<FloatingActionButton>(find.byType(FloatingActionButton))
-          .onPressed,
-      isNull,
-    );
+    expect(find.byType(FloatingActionButton), findsNothing);
   });
 
   testWidgets('editar: trocar o início confirma; falha ao gravar', (

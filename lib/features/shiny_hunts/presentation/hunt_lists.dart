@@ -30,9 +30,12 @@ class HuntCards extends ConsumerWidget {
     final theme = Theme.of(context);
     return switch (ref.watch(shinyHuntsProvider)) {
       AsyncData(value: final all) => () {
+        // A que está com o cronômetro rodando vai para o topo.
         final hunts = [
           for (final h in all)
-            if (h.paused == paused) h,
+            if (h.paused == paused && h.running) h,
+          for (final h in all)
+            if (h.paused == paused && !h.running) h,
         ];
         final running = paused
             ? null
@@ -110,8 +113,9 @@ class HuntCards extends ConsumerWidget {
   }
 }
 
-/// "Começar caçada" da aba Em andamento: desabilitado com um cronômetro
-/// rodando (não se começa outra caçada no meio de uma contada no relógio).
+/// "Começar caçada" da aba Ativas: some com um cronômetro rodando (não se
+/// começa outra caçada no meio de uma contada no relógio; desabilitado, o
+/// botão parecia ativo).
 class StartHuntButton extends ConsumerWidget {
   const StartHuntButton({super.key});
 
@@ -119,9 +123,10 @@ class StartHuntButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final running = (ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[])
         .any((h) => h.running);
+    if (running) return const SizedBox.shrink();
     return FloatingActionButton.extended(
       heroTag: 'start-hunt',
-      onPressed: running ? null : () => unawaited(startHuntFromPicker(context)),
+      onPressed: () => unawaited(startHuntFromPicker(context)),
       icon: const Icon(Icons.add),
       label: const Text('Começar caçada'),
     );

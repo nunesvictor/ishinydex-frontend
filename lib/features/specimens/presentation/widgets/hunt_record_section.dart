@@ -162,7 +162,8 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
         title: const Text('Registro da caçada'),
         subtitle: Text(_summary),
         shape: const Border(),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        // Respiro no topo: o rótulo do primeiro campo flutua acima da borda.
+        childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         children: [
           if (widget.methods.isNotEmpty || hunt.method != null)
             Padding(
@@ -224,28 +225,31 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
                     onChanged: (_) => _countChanged(),
                   ),
                 ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SegmentedButton<String>(
-                      key: const ValueKey('field-hunt-unit'),
-                      segments: [
-                        for (final u in _units)
-                          ButtonSegment(
-                            value: u,
-                            label: Text(huntUnitLabels[u] ?? u),
-                          ),
-                      ],
-                      selected: {_unit},
-                      showSelectedIcon: _units.length > 1,
-                      onSelectionChanged: (v) => _changeUnit(v.single),
-                    ),
-                  ),
+            ],
+          ),
+          // Unidades numa linha própria: lado a lado com a contagem, passam
+          // da largura do iPhone.
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SegmentedButton<String>(
+                  key: const ValueKey('field-hunt-unit'),
+                  segments: [
+                    for (final u in _units)
+                      ButtonSegment(
+                        value: u,
+                        label: Text(huntUnitLabels[u] ?? u),
+                      ),
+                  ],
+                  selected: {_unit},
+                  showSelectedIcon: _units.length > 1,
+                  onSelectionChanged: (v) => _changeUnit(v.single),
                 ),
               ),
-            ],
+            ),
           ),
           if (widget.methods.isNotEmpty && widget.game != null)
             Padding(

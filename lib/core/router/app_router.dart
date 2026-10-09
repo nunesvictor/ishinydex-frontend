@@ -47,8 +47,9 @@ abstract final class Routes {
     }.nullIfEmpty,
   ).toString();
 
-  /// Caçadas do shiny dex [dexId].
-  static String hunts(int dexId) => '$dexes/$dexId/hunts';
+  /// Caçadas do shiny dex [dexId]; com [active], já na aba Ativas.
+  static String hunts(int dexId, {bool active = false}) =>
+      '$dexes/$dexId/hunts${active ? '?tab=active' : ''}';
 
   static String specimen(int id) => '$specimens/$id';
 }
@@ -116,6 +117,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                         builder: (context, state) => HuntsPage(
                           dexId:
                               int.tryParse(state.pathParameters['dexId']!) ?? 0,
+                          initialTab:
+                              state.uri.queryParameters['tab'] == 'active'
+                              ? HuntsTab.active
+                              : HuntsTab.missing,
                         ),
                       ),
                     ],

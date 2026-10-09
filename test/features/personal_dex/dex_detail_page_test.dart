@@ -13,11 +13,14 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
+import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_grid.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -1244,5 +1247,32 @@ void main() {
       expect(find.text(const ServerFailure().message), findsOneWidget);
       expect(find.text('Depositar automaticamente'), findsOneWidget);
     });
+  });
+
+  group('caçada no painel do slot', () {
+    for (final size in [expandedSize, compactSize]) {
+      testWidgets('a linha leva às caçadas ativas (${size.width.toInt()}px)', (
+        tester,
+      ) async {
+        final backend = FakeBackend.seeded();
+        final form = (await backend.fetchSlot(3)).form!.id;
+        await backend.saveShinyHunt(
+          ShinyHunt(id: 0, form: form, count: 7, unit: 'resets'),
+        );
+        await pumpFullApp(tester, size: size, backend: backend);
+        await openShinyDex(tester);
+        await tester.tap(slot(3));
+        await tester.pumpAndSettle();
+        expect(find.text('Caçada em andamento'), findsOneWidget);
+        expect(find.text('7 resets'), findsOneWidget);
+        await tester.ensureVisible(find.text('Caçada em andamento'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Caçada em andamento'));
+        await tester.pumpAndSettle();
+        expect(find.byType(HuntsPage), findsOneWidget);
+        expect(find.byType(HuntCards), findsOneWidget);
+        expect(find.byType(BottomSheet), findsNothing);
+      });
+    }
   });
 }
