@@ -487,13 +487,6 @@ class _Filters extends StatelessWidget {
           query.alphaOnly,
           (bool v) => query.copyWith(alphaOnly: v),
         ),
-        (
-          const GoIcon(size: 18, semanticLabel: null),
-          'GO',
-          'Veio do Pokémon GO',
-          query.fromGoOnly,
-          (bool v) => query.copyWith(fromGoOnly: v),
-        ),
       ])
         FilterChip(
           avatar: compact ? null : icon,

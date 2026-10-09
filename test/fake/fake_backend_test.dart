@@ -359,13 +359,10 @@ void main() {
       expect(saur.any((s) => s.nickname == 'Saur'), true);
     });
 
-    test('filtros de alfa e GO', () async {
+    test('filtro de alfa', () async {
       final alpha = await all(emptySpecimenQuery.copyWith(alphaOnly: true));
-      final go = await all(emptySpecimenQuery.copyWith(fromGoOnly: true));
       expect(alpha, isNotEmpty);
       expect(alpha.every((s) => s.isAlpha), true);
-      expect(go, isNotEmpty);
-      expect(go.every((s) => s.isFromGo), true);
     });
 
     test('filtros avançados como na API', () async {
