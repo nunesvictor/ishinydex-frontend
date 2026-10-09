@@ -216,6 +216,45 @@ void main() {
       expect(catalog.inGame(196, 'red'), isTrue);
     });
 
+    test('FRLG (só ida): caçável e com marca GBA, mas não é save', () {
+      final json = catalogJson();
+      (json['versionGroups'] as List).add({
+        'name': 'firered-leafgreen',
+        'generation': 'generation-iii',
+        'order': 7,
+        'versions': ['firered', 'leafgreen'],
+        'originMark': 'gba',
+      });
+      for (final v in ['firered', 'leafgreen']) {
+        (json['versions'] as List).add({
+          'name': v,
+          'versionGroup': 'firered-leafgreen',
+          'receivesFromHome': false,
+        });
+      }
+      (json['pokedexes'] as List).add({
+        'name': 'kanto',
+        'label': 'Kanto',
+        'versionGroups': ['firered-leafgreen'],
+        'dlc': null,
+        'entries': [
+          ['bulbasaur', 1],
+        ],
+      });
+      final frlg = Catalog.fromJson(json, spriteBase: _base);
+
+      expect(frlg.transferVersions, isNot(contains('firered')));
+      expect(frlg.huntableVersions(1), [
+        'firered',
+        'leafgreen',
+        'brilliant-diamond',
+        'shining-pearl',
+      ]);
+      expect(frlg.pokedexesOf(1).first.versions, ['firered', 'leafgreen']);
+      expect(frlg.inGame(1, 'firered'), isTrue);
+      expect(frlg.inGame(133, 'firered'), isFalse);
+    });
+
     test('catálogo antigo: sem pokédex nem exclusivos', () {
       final old = Catalog.fromJson(
         catalogJson()

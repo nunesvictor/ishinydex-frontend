@@ -9,6 +9,7 @@ Fora de `game_icons/`, `icons/` e `origin_marks/` para não entrar no bundle (o 
 | Arquivo | Original |
 | --- | --- |
 | `game_boy.png` | `GB_icon_HOME.png` |
+| `gba.png` | `GBA_icon_HOME.png` (FireRed e LeafGreen do Switch; o original é cinza, convertido para RGBA) |
 | `kalos.png` | `Blue_pentagon_HOME.png` |
 | `alola.png` | `Black_clover_HOME.png` |
 | `lets_go.png` | `Let's_Go_icon_HOME.png` |
@@ -23,10 +24,12 @@ O app pinta o branco com a cor do tema (`OriginMarkIcon`, em `lib/core/widgets/o
 
 ## Ícones de jogo (`game_icons/`)
 
-Ícones dos jogos no Pokémon HOME (128×128, coloridos), baixados da Bulbagarden Archives, categoria [Pokémon HOME game icons](https://archives.bulbagarden.net/wiki/Category:Pok%C3%A9mon_HOME_game_icons). Só os jogos que recebem Pokémon do HOME (os que viram save), com o nome da versão no catálogo. Mesma ressalva de propriedade das marcas de origem.
+Ícones dos jogos no Pokémon HOME (128×128, coloridos), baixados da Bulbagarden Archives, categoria [Pokémon HOME game icons](https://archives.bulbagarden.net/wiki/Category:Pok%C3%A9mon_HOME_game_icons). Só os jogos ligados ao HOME (os que viram save e o FireRed/LeafGreen do Switch, que só envia), com o nome da versão no catálogo. Mesma ressalva de propriedade das marcas de origem.
 
 | Arquivo | Original |
 | --- | --- |
+| `firered.png` | `HOME_FireRed_icon.png` |
+| `leafgreen.png` | `HOME_LeafGreen_icon.png` |
 | `lets-go-pikachu.png` | `HOME_Let's_Go_Pikachu_icon.png` |
 | `lets-go-eevee.png` | `HOME_Let's_Go_Eevee_icon.png` |
 | `sword.png` | `HOME_Sword_icon.png` |

@@ -677,6 +677,7 @@ class FakeBackend
     // Mesma ordem do backend: marcas, GO e "sem marca".
     originMark: [
       Choice(value: 'game-boy', label: 'GB'),
+      Choice(value: 'gba', label: 'GBA'),
       Choice(value: 'alola', label: 'SM/USUM'),
       Choice(value: 'lets-go', label: 'LGPE'),
       Choice(value: 'galar', label: 'SwSh'),
@@ -2244,6 +2245,7 @@ const _originMarkByVersionGroup = {
   'yellow': 'game-boy',
   'gold-silver': 'game-boy',
   'crystal': 'game-boy',
+  'firered-leafgreen': 'gba',
   'x-y': 'kalos',
   'omega-ruby-alpha-sapphire': 'kalos',
   'sun-moon': 'alola',

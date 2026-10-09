@@ -11,6 +11,8 @@ String versionLabel(String version) =>
     _versionLabels[version] ?? prettifyName(version);
 
 const _versionLabels = {
+  'firered': 'FireRed',
+  'leafgreen': 'LeafGreen',
   'legends-arceus': 'Legends: Arceus',
   'legends-za': 'Legends: Z-A',
   'lets-go-pikachu': "Let's Go Pikachu",
