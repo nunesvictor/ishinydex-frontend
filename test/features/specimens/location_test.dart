@@ -5,6 +5,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
 import 'package:ishinydex/features/specimens/presentation/away_page.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/saves_page.dart';
@@ -521,8 +522,13 @@ void main() {
           specimenRepositoryProvider.overrideWithValue(repository),
           transferCheckProvider.overrideWithValue(
             (ids, save) => save.id == lgpe.id
-                ? (allowed: false, outside: 0)
-                : (allowed: true, outside: outside),
+                ? TransferCheck(
+                    blocked: [
+                      for (final id in ids)
+                        (id: id, name: 'P$id', message: save.restriction!),
+                    ],
+                  )
+                : TransferCheck(movable: ids, outside: outside),
           ),
         ],
       );
@@ -547,6 +553,115 @@ void main() {
       outside = 0;
       await reopen();
       expect(find.textContaining('fora da pokédex'), findsNothing);
+    });
+
+    testWidgets('destino: contagens, avisos e envio parcial confirmado', (
+      tester,
+    ) async {
+      when(repository.fetchSaves).thenAnswer((_) async => [_save]);
+      when(
+        () => repository.transfer(any(), saveId: any(named: 'saveId')),
+      ).thenAnswer((i) async => (i.positionalArguments.first as List).length);
+      var ids = [7, 8, 9];
+      var check = const TransferCheck(
+        movable: [8, 9],
+        blocked: [(id: 7, name: 'Spinda', message: 'Não vai')],
+        warnings: [(id: 9, name: 'Mewtwo', message: 'Do GO')],
+        outside: 1,
+      );
+      await pumpWidgetApp(
+        tester,
+        Scaffold(
+          body: Consumer(
+            builder: (context, ref, _) => TextButton(
+              onPressed: () => sendToGame(context, ref, ids),
+              child: const Text('Enviar'),
+            ),
+          ),
+        ),
+        overrides: [
+          specimenRepositoryProvider.overrideWithValue(repository),
+          transferCheckProvider.overrideWithValue((_, _) => check),
+        ],
+      );
+
+      await _tap(tester, find.text('Enviar'));
+      expect(
+        find.textContaining(
+          '1 não pode ir · 1 com aviso · 1 fora da pokédex de Scarlet',
+        ),
+        findsOne,
+      );
+      await _tap(tester, find.text('Scarlet · Switch'));
+      expect(find.text('Enviar 2 de 3 para Scarlet · Switch?'), findsOne);
+      expect(find.text('Spinda: Não vai'), findsOne);
+      expect(find.text('Mewtwo: Do GO'), findsOne);
+      await _tap(tester, find.text('Cancelar'));
+      verifyNever(
+        () => repository.transfer(any(), saveId: any(named: 'saveId')),
+      );
+
+      await _tap(tester, find.text('Enviar'));
+      await _tap(tester, find.text('Scarlet · Switch'));
+      await _tap(tester, find.text('Enviar os 2'));
+      verify(() => repository.transfer([8, 9], saveId: 1)).called(1);
+      expect(
+        find.text('2 espécimes enviados para Scarlet · Switch.'),
+        findsOne,
+      );
+
+      // Só um vai, sem aviso: "Enviar 1".
+      check = const TransferCheck(
+        movable: [8],
+        blocked: [
+          (id: 7, name: 'A', message: 'Não vai'),
+          (id: 9, name: 'B', message: 'Não vai'),
+        ],
+      );
+      await _tap(tester, find.text('Enviar'));
+      expect(find.textContaining('2 não podem ir'), findsOne);
+      await _tap(tester, find.text('Scarlet · Switch'));
+      expect(find.text('Vão com aviso'), findsNothing);
+      await _tap(tester, find.text('Enviar 1'));
+      verify(() => repository.transfer([8], saveId: 1)).called(1);
+
+      // Nenhum vai: o motivo comum, ou um texto geral.
+      Future<void> reopen() async {
+        Navigator.of(tester.element(find.text('Enviar para qual save?'))).pop();
+        await tester.pumpAndSettle();
+        await _tap(tester, find.text('Enviar'));
+      }
+
+      check = const TransferCheck(
+        blocked: [
+          (id: 7, name: 'A', message: 'Não vai'),
+          (id: 9, name: 'B', message: 'Não vai'),
+        ],
+      );
+      await _tap(tester, find.text('Enviar'));
+      expect(find.textContaining('Não vai'), findsOne);
+      check = const TransferCheck(
+        blocked: [
+          (id: 7, name: 'A', message: 'Não vai'),
+          (id: 9, name: 'B', message: 'Outro motivo'),
+        ],
+      );
+      await reopen();
+      expect(find.textContaining('Nenhum deles pode ir'), findsOne);
+
+      // Um só: o motivo ou o aviso dele.
+      ids = [9];
+      check = const TransferCheck(
+        movable: [9],
+        warnings: [(id: 9, name: 'Mewtwo', message: 'Do GO')],
+      );
+      await reopen();
+      expect(find.textContaining('Do GO'), findsOne);
+      check = const TransferCheck(
+        blocked: [(id: 9, name: 'Mewtwo', message: 'Não sai')],
+      );
+      await reopen();
+      expect(find.textContaining('Não sai'), findsOne);
     });
 
     testWidgets('enviar: saves e transferência', (tester) async {

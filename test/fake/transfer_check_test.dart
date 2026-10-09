@@ -3,6 +3,7 @@ import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -25,19 +26,23 @@ void main() {
     final other = (await backend.fetchSlot(1)).specimen!.id;
 
     expect(backend.transferCheck([fromLgpe.id], save).allowed, isTrue);
-    expect(backend.transferCheck([fromLgpe.id, other], save), (
-      allowed: false,
-      outside: 0, // sem catálogo, sem aviso
-    ));
+    final mixed = backend.transferCheck([fromLgpe.id, other], save);
+    expect(mixed.allowed, isTrue);
+    expect(mixed.movable, [fromLgpe.id]);
+    expect(mixed.blocked.single.id, other);
+    expect(mixed.blocked.single.message, contains('entram nesse save'));
+    expect(mixed.outside, 0); // sem catálogo, sem aviso
     await expectLater(
-      backend.transfer([fromLgpe.id, other], saveId: save.id),
+      backend.transfer([other], saveId: save.id),
       throwsA(
         isA<ValidationFailure>().having((f) => f.fieldErrors.keys, 'campos', [
           'save',
         ]),
       ),
     );
-    expect(await backend.transfer([fromLgpe.id], saveId: save.id), 1);
+    // Envio parcial: vai só quem pode.
+    expect(await backend.transfer([fromLgpe.id, other], saveId: save.id), 1);
+    expect((await backend.fetchSlot(1)).specimen!.location, isNull);
     expect(await backend.transfer([fromLgpe.id], saveId: 1), 1);
   });
 
@@ -121,9 +126,39 @@ void main() {
     final container = createContainer(
       overrides: [fakeBackendProvider.overrideWithValue(backend)],
     );
-    expect(container.read(transferCheckProvider)([espeon.id, eevee.id], save), (
-      allowed: true,
-      outside: 1,
-    ));
+    final check = container.read(transferCheckProvider)([
+      espeon.id,
+      eevee.id,
+    ], save);
+    expect(check.allowed, isTrue);
+    expect(check.outside, 1);
+  });
+
+  test('restrições do HOME: bloqueios e avisos por espécime', () async {
+    final backend = FakeBackend.seeded()
+      ..addForm(id: 9001, name: 'spinda')
+      ..addForm(id: 9002, name: 'kyurem-black')
+      ..addForm(id: 9003, name: 'mewtwo', category: SpeciesCategory.legendary);
+    final bd = backend.addTrainer(
+      name: 'Ash',
+      trainerId: '1',
+      version: 'brilliant-diamond',
+    );
+    final save = await backend.createSave(trainerId: bd);
+    Future<int> make(int form, {bool go = false}) async =>
+        (await backend.create(
+          SpecimenDraft(form: form, ability: '', isFromGo: go),
+        )).id;
+    final spinda = await make(9001);
+    final kyurem = await make(9002);
+    final mewtwo = await make(9003, go: true);
+    final check = backend.transferCheck([spinda, kyurem, mewtwo], save);
+    expect(check.movable, [mewtwo]);
+    expect(check.blocked.map((b) => b.message), [
+      'O Spinda não vai para o BDSP',
+      'Essa forma não sai do HOME',
+    ]);
+    expect(check.warnings.single.id, mewtwo);
+    expect(await backend.transfer([spinda, mewtwo], saveId: save.id), 1);
   });
 }

@@ -10,6 +10,7 @@ import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/domain/shiny_lock_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
+import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
 
 final fakeBackendProvider = Provider<FakeBackend>(
   (ref) => FakeBackend.seeded(latency: const Duration(milliseconds: 250)),
@@ -1805,25 +1806,44 @@ class FakeBackend
     _saves.remove(saveId);
   }
 
-  /// Para a escolha do destino: se os [ids] podem ir para o [save] (o Let's
-  /// Go só recebe quem veio dele, [Save.accepts]) e quantos não
-  /// estão numa pokédex do jogo do save (só um aviso: o HOME aceita alguns
-  /// de fora, como eventos).
-  ({bool allowed, int outside}) transferCheck(List<int> ids, Save save) {
+  /// Para a escolha do destino: quem dos [ids] pode ir para o [save] e quem
+  /// fica, com o motivo (o Let's Go só recebe quem veio dele,
+  /// [Save.accepts]; as restrições do HOME, [transferBlock]), os avisos
+  /// ([transferWarning]) e quantos não estão numa pokédex do jogo do save.
+  TransferCheck transferCheck(List<int> ids, Save save) {
     final version = save.trainer.version;
-    final specimens = [for (final id in ids) ?_specimens[id]];
-    return (
-      allowed: specimens.every(
-        (s) => save.accepts(s.originMark, s.originVersion),
-      ),
-      outside: specimens
-          .where((s) => !(catalog?.inGame(s.form, version) ?? true))
-          .length,
+    final movable = <int>[];
+    final blocked = <TransferIssue>[];
+    final warnings = <TransferIssue>[];
+    var outside = 0;
+    for (final s in [for (final id in ids.toSet()) ?_specimens[id]]) {
+      final name = _forms[s.form]?.name ?? '';
+      final block = save.accepts(s.originMark, s.originVersion)
+          ? transferBlock(name, s.originMark, version)
+          : '${save.restriction} entram nesse save';
+      if (block != null) {
+        blocked.add((id: s.id, name: s.displayName, message: block));
+        continue;
+      }
+      movable.add(s.id);
+      final category = _categories[s.form] ?? SpeciesCategory.regular;
+      final warning = transferWarning(name, s.originMark, category);
+      if (warning != null) {
+        warnings.add((id: s.id, name: s.displayName, message: warning));
+      }
+      if (!(catalog?.inGame(s.form, version) ?? true)) outside++;
+    }
+    return TransferCheck(
+      movable: movable,
+      blocked: blocked,
+      warnings: warnings,
+      outside: outside,
     );
   }
 
-  /// Como `POST /specimens/transfer/`: tudo ou nada; quem já está no
-  /// destino não muda (nem a data).
+  /// Como `POST /specimens/transfer/`: para um save, vão só os que podem
+  /// ([transferCheck]); se nenhum puder, nada muda. Quem já está no destino
+  /// não muda (nem a data).
   @override
   Future<int> transfer(List<int> ids, {required int? saveId}) async {
     await _delay();
@@ -1839,13 +1859,17 @@ class FakeBackend
         'save': ['Save inexistente.'],
       });
     }
-    final save = saveId == null ? null : _saves[saveId]!;
-    if (save != null && !transferCheck(ids, save).allowed) {
-      throw ValidationFailure({
-        'save': ['${save.restriction} entram nesse save.'],
-      });
+    var going = unique;
+    if (saveId != null) {
+      final check = transferCheck([...unique], _saves[saveId]!);
+      if (!check.allowed) {
+        throw ValidationFailure({
+          'save': ['${check.blocked.first.message}.'],
+        });
+      }
+      going = check.movable.toSet();
     }
-    final moving = unique.where((id) => _specimens[id]!.location?.id != saveId);
+    final moving = going.where((id) => _specimens[id]!.location?.id != saveId);
     final count = moving.length;
     for (final id in [...moving]) {
       moveTo(id, saveId);

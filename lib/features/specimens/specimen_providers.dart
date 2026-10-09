@@ -5,6 +5,7 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
+import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
 
 /// O backend local: os dados do aparelho (modo local) ou de exemplo
 /// (demonstração).
@@ -82,10 +83,10 @@ final originFitsProvider = Provider<bool Function(int formId, String? version)>(
   },
 );
 
-/// Se os espécimes podem ir para o save e quantos estão fora da pokédex do
-/// jogo dele (`FakeBackend.transferCheck`).
+/// Quem dos espécimes pode ir para o save, quem fica e os avisos
+/// (`FakeBackend.transferCheck`).
 final transferCheckProvider =
-    Provider<({bool allowed, int outside}) Function(List<int> ids, Save save)>(
+    Provider<TransferCheck Function(List<int> ids, Save save)>(
       (ref) => ref.watch(fakeBackendProvider).transferCheck,
     );
 

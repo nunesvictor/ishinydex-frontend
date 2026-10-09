@@ -8,6 +8,7 @@ import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -65,11 +66,12 @@ void _notify(BuildContext context, String message) =>
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
 
-/// Escolhe o save de destino dos [ids]. Sem nenhum save cadastrado, explica
-/// e oferece abrir Ajustes → Meus saves. `null` = desistiu. Um save que não
-/// aceita os espécimes (o Let's Go só recebe quem veio dele) fica
-/// desabilitado; um em cujo jogo eles não estão na pokédex, só avisa.
-Future<Save?> pickSave(
+/// Escolhe o save de destino dos [ids], com a checagem de quem pode ir
+/// ([TransferCheck]). Sem nenhum save cadastrado, explica e oferece abrir
+/// Ajustes → Meus saves. `null` = desistiu. Um save em que nenhum dos
+/// espécimes pode entrar fica desabilitado; os outros dizem quantos ficam,
+/// os avisos e quantos estão fora da pokédex do jogo.
+Future<({Save save, TransferCheck check})?> pickSave(
   BuildContext context,
   WidgetRef ref,
   List<int> ids,
@@ -106,7 +108,7 @@ Future<Save?> pickSave(
     if ((open ?? false) && context.mounted) context.go(Routes.saves);
     return null;
   }
-  return await showModalBottomSheet<Save>(
+  return await showModalBottomSheet<({Save save, TransferCheck check})>(
     context: context,
     showDragHandle: true,
     builder: (context) => SafeArea(
@@ -134,13 +136,7 @@ Widget _saveOption(
   List<int> ids,
 ) {
   final check = ref.read(transferCheckProvider)(ids, save);
-  final warning = !check.allowed
-      ? save.restriction
-      : switch (check.outside) {
-          0 => null,
-          1 when ids.length == 1 => 'Fora da pokédex de ${save.game}',
-          final n => '$n fora da pokédex de ${save.game}',
-        };
+  final warning = _saveWarning(save, ids.length, check);
   return ListTile(
     enabled: check.allowed,
     leading: SaveIcon(save),
@@ -165,22 +161,100 @@ Widget _saveOption(
             ),
           ),
     isThreeLine: warning != null,
-    onTap: () => Navigator.of(context).pop(save),
+    onTap: () => Navigator.of(context).pop((save: save, check: check)),
   );
 }
 
-/// Envia os [ids] para um save escolhido. Devolve `true` se enviou.
+/// O texto embaixo do save: com um espécime, o motivo ou o aviso dele; com
+/// vários, as contagens (quantos ficam, quantos têm aviso, quantos estão
+/// fora da pokédex). `null` = nada a dizer.
+String? _saveWarning(Save save, int total, TransferCheck check) {
+  final outsideText = 'fora da pokédex de ${save.game}';
+  if (total == 1) {
+    if (check.blocked.isNotEmpty) return check.blocked.first.message;
+    if (check.warnings.isNotEmpty) return check.warnings.first.message;
+    return check.outside > 0 ? 'Fora da pokédex de ${save.game}' : null;
+  }
+  if (!check.allowed) {
+    final reasons = {for (final b in check.blocked) b.message};
+    return reasons.length == 1 ? reasons.first : 'Nenhum deles pode ir';
+  }
+  final parts = [
+    if (check.blocked.length == 1) '1 não pode ir',
+    if (check.blocked.length > 1) '${check.blocked.length} não podem ir',
+    if (check.warnings.isNotEmpty) '${check.warnings.length} com aviso',
+    if (check.outside > 0) '${check.outside} $outsideText',
+  ];
+  return parts.isEmpty ? null : parts.join(' · ');
+}
+
+/// Quando parte dos espécimes não pode ir: confirma o envio só dos outros,
+/// listando quem fica no HOME (e por quê) e os avisos.
+Future<bool> _confirmPartial(
+  BuildContext context,
+  Save save,
+  int total,
+  TransferCheck check,
+) async {
+  final going = check.movable.length;
+  final theme = Theme.of(context);
+  Widget issue(TransferIssue i) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: Text('${i.name}: ${i.message}'),
+  );
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Enviar $going de $total para ${save.title}?'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Ficam no HOME', style: theme.textTheme.titleSmall),
+            ...check.blocked.map(issue),
+            if (check.warnings.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Vão com aviso', style: theme.textTheme.titleSmall),
+              ...check.warnings.map(issue),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(going == 1 ? 'Enviar 1' : 'Enviar os $going'),
+        ),
+      ],
+    ),
+  );
+  return ok ?? false;
+}
+
+/// Envia os [ids] para um save escolhido: só os que podem ir, confirmando
+/// antes quando algum fica. Devolve `true` se enviou.
 Future<bool> sendToGame(
   BuildContext context,
   WidgetRef ref,
   List<int> ids,
 ) async {
-  final save = await pickSave(context, ref, ids);
-  if (save == null || !context.mounted) return false;
+  final picked = await pickSave(context, ref, ids);
+  if (picked == null || !context.mounted) return false;
+  final (:save, :check) = picked;
+  if (check.blocked.isNotEmpty &&
+      !await _confirmPartial(context, save, ids.length, check)) {
+    return false;
+  }
+  if (!context.mounted) return false;
   try {
     final moved = await ref
         .read(specimenRepositoryProvider)
-        .transfer(ids, saveId: save.id);
+        .transfer(check.movable, saveId: save.id);
     ref.read(slotActionsProvider).specimensChanged();
     if (context.mounted) {
       _notify(
