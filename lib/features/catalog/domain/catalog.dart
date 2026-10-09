@@ -27,6 +27,7 @@ class Catalog {
     required this._exclusives,
     required this._gameFormIds,
     required this._gameLocks,
+    required this.shinyMethods,
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
@@ -218,7 +219,30 @@ class Catalog {
         }
         return result;
       }(),
+      shinyMethods: [
+        for (final m in _objects(json['shinyMethods'] ?? const <Object>[]))
+          ShinyMethod(
+            id: m['id'] as String,
+            label: m['label'] as String,
+            units: [for (final u in m['units'] as List) u as String],
+            versions: {for (final v in m['versions'] as List) v as String},
+          ),
+      ],
     );
+  }
+
+  /// Métodos de shiny hunt (vazio em catálogo antigo).
+  final List<ShinyMethod> shinyMethods;
+
+  /// Os métodos do jogo [version] do OT: sem OT, ou num jogo sem métodos
+  /// curados, todos; vindo do GO ([fromGo]), nenhum.
+  List<ShinyMethod> shinyMethodsFor(String? version, {bool fromGo = false}) {
+    if (fromGo) return const [];
+    final mine = [
+      for (final m in shinyMethods)
+        if (m.versions.contains(version)) m,
+    ];
+    return mine.isEmpty ? shinyMethods : mine;
   }
 
   /// Maior `schemaVersion` que este app sabe ler.
@@ -668,4 +692,21 @@ class _Species {
   final bool isLegendary;
   final bool isMythical;
   final String? evolvesFrom;
+}
+
+/// Um método de shiny hunt do catálogo (backend#103).
+class ShinyMethod {
+  const ShinyMethod({
+    required this.id,
+    required this.label,
+    required this.units,
+    required this.versions,
+  });
+
+  final String id;
+  final String label;
+
+  /// Unidades aceitas; a primeira é a padrão.
+  final List<String> units;
+  final Set<String> versions;
 }

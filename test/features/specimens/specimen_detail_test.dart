@@ -240,6 +240,18 @@ void main() {
       verify(() => dexes.deposit(slotId: 1, specimenId: 1)).called(2);
     });
 
+    testWidgets('registro da caçada no fim do detalhe', (tester) async {
+      when(() => specimens.fetchSpecimen(1)).thenAnswer(
+        (_) async => _specimen.copyWith(
+          isShiny: true,
+          hunt: const HuntRecord(count: 12, unit: 'eggs'),
+        ),
+      );
+      await pumpDetail(tester);
+      expect(find.text('Registro da caçada'), findsOne);
+      expect(find.text('12 ovos'), findsOne);
+    });
+
     testWidgets('sem formRef não oferece editar', (tester) async {
       when(() => specimens.fetchSpecimen(1))
           .thenAnswer((_) async => const Specimen(id: 1, form: 1));

@@ -40,6 +40,9 @@ abstract class Specimen with _$Specimen {
 
     /// Desde quando está no [location].
     DateTime? locationSince,
+
+    /// Como saiu o shiny e quanto custou (só em shiny).
+    HuntRecord? hunt,
   }) = _Specimen;
 
   const Specimen._();
@@ -60,6 +63,69 @@ abstract class Specimen with _$Specimen {
   bool get isAway => location != null;
 }
 
+/// Registro da caçada que rendeu o espécime (#163). Tudo opcional.
+@freezed
+abstract class HuntRecord with _$HuntRecord {
+  const factory HuntRecord({
+    /// Id do método no catálogo (`shinyMethods`).
+    String? method,
+
+    /// A contagem na [unit]; em horas, guarda minutos.
+    int? count,
+
+    /// Unidade da contagem (`encounters`, `hours`...), uma das do método.
+    String? unit,
+    DateTime? startedAt,
+
+    /// Link do post (ex.: r/ShinyPokemon).
+    String? postUrl,
+  }) = _HuntRecord;
+
+  const HuntRecord._();
+
+  factory HuntRecord.fromJson(Map<String, dynamic> json) =>
+      _$HuntRecordFromJson(json);
+
+  /// Sem método, contagem nem post: não vale guardar (só a data de início,
+  /// que o formulário preenche com hoje, não conta).
+  bool get isBlank =>
+      method == null && count == null && (postUrl == null || postUrl!.isEmpty);
+}
+
+/// Nomes em pt-BR das unidades dos métodos de shiny.
+const huntUnitLabels = {
+  'encounters': 'encontros',
+  'hours': 'horas',
+  'resets': 'resets',
+  'eggs': 'ovos',
+  'chains': 'cadeia',
+  'runs': 'runs',
+  'raids': 'reides',
+  'hordes': 'hordas',
+  'combo': 'combo',
+};
+
+/// `"4.213 resets"`, ou `"38 h 30 min"` em horas (a contagem são minutos).
+String huntCountLabel(int count, String? unit) {
+  if (unit == 'hours') {
+    final (h, m) = (count ~/ 60, count % 60);
+    return m == 0 ? '$h h' : (h == 0 ? '$m min' : '$h h $m min');
+  }
+  final number = NumberFormat.decimalPattern('pt_BR').format(count);
+  return unit == null ? number : '$number ${huntUnitLabels[unit] ?? unit}';
+}
+
+/// Quanto durou a caçada, de [start] até [end]: `"12 dias"`, `"3 meses"`,
+/// `"2 anos"`. No mesmo dia, `"menos de um dia"`.
+String huntDuration(DateTime start, DateTime end) {
+  final days = end.difference(start).inDays;
+  String plural(int n, String one, String many) => '$n ${n == 1 ? one : many}';
+  if (days < 1) return 'menos de um dia';
+  if (days < 30) return plural(days, 'dia', 'dias');
+  if (days < 365) return plural(days ~/ 30, 'mês', 'meses');
+  return plural(days ~/ 365, 'ano', 'anos');
+}
+
 /// Dados para criar (`POST /specimens/`) ou editar
 /// (`PATCH /specimens/{id}/`) um specimen.
 @freezed
@@ -78,6 +144,7 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     String? pokeball,
     String? observation,
     int? ot,
+    HuntRecord? hunt,
   }) = _SpecimenDraft;
 
   const SpecimenDraft._();
@@ -97,6 +164,7 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     pokeball: specimen.pokeball,
     observation: specimen.observation,
     ot: specimen.ot,
+    hunt: specimen.hunt,
   );
 
   static final _dateFormat = DateFormat('yyyy-MM-dd');
@@ -116,6 +184,7 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     if (_filled(pokeball)) 'pokeball': pokeball,
     if (_filled(observation)) 'observation': observation,
     if (ot != null) 'ot': ot,
+    if (hunt != null) 'hunt': hunt!.toJson(),
   };
 
   /// Para o PATCH: envia todos os campos, com `null` nos vazios, para que
@@ -134,6 +203,7 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     'pokeball': _orNull(pokeball),
     'observation': _orNull(observation),
     'ot': ot,
+    'hunt': hunt?.toJson(),
   };
 
   static bool _filled(String? value) => value != null && value.isNotEmpty;

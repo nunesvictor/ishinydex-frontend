@@ -12,6 +12,7 @@ import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/capture_date_field.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_section.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -253,6 +254,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               onChanged: (v) =>
                   setState(() => _draft = _draft.copyWith(isShiny: v)),
             ),
+            ?_huntRecord(),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               secondary: const AlphaIcon(size: 24, semanticLabel: null),
@@ -298,13 +300,34 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     );
   }
 
+  /// Versão do jogo do OT escolhido.
+  String? get _otVersion => [
+    for (final t in _trainers)
+      if (t.id == _draft.ot) t.version,
+  ].firstOrNull;
+
+  /// O registro da caçada (#163), só com Shiny ligado. Desligar não apaga o
+  /// que foi preenchido, mas ele não é salvo (o backend descarta).
+  Widget? _huntRecord() {
+    if (!_draft.isShiny) return null;
+    final version = _otVersion;
+    final methods = ref.watch(shinyMethodsProvider);
+    return HuntRecordSection(
+      key: const ValueKey('hunt-section'),
+      value: _draft.hunt,
+      methods: methods(version, fromGo: _draft.isFromGo),
+      allMethods: methods(null),
+      game: version == null ? null : versionLabel(version),
+      capturedAt: _draft.capturedAt,
+      errorFor: (field) => _validation?.errorFor(field),
+      onChanged: (hunt) => setState(() => _draft = _draft.copyWith(hunt: hunt)),
+    );
+  }
+
   /// Aviso (não erro) quando o Pokémon não está na pokédex do jogo do OT:
   /// pode ser um OT errado, ou um evento. Salvar continua valendo.
   Widget? _originWarning() {
-    final version = [
-      for (final t in _trainers)
-        if (t.id == _draft.ot) t.version,
-    ].firstOrNull;
+    final version = _otVersion;
     if (version == null ||
         ref.watch(originFitsProvider)(widget.form.id, version)) {
       return null;

@@ -370,6 +370,14 @@ class FakeBackend
           'ot': s.ot,
           'location': s.location?.id,
           'locationSince': _date(s.locationSince),
+          if (s.hunt case final h?)
+            'hunt': {
+              'method': h.method,
+              'count': h.count,
+              'unit': h.unit,
+              'startedAt': _date(h.startedAt),
+              'postUrl': h.postUrl,
+            },
         },
       ...?_orphans['specimens'],
     ],
@@ -494,6 +502,16 @@ class FakeBackend
         ot: ot,
         location: _saves[s['location']],
         locationSince: date(s['locationSince']),
+        hunt: switch (s['hunt']) {
+          final Map<String, dynamic> h => HuntRecord(
+            method: h['method'] as String?,
+            count: h['count'] as int?,
+            unit: h['unit'] as String?,
+            startedAt: date(h['startedAt']),
+            postUrl: h['postUrl'] as String?,
+          ),
+          _ => null,
+        },
       ).withOrigin(_originMarkOf, _otVersion(ot));
     }
     for (final s in of('slots')) {
@@ -1443,6 +1461,7 @@ class FakeBackend
       });
     }
     _validateAbility(form, draft.ability);
+    final hunt = _validHunt(draft);
     final id = _newId(_specimens.keys);
     final specimen = Specimen(
       id: id,
@@ -1462,6 +1481,7 @@ class FakeBackend
       pokeballSpriteUrl: _ballSprite(draft.pokeball),
       observation: draft.observation,
       ot: draft.ot,
+      hunt: hunt,
     ).withOrigin(_originMarkOf, _otVersion(draft.ot));
     _specimens[id] = specimen;
     return specimen;
@@ -1570,6 +1590,8 @@ class FakeBackend
       nature: pick(c.nature, s.nature),
       capturedAt: pick(c.capturedAt, s.capturedAt),
       isShiny: pick(c.isShiny, s.isShiny) ?? s.isShiny,
+      // O registro da caçada só existe em shiny.
+      hunt: (pick(c.isShiny, s.isShiny) ?? s.isShiny) ? s.hunt : null,
       isAlpha: pick(c.isAlpha, s.isAlpha) ?? s.isAlpha,
       isFromGo: pick(c.isFromGo, s.isFromGo) ?? s.isFromGo,
     );
@@ -1605,6 +1627,7 @@ class FakeBackend
       });
     }
     _validateAbility(_forms[specimen.form]!, draft.ability);
+    final hunt = _validHunt(draft);
     final edited = specimen.copyWith(
       nickname: draft.nickname,
       ability: draft.ability,
@@ -1620,6 +1643,7 @@ class FakeBackend
       observation: draft.observation,
       ot: draft.ot,
       slot: _slotHolding(specimenId)?.id,
+      hunt: hunt,
     );
     // O jogo de origem só muda quando o OT muda (como no backend).
     final updated = draft.ot == specimen.ot
@@ -2084,6 +2108,39 @@ class FakeBackend
       if (dexNumber <= end) return 'generation-${_romans[i]}';
     }
     return 'generation-ix';
+  }
+
+  /// O registro da caçada do [draft], validado: fora de shiny, ou em branco
+  /// ([HuntRecord.isBlank]), não guarda nada.
+  HuntRecord? _validHunt(SpecimenDraft draft) {
+    final hunt = draft.hunt;
+    if (hunt == null || !draft.isShiny || hunt.isBlank) return null;
+    final errors = <String, List<String>>{};
+    final methods = catalog?.shinyMethods ?? const <ShinyMethod>[];
+    final method = methods.where((m) => m.id == hunt.method).firstOrNull;
+    if (hunt.method != null && methods.isNotEmpty && method == null) {
+      errors['huntMethod'] = ['Método desconhecido.'];
+    }
+    if (hunt.count case final count? when count <= 0) {
+      errors['huntCount'] = ['A contagem precisa ser maior que zero.'];
+    }
+    if (hunt.unit case final unit?
+        when method != null && !method.units.contains(unit)) {
+      errors['huntUnit'] = ['Unidade que não é do método.'];
+    }
+    final (start, end) = (hunt.startedAt, draft.capturedAt);
+    if (start != null && end != null && start.isAfter(end)) {
+      errors['huntStartedAt'] = ['O início é depois da data de captura.'];
+    }
+    final url = hunt.postUrl;
+    if (url != null && url.isNotEmpty) {
+      final uri = Uri.tryParse(url);
+      if (uri == null || !{'http', 'https'}.contains(uri.scheme)) {
+        errors['huntPostUrl'] = ['Link inválido (use http:// ou https://).'];
+      }
+    }
+    if (errors.isNotEmpty) throw ValidationFailure(errors);
+    return hunt.copyWith(postUrl: url == null || url.isEmpty ? null : url);
   }
 
   void _validateAbility(FormDetail form, String? ability) {

@@ -102,6 +102,7 @@ void main() {
       'pokeball': null,
       'observation': null,
       'ot': 7,
+      'hunt': null,
     });
     expect(
       const SpecimenDraft(form: 1).toUpdateJson(),
