@@ -466,6 +466,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
         onRelease: () => _release(_selectedSlot(box)!),
         onWithdraw: () => _withdraw(_selectedSlot(box)!),
         onOpenSlot: _goToSlot,
+        onShowHunts: _showHunts,
         fillHeight: true,
       ),
     );
@@ -652,6 +653,12 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
   }
 
+  /// Abre as caçadas na aba Ativas; `null` fora de um shiny dex.
+  VoidCallback? get _showHunts =>
+      (ref.read(dexProvider(_dexId)).value?.isShinyDex ?? false)
+      ? () => unawaited(context.push(Routes.hunts(_dexId, active: true)))
+      : null;
+
   Future<void> _showSlotSheet(BoxSummary box) => showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -688,6 +695,12 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
               Navigator.of(sheetContext).pop();
               _goToSlot(other);
             },
+            onShowHunts: _showHunts == null
+                ? null
+                : () {
+                    Navigator.of(sheetContext).pop();
+                    _showHunts!();
+                  },
           ),
         );
       },

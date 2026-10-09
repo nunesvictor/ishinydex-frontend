@@ -5,6 +5,8 @@ import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../../helpers/helpers.dart';
@@ -39,6 +41,7 @@ void main() {
     WidgetTester tester,
     Slot slot, {
     Size size = compactSize,
+    VoidCallback? onShowHunts,
   }) async {
     await pumpWidgetApp(
       tester,
@@ -49,10 +52,15 @@ void main() {
           onEdit: () {},
           onRelease: () {},
           onWithdraw: () {},
+          onShowHunts: onShowHunts,
         ),
       ),
       size: size,
-      overrides: [specimenRepositoryProvider.overrideWithValue(backend)],
+      hunts: backend,
+      overrides: [
+        specimenRepositoryProvider.overrideWithValue(backend),
+        clockProvider.overrideWithValue(() => DateTime(2026, 10, 9, 12)),
+      ],
     );
     await tester.pumpAndSettle();
   }
@@ -141,5 +149,56 @@ void main() {
     expect(find.text('Bulba'), findsOneWidget);
     expect(find.text('Editar espécime'), findsOneWidget);
     expect(find.byTooltip('Natureza'), findsNothing);
+  });
+
+  group('caçada ativa da forma', () {
+    Slot missing() => const Slot(
+      id: 2,
+      box: BoxRef(id: 1, name: 'HOME 1', position: 1),
+      row: 0,
+      col: 1,
+      form: FormRef(
+        id: 1,
+        name: 'bulbasaur',
+        pokeapiId: 1,
+        spriteUrl: 'http://x/1.png',
+        shinySpriteUrl: 'http://x/shiny/1.png',
+      ),
+    );
+
+    testWidgets('no cronômetro: a linha com o tempo; tocar abre', (
+      tester,
+    ) async {
+      await backend.saveShinyHunt(
+        ShinyHunt(
+          id: 0,
+          form: 1,
+          unit: 'hours',
+          runningSince: DateTime(2026, 10, 9, 10, 30),
+        ),
+      );
+      var opened = 0;
+      await pump(tester, missing(), onShowHunts: () => opened++);
+      expect(find.byKey(const ValueKey('hunt-badge')), findsOne);
+      expect(find.text('1 h 30 min'), findsOne);
+      await tester.ensureVisible(find.text('Caçada em andamento'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Caçada em andamento'));
+      expect(opened, 1);
+    });
+
+    testWidgets('pausada, fora de um shiny dex ou já shiny: sem a linha', (
+      tester,
+    ) async {
+      await backend.saveShinyHunt(const ShinyHunt(id: 0, form: 1));
+      await pump(tester, missing());
+      expect(find.text('Caçada em andamento'), findsNothing);
+
+      final shiny = missing().copyWith(
+        specimen: const SpecimenSummary(id: 99, isShiny: true),
+      );
+      await pump(tester, shiny, onShowHunts: () {});
+      expect(find.text('Caçada em andamento'), findsNothing);
+    });
   });
 }

@@ -299,7 +299,7 @@ void main() {
           ],
         );
 
-    testWidgets('abas e caçada por item: começar e Em andamento', (
+    testWidgets('abas e caçada por item: começar leva a Ativas; o selo', (
       tester,
     ) async {
       answer(1, () async => Paginated(count: 1, results: [hunt(20)]));
@@ -307,15 +307,20 @@ void main() {
         ..addForm(id: 1218, name: 'rattata-alola');
       await pump(tester, hunts: backend);
       await tester.pumpAndSettle();
-      expect(find.text('Em andamento (0)'), findsOne);
+      expect(find.text('Ativas (0)'), findsOne);
+      // Desistir na folha: fica em Faltam.
+      await tester.tap(find.byTooltip('Começar caçada'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byType(HuntCards), findsNothing);
       await tester.tap(find.byTooltip('Começar caçada'));
       await tester.pumpAndSettle();
       expect(find.text('Começar caçada'), findsWidgets);
       await tester.tap(find.text('Começar'));
       await tester.pumpAndSettle();
-      expect(find.text('Em andamento (1)'), findsOne);
-      await tester.tap(find.text('Em andamento'));
-      await tester.pumpAndSettle();
+      // Começou: vai para Ativas.
+      expect(find.text('Ativas (1)'), findsOne);
       expect(find.byType(HuntCards), findsOne);
       expect(find.byType(StartHuntButton), findsOne);
       await tester.tap(find.text('Pausadas (0)'));
@@ -323,8 +328,13 @@ void main() {
       expect(find.textContaining('Nenhuma caçada pausada'), findsOne);
       await tester.tap(find.text('Faltam'));
       await tester.pumpAndSettle();
+      // O selo no lugar do botão leva a Ativas.
+      expect(find.byKey(const ValueKey('hunt-badge')), findsOne);
+      await tester.tap(find.byTooltip('Caçada em andamento'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HuntCards), findsOne);
 
-      // Um cronômetro rodando: o chip continua; começar fica desabilitado.
+      // Um cronômetro rodando: começar fica desabilitado em Faltam.
       final created = (await backend.fetchShinyHunts()).single;
       await backend.saveShinyHunt(created.copyWith(paused: true));
       await backend.saveShinyHunt(

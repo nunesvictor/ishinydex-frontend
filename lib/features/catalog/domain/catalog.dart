@@ -468,6 +468,20 @@ class Catalog {
     return pokedexesOf(formId).any((game) => game.versionGroup == group);
   }
 
+  /// A forma pode ser caçada no jogo [version]: está numa pokédex dele e
+  /// não é exclusiva da outra versão (o Koraidon só em Scarlet). Jogos sem
+  /// pokédex no catálogo sempre servem.
+  bool huntableIn(int formId, String? version) {
+    if (!inGame(formId, version)) return false;
+    final exclusive = _exclusives[formId] ?? const <String>{};
+    final group = _groupOfVersion[version];
+    final pair = [
+      for (final v in versions)
+        if (v.versionGroup == group) v.name,
+    ];
+    return !pair.any(exclusive.contains) || exclusive.contains(version);
+  }
+
   /// Versões em que a forma não pode ser shiny (Solgaleo em Scarlet).
   Set<String> lockedVersions(int formId) =>
       _gameLocks[formId] ?? const <String>{};

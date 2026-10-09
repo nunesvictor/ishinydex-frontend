@@ -103,7 +103,14 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final saves = ref.watch(savesProvider).value ?? const <Save>[];
+    final huntable = ref.watch(huntableInProvider);
+    // Só os saves de jogos onde a forma pode ser caçada (o já escolhido
+    // fica, ao editar).
+    final saves = [
+      for (final s in ref.watch(savesProvider).value ?? const <Save>[])
+        if (s.id == _hunt.save || huntable(widget.form.id, s.trainer.version))
+          s,
+    ];
     final save = saves.where((s) => s.id == _hunt.save).firstOrNull;
     final methodsFor = ref.watch(shinyMethodsProvider);
     final methods = methodsFor(save?.trainer.version);
@@ -177,14 +184,7 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
               key: const ValueKey('field-hunt-unit'),
               segments: [
                 for (final u in units)
-                  ButtonSegment(
-                    value: u,
-                    label: Text(
-                      u == 'hours'
-                          ? 'horas (cronômetro)'
-                          : huntUnitLabels[u] ?? u,
-                    ),
-                  ),
+                  ButtonSegment(value: u, label: Text(huntUnitLabels[u] ?? u)),
               ],
               selected: {
                 if (units.contains(_hunt.unit)) _hunt.unit else units.first,

@@ -273,27 +273,57 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                 spacing: 8,
                 children: [
                   Expanded(
-                    child: Text(
-                      countText,
-                      key: const ValueKey('hunt-timer'),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineMedium,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: 8,
+                      children: [
+                        // O ponto vermelho: o relógio está contando.
+                        if (hunt.running)
+                          Container(
+                            key: const ValueKey('hunt-recording'),
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.error,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              countText,
+                              key: const ValueKey('hunt-timer'),
+                              style: theme.textTheme.headlineMedium,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   SizedBox(
                     width: 112,
                     height: 64,
+                    // Parar em vermelho-claro, como um "gravando"; no tonal
+                    // índigo, não parecia um botão de parar.
                     child: hunt.running
-                        ? FilledButton.tonal(
+                        ? FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: theme.colorScheme.errorContainer,
+                              foregroundColor:
+                                  theme.colorScheme.onErrorContainer,
+                            ),
                             onPressed: () =>
                                 _run(() => _actions.toggleTimer(hunt)),
-                            child: const Text('Parar'),
+                            icon: const Icon(Icons.stop),
+                            label: const Text('Parar'),
                           )
-                        : FilledButton(
+                        : FilledButton.icon(
                             onPressed: enabled
                                 ? () => _run(() => _actions.toggleTimer(hunt))
                                 : null,
-                            child: const Text('Iniciar'),
+                            icon: const Icon(Icons.play_arrow),
+                            label: const Text('Iniciar'),
                           ),
                   ),
                 ],

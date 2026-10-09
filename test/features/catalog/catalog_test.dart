@@ -180,6 +180,12 @@ void main() {
         'shining-pearl',
       ]);
       expect(catalog.huntableVersions(793), isEmpty);
+      // Num jogo só (o save da caçada).
+      expect(catalog.huntableIn(196, 'scarlet'), isTrue);
+      expect(catalog.huntableIn(196, 'violet'), isFalse);
+      expect(catalog.huntableIn(133, 'shield'), isTrue);
+      expect(catalog.huntableIn(793, 'sword'), isFalse);
+      expect(catalog.huntableIn(196, 'red'), isTrue);
     });
 
     test('OT: a forma, ou uma pré-evolução, na pokédex do jogo', () {

@@ -14,6 +14,7 @@ import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
@@ -30,9 +31,14 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// escopo (categoria, geração, tipo) fica na folha de filtros. Tocar num item empilha o dex naquela box, com o slot aberto: o
 /// voltar retorna para cá, com os filtros intactos.
 class HuntsPage extends ConsumerStatefulWidget {
-  const HuntsPage({required this.dexId, super.key});
+  const HuntsPage({
+    required this.dexId,
+    this.initialTab = HuntsTab.missing,
+    super.key,
+  });
 
   final int dexId;
+  final HuntsTab initialTab;
 
   @override
   ConsumerState<HuntsPage> createState() => _HuntsPageState();
@@ -44,7 +50,7 @@ enum HuntsTab { missing, active, paused }
 
 class _HuntsPageState extends ConsumerState<HuntsPage> {
   HuntQuery _query = const HuntQuery();
-  HuntsTab _tab = HuntsTab.missing;
+  late HuntsTab _tab = widget.initialTab;
   Timer? _debounce;
 
   @override
@@ -77,7 +83,7 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
           const ButtonSegment(value: HuntsTab.missing, label: Text('Faltam')),
           ButtonSegment(
             value: HuntsTab.active,
-            label: Text('Em andamento ($active)'),
+            label: Text('Ativas ($active)'),
           ),
           ButtonSegment(
             value: HuntsTab.paused,
@@ -443,7 +449,7 @@ class HuntList extends ConsumerWidget {
   final HuntQuery query;
   final ValueChanged<Hunt> onTap;
 
-  /// O chip "Em andamento" de um item leva à aba das caçadas.
+  /// O selo da caçada de um item, e começar uma caçada, levam à aba Ativas.
   final VoidCallback? onShowActive;
 
   @override
@@ -629,23 +635,28 @@ class HuntTile extends ConsumerWidget {
     );
   }
 
-  /// Caçada em andamento desta forma: o chip que leva à aba; senão, o botão
-  /// "Começar caçada" (desabilitado com um cronômetro rodando).
+  /// Caçada em andamento desta forma: o selo (o mesmo da grade da box), que
+  /// leva à aba; senão, o botão "Começar caçada" (desabilitado com um
+  /// cronômetro rodando). Os dois têm o mesmo tamanho: o item não muda de
+  /// largura.
   Widget? _huntAction(BuildContext context, WidgetRef ref, FormRef? form) {
     if (form == null) return null;
     final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
     if (hunts.any((h) => !h.paused && h.form == form.id)) {
-      return ActionChip(
-        avatar: const Icon(Icons.track_changes, size: 16),
-        label: const Text('Em andamento'),
+      return IconButton(
+        tooltip: 'Caçada em andamento',
         onPressed: onShowActive,
+        icon: const HuntBadge(size: 28),
       );
     }
     return IconButton(
       tooltip: 'Começar caçada',
       onPressed: hunts.any((h) => h.running)
           ? null
-          : () => unawaited(showHuntSheet(context, form: form)),
+          : () async {
+              final started = await showHuntSheet(context, form: form);
+              if (started != null) onShowActive?.call();
+            },
       icon: const Icon(Icons.track_changes),
     );
   }
