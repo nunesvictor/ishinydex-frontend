@@ -477,7 +477,6 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     @Default(SpecimenStatus.all) SpecimenStatus status,
     @Default(false) bool shinyOnly,
     @Default(false) bool alphaOnly,
-    @Default(false) bool fromGoOnly,
     @Default(<String>[]) List<String> pokeballs,
     @Default(false) bool withoutPokeball,
 
@@ -555,7 +554,6 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     status: status,
     shinyOnly: shinyOnly,
     alphaOnly: alphaOnly,
-    fromGoOnly: fromGoOnly,
   );
 
   /// Parâmetros de `GET /specimens/`: só os filtros em uso.
@@ -568,7 +566,6 @@ abstract class SpecimenQuery with _$SpecimenQuery {
       'available': ?status.availableParam,
       if (shinyOnly) 'is_shiny': true,
       if (alphaOnly) 'is_alpha': true,
-      if (fromGoOnly) 'is_from_go': true,
       if (hasPokeballFilter)
         'pokeball': join([...pokeballs, if (withoutPokeball) noneParam]),
       if (types.isNotEmpty) 'type': join(types),

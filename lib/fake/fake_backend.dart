@@ -1979,7 +1979,6 @@ class FakeBackend
         (query.ids.isEmpty || query.ids.contains(s.id)) &&
         (!query.shinyOnly || s.isShiny) &&
         (!query.alphaOnly || s.isAlpha) &&
-        (!query.fromGoOnly || s.isFromGo) &&
         (!query.hasPokeballFilter ||
             query.pokeballs.contains(s.pokeball) ||
             (query.withoutPokeball && s.pokeball == null)) &&

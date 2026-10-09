@@ -113,20 +113,15 @@ void main() {
       await pickStatus(tester, 'Todos');
       expect(find.widgetWithText(MenuChip, 'Situação'), findsOneWidget);
 
-      // Alfa e GO: só os que têm cada marca (seed: 💢 nas formas 1, 6, 11…;
-      // 📱 nas múltiplas de 7).
+      // Alfa: só os que têm a marca (seed: 💢 nas formas 1, 6, 11…). O GO
+      // não tem chip: fica no filtro de marca de origem.
       await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
       await tester.pumpAndSettle();
       expect(specimenTile(saur.id), findsNothing); // Saur não é alfa
       expect(find.byType(AlphaIcon), findsWidgets);
       await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilterChip, 'GO'));
-      await tester.pumpAndSettle();
-      expect(specimenTile(shinyBulba.id), findsNothing);
-      expect(find.byType(GoIcon), findsWidgets);
-      await tester.tap(find.widgetWithText(FilterChip, 'GO'));
-      await tester.pumpAndSettle();
+      expect(find.widgetWithText(FilterChip, 'GO'), findsNothing);
 
       await search(tester, 'pidgeotto');
       expect(find.byType(SpecimenListTile), findsNWidgets(2));

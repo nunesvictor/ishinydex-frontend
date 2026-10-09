@@ -460,7 +460,7 @@ fechar. Os itens são `RadioMenuButton` (uma opção) ou `CheckboxMenuButton`
 (várias; `closeOnActivate: false` deixa o menu aberto para marcar mais de
 uma).
 
-Os liga/desliga (shiny, alfa, GO) viram, no celular, chips **só com o
+Os liga/desliga (shiny e alfa) viram, no celular, chips **só com o
 ícone**: o nome fica no `tooltip`, que também é o que o leitor de tela fala.
 Com espaço, voltam a ter ícone e texto. A linha usa `Wrap`: se mesmo assim
 faltar largura, ela quebra em vez de rolar de lado.

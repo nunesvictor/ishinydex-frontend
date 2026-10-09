@@ -127,9 +127,8 @@ void main() {
   test('SpecimenQuery.copyWith muda só o pedido', () {
     final query = emptySpecimenQuery.copyWith(alphaOnly: true);
     expect(query.alphaOnly, true);
-    expect(query.fromGoOnly, false);
     expect(query.copyWith(search: 'x').alphaOnly, true);
-    expect(query.copyWith(fromGoOnly: true).fromGoOnly, true);
+    expect(query.copyWith(shinyOnly: true).shinyOnly, true);
   });
 
   test('SpecimenQuery: igualdade por valor, inclusive das listas', () {
@@ -151,7 +150,6 @@ void main() {
       status: SpecimenStatus.available,
       shinyOnly: true,
       alphaOnly: true,
-      fromGoOnly: true,
       pokeballs: const ['dive-ball', 'dusk-ball'],
       withoutPokeball: true,
       types: const ['water', 'flying'],
@@ -173,7 +171,6 @@ void main() {
       'available': true,
       'is_shiny': true,
       'is_alpha': true,
-      'is_from_go': true,
       'pokeball': 'dive-ball,dusk-ball,none',
       'type': 'water,flying',
       'ot': '1,3,none',
@@ -201,7 +198,6 @@ void main() {
       'available': true,
       'is_shiny': true,
       'is_alpha': true,
-      'is_from_go': true,
     });
   });
 
