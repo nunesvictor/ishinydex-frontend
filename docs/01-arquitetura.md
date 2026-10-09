@@ -344,6 +344,9 @@ Pokémon num save, o espécime tem uma **localização**: `location` (um
   ([saves_page.dart](../lib/features/specimens/presentation/saves_page.dart)).
   Só OTs de jogos que **recebem** do HOME servem (`Save.transferVersions`).
   O OT continua sendo "de onde o Pokémon veio"; o save é "onde ele está".
+  FireRed/LeafGreen do Switch (HOME 4.1.0) são só ida: viram OT, com a
+  marca GBA, e jogo de caça (o catálogo traz as pokédex deles), mas não
+  save.
 - **Fora do HOME, o espécime continua no slot**, que fica reservado para a
   volta (a API recusa depositar outro ali). Ele continua contando no
   progresso; as contagens trazem `away`, mostrado como "· 2 fora" na box,

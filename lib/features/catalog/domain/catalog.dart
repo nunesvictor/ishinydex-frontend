@@ -354,11 +354,15 @@ class Catalog {
     );
   }
 
-  /// Versões que recebem do HOME, por grupo, na ordem do catálogo.
+  /// Versões dos jogos ligados ao HOME (os que têm pokédex no catálogo), por
+  /// grupo, na ordem do catálogo. Não são só os que recebem do HOME
+  /// ([transferVersions]): FireRed/LeafGreen do Switch só enviam (só ida),
+  /// mas dá para caçar neles e mandar o shiny para o HOME.
   late final Map<String, List<String>> _homeVersions = () {
+    final groups = {for (final dex in _pokedexes) ...dex.versionGroups};
     final result = <String, List<String>>{};
     for (final v in versions) {
-      if (transferVersions.contains(v.name)) {
+      if (groups.contains(v.versionGroup)) {
         (result[v.versionGroup] ??= []).add(v.name);
       }
     }
@@ -444,7 +448,7 @@ class Catalog {
   Set<String> lockedVersions(int formId) =>
       _gameLocks[formId] ?? const <String>{};
 
-  /// Versões (das que recebem do HOME) em que a forma pode ser caçada: a
+  /// Versões (dos jogos ligados ao HOME) em que a forma pode ser caçada: a
   /// espécie está numa pokédex do jogo e a forma não é exclusiva da outra
   /// versão (o Koraidon só em Scarlet).
   List<String> huntableVersions(int formId) {

@@ -7,6 +7,7 @@
 /// transparente, pintados com a cor do tema (ver `OriginMarkIcon`).
 enum OriginMark {
   gameBoy('game-boy', 'GB', 'Game Boy (Virtual Console)', 'game_boy'),
+  gba('gba', 'GBA', 'FireRed e LeafGreen (Switch)', 'gba'),
   kalos('kalos', 'XY/ORAS', 'X e Y / Omega Ruby e Alpha Sapphire', 'kalos'),
   alola('alola', 'SM/USUM', 'Sun e Moon / Ultra Sun e Ultra Moon', 'alola'),
   letsGo('lets-go', 'LGPE', "Let's Go, Pikachu! e Let's Go, Eevee!", 'lets_go'),
@@ -35,9 +36,10 @@ enum OriginMark {
   static OriginMark? fromSlug(String? slug) =>
       values.where((m) => m.slug == slug).firstOrNull;
 
-  /// Marca dos jogos que recebem Pokémon do HOME, pela versão (o selo do
-  /// save onde um espécime está): `"scarlet"` → [paldea].
+  /// Marca dos jogos ligados ao HOME, pela versão (o selo do save onde um
+  /// espécime está, o jogo do OT): `"scarlet"` → [paldea].
   static OriginMark? fromVersion(String? version) => switch (version) {
+    'firered' || 'leafgreen' => gba,
     'lets-go-pikachu' || 'lets-go-eevee' => letsGo,
     'sword' || 'shield' => galar,
     'brilliant-diamond' || 'shining-pearl' => bdsp,
