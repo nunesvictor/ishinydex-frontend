@@ -155,12 +155,13 @@ class SlotDetailPanel extends ConsumerWidget {
                   context,
                   title: specimen.displayName,
                   actions: [
-                    locationAction(
+                    ...locationActions(
                       context,
                       ref,
-                      specimenId: specimen.id,
+                      id: specimen.id,
                       name: specimen.displayName,
                       away: specimen.location != null,
+                      visiting: specimen.isVisitingChampions,
                     ),
                     SheetAction(
                       icon: Icons.move_up,
@@ -168,11 +169,8 @@ class SlotDetailPanel extends ConsumerWidget {
                       subtitle: 'Volta para o inventário, disponível',
                       onSelected: onWithdraw,
                     ),
-                    SheetAction(
-                      icon: Icons.warning_amber_rounded,
-                      label: 'Libertar',
-                      subtitle: 'Apaga o cadastro (pede confirmação)',
-                      destructive: true,
+                    releaseAction(
+                      visiting: specimen.isVisitingChampions,
                       onSelected: onRelease,
                     ),
                   ],

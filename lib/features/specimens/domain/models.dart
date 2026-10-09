@@ -41,6 +41,10 @@ abstract class Specimen with _$Specimen {
     /// Desde quando está no [location].
     DateTime? locationSince,
 
+    /// Desde quando visita o Pokémon Champions (#174): continua no HOME,
+    /// mas não vai para saves nem pode ser libertado. `null` = não visita.
+    DateTime? championsSince,
+
     /// Como saiu o shiny e quanto custou (só em shiny).
     HuntRecord? hunt,
   }) = _Specimen;
@@ -61,6 +65,8 @@ abstract class Specimen with _$Specimen {
   bool get isDeposited => slot != null;
 
   bool get isAway => location != null;
+
+  bool get isVisitingChampions => championsSince != null;
 }
 
 /// Registro da caçada que rendeu o espécime (#163). Tudo opcional.

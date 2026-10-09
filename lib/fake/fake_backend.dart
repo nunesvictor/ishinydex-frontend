@@ -371,6 +371,7 @@ class FakeBackend
           'ot': s.ot,
           'location': s.location?.id,
           'locationSince': _date(s.locationSince),
+          'championsSince': _date(s.championsSince),
           if (s.hunt case final h?)
             'hunt': {
               'method': h.method,
@@ -503,6 +504,7 @@ class FakeBackend
         ot: ot,
         location: _saves[s['location']],
         locationSince: date(s['locationSince']),
+        championsSince: date(s['championsSince']),
         hunt: switch (s['hunt']) {
           final Map<String, dynamic> h => HuntRecord(
             method: h['method'] as String?,
@@ -1654,10 +1656,42 @@ class FakeBackend
     return updated;
   }
 
+  /// Visita ao Champions (#174): só de quem está no HOME; o Pokémon fica
+  /// travado até voltar ([transferCheck], [release]).
+  @override
+  Future<Specimen> setChampionsVisit(
+    int specimenId, {
+    required bool visiting,
+  }) async {
+    await _delay();
+    final specimen = _specimens[specimenId];
+    if (specimen == null) throw const NotFoundFailure();
+    if (visiting && specimen.isAway) {
+      throw ValidationFailure({
+        'champions': ['Só quem está no HOME visita o Champions.'],
+      });
+    }
+    if (visiting == specimen.isVisitingChampions) return specimen;
+    final updated = specimen.copyWith(
+      championsSince: visiting ? _today() : null,
+    );
+    _specimens[specimenId] = updated;
+    return updated;
+  }
+
+  void _checkNotVisiting(Iterable<int> ids) {
+    if (ids.any((id) => _specimens[id]?.isVisitingChampions ?? false)) {
+      throw ValidationFailure({
+        'champions': ['Não dá para libertar quem visita o Champions.'],
+      });
+    }
+  }
+
   /// Como no backend (`Slot.specimen` com `SET_NULL`): o slot fica faltante.
   @override
   Future<void> release(int specimenId) async {
     await _delay();
+    _checkNotVisiting([specimenId]);
     if (_specimens.remove(specimenId) == null) throw const NotFoundFailure();
     _slotHolding(specimenId)?.specimenId = null;
   }
@@ -1678,6 +1712,7 @@ class FakeBackend
         'ids': ['espécimes não encontrados: ${missing.join(', ')}'],
       });
     }
+    _checkNotVisiting(unique);
     for (final id in unique) {
       _slotHolding(id)?.specimenId = null;
       _specimens.remove(id);
@@ -1842,7 +1877,9 @@ class FakeBackend
     var outside = 0;
     for (final s in [for (final id in ids.toSet()) ?_specimens[id]]) {
       final name = _forms[s.form]?.name ?? '';
-      final block = save.accepts(s.originMark, s.originVersion)
+      final block = s.isVisitingChampions
+          ? 'Está visitando o Champions'
+          : save.accepts(s.originMark, s.originVersion)
           ? transferBlock(name, s.originMark, version)
           : '${save.restriction} entram nesse save';
       if (block != null) {
@@ -2211,6 +2248,7 @@ class FakeBackend
               pokeballSpriteUrl: specimen.pokeballSpriteUrl,
               location: specimen.location,
               locationSince: specimen.locationSince,
+              championsSince: specimen.championsSince,
             ),
       isShinyDisplay: specimen == null
           ? formId != null && isShinyDex
