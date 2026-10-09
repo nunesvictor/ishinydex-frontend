@@ -27,8 +27,12 @@ class SlotTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.dimmed = false,
+    this.hunting = false,
     super.key,
   });
+
+  /// Há caçada em andamento desta forma (#164): o selo no canto.
+  final bool hunting;
 
   /// A partir deste tamanho, os selos de shiny e alfa ficam lado a lado;
   /// abaixo, empilhados.
@@ -115,6 +119,15 @@ class SlotTile extends StatelessWidget {
                               children: badges,
                             ),
                     ),
+                  if (hunting && away == null)
+                    Positioned(
+                      right: inset,
+                      top: inset,
+                      child: Tooltip(
+                        message: 'Caçada em andamento',
+                        child: HuntBadge(size: size * 0.24),
+                      ),
+                    ),
                   if (away != null)
                     Positioned(
                       right: inset,
@@ -135,6 +148,34 @@ class SlotTile extends StatelessWidget {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// O selo de caçada em andamento: o alvo do botão Caçadas num círculo. No
+/// tema escuro é âmbar, para se destacar do índigo.
+class HuntBadge extends StatelessWidget {
+  const HuntBadge({this.size = 18, super.key});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
+    return Container(
+      key: const ValueKey('hunt-badge'),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: dark ? Colors.amber.shade300 : scheme.primary,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.track_changes,
+        size: size * 0.72,
+        color: dark ? Colors.black : scheme.onPrimary,
       ),
     );
   }

@@ -13,6 +13,8 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -284,14 +286,56 @@ void main() {
       ),
     ).thenAnswer((_) => result());
 
-    Future<void> pump(WidgetTester tester) => pumpWidgetApp(
+    Future<void> pump(WidgetTester tester, {FakeBackend? hunts}) =>
+        pumpWidgetApp(
+          tester,
+          const HuntsPage(dexId: 1),
+          hunts: hunts,
+          overrides: [
+            personalDexRepositoryProvider.overrideWithValue(repository),
+            specimenOptionsProvider.overrideWith(
+              (ref) => const SpecimenOptions(),
+            ),
+          ],
+        );
+
+    testWidgets('abas e caçada por item: começar e Em andamento', (
       tester,
-      const HuntsPage(dexId: 1),
-      overrides: [
-        personalDexRepositoryProvider.overrideWithValue(repository),
-        specimenOptionsProvider.overrideWith((ref) => const SpecimenOptions()),
-      ],
-    );
+    ) async {
+      answer(1, () async => Paginated(count: 1, results: [hunt(20)]));
+      final backend = FakeBackend.seeded()
+        ..addForm(id: 1218, name: 'rattata-alola');
+      await pump(tester, hunts: backend);
+      await tester.pumpAndSettle();
+      expect(find.text('Em andamento (0)'), findsOne);
+      await tester.tap(find.byTooltip('Começar caçada'));
+      await tester.pumpAndSettle();
+      expect(find.text('Começar caçada'), findsWidgets);
+      await tester.tap(find.text('Começar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Em andamento (1)'), findsOne);
+      await tester.tap(find.text('Em andamento'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HuntCards), findsOne);
+      expect(find.byType(StartHuntButton), findsOne);
+      await tester.tap(find.text('Pausadas (0)'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Nenhuma caçada pausada'), findsOne);
+      await tester.tap(find.text('Faltam'));
+      await tester.pumpAndSettle();
+
+      // Um cronômetro rodando: o chip continua; começar fica desabilitado.
+      final created = (await backend.fetchShinyHunts()).single;
+      await backend.saveShinyHunt(created.copyWith(paused: true));
+      await backend.saveShinyHunt(
+        ShinyHunt(id: 0, form: 2, runningSince: DateTime(2026)),
+      );
+      await tester.pumpWidget(const SizedBox());
+      await pump(tester, hunts: backend);
+      await tester.pumpAndSettle();
+      final start = find.widgetWithIcon(IconButton, Icons.track_changes);
+      expect(tester.widget<IconButton>(start).onPressed, isNull);
+    });
 
     testWidgets('item no estilo do inventário: espécime com apelido', (
       tester,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
+import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 
 const boxRows = 5;
 const boxCols = 6;
@@ -37,7 +39,7 @@ Size boxGridSize(Size available) {
 /// A API só devolve os slots do dex; as posições que sobram (ex.: o fim da
 /// última box de uma geração) viram [EmptySlotTile], para a box ter sempre
 /// 30 células como no HOME.
-class BoxGrid extends StatelessWidget {
+class BoxGrid extends ConsumerWidget {
   const BoxGrid({
     required this.slots,
     required this.onSlotTap,
@@ -52,8 +54,9 @@ class BoxGrid extends StatelessWidget {
   final ValueChanged<Slot> onSlotTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final byPosition = {for (final s in slots) (s.row, s.col): s};
+    final hunted = ref.watch(huntedFormsProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final (:cell, :gap) = boxGridMetrics(constraints.biggest);
@@ -70,7 +73,7 @@ class BoxGrid extends StatelessWidget {
                     for (var col = 0; col < boxCols; col++)
                       SizedBox.square(
                         dimension: cell,
-                        child: _cell(byPosition[(row, col)]),
+                        child: _cell(byPosition[(row, col)], hunted),
                       ),
                   ],
                 ),
@@ -81,10 +84,14 @@ class BoxGrid extends StatelessWidget {
     );
   }
 
-  Widget _cell(Slot? slot) {
+  Widget _cell(Slot? slot, Set<int> hunted) {
     if (slot == null || slot.isFree) return const EmptySlotTile();
     return SlotTile(
       slot: slot,
+      // Caçada em andamento e o slot ainda precisa do Pokémon (faltante, ou
+      // registrado sem ser shiny).
+      hunting:
+          hunted.contains(slot.form?.id) && !(slot.specimen?.isShiny ?? false),
       selected: slot.id == selectedSlotId,
       dimmed: onlyMissing && !slot.isMissing,
       onTap: () => onSlotTap(slot),
