@@ -16,6 +16,46 @@
   <style>
     body { background-color: #FBF8FF; }
     @media (prefers-color-scheme: dark) { body { background-color: #121318; } }
+
+    /* Splash do primeiro carregamento (#159). Antes do primeiro quadro o
+       navegador baixa o app (main.dart.wasm, motor, catálogo) e a tela fica
+       vazia. O splash já vem na página, mas invisível: só aparece se o
+       carregamento passar da margem de tolerância (o atraso da animação
+       splash-in). Quem abre rápido (o normal, pelo cache do service worker)
+       nunca o vê. Some no primeiro quadro do Flutter (script no fim do
+       body). Cores do AppTheme, conferidas em test/web_index_test.dart. */
+    #splash {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px;
+      font-family: Roboto, system-ui, -apple-system, sans-serif;
+      color: #1B1B21; opacity: 0;
+      animation: splash-in 200ms ease 450ms forwards;
+    }
+    #splash img { width: 96px; height: 96px; border-radius: 22px; }
+    #splash span { font-size: 22px; font-weight: 500; }
+    /* Barra indeterminada: o loader não diz quanto falta. */
+    .splash-track {
+      width: 120px; height: 4px; border-radius: 2px; overflow: hidden;
+      margin-top: 8px; background: #DEE0FF;
+    }
+    .splash-bar {
+      width: 40%; height: 100%; border-radius: 2px; background: #515B92;
+      animation: splash-bar 1.2s ease-in-out infinite;
+    }
+    @media (prefers-color-scheme: dark) {
+      #splash { color: #E4E1E9; }
+      .splash-track { background: #394379; }
+      .splash-bar { background: #BAC3FF; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .splash-bar { width: 100%; animation: none; opacity: 0.6; }
+    }
+    @keyframes splash-in { to { opacity: 1; } }
+    @keyframes splash-bar {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(250%); }
+    }
   </style>
 
   <!-- PWA no iOS: abrir em tela cheia a partir da tela de início. -->
@@ -33,6 +73,28 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="splash" aria-hidden="true">
+    <img src="icons/Icon-192.png" alt="">
+    <span>iShinyDex</span>
+    <div class="splash-track"><div class="splash-bar"></div></div>
+  </div>
+  <!-- No primeiro quadro do app, o splash some (fade de 200 ms, se já
+       estava visível) e sai da página. -->
+  <script>
+    window.addEventListener('flutter-first-frame', () => {
+      const splash = document.getElementById('splash');
+      if (!splash) return;
+      const opacity = getComputedStyle(splash).opacity;
+      if (opacity === '0') return splash.remove();
+      // Congela a opacidade da animação e anima até 0.
+      splash.style.animation = 'none';
+      splash.style.opacity = opacity;
+      splash.getBoundingClientRect();
+      splash.style.transition = 'opacity 200ms ease';
+      splash.style.opacity = '0';
+      setTimeout(() => splash.remove(), 200);
+    }, { once: true });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
   <!-- Cache offline (web/sw.js): depois de um uso online, o app abre sem
        internet. Relativo ao <base href>, então vale no Pages e no Docker. -->

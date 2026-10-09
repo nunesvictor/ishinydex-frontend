@@ -31,6 +31,33 @@ void main() {
     expect(html, contains('body { background-color: $dark; }'));
   });
 
+  test('splash: invisível até a margem, com as cores do tema', () {
+    final html = File('web/index.html').readAsStringSync();
+    final light = AppTheme.light().colorScheme;
+    final dark = AppTheme.dark().colorScheme;
+
+    // Só aparece depois da margem de tolerância (o atraso da animação).
+    expect(html, contains('animation: splash-in 200ms ease 450ms forwards;'));
+    expect(html, contains('color: ${_hex(light.onSurface)}; opacity: 0;'));
+    expect(html, contains('background: ${_hex(light.primaryContainer)};'));
+    expect(html, contains('background: ${_hex(light.primary)};'));
+    expect(html, contains('#splash { color: ${_hex(dark.onSurface)}; }'));
+    expect(
+      html,
+      contains('.splash-track { background: ${_hex(dark.primaryContainer)}; }'),
+    );
+    expect(
+      html,
+      contains('.splash-bar { background: ${_hex(dark.primary)}; }'),
+    );
+    // Sai no primeiro quadro do Flutter, antes de o app carregar.
+    expect(html, contains("addEventListener('flutter-first-frame'"));
+    expect(
+      html.indexOf('<div id="splash"'),
+      lessThan(html.indexOf('flutter_bootstrap.js')),
+    );
+  });
+
   test('service worker: registrado, versionado e só GET no cache', () {
     final html = File('web/index.html').readAsStringSync();
     final sw = File('web/sw.js').readAsStringSync();
