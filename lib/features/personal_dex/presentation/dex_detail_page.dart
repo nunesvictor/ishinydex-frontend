@@ -78,6 +78,13 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   String _search = '';
   Timer? _searchDebounce;
 
+  /// Resultado destacado (o que o Enter abre): volta ao primeiro a cada
+  /// busca nova.
+  int _highlight = 0;
+
+  /// Enter apertado: abrir o destacado assim que a lista chegar.
+  bool _openWhenReady = false;
+
   final GlobalKey _searchStackKey = GlobalKey();
   final GlobalKey _pillAnchorKey = GlobalKey();
 
@@ -215,6 +222,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
                 active: active,
                 onChanged: _onSearchChanged,
                 onClear: _clearSearch,
+                onSubmitted: _submitSearch,
+                onMove: _moveHighlight,
+                onEscape: _cancelSearch,
               ),
             ),
           ],
@@ -257,6 +267,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
                         dexId: _dexId,
                         search: _search,
                         onSelected: _goToSlot,
+                        highlighted: _highlight,
+                        onHighlight: (i) => setState(() => _highlight = i),
+                        onReady: _openWhenReady ? _openReady : null,
                       ),
                     ),
                   ),
@@ -350,10 +363,48 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
 
   /// Espera o usuário parar de digitar antes de consultar a API.
   void _onSearchChanged(String text) {
+    _openWhenReady = false;
     _searchDebounce?.cancel();
     _searchDebounce = Timer(
       const Duration(milliseconds: 350),
-      () => setState(() => _search = text.trim()),
+      () => setState(() {
+        _search = text.trim();
+        _highlight = 0;
+      }),
+    );
+  }
+
+  /// Enter: abre o resultado destacado, como um toque nele. Usa o texto do
+  /// campo agora, sem esperar o debounce: quem digita rápido e já aperta
+  /// Enter abre o primeiro do que digitou, assim que a lista chegar (ver
+  /// [SlotSearchResults.onReady]). Texto curto ou nenhum resultado: nada (a
+  /// lista explica).
+  void _submitSearch() {
+    _searchDebounce?.cancel();
+    final text = _searchController.text.trim();
+    if (!slotSearchReady(text)) return;
+    setState(() {
+      if (text != _search) {
+        _search = text;
+        _highlight = 0;
+      }
+      _openWhenReady = true;
+    });
+  }
+
+  /// A lista chegou depois de um Enter: abre o destacado, uma vez só.
+  void _openReady(Slot slot) {
+    if (_openWhenReady) _goToSlot(slot);
+  }
+
+  /// ↑/↓: move o destaque, sem passar do primeiro nem do último.
+  void _moveHighlight(int delta) {
+    final slots = ref
+        .read(slotSearchProvider((dexId: _dexId, search: _search)))
+        .value;
+    if (slots == null || slots.isEmpty) return;
+    setState(
+      () => _highlight = (_highlight + delta).clamp(0, slots.length - 1),
     );
   }
 
@@ -364,7 +415,10 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     _searchDebounce?.cancel();
     _searchController.clear();
     _searchFocus.requestFocus();
-    setState(() => _search = '');
+    setState(() {
+      _search = '';
+      _highlight = 0;
+    });
   }
 
   /// Limpa a busca e devolve as boxes (a AppBar volta junto).
@@ -372,7 +426,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     _searchDebounce?.cancel();
     _searchController.clear();
     _searchFocus.unfocus();
-    setState(() => _search = '');
+    setState(() {
+      _search = '';
+      _highlight = 0;
+      _openWhenReady = false;
+    });
   }
 
   Widget _buildLayout(BuildContext context, List<BoxSummary> boxes) {

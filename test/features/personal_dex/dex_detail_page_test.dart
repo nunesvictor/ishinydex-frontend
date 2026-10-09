@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -550,7 +552,10 @@ void main() {
       await openShinyDex(tester);
       await searchFor(tester, 'wiggly');
       // Wigglytuff = forma 40, slot 40 (HOME 2, linha 2, coluna 4).
-      expect(find.text('#0040 · HOME 2 · linha 2, coluna 4'), findsOneWidget);
+      expect(
+        find.textContaining('#0040 · HOME 2 · linha 2, coluna 4 · '),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const ValueKey('search-slot-40')));
       await tester.pumpAndSettle();
       expect(find.text('HOME 2 · 19/28'), findsOneWidget);
@@ -645,21 +650,144 @@ void main() {
     });
 
     for (final size in [compactSize, expandedSize]) {
-      testWidgets('"Buscar" no teclado fecha o teclado e mantém os resultados '
+      testWidgets('"Buscar" no teclado abre o resultado destacado '
           '(${size.width.toInt()}px)', (tester) async {
         await pumpFullApp(tester, size: size);
         await openShinyDex(tester);
         await searchFor(tester, 'wiggly');
         await tester.testTextInput.receiveAction(TextInputAction.search);
         await tester.pumpAndSettle();
-        expect(
-          tester.widget<TextField>(searchField()).focusNode!.hasFocus,
-          isFalse,
-        );
-        expect(find.byKey(const ValueKey('search-slot-40')), findsOneWidget);
-        expect(find.text('Cancelar'), findsOneWidget);
+        // Como tocar no resultado: a busca fecha e a grade vai até o slot.
+        expect(find.text('Cancelar'), findsNothing);
+        expect(find.text('HOME 2 · 19/28'), findsOneWidget);
       });
     }
+
+    testWidgets('Enter antes do debounce usa o texto do campo', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await tester.tap(searchField());
+      await tester.pumpAndSettle();
+      await tester.enterText(searchField(), 'wiggly');
+      // Sem esperar os 350 ms: a lista ainda é do texto anterior.
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(find.text('Cancelar'), findsNothing);
+      expect(find.text('HOME 2 · 19/28'), findsOneWidget);
+    });
+
+    testWidgets('Enter com texto curto ou sem resultado não abre nada', (
+      tester,
+    ) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      await searchFor(tester, 'w');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(find.text('Cancelar'), findsOneWidget);
+      expect(
+        find.text('Digite o nome (2 letras ou mais) ou o número.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(searchField());
+      await tester.pumpAndSettle();
+      await tester.enterText(searchField(), 'zzz');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(find.text('Nenhuma forma deste dex encontrada.'), findsOneWidget);
+      // Digitar de novo cancela o "abrir quando chegar".
+      await tester.tap(searchField());
+      await tester.pumpAndSettle();
+      await searchFor(tester, 'wiggly');
+      expect(find.byKey(const ValueKey('search-slot-40')), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+    });
+
+    testWidgets('celular: o primeiro resultado vem destacado, com a '
+        'etiqueta "Buscar abre"', (tester) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      await searchFor(tester, 'pidge');
+      final tiles = tester
+          .widgetList<ListTile>(
+            find.descendant(
+              of: find.byType(SlotSearchResults),
+              matching: find.byType(ListTile),
+            ),
+          )
+          .toList();
+      expect(tiles.map((t) => t.selected), [true, false, false]);
+      expect(find.text('Buscar abre'), findsOneWidget);
+      expect(find.text('escolher'), findsNothing);
+    });
+
+    testWidgets(
+      'PC: setas movem o destaque, Enter abre, Esc cancela e o mouse '
+      'também destaca',
+      variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+      (tester) async {
+        await pumpFullApp(tester);
+        await openShinyDex(tester);
+        await searchFor(tester, 'pidge');
+        List<bool> selected() => [
+          for (final tile in tester.widgetList<ListTile>(
+            find.descendant(
+              of: find.byType(SlotSearchResults),
+              matching: find.byType(ListTile),
+            ),
+          ))
+            tile.selected,
+        ];
+        expect(selected(), [true, false, false]);
+        expect(find.text('Buscar abre'), findsNothing);
+        expect(find.text('escolher'), findsOneWidget);
+        expect(find.text('Enter'), findsNWidgets(2)); // no item e na dica
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pump();
+        expect(selected(), [true, false, false]); // não passa do primeiro
+        for (var i = 0; i < 3; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        }
+        await tester.pump();
+        expect(selected(), [false, false, true]); // nem do último
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pump();
+        expect(selected(), [false, true, false]);
+        // O foco continua no campo.
+        expect(
+          tester.widget<TextField>(searchField()).focusNode!.hasFocus,
+          isTrue,
+        );
+
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        await mouse.addPointer(location: Offset.zero);
+        addTearDown(mouse.removePointer);
+        final pidgey = find.byKey(const ValueKey('search-slot-16'));
+        await mouse.moveTo(tester.getCenter(pidgey));
+        await tester.pump();
+        expect(selected(), [true, false, false]);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pumpAndSettle();
+        expect(find.text('Cancelar'), findsNothing);
+        expect(find.text('Pidgeotto'), findsWidgets);
+
+        await searchFor(tester, 'pidge');
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('Cancelar'), findsNothing);
+        expect(tester.widget<TextField>(searchField()).controller!.text, '');
+        // Sem resultados (texto vazio), as setas não fazem nada.
+        await tester.tap(searchField());
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+      },
+    );
 
     testWidgets('o "x" apaga o texto e mantém a busca aberta', (tester) async {
       await pumpFullApp(tester, size: compactSize);
