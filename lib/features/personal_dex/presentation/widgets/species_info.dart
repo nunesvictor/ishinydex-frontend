@@ -14,18 +14,21 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 ///
 /// Num dex ([dexId]), cada forma da linha evolutiva e das outras formas leva
 /// ao slot dela ([onOpenSlot]); a que não está no dex fica esmaecida. Fora
-/// de um dex (inventário), elas só aparecem.
+/// de um dex (inventário, ficha da forma), não há slot: com [onOpenForm],
+/// tocar abre a ficha da forma.
 class SpeciesInfo extends ConsumerWidget {
   const SpeciesInfo({
     required this.form,
     this.dexId,
     this.onOpenSlot,
+    this.onOpenForm,
     super.key,
   });
 
   final FormDetail form;
   final int? dexId;
   final ValueChanged<Slot>? onOpenSlot;
+  final ValueChanged<FormRef>? onOpenForm;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,15 +56,19 @@ class SpeciesInfo extends ConsumerWidget {
     };
     Widget item(FormRef ref, {required Widget child}) {
       final slot = slotOf[ref.id];
-      final open = onOpenSlot;
+      final openSlot = onOpenSlot;
+      final openForm = onOpenForm;
+      final onTap = ref.id == form.id
+          ? null
+          : dexId != null
+          ? (slot == null || openSlot == null ? null : () => openSlot(slot))
+          : (openForm == null ? null : () => openForm(ref));
       return Opacity(
         opacity: slots != null && slot == null ? 0.45 : 1,
         child: InkWell(
           key: ValueKey('species-form-${ref.id}'),
           borderRadius: BorderRadius.circular(12),
-          onTap: slot == null || open == null || ref.id == form.id
-              ? null
-              : () => open(slot),
+          onTap: onTap,
           child: child,
         ),
       );

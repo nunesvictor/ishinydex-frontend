@@ -1049,15 +1049,16 @@ void main() {
 
   group('abas do painel e linha evolutiva', () {
     for (final size in [compactSize, expandedSize]) {
-      testWidgets('status, espécie e ir para a evolução '
+      testWidgets('status no resumo, espécie e ir para a evolução '
           '(${size.width.toInt()}px)', (tester) async {
         await pumpFullApp(tester, size: size);
         await openShinyDex(tester);
         await tester.tap(slot(1));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Status'));
-        await tester.pumpAndSettle();
+        // O hexágono fica no resumo, no cartão "Status base".
+        expect(find.text('Status'), findsNothing);
+        expect(find.text('Status base'), findsOneWidget);
         expect(find.byType(BaseStatsChart), findsOneWidget);
         expect(find.textContaining('Total '), findsOneWidget);
 

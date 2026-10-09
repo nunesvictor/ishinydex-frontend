@@ -130,19 +130,35 @@ seguem o mesmo padrão, para as ações não empilharem botões:
   Ver no dex (inventário), Enviar para jogo ou Trazer de volta ao HOME
   (`locationAction`), Retirar do slot e, separada e em vermelho, Libertar.
   Ações novas entram ali sem a tela crescer.
+- **Corpo comum** (`DetailBody`, em
+  [detail_body.dart](../lib/features/personal_dex/presentation/widgets/detail_body.dart)):
+  sprite, nome, as linhas da forma e as abas. O que muda entre o slot e o
+  espécime vem por parâmetro: a posição na caixa (só no slot), os chips de
+  situação (Registrado/Faltante × Depositado/Disponível), os campos (OT,
+  idioma, captura e observação, só no inventário) e a navegação da aba
+  Espécie. As ações ficam com cada tela.
 - **Abas** (`FormInfoTabs`): o resumo ("Espécime"; "Forma" num slot
-  faltante), **Status** e **Espécie**. A altura fica a da aba aberta, e não a
+  faltante ou na ficha) e **Espécie**. A altura fica a da aba aberta, e não a
   soma de tudo.
-  - **Status** (`BaseStatsChart`): os status base num hexágono desenhado com
-    `CustomPainter`, como nos jogos (HP no topo e, no sentido horário,
-    Ataque, Defesa, Velocidade, Def. Esp. e Atq. Esp.), com escala fixa até
-    200, o total e o EV que o Pokémon dá.
+  - **Resumo:** tipos e habilidades (a do espécime destacada), os chips, o
+    cartão **Status base** (`StatsCard`) e os campos. Em telas largas (a
+    partir de 640 px), o cartão vai para a direita dos campos. Como na tela
+    de resumo dos jogos, o hexágono (`BaseStatsChart`) fica junto dos dados:
+    desenhado com `CustomPainter` (HP no topo e, no sentido horário, Ataque,
+    Defesa, Velocidade, Def. Esp. e Atq. Esp.), com escala fixa até 200, o
+    total e o EV. A natureza do espécime pinta os stats que muda e aparece
+    embaixo do hexágono (o chip solto saiu); sem status, ela continua à
+    vista.
   - **Espécie** (`SpeciesInfo`): linha evolutiva e outras formas (Mega,
     Gigantamax, regionais) com sprite, e uma grade com gênero, taxa de
     captura, ciclos de ovo, estreia, altura e peso. No dex, tocar numa forma
     leva ao slot dela (`formSlotsProvider` →
     `GET /slots/?personal_dex=&form=`), e a que não está no dex fica
-    esmaecida; no inventário, elas só aparecem.
+    esmaecida. No inventário não há dex nem slot: tocar abre a **ficha da
+    forma** (`showFormSheet`, em
+    [form_sheet.dart](../lib/features/personal_dex/presentation/widgets/form_sheet.dart)),
+    um bottom sheet só de leitura com as mesmas abas; tocar em outra forma
+    troca a ficha, sem empilhar sheets, e a aba aberta continua.
   - Os dados vêm do detalhe da forma (`formDetailProvider` →
     `GET /forms/{id}/`), com carregamento e erro contidos na aba.
 

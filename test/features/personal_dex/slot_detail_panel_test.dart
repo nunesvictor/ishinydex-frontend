@@ -70,9 +70,10 @@ void main() {
 
       expect(find.bySemanticsLabel('Macho'), findsOneWidget);
       expect(find.text(maleEmoji), findsOneWidget);
-      // Label vindo de /specimens/options/, com o tooltip explicando o chip.
-      expect(find.text('Adamant'), findsOneWidget);
-      expect(find.byTooltip('Natureza'), findsOneWidget);
+      // Label vindo de /specimens/options/, no cartão de status (o chip
+      // solto da natureza saiu).
+      expect(find.textContaining('Natureza Adamant'), findsOneWidget);
+      expect(find.byTooltip('Natureza'), findsNothing);
       // Marca de origem do GO (ícone + nome), no lugar do antigo 📱.
       expect(find.text('GO'), findsOneWidget);
       expect(find.byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);
@@ -95,7 +96,8 @@ void main() {
 
       expect(find.bySemanticsLabel('Fêmea'), findsOneWidget);
       expect(find.text(femaleEmoji), findsOneWidget);
-      expect(find.text('Jolly'), findsOneWidget);
+      // Fora das opções não se sabe o que a natureza muda: não aparece.
+      expect(find.textContaining('Jolly'), findsNothing);
       expect(find.text('GO'), findsNothing);
       // Sem OT: sem jogo de origem, sem marca.
       expect(find.byTooltip(RegExp('^Marca de origem')), findsNothing);
@@ -126,7 +128,7 @@ void main() {
     expect(find.text('Registrado'), findsOneWidget);
     expect(find.text(maleEmoji), findsNothing);
     expect(find.text(femaleEmoji), findsNothing);
-    expect(find.byTooltip('Natureza'), findsNothing);
+    expect(find.textContaining('Natureza'), findsNothing);
   });
 
   testWidgets('falha ao carregar o specimen: resumo e ações continuam', (
