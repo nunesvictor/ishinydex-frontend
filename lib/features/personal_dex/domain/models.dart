@@ -341,8 +341,9 @@ abstract class HuntQuery with _$HuntQuery {
   }
 }
 
-/// Limite de boxes do Pokémon HOME (o backend não cria boxes além dele).
-const homeMaxBoxes = 200;
+/// Limite de boxes do Pokémon HOME no plano pago: 300 (9.000 lugares) desde
+/// o HOME 4.1.0; antes eram 200. O backend não cria boxes além dele.
+const homeMaxBoxes = 300;
 
 /// Simulação de um dex padrão (`GET /personal-dexes/preview/`).
 @freezed
