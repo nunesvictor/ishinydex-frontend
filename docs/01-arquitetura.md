@@ -220,7 +220,7 @@ Um usuário pode ter vários dexes.
   - **Resumo antes de criar:** `GET /personal-dexes/preview/` diz quantas formas,
     quantas boxes, a partir de qual box e quantas boxes novas seriam criadas
     no fim (`boxesToCreate`; `firstBox` nulo = dex todo em boxes novas). Sem
-    espaço nem criando boxes (limite de 200 do HOME, `homeMaxBoxes`), o botão
+    espaço nem criando boxes (limite de 300 do HOME, `homeMaxBoxes`), o botão
     fica desabilitado.
   - **Criação:** `POST /personal-dexes/` instala o esquema na primeira sequência
     de boxes livres (ou completa a do fim com boxes novas), e o app abre o dex

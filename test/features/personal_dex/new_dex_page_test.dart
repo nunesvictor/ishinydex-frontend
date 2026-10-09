@@ -115,7 +115,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.textContaining('o HOME tem no máximo 200 boxes'),
+        find.textContaining('o HOME tem no máximo 300 boxes'),
         findsOneWidget,
       );
       final button = tester.widget<FilledButton>(
