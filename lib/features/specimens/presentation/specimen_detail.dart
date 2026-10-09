@@ -16,6 +16,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/form_sheet.
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_card.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -136,12 +137,20 @@ class _Details extends ConsumerWidget {
                   OriginMarkChip(mark),
               ],
               fields: fields,
-              footer: switch (specimen.location) {
-                final save? => LocationTile(
-                  save: save,
-                  since: specimen.locationSince,
+              footer: switch ((specimen.location, specimen.hunt)) {
+                (null, null) => null,
+                (final save, final hunt) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (save != null)
+                      LocationTile(save: save, since: specimen.locationSince),
+                    if (hunt != null)
+                      HuntRecordCard(
+                        hunt: hunt,
+                        capturedAt: specimen.capturedAt,
+                      ),
+                  ],
                 ),
-                null => null,
               },
               nature: specimen.nature,
               // Fora de um dex não há slot: a forma tocada abre a ficha.

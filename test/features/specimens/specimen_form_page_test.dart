@@ -185,6 +185,36 @@ void main() {
     expect(results.single!.id, 99);
   });
 
+  testWidgets('registro da caçada: só com Shiny, e vai no cadastro', (
+    tester,
+  ) async {
+    when(() => repository.create(any()))
+        .thenAnswer((_) async => const Specimen(id: 99, form: 1));
+    await pumpForm(tester);
+    await tester.pumpAndSettle();
+    final section = find.text('Registro da caçada');
+    await tester.ensureVisible(section);
+    await tester.tap(section);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('field-hunt-count')),
+      '42',
+    );
+    await tester.tap(find.text('Shiny'));
+    await tester.pumpAndSettle();
+    expect(section, findsNothing);
+    await tester.tap(find.text('Shiny'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Salvar e depositar'));
+    await tester.pumpAndSettle();
+    final draft =
+        verify(() => repository.create(captureAny())).captured.single
+            as SpecimenDraft;
+    expect(draft.hunt?.count, 42);
+    expect(draft.hunt?.unit, 'encounters');
+    expect(draft.hunt?.startedAt, isNotNull);
+  });
+
   testWidgets('novo treinador fica selecionado e vai no cadastro', (
     tester,
   ) async {

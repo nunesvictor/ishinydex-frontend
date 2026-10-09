@@ -58,6 +58,9 @@ Future<PickedFile?> pickFileInPage({required String accept}) {
 /// Dropbox volta para o app instalado só assim; ishinydex#53).
 void openUrl(String url) => web.window.location.assign(url);
 
+/// Abre [url] numa aba nova, sem sair do app (o post da caçada).
+void openInNewTab(String url) => web.window.open(url, '_blank');
+
 /// Troca o endereço na barra sem recarregar (tira o `?code=` da volta do
 /// login, para um recarregamento não tentar usá-lo de novo).
 void replaceUrl(String url) => web.window.history.replaceState(null, '', url);

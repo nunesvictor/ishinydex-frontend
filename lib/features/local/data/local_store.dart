@@ -11,7 +11,7 @@ typedef Records = Map<String, List<Map<String, dynamic>>>;
 /// exportar/importar e do sync:
 ///
 /// ```json
-/// {"schemaVersion": 1, "kind": "ishinydex-data", "catalog": "...",
+/// {"schemaVersion": 2, "kind": "ishinydex-data", "catalog": "...",
 ///  "savedAt": "...", "records": {"specimens": [{..., "updatedAt": "..."}]},
 ///  "deleted": {"specimens": {"123": "..."}}}
 /// ```
@@ -25,8 +25,11 @@ class LocalStore {
   LocalStore(this.storage, {DateTime Function()? now})
     : _now = now ?? DateTime.now;
 
-  /// Maior `schemaVersion` que este app sabe ler.
-  static const schemaVersion = 1;
+  /// Maior `schemaVersion` que este app sabe ler, e o que ele grava. O 2
+  /// trouxe o registro da caçada no espécime (frontend#163): um app antigo
+  /// leria o arquivo, descartaria o campo ao regravar e, pelo sync, apagaria
+  /// o registro; com o 2 ele recusa o arquivo. O 1 é lido sem migração.
+  static const schemaVersion = 2;
   static const kind = 'ishinydex-data';
 
   final LocalDataStorage storage;

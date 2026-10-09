@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/core/network/paginated.dart';
+import 'package:ishinydex/core/web/browser.dart' as browser;
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
@@ -72,6 +74,20 @@ final FutureProvider<List<Trainer>> trainersProvider =
     FutureProvider.autoDispose<List<Trainer>>(
       (ref) => ref.watch(specimenRepositoryProvider).fetchTrainers(),
     );
+
+/// Os métodos de shiny do jogo do OT (`Catalog.shinyMethodsFor`); sem o
+/// catálogo, nenhum.
+final shinyMethodsProvider =
+    Provider<List<ShinyMethod> Function(String? version, {bool fromGo})>((ref) {
+      final catalog = ref.watch(fakeBackendProvider).catalog;
+      return (version, {fromGo = false}) =>
+          catalog?.shinyMethodsFor(version, fromGo: fromGo) ?? const [];
+    });
+
+/// Abre um link externo (o post da caçada) numa aba nova.
+final openLinkProvider = Provider<void Function(String url)>(
+  (ref) => browser.openInNewTab,
+);
 
 /// Se o Pokémon (a forma ou uma pré-evolução) está na pokédex do jogo do OT
 /// (`Catalog.originFits`); sem o catálogo, sempre.
