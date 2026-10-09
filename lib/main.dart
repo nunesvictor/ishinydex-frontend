@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -14,7 +13,7 @@ Future<void> main() async {
   // Catálogo e dados locais (modo local, ou demonstração com CATALOG_URL).
   final List<Override> overrides;
   try {
-    overrides = await catalogOverrides(Env.fromEnvironment(), Dio());
+    overrides = await catalogOverrides(Env.fromEnvironment(), bootDio());
   } on Object catch (error) {
     runApp(BootFailureApp(error: error, onRetry: main));
     return;

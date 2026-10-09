@@ -58,11 +58,49 @@ void main() {
     );
   });
 
+  test('splash: aviso e Recarregar se o primeiro quadro não vier', () {
+    final html = File('web/index.html').readAsStringSync();
+    final light = AppTheme.light().colorScheme;
+    final dark = AppTheme.dark().colorScheme;
+
+    expect(html, contains("classList.add('slow');\n    }, 15000);"));
+    expect(html, contains('clearTimeout(slowTimer);'));
+    expect(html, contains('Está demorando mais que o normal.'));
+    expect(html, contains('onclick="location.reload()">Recarregar</button>'));
+    // O splash não recebe toques, exceto com o aviso (o botão).
+    expect(html, contains('#splash.slow { pointer-events: auto; }'));
+    expect(
+      html,
+      contains(
+        'background: ${_hex(light.primary)}; color: ${_hex(light.onPrimary)};',
+      ),
+    );
+    expect(
+      html,
+      contains(
+        '.splash-slow button { background: ${_hex(dark.primary)}; '
+        'color: ${_hex(dark.onPrimary)}; }',
+      ),
+    );
+    expect(html, contains('color: ${_hex(light.onSurfaceVariant)}; }'));
+    expect(
+      html,
+      contains('.splash-slow { color: ${_hex(dark.onSurfaceVariant)}; }'),
+    );
+  });
+
   test('service worker: registrado, versionado e só GET no cache', () {
     final html = File('web/index.html').readAsStringSync();
     final sw = File('web/sw.js').readAsStringSync();
 
     expect(html, contains("navigator.serviceWorker.register('sw.js')"));
+    // Só depois do primeiro quadro: a troca de worker numa atualização não
+    // concorre com o boot (#176).
+    final firstFrame = html.substring(
+      html.indexOf("addEventListener('flutter-first-frame'"),
+    );
+    expect(firstFrame, contains('registerServiceWorker();'));
+    expect(RegExp(r'serviceWorker\.register\(').allMatches(html), hasLength(1));
     // A versão é trocada no build, como no flutter_bootstrap.js.
     expect(sw, contains("const VERSION = '__BUILD_VERSION__';"));
     expect(sw, contains("if (request.method !== 'GET') return;"));

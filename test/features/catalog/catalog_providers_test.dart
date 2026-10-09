@@ -25,6 +25,12 @@ void main() {
     adapter = DioAdapter(dio: dio);
   });
 
+  test('bootDio: com tempo limite, para o boot não ficar pendurado', () {
+    final options = bootDio().options;
+    expect(options.connectTimeout, bootTimeout);
+    expect(options.receiveTimeout, bootTimeout);
+  });
+
   test('demonstração sem CATALOG_URL: nada muda', () async {
     expect(await catalogOverrides(const Env(), dio), isEmpty);
     expect(createContainer().read(catalogLoadProvider), isNull);

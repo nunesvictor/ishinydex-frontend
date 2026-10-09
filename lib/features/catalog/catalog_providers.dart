@@ -9,6 +9,16 @@ import 'package:ishinydex/features/local/data/local_data_storage.dart';
 import 'package:ishinydex/features/local/data/local_store.dart';
 import 'package:ishinydex/features/local/local_data_providers.dart';
 
+/// Tempo limite das requisições da inicialização ([bootDio]).
+const bootTimeout = Duration(seconds: 20);
+
+/// O `Dio` da inicialização (`main.dart`). O catálogo é baixado antes do
+/// primeiro quadro: sem tempo limite, uma requisição pendurada deixaria o
+/// app parado no splash para sempre (#176). Estourando, o erro chega ao
+/// `main`, que mostra a `BootFailureApp` com o "Tentar novamente".
+Dio bootDio() =>
+    Dio(BaseOptions(connectTimeout: bootTimeout, receiveTimeout: bootTimeout));
+
 /// Catálogo carregado na inicialização (`main.dart`), quando há
 /// `CATALOG_URL`; `null` sem ele.
 final catalogLoadProvider = Provider<CatalogLoad?>((ref) => null);

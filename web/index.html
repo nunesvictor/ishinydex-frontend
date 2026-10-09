@@ -51,6 +51,22 @@
     @media (prefers-reduced-motion: reduce) {
       .splash-bar { width: 100%; animation: none; opacity: 0.6; }
     }
+    /* Saída de segurança (#176): sem o primeiro quadro em 15 s, o boot
+       travou (um download pendurado, por exemplo); o splash explica e
+       oferece recarregar. */
+    .splash-slow { display: none; flex-direction: column; align-items: center;
+      gap: 12px; margin-top: 8px; font-size: 14px; color: #46464F; }
+    #splash .splash-slow span { font-size: 14px; font-weight: 400; }
+    #splash.slow { pointer-events: auto; }
+    #splash.slow .splash-slow { display: flex; }
+    .splash-slow button {
+      font: inherit; font-weight: 500; border: 0; border-radius: 20px;
+      padding: 10px 24px; background: #515B92; color: #FFFFFF;
+    }
+    @media (prefers-color-scheme: dark) {
+      .splash-slow { color: #C7C5D0; }
+      .splash-slow button { background: #BAC3FF; color: #222C61; }
+    }
     @keyframes splash-in { to { opacity: 1; } }
     @keyframes splash-bar {
       from { transform: translateX(-100%); }
@@ -77,11 +93,34 @@
     <img src="icons/Icon-192.png" alt="">
     <span>iShinyDex</span>
     <div class="splash-track"><div class="splash-bar"></div></div>
+    <div class="splash-slow">
+      <span>Está demorando mais que o normal.</span>
+      <button type="button" onclick="location.reload()">Recarregar</button>
+    </div>
   </div>
-  <!-- No primeiro quadro do app, o splash some (fade de 200 ms, se já
-       estava visível) e sai da página. -->
+  <!-- Cache offline (web/sw.js): depois de um uso online, o app abre sem
+       internet. Relativo ao <base href>, então vale no Pages e no Docker.
+       Registrado só depois do primeiro quadro (#176): numa atualização, o
+       worker novo assume a página (skipWaiting/clients.claim) e, durante o
+       boot, isso pode derrubar downloads em andamento no iOS (o app ficou
+       parado no splash na primeira abertura da v2.5.0). Depois do primeiro
+       quadro, a troca não atrapalha. -->
   <script>
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+    }
+  </script>
+  <!-- No primeiro quadro do app, o splash some (fade de 200 ms, se já
+       estava visível) e sai da página, e o service worker é registrado. -->
+  <script>
+    const slowTimer = setTimeout(() => {
+      document.getElementById('splash')?.classList.add('slow');
+    }, 15000);
     window.addEventListener('flutter-first-frame', () => {
+      clearTimeout(slowTimer);
+      registerServiceWorker();
       const splash = document.getElementById('splash');
       if (!splash) return;
       const opacity = getComputedStyle(splash).opacity;
@@ -96,12 +135,5 @@
     }, { once: true });
   </script>
   <script src="flutter_bootstrap.js" async></script>
-  <!-- Cache offline (web/sw.js): depois de um uso online, o app abre sem
-       internet. Relativo ao <base href>, então vale no Pages e no Docker. -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  </script>
 </body>
 </html>
