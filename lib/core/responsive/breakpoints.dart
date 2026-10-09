@@ -10,7 +10,11 @@ enum WindowSize {
   /// apertar a grade.
   large;
 
-  static const mediumMin = 600.0;
+  /// 840, e não os 600 do Material 3 para o *medium*: é onde o M3 passa de
+  /// um painel para dois. Assim o iPad em retrato (mini 744, A16/Air/Pro 11"
+  /// 820–834) fica com o layout do iPhone, e os painéis só aparecem na
+  /// paisagem.
+  static const mediumMin = 840.0;
   static const expandedMin = 1024.0;
   static const largeMin = 1440.0;
 
