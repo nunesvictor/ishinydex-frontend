@@ -662,14 +662,16 @@ class HuntTile extends ConsumerWidget {
   }
 }
 
-/// Onde caçar, em até [max] ícones de jogo: os saves do usuário em que dá
-/// (coloridos) e depois os jogos em que ele não tem save (cinza); o resto
-/// vira "+N". Sem ícone: fora das pokédex dos jogos do HOME.
+/// Onde caçar, em até [max] ícones de jogo sobrepostos: os saves do usuário
+/// em que dá (coloridos) e depois os jogos em que ele não tem save (cinza); o
+/// resto vira "+N". Sobrepostos, os ícones ocupam pouca largura e o subtítulo
+/// do item continua legível no celular (#188). Sem ícone: fora das pokédex
+/// dos jogos do HOME.
 class HuntGames extends StatelessWidget {
   const HuntGames({
     required this.versions,
     required this.owned,
-    this.max = 4,
+    this.max = 3,
     super.key,
   });
 
@@ -679,24 +681,58 @@ class HuntGames extends StatelessWidget {
   final Set<String> owned;
   final int max;
 
+  /// O tamanho padrão do [GameIcon].
+  static const _size = 22.0;
+
+  /// Quanto cada ícone anda para a direita: 8 px ficam por baixo do próximo.
+  static const _step = 14.0;
+
   @override
   Widget build(BuildContext context) {
-    final mine = [...versions.where(owned.contains)];
-    final others = [...versions.where((v) => !owned.contains(v))];
-    final room = (max - mine.length).clamp(0, others.length);
-    final rest = others.length - room;
+    final shown = [
+      for (final v in versions)
+        if (owned.contains(v)) (version: v, muted: false),
+      for (final v in versions)
+        if (!owned.contains(v)) (version: v, muted: true),
+    ].take(max).toList();
+    final rest = versions.length - shown.length;
+    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 4,
       children: [
-        for (final version in mine) GameIcon(version),
-        for (final version in others.take(room)) GameIcon(version, muted: true),
+        SizedBox(
+          width: _size + _step * (shown.length - 1),
+          height: _size,
+          // O Stack pinta na ordem da lista: cada ícone fica por cima do
+          // anterior, separado dele por um contorno da cor do fundo.
+          child: Stack(
+            children: [
+              for (final (i, game) in shown.indexed)
+                Positioned(
+                  left: _step * i,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(color: colors.surface, spreadRadius: 2),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: GameIcon(game.version, muted: game.muted),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
         if (rest > 0)
           Text(
             '+$rest',
-            semanticsLabel: 'mais $rest jogos sem save seu',
+            semanticsLabel: 'mais $rest jogos',
             style: Theme.of(context).textTheme.labelMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                ?.copyWith(color: colors.outline),
           ),
       ],
     );
