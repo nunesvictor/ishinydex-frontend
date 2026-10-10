@@ -207,7 +207,7 @@ void main() {
     expect(find.byType(GameIcon), findsNothing);
   });
 
-  testWidgets('até 4 ícones: os seus primeiro, o resto vira "+N"', (
+  testWidgets('até 3 ícones sobrepostos: os seus primeiro, o resto vira "+N"', (
     tester,
   ) async {
     await pumpWidgetApp(
@@ -230,9 +230,47 @@ void main() {
     final icons = tester.widgetList<GameIcon>(find.byType(GameIcon));
     expect(
       [for (final i in icons) '${i.muted ? '~' : ''}${i.version}'],
-      ['scarlet', '~sword', '~shield', '~brilliant-diamond'],
+      ['scarlet', '~sword', '~shield'],
+    );
+    // Cada um anda 14 px: os 8 px restantes ficam por baixo do seguinte.
+    final lefts = [
+      for (final i in icons) tester.getTopLeft(find.byWidget(i)).dx,
+    ];
+    expect([lefts[1] - lefts[0], lefts[2] - lefts[1]], [14, 14]);
+    expect(find.text('+3'), findsOneWidget);
+    expect(find.bySemanticsLabel('mais 3 jogos'), findsOneWidget);
+  });
+
+  testWidgets('mais de 3 saves seus: o "+N" conta os seus também', (
+    tester,
+  ) async {
+    await pumpWidgetApp(
+      tester,
+      const Scaffold(
+        body: HuntGames(
+          versions: ['sword', 'shield', 'scarlet', 'violet', 'legends-za'],
+          owned: {'sword', 'shield', 'scarlet', 'violet'},
+        ),
+      ),
+    );
+
+    final icons = tester.widgetList<GameIcon>(find.byType(GameIcon));
+    expect(
+      [for (final i in icons) '${i.muted ? '~' : ''}${i.version}'],
+      ['sword', 'shield', 'scarlet'],
     );
     expect(find.text('+2'), findsOneWidget);
-    expect(find.bySemanticsLabel('mais 2 jogos sem save seu'), findsOneWidget);
+  });
+
+  testWidgets('até 3 jogos: todos aparecem, sem "+N"', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const Scaffold(
+        body: HuntGames(versions: ['scarlet', 'violet'], owned: {}),
+      ),
+    );
+
+    expect(find.byType(GameIcon), findsNWidgets(2));
+    expect(find.textContaining('+'), findsNothing);
   });
 }
