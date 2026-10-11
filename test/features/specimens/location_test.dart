@@ -70,6 +70,10 @@ void main() {
       trainer: _save.trainer.copyWith(version: 'leafgreen'),
     );
     expect(frlg.isOneWay, isTrue);
+    final oras = _save.copyWith(
+      trainer: _save.trainer.copyWith(version: 'alpha-sapphire'),
+    );
+    expect(oras.isOneWay, isTrue);
   });
 
   test('AwayPage.group: por save, o que saiu há mais tempo primeiro', () {

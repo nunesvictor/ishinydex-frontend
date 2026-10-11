@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -259,6 +260,40 @@ void main() {
       expect(frlg.pokedexesOf(1).first.versions, ['firered', 'leafgreen']);
       expect(frlg.inGame(1, 'firered'), isTrue);
       expect(frlg.inGame(133, 'firered'), isFalse);
+    });
+
+    test('USUM (só ida pelo Bank): caçável e com marca de Alola', () {
+      final json = catalogJson();
+      (json['versionGroups'] as List).add({
+        'name': 'ultra-sun-ultra-moon',
+        'generation': 'generation-vii',
+        'order': 18,
+        'versions': ['ultra-sun', 'ultra-moon'],
+        'originMark': 'alola',
+      });
+      for (final v in ['ultra-sun', 'ultra-moon']) {
+        (json['versions'] as List).add({
+          'name': v,
+          'versionGroup': 'ultra-sun-ultra-moon',
+          'receivesFromHome': false,
+        });
+      }
+      (json['pokedexes'] as List).add({
+        'name': 'updated-alola',
+        'label': 'Alola (USUM)',
+        'versionGroups': ['ultra-sun-ultra-moon'],
+        'dlc': null,
+        'entries': [
+          ['eevee', 150],
+        ],
+      });
+      final usum = Catalog.fromJson(json, spriteBase: _base);
+
+      expect(usum.transferVersions, isNot(contains('ultra-sun')));
+      expect(usum.huntableVersions(133), contains('ultra-moon'));
+      expect(usum.inGame(133, 'ultra-sun'), isTrue);
+      expect(usum.inGame(1, 'ultra-sun'), isFalse);
+      expect(OriginMark.fromVersion('ultra-sun'), OriginMark.alola);
     });
 
     test('catálogo antigo: sem pokédex nem exclusivos', () {

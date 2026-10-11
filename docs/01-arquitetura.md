@@ -370,8 +370,10 @@ Pokémon num save, o espécime tem uma **localização**: `location` (um
   ([saves_page.dart](../lib/features/specimens/presentation/saves_page.dart)).
   Servem OTs de jogos ligados ao HOME (`Save.homeVersions`). O OT continua
   sendo "de onde o Pokémon veio"; o save é "onde ele está".
-- **Save só de ida** (`Save.isOneWay`, jogos em `Save.oneWayVersions`, hoje
-  o FireRed/LeafGreen do Switch): o jogo só envia para o HOME. O save
+- **Save só de ida** (`Save.isOneWay`, jogos em `Save.oneWayVersions`: o
+  FireRed/LeafGreen do Switch, que manda direto, e os jogos do 3DS da Gen VI
+  e VII, que mandam pelo Pokémon Bank; o selo deles é a marca de Kalos ou de
+  Alola): o jogo só envia para o HOME. O save
   existe para a caçada (campo "Jogo", filtro "Jogo" das Caçadas e o OT do
   "Encontrei!"), mas nunca é destino: fica fora da folha "Enviar para qual
   save?" (com uma nota no pé), do filtro "Onde está" e numa seção própria

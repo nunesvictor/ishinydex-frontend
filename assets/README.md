@@ -46,6 +46,8 @@ O `champions.png` (o Pokémon que visita o Pokémon Champions, #174) não é mar
 
 Usados por `GameIcon` (`lib/core/widgets/game_icon.dart`), que mostra a sigla do jogo se o asset faltar.
 
+Os jogos do 3DS (X, Y, Omega Ruby, Alpha Sapphire, Sun, Moon, Ultra Sun e Ultra Moon), só de ida pelo Pokémon Bank, ainda não têm ícone aqui: o `GameIcon` mostra as iniciais até os arquivos entrarem.
+
 ## Ícone de alfa (`icons/alpha.png`)
 
 Selo de alfa do Pokémon HOME/Legends: Arceus (58×61, colorido), baixado da Bulbagarden Archives como `Alpha_icon.png` ("Icon used in summary screen of Alpha Pokémon"; artigo [Alpha Pokémon](https://bulbapedia.bulbagarden.net/wiki/Alpha_Pok%C3%A9mon)). Não confundir com `Alpha_Mark.png`, a marca "Former Alpha" de Scarlet/Violet. Mesma ressalva de propriedade das marcas de origem.

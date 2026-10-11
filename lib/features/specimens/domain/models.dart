@@ -449,8 +449,20 @@ abstract class Save with _$Save {
   };
 
   /// Jogos que só enviam Pokémon para o HOME (só de ida): o save serve
-  /// para caçar e para o OT, mas nunca é destino de transferência.
-  static const oneWayVersions = {'firered', 'leafgreen'};
+  /// para caçar e para o OT, mas nunca é destino de transferência. FRLG do
+  /// Switch manda direto; a Gen VI e VII (3DS), pelo Pokémon Bank.
+  static const oneWayVersions = {
+    'firered',
+    'leafgreen',
+    'x',
+    'y',
+    'omega-ruby',
+    'alpha-sapphire',
+    'sun',
+    'moon',
+    'ultra-sun',
+    'ultra-moon',
+  };
 
   /// Jogos cujos treinadores podem virar save: os que recebem do HOME e os
   /// só de ida.
