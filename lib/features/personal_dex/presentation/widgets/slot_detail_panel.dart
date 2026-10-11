@@ -10,6 +10,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_naviga
 import 'package:ishinydex/features/shiny_hunts/presentation/active_hunt_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/specimen_extras.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -22,8 +23,9 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// trazer de volta, retirar do slot e libertar.
 ///
 /// O slot traz só o resumo do specimen (`SpecimenSummary`); gênero,
-/// natureza e Pokémon GO vêm do specimen completo (`GET /specimens/{id}/`),
-/// carregado à parte. Enquanto ele não chega (ou se falhar), o painel mostra
+/// natureza, marca de origem, os campos, o Champions e o registro da caçada
+/// vêm do specimen completo (`specimenProvider`), carregado à parte, e são
+/// os mesmos do detalhe do inventário (`specimen_extras.dart`). Enquanto ele não chega (ou se falhar), o painel mostra
 /// o resumo e as ações normalmente.
 class SlotDetailPanel extends ConsumerWidget {
   const SlotDetailPanel({
@@ -149,23 +151,21 @@ class SlotDetailPanel extends ConsumerWidget {
                     ),
                     if (OriginMark.fromSlug(full?.originMark) case final mark?)
                       OriginMarkChip(mark),
+                    if (full?.isVisitingChampions ?? false)
+                      const ChampionsChip(),
                   ],
                 ],
-                footer: switch ((specimen?.location, hunting)) {
-                  (null, false) => null,
-                  (final save, _) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (save != null)
-                        LocationTile(
-                          save: save,
-                          since: specimen!.locationSince,
-                        ),
-                      if (hunting)
-                        ActiveHuntTile(formId: form.id, onTap: onShowHunts),
-                    ],
-                  ),
-                },
+                fields: full == null
+                    ? const []
+                    : specimenFields(context, ref, full),
+                footer: specimenFooter(
+                  save: specimen?.location,
+                  since: specimen?.locationSince,
+                  specimen: full,
+                  trailing: hunting
+                      ? ActiveHuntTile(formId: form.id, onTap: onShowHunts)
+                      : null,
+                ),
                 nature: full?.nature,
                 dexId: current.personalDex,
                 onOpenSlot: onOpenSlot,

@@ -16,7 +16,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/form_sheet.
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
-import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_card.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/specimen_extras.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -76,24 +76,7 @@ class _Details extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final options = ref.watch(specimenOptionsProvider).value;
-    final trainers = ref.watch(trainersProvider).value;
     final form = specimen.formRef;
-    final ot = trainers?.where((t) => t.id == specimen.ot).firstOrNull;
-    // Habilidade, natureza e gênero já aparecem no corpo (lista da forma,
-    // cartão de status e cabeçalho): aqui, só o que é do espécime.
-    final fields = <(String, String?)>[
-      ('Treinador original', ot?.label),
-      ('Idioma', choiceLabel(options?.language, specimen.language)),
-      (
-        'Data de captura',
-        specimen.capturedAt == null
-            ? null
-            : MaterialLocalizations.of(context)
-                  .formatCompactDate(specimen.capturedAt!),
-      ),
-      ('Observação', specimen.observation),
-    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -135,33 +118,14 @@ class _Details extends ConsumerWidget {
                   ),
                 if (OriginMark.fromSlug(specimen.originMark) case final mark?)
                   OriginMarkChip(mark),
-                if (specimen.isVisitingChampions)
-                  const Chip(
-                    avatar: ChampionsIcon(size: 18),
-                    label: Text('Visitando o Champions'),
-                  ),
+                if (specimen.isVisitingChampions) const ChampionsChip(),
               ],
-              fields: fields,
-              footer: switch ((
-                specimen.location,
-                specimen.championsSince,
-                specimen.hunt,
-              )) {
-                (null, null, null) => null,
-                (final save, final champions, final hunt) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (save != null)
-                      LocationTile(save: save, since: specimen.locationSince),
-                    if (champions != null) ChampionsTile(since: champions),
-                    if (hunt != null)
-                      HuntRecordCard(
-                        hunt: hunt,
-                        capturedAt: specimen.capturedAt,
-                      ),
-                  ],
-                ),
-              },
+              fields: specimenFields(context, ref, specimen),
+              footer: specimenFooter(
+                save: specimen.location,
+                since: specimen.locationSince,
+                specimen: specimen,
+              ),
               nature: specimen.nature,
               // Fora de um dex não há slot: a forma tocada abre a ficha.
               onOpenForm: (other) => showFormSheet(context, other),
