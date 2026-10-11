@@ -91,7 +91,7 @@ void main() {
       await tester.tap(find.text('Venusaur'));
       await tester.pumpAndSettle();
       // O dex abre na box, com o painel do slot (sheet no compacto).
-      expect(find.text('HOME 1 · linha 1, coluna 3'), findsOneWidget);
+      expect(find.text('HOME 1 · L1 C3 · 3 de 30'), findsOneWidget);
       if (size == compactSize) {
         expect(find.byType(BottomSheet), findsOneWidget);
         await tester.tapAt(const Offset(200, 20));

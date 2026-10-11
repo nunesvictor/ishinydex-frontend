@@ -22,6 +22,7 @@ class DetailBody extends StatelessWidget {
     required this.tabsKey,
     this.subtitle,
     this.caption,
+    this.position,
     this.summaryLabel = 'Espécime',
     this.highlightAbility,
     this.chips = const [],
@@ -39,6 +40,9 @@ class DetailBody extends StatelessWidget {
   final Widget title;
   final String? subtitle;
   final String? caption;
+
+  /// No lugar do [caption]: a posição com as setas de navegação do slot.
+  final Widget? position;
 
   /// A forma do detalhe; `null` se o espécime não tiver a forma carregada
   /// (sem abas: só os chips, os campos e o [footer]).
@@ -116,6 +120,7 @@ class DetailBody extends StatelessWidget {
             style: theme.textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),
+        ?position,
         const SizedBox(height: 12),
         if (formId == null)
           Column(
