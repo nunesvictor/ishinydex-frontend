@@ -6,6 +6,7 @@ import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/active_hunt_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
@@ -33,6 +34,7 @@ class SlotDetailPanel extends ConsumerWidget {
     required this.onWithdraw,
     this.onOpenSlot,
     this.onShowHunts,
+    this.navigation,
     this.fillHeight = false,
     super.key,
   });
@@ -49,6 +51,10 @@ class SlotDetailPanel extends ConsumerWidget {
   /// Abre as caçadas ativas (a linha "Caçada em andamento"); `null` fora de
   /// um shiny dex, onde a linha não aparece.
   final VoidCallback? onShowHunts;
+
+  /// A navegação pela box: as setas abaixo do nome e o gesto de deslizar na
+  /// horizontal. `null` = sem navegação, só a posição do slot.
+  final SlotNavigation? navigation;
 
   /// Painel lateral: ocupa a altura toda, com a barra presa embaixo. No
   /// bottom sheet (`false`), o painel tem a altura do conteúdo.
@@ -86,72 +92,84 @@ class SlotDetailPanel extends ConsumerWidget {
       children: [
         Flexible(
           fit: fillHeight ? FlexFit.tight : FlexFit.loose,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: DetailBody(
-              spriteUrl: current.spriteUrl,
-              semanticLabel: form.displayName,
-              title: specimen == null
-                  ? Text(
-                      form.displayName,
-                      style: theme.textTheme.titleLarge,
-                      textAlign: TextAlign.center,
+          child: _navigable(
+            context,
+            SingleChildScrollView(
+              key: ValueKey('slot-panel-${current.id}'),
+              padding: const EdgeInsets.all(16),
+              child: DetailBody(
+                spriteUrl: current.spriteUrl,
+                semanticLabel: form.displayName,
+                title: specimen == null
+                    ? Text(
+                        form.displayName,
+                        style: theme.textTheme.titleLarge,
+                        textAlign: TextAlign.center,
+                      )
+                    : SpecimenHeadline(
+                        name: specimen.displayName,
+                        pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+                        pokeballLabel: specimen.pokeball == null
+                            ? null
+                            : prettifyName(specimen.pokeball!),
+                        gender: full?.gender,
+                        isShiny: specimen.isShiny,
+                        isAlpha: specimen.isAlpha,
+                        style: theme.textTheme.titleLarge,
+                        center: true,
+                      ),
+                subtitle: [
+                  if (specimen != null) form.displayName,
+                  form.dexNumber,
+                  if (form.formName.isNotEmpty) prettifyName(form.formName),
+                ].join(' · '),
+                caption: navigation == null
+                    ? '${current.box.name} · linha ${current.row + 1}, '
+                          'coluna ${current.col + 1}'
+                    : null,
+                position: switch (navigation) {
+                  final navigation? => SlotNavigationBar(navigation),
+                  null => null,
+                },
+                formId: form.id,
+                // Uma aba por slot: trocar de slot volta para o resumo.
+                tabsKey: ValueKey('tabs-${current.id}'),
+                summaryLabel: specimen == null ? 'Forma' : 'Espécime',
+                highlightAbility: specimen?.ability,
+                chips: [
+                  if (specimen == null)
+                    const Chip(
+                      avatar: Icon(Icons.radio_button_unchecked),
+                      label: Text('Faltante'),
                     )
-                  : SpecimenHeadline(
-                      name: specimen.displayName,
-                      pokeballSpriteUrl: specimen.pokeballSpriteUrl,
-                      pokeballLabel: specimen.pokeball == null
-                          ? null
-                          : prettifyName(specimen.pokeball!),
-                      gender: full?.gender,
-                      isShiny: specimen.isShiny,
-                      isAlpha: specimen.isAlpha,
-                      style: theme.textTheme.titleLarge,
-                      center: true,
+                  else ...[
+                    const Chip(
+                      avatar: Icon(Icons.check_circle, color: Colors.green),
+                      label: Text('Registrado'),
                     ),
-              subtitle: [
-                if (specimen != null) form.displayName,
-                form.dexNumber,
-                if (form.formName.isNotEmpty) prettifyName(form.formName),
-              ].join(' · '),
-              caption:
-                  '${current.box.name} · linha ${current.row + 1}, '
-                  'coluna ${current.col + 1}',
-              formId: form.id,
-              // Uma aba por slot: trocar de slot volta para o resumo.
-              tabsKey: ValueKey('tabs-${current.id}'),
-              summaryLabel: specimen == null ? 'Forma' : 'Espécime',
-              highlightAbility: specimen?.ability,
-              chips: [
-                if (specimen == null)
-                  const Chip(
-                    avatar: Icon(Icons.radio_button_unchecked),
-                    label: Text('Faltante'),
-                  )
-                else ...[
-                  const Chip(
-                    avatar: Icon(Icons.check_circle, color: Colors.green),
-                    label: Text('Registrado'),
-                  ),
-                  if (OriginMark.fromSlug(full?.originMark) case final mark?)
-                    OriginMarkChip(mark),
-                ],
-              ],
-              footer: switch ((specimen?.location, hunting)) {
-                (null, false) => null,
-                (final save, _) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (save != null)
-                      LocationTile(save: save, since: specimen!.locationSince),
-                    if (hunting)
-                      ActiveHuntTile(formId: form.id, onTap: onShowHunts),
+                    if (OriginMark.fromSlug(full?.originMark) case final mark?)
+                      OriginMarkChip(mark),
                   ],
-                ),
-              },
-              nature: full?.nature,
-              dexId: current.personalDex,
-              onOpenSlot: onOpenSlot,
+                ],
+                footer: switch ((specimen?.location, hunting)) {
+                  (null, false) => null,
+                  (final save, _) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (save != null)
+                        LocationTile(
+                          save: save,
+                          since: specimen!.locationSince,
+                        ),
+                      if (hunting)
+                        ActiveHuntTile(formId: form.id, onTap: onShowHunts),
+                    ],
+                  ),
+                },
+                nature: full?.nature,
+                dexId: current.personalDex,
+                onOpenSlot: onOpenSlot,
+              ),
             ),
           ),
         ),
@@ -197,4 +215,59 @@ class SlotDetailPanel extends ConsumerWidget {
       ],
     );
   }
+
+  /// Com [navigation]: o gesto de deslizar, a transição entre um slot e
+  /// outro e o balão da troca de box, por cima do conteúdo.
+  ///
+  /// O gesto é um `GestureDetector` horizontal, e não um `PageView`: as
+  /// páginas vizinhas teriam de estar prontas antes (e a da box vizinha nem
+  /// carregou ainda). Como a rolagem do painel é vertical, os dois gestos
+  /// não disputam o mesmo toque.
+  Widget _navigable(BuildContext context, Widget content) {
+    final navigation = this.navigation;
+    if (navigation == null) return content;
+    final notice = navigation.notice;
+    return Stack(
+      children: [
+        GestureDetector(
+          onHorizontalDragEnd: (details) {
+            final velocity = details.primaryVelocity ?? 0;
+            // Dedo para a esquerda: o próximo slot, como virar uma página.
+            if (velocity < -_swipeVelocity) navigation.onNext?.call();
+            if (velocity > _swipeVelocity) navigation.onPrevious?.call();
+          },
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            // O slot novo entra pelo lado de onde veio o passo, por cima do
+            // antigo, que só some.
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.topCenter,
+              children: [...previous, ?current],
+            ),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween(
+                  begin: Offset(0.15 * navigation.direction, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            ),
+            child: content,
+          ),
+        ),
+        if (notice != null)
+          Positioned(
+            top: 4,
+            left: 0,
+            right: 0,
+            child: Center(child: BoxNoticeBalloon(notice)),
+          ),
+      ],
+    );
+  }
+
+  /// Velocidade mínima (px/s) para o gesto contar como deslizar.
+  static const _swipeVelocity = 200.0;
 }

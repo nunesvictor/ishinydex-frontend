@@ -21,6 +21,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_menu.da
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/generation_progress.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/deposit_flow.dart';
@@ -61,6 +62,15 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   /// bottom sheet, uma vez só; nos demais tamanhos o painel já fica ao lado.
   late bool _openInitialSheet = widget.initialSlotId != null;
   bool _onlyMissing = false;
+
+  /// A última troca de box pela navegação do painel (o balão), e o sentido
+  /// do último passo. Um toque na grade limpa os dois.
+  BoxNotice? _boxNotice;
+  int _direction = 0;
+
+  /// Avisa o bottom sheet de que a seleção mudou. O sheet é outra rota: o
+  /// `setState` da página não o reconstrói.
+  final ValueNotifier<int> _selection = ValueNotifier(0);
 
   /// Lista de boxes ao lado da grade (expandido e maior). `null` = padrão do
   /// tamanho: aberta só em telas largas, para a grade crescer no PC.
@@ -113,6 +123,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   @override
   void dispose() {
     _pageController?.dispose();
+    _selection.dispose();
     _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
@@ -467,6 +478,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
         onWithdraw: () => _withdraw(_selectedSlot(box)!),
         onOpenSlot: _goToSlot,
         onShowHunts: _showHunts,
+        navigation: _navigation(boxes, index),
         fillHeight: true,
       ),
     );
@@ -584,7 +596,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     selectedSlotId: _selectedSlotId,
     onlyMissing: _onlyMissing,
     onSlotTap: (slot) {
-      setState(() => _selectedSlotId = slot.id);
+      setState(() {
+        _selectedSlotId = slot.id;
+        _boxNotice = null;
+        _direction = 0;
+      });
       if (compact) unawaited(_showSlotSheet(box));
     },
   );
@@ -607,6 +623,8 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     setState(() {
       _boxIndex = index < 0 ? _boxIndex : index;
       _selectedSlotId = slot.id;
+      _boxNotice = null;
+      _direction = 0;
     });
     final controller = _pageController;
     if (controller == null) return;
@@ -628,7 +646,83 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   void _selectBox(int index) => setState(() {
     _boxIndex = index;
     _selectedSlotId = null;
+    _boxNotice = null;
   });
+
+  /// A navegação do painel para o slot selecionado da box [index]; `null`
+  /// enquanto os slots carregam ou sem slot selecionado.
+  SlotNavigation? _navigation(
+    List<BoxSummary> boxes,
+    int index, [
+    WidgetRef? watcher,
+  ]) {
+    final box = boxes[index];
+    final slots = (watcher ?? ref)
+        .watch(slotsProvider((dexId: _dexId, boxId: box.id)))
+        .value;
+    if (slots == null) return null;
+    final list = navigableSlots(
+      slots,
+      onlyMissing: _onlyMissing,
+      keep: _selectedSlotId,
+    );
+    final position = list.indexWhere((s) => s.id == _selectedSlotId);
+    if (position < 0) return null;
+    final slot = list[position];
+    return SlotNavigation(
+      label:
+          '${box.name} · L${slot.row + 1} C${slot.col + 1} · '
+          '${position + 1} de ${list.length}',
+      onPrevious: position == 0 && index == 0
+          ? null
+          : () => unawaited(_step(-1)),
+      onNext: position == list.length - 1 && index == boxes.length - 1
+          ? null
+          : () => unawaited(_step(1)),
+      notice: _boxNotice,
+      direction: _direction,
+    );
+  }
+
+  /// Vai para o slot anterior ([delta] -1) ou o seguinte (1). Na borda da
+  /// box, passa para a vizinha (pulando as que não têm slot para mostrar,
+  /// como uma box completa com o filtro de faltantes), com o balão. Os
+  /// slots da box vizinha podem não ter carregado ainda: daí o `await`.
+  Future<void> _step(int delta) async {
+    final boxes = ref.read(boxesProvider(_dexId)).value ?? const [];
+    final start = _boxIndex.clamp(0, boxes.length - 1);
+    var index = start;
+    try {
+      var list = await _navigableOf(boxes[index]);
+      var target = list.indexWhere((s) => s.id == _selectedSlotId) + delta;
+      while (target < 0 || target >= list.length) {
+        index += delta;
+        if (index < 0 || index >= boxes.length) return;
+        list = await _navigableOf(boxes[index]);
+        target = delta > 0 ? 0 : list.length - 1;
+      }
+      if (!mounted) return;
+      final slot = list[target];
+      setState(() {
+        _boxIndex = index;
+        _selectedSlotId = slot.id;
+        _direction = delta;
+        if (index != start) {
+          _boxNotice = BoxNotice((_boxNotice?.id ?? 0) + 1, boxes[index].name);
+        }
+      });
+      _selection.value++;
+      if (index != start) _pageController?.jumpToPage(index);
+    } on AppFailure catch (failure) {
+      _notify(failure.message);
+    }
+  }
+
+  Future<List<Slot>> _navigableOf(BoxSummary box) async => navigableSlots(
+    await ref.read(slotsProvider((dexId: _dexId, boxId: box.id)).future),
+    onlyMissing: _onlyMissing,
+    keep: _selectedSlotId,
+  );
 
   /// Slot selecionado, sempre na versão mais recente vinda da API.
   ///
@@ -664,46 +758,54 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     showDragHandle: true,
     useSafeArea: true,
     isScrollControlled: true,
-    builder: (sheetContext) => Consumer(
-      builder: (context, sheetRef, _) {
-        final slot = _selectedSlot(box, sheetRef);
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.8,
-          ),
-          child: SlotDetailPanel(
-            slot: slot,
-            onDeposit: () {
-              Navigator.of(sheetContext).pop();
-              unawaited(_deposit(slot!));
-            },
-            onEdit: () {
-              Navigator.of(sheetContext).pop();
-              unawaited(_edit(slot!));
-            },
-            onRelease: () {
-              Navigator.of(sheetContext).pop();
-              unawaited(_release(slot!));
-            },
-            onWithdraw: () {
-              Navigator.of(sheetContext).pop();
-              unawaited(_withdraw(slot!));
-            },
-            // Outra forma da linha evolutiva: fecha este sheet e abre o do
-            // slot dela (na box certa).
-            onOpenSlot: (other) {
-              Navigator.of(sheetContext).pop();
-              _goToSlot(other);
-            },
-            onShowHunts: _showHunts == null
-                ? null
-                : () {
-                    Navigator.of(sheetContext).pop();
-                    _showHunts!();
-                  },
-          ),
-        );
-      },
+    builder: (sheetContext) => ListenableBuilder(
+      listenable: _selection,
+      builder: (context, _) => Consumer(
+        builder: (context, sheetRef, _) {
+          // A navegação do painel pode levar a outra box: o sheet segue a box
+          // atual, e não a do slot que o abriu.
+          final boxes = sheetRef.watch(boxesProvider(_dexId)).value ?? [box];
+          final index = _boxIndex.clamp(0, boxes.length - 1);
+          final slot = _selectedSlot(boxes[index], sheetRef);
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+            ),
+            child: SlotDetailPanel(
+              slot: slot,
+              onDeposit: () {
+                Navigator.of(sheetContext).pop();
+                unawaited(_deposit(slot!));
+              },
+              onEdit: () {
+                Navigator.of(sheetContext).pop();
+                unawaited(_edit(slot!));
+              },
+              onRelease: () {
+                Navigator.of(sheetContext).pop();
+                unawaited(_release(slot!));
+              },
+              onWithdraw: () {
+                Navigator.of(sheetContext).pop();
+                unawaited(_withdraw(slot!));
+              },
+              // Outra forma da linha evolutiva: fecha este sheet e abre o do
+              // slot dela (na box certa).
+              onOpenSlot: (other) {
+                Navigator.of(sheetContext).pop();
+                _goToSlot(other);
+              },
+              onShowHunts: _showHunts == null
+                  ? null
+                  : () {
+                      Navigator.of(sheetContext).pop();
+                      _showHunts!();
+                    },
+              navigation: _navigation(boxes, index, sheetRef),
+            ),
+          );
+        },
+      ),
     ),
   );
 
