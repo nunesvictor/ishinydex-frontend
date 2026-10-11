@@ -16,7 +16,7 @@ void main() {
   });
 
   test('fromVersion: todo jogo que vira save tem marca', () {
-    for (final version in Save.transferVersions) {
+    for (final version in Save.homeVersions) {
       expect(OriginMark.fromVersion(version), isNotNull, reason: version);
     }
     expect(OriginMark.fromVersion('lets-go-eevee'), OriginMark.letsGo);
@@ -24,6 +24,13 @@ void main() {
     expect(OriginMark.fromVersion('firered'), OriginMark.gba);
     expect(OriginMark.fromVersion('leafgreen'), OriginMark.gba);
     expect(Save.transferVersions, isNot(contains('firered')));
+    // Gen VI e VII (3DS, só ida pelo Pokémon Bank).
+    for (final v in ['x', 'y', 'omega-ruby', 'alpha-sapphire']) {
+      expect(OriginMark.fromVersion(v), OriginMark.kalos, reason: v);
+    }
+    for (final v in ['sun', 'moon', 'ultra-sun', 'ultra-moon']) {
+      expect(OriginMark.fromVersion(v), OriginMark.alola, reason: v);
+    }
     expect(OriginMark.fromVersion('red'), isNull);
   });
 

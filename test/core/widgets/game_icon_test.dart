@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 
 Future<void> _pump(WidgetTester tester, Widget icon) async {
   await tester.pumpWidget(MaterialApp(home: Center(child: icon)));
@@ -30,9 +33,19 @@ void main() {
   });
 
   testWidgets('sem o asset (outra versão): a sigla do jogo', (tester) async {
-    await _pump(tester, const GameIcon('omega-ruby'));
+    await _pump(tester, const GameIcon('black-2'));
 
-    expect(find.text('OR'), findsOneWidget);
-    expect(find.bySemanticsLabel('Omega Ruby'), findsOneWidget);
+    expect(find.text('B2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Black 2'), findsOneWidget);
+  });
+
+  test('todo jogo que vira save tem ícone, inclusive os só de ida', () {
+    for (final version in Save.homeVersions) {
+      expect(
+        File('assets/game_icons/$version.png').existsSync(),
+        isTrue,
+        reason: version,
+      );
+    }
   });
 }

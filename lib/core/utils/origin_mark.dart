@@ -40,6 +40,8 @@ enum OriginMark {
   /// espécime está, o jogo do OT): `"scarlet"` → [paldea].
   static OriginMark? fromVersion(String? version) => switch (version) {
     'firered' || 'leafgreen' => gba,
+    'x' || 'y' || 'omega-ruby' || 'alpha-sapphire' => kalos,
+    'sun' || 'moon' || 'ultra-sun' || 'ultra-moon' => alola,
     'lets-go-pikachu' || 'lets-go-eevee' => letsGo,
     'sword' || 'shield' => galar,
     'brilliant-diamond' || 'shining-pearl' => bdsp,

@@ -26,7 +26,7 @@ O `champions.png` (o Pokémon que visita o Pokémon Champions, #174) não é mar
 
 ## Ícones de jogo (`game_icons/`)
 
-Ícones dos jogos no Pokémon HOME (128×128, coloridos), baixados da Bulbagarden Archives, categoria [Pokémon HOME game icons](https://archives.bulbagarden.net/wiki/Category:Pok%C3%A9mon_HOME_game_icons). Só os jogos ligados ao HOME (os que viram save e o FireRed/LeafGreen do Switch, que só envia), com o nome da versão no catálogo. Mesma ressalva de propriedade das marcas de origem.
+Ícones dos jogos no Pokémon HOME (128×128, coloridos), baixados da Bulbagarden Archives, categoria [Pokémon HOME game icons](https://archives.bulbagarden.net/wiki/Category:Pok%C3%A9mon_HOME_game_icons). Só os jogos ligados ao HOME (os que viram save, incluindo os só de ida: o FireRed/LeafGreen do Switch e os jogos do 3DS), com o nome da versão no catálogo. Mesma ressalva de propriedade das marcas de origem.
 
 | Arquivo | Original |
 | --- | --- |
@@ -43,6 +43,14 @@ O `champions.png` (o Pokémon que visita o Pokémon Champions, #174) não é mar
 | `scarlet.png` | `HOME_Scarlet_icon.png` |
 | `violet.png` | `HOME_Violet_icon.png` |
 | `legends-za.png` | `HOME_Legends_Z-A_icon.png` |
+| `x.png` | `HOME_X_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `y.png` | `HOME_Y_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `omega-ruby.png` | `HOME_Omega_Ruby_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `alpha-sapphire.png` | `HOME_Alpha_Sapphire_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `sun.png` | `HOME_Sun_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `moon.png` | `HOME_Moon_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `ultra-sun.png` | `HOME_Ultra_Sun_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `ultra-moon.png` | `HOME_Ultra_Moon_icon.png` (3DS, só de ida pelo Pokémon Bank) |
 
 Usados por `GameIcon` (`lib/core/widgets/game_icon.dart`), que mostra a sigla do jogo se o asset faltar.
 
