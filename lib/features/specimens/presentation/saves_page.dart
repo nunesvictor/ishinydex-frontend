@@ -12,8 +12,12 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// Ajustes → Meus saves: os jogos para onde o usuário envia Pokémon do HOME.
 ///
 /// Um save é um treinador original (nome, TID e versão) marcado como "meu":
-/// só treinadores de jogos que recebem do HOME servem. O apelido distingue
-/// dois saves do mesmo jogo ("Switch Lite").
+/// servem os treinadores de jogos ligados ao HOME. O apelido distingue dois
+/// saves do mesmo jogo ("Switch Lite").
+///
+/// Os saves de jogos só de ida ([Save.isOneWay], como o FireRed do Switch)
+/// ficam numa seção à parte: servem para caçar e para o OT, mas nunca são
+/// destino de transferência.
 class SavesPage extends ConsumerWidget {
   const SavesPage({super.key});
 
@@ -32,41 +36,90 @@ class SavesPage extends ConsumerWidget {
             'Nenhum save cadastrado. Um save é um jogo para onde você envia '
             'Pokémon do HOME (Scarlet, Legends: Z-A...).',
       ),
-      AsyncData(value: final saves) => ListView(
-        padding: const EdgeInsets.only(bottom: 88),
-        children: [
-          for (final save in saves)
-            ListTile(
-              key: ValueKey('save-${save.id}'),
-              leading: SaveIcon(save),
-              title: Text(save.title),
-              subtitle: Text(save.trainer.label),
-              trailing: PopupMenuButton<_SaveAction>(
-                tooltip: 'Ações do save',
-                onSelected: (action) => switch (action) {
-                  _SaveAction.rename => _rename(context, ref, save),
-                  _SaveAction.delete => _delete(context, ref, save),
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: _SaveAction.rename,
-                    child: Text('Renomear'),
-                  ),
-                  PopupMenuItem(
-                    value: _SaveAction.delete,
-                    child: Text('Remover'),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+      AsyncData(value: final saves) => _SaveList(saves),
       AsyncError(:final error) => ErrorView(
         error: error,
         onRetry: () => ref.invalidate(savesProvider),
       ),
       _ => const LoadingView(),
     },
+  );
+}
+
+/// A lista de saves. Com algum save só de ida, ela se divide em duas
+/// seções: "Recebem do HOME" e "Só enviam para o HOME", esta com uma linha
+/// que explica por que esses saves não aparecem como destino.
+class _SaveList extends ConsumerWidget {
+  const _SaveList(this.saves);
+
+  final List<Save> saves;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final receivers = [
+      for (final s in saves)
+        if (!s.isOneWay) s,
+    ];
+    final oneWay = [
+      for (final s in saves)
+        if (s.isOneWay) s,
+    ];
+    Widget header(String text) => Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        text,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    );
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 88),
+      children: [
+        if (oneWay.isNotEmpty && receivers.isNotEmpty)
+          header('Recebem do HOME'),
+        for (final save in receivers) _tile(context, ref, save),
+        if (oneWay.isNotEmpty) ...[
+          if (receivers.isNotEmpty) const Divider(indent: 16, endIndent: 16),
+          header('Só enviam para o HOME'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              'Servem para caçar e para o OT. Não aparecem como destino: o '
+              'Pokémon que sai deles não volta.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          for (final save in oneWay) _tile(context, ref, save),
+        ],
+      ],
+    );
+  }
+
+  Widget _tile(BuildContext context, WidgetRef ref, Save save) => ListTile(
+    key: ValueKey('save-${save.id}'),
+    leading: SaveIcon(save),
+    title: Text(save.title),
+    subtitle: Text(
+      save.isOneWay
+          ? '${save.trainer.label}\nSó envia para o HOME'
+          : save.trainer.label,
+    ),
+    isThreeLine: save.isOneWay,
+    trailing: PopupMenuButton<_SaveAction>(
+      tooltip: 'Ações do save',
+      onSelected: (action) => switch (action) {
+        _SaveAction.rename => _rename(context, ref, save),
+        _SaveAction.delete => _delete(context, ref, save),
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: _SaveAction.rename, child: Text('Renomear')),
+        PopupMenuItem(value: _SaveAction.delete, child: Text('Remover')),
+      ],
+    ),
   );
 }
 
@@ -88,8 +141,7 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
     final taken = {for (final s in saves) s.trainer.id};
     eligible = [
       for (final t in trainers)
-        if (Save.transferVersions.contains(t.version) && !taken.contains(t.id))
-          t,
+        if (Save.homeVersions.contains(t.version) && !taken.contains(t.id)) t,
     ];
   } on AppFailure catch (failure) {
     if (context.mounted) _notify(context, failure.message);
@@ -119,7 +171,7 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
             ),
           if (eligible.isEmpty)
             const ListTile(
-              title: Text('Nenhum treinador de jogo que recebe do HOME.'),
+              title: Text('Nenhum treinador de jogo ligado ao HOME.'),
             ),
           ListTile(
             leading: const Icon(Icons.person_add_alt),

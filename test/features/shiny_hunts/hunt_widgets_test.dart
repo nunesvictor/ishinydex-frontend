@@ -62,6 +62,12 @@ void main() {
       version: 'sword',
     );
     await backend.createSave(trainerId: sword);
+    final frlg = backend.addTrainer(
+      name: 'Ash',
+      trainerId: '3',
+      version: 'firered',
+    );
+    await backend.createSave(trainerId: frlg);
   });
 
   Future<ShinyHunt> add(ShinyHunt hunt) => backend.saveShinyHunt(hunt);
@@ -240,6 +246,8 @@ void main() {
     await tap(tester, find.byKey(const ValueKey('field-hunt-save')));
     // Só os saves de jogos onde a forma pode ser caçada.
     expect(find.textContaining('Sword'), findsNothing);
+    // O save só de ida entra, com a etiqueta.
+    expect(find.text('FireRed · Ash (3) · só ida'), findsWidgets);
     await tap(tester, find.textContaining('Scarlet').last);
     // Encontro aleatório aceita a unidade padrão (encontros): ela fica.
     await tap(tester, find.byKey(const ValueKey('field-hunt-method')));
