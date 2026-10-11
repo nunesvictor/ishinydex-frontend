@@ -17,6 +17,8 @@ import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_grid.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_list_panel.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
@@ -579,7 +581,7 @@ void main() {
       expect(find.byType(BottomSheet), findsOneWidget);
       expect(find.text('HOME 2 · 19/28'), findsOneWidget);
       // A seleção sobreviveu ao pulo de página.
-      expect(find.text('HOME 2 · linha 2, coluna 4'), findsOneWidget);
+      expect(find.text('HOME 2 · L2 C4 · 10 de 28'), findsOneWidget);
     });
 
     testWidgets('compacto: a pílula fica embaixo e sobe para o topo com o '
@@ -1072,10 +1074,10 @@ void main() {
         // A forma atual não navega; as outras levam ao slot delas.
         await tester.tap(find.byKey(const ValueKey('species-form-1')));
         await tester.pumpAndSettle();
-        expect(find.text('HOME 1 · linha 1, coluna 1'), findsOneWidget);
+        expect(find.text('HOME 1 · L1 C1 · 1 de 30'), findsOneWidget);
         await tester.tap(find.byKey(const ValueKey('species-form-2')));
         await tester.pumpAndSettle();
-        expect(find.text('HOME 1 · linha 1, coluna 2'), findsOneWidget);
+        expect(find.text('HOME 1 · L1 C2 · 2 de 30'), findsOneWidget);
         // Outro slot: as abas voltam para o resumo.
         expect(find.text('Registrado'), findsOneWidget);
       });
@@ -1274,5 +1276,190 @@ void main() {
         expect(find.byType(BottomSheet), findsNothing);
       });
     }
+  });
+
+  group('navegação no painel do slot', () {
+    Finder balloon(String box) => find.descendant(
+      of: find.byType(BoxNoticeBalloon),
+      matching: find.text(box),
+    );
+    Future<void> swipe(WidgetTester tester, double dx) async {
+      await tester.fling(find.byType(SlotDetailPanel), Offset(dx, 0), 1000);
+      await tester.pumpAndSettle();
+    }
+
+    double balloonOpacity(WidgetTester tester) => tester
+        .widget<AnimatedOpacity>(
+          find.descendant(
+            of: find.byType(BoxNoticeBalloon),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+
+    testWidgets('setas, deslizar e a troca de box com o balão (expandido)', (
+      tester,
+    ) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await tester.tap(slot(1));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 1 · L1 C1 · 1 de 30'), findsOneWidget);
+      // O começo do dex: não há slot antes.
+      expect(
+        tester
+            .widget<IconButton>(
+              find.ancestor(
+                of: find.byTooltip('Slot anterior'),
+                matching: find.byType(IconButton),
+              ),
+            )
+            .onPressed,
+        isNull,
+      );
+      // Um gesto curto demais não conta.
+      await tester.drag(find.byType(SlotDetailPanel), const Offset(-20, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 1 · L1 C1 · 1 de 30'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Próximo slot'));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 1 · L1 C2 · 2 de 30'), findsOneWidget);
+      await swipe(tester, -300);
+      expect(find.text('HOME 1 · L1 C3 · 3 de 30'), findsOneWidget);
+      // A grade acompanha: o slot 3 fica selecionado.
+      expect(
+        tester
+            .widget<SlotTile>(
+              find.ancestor(of: slot(3), matching: find.byType(SlotTile)),
+            )
+            .selected,
+        isTrue,
+      );
+      await swipe(tester, 300);
+      expect(find.text('HOME 1 · L1 C2 · 2 de 30'), findsOneWidget);
+      expect(find.byType(BoxNoticeBalloon), findsNothing);
+
+      // Do último slot da box para o primeiro da seguinte, com o balão.
+      await tester.tap(slot(30));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 1 · L5 C6 · 30 de 30'), findsOneWidget);
+      await tester.tap(find.byTooltip('Próximo slot'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('HOME 2 · 19/28'), findsOneWidget);
+      expect(find.text('HOME 2 · L1 C1 · 1 de 28'), findsOneWidget);
+      expect(balloon('HOME 2'), findsOneWidget);
+      expect(balloonOpacity(tester), 1);
+      await tester.pump(BoxNoticeBalloon.visibleFor);
+      await tester.pumpAndSettle();
+      expect(balloonOpacity(tester), 0);
+
+      // E de volta: o balão aparece de novo, com a box anterior.
+      await tester.tap(find.byTooltip('Slot anterior'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('HOME 1 · L5 C6 · 30 de 30'), findsOneWidget);
+      expect(balloon('HOME 1'), findsOneWidget);
+      expect(balloonOpacity(tester), 1);
+      await tester.pump(BoxNoticeBalloon.visibleFor);
+      await tester.pumpAndSettle();
+
+      // Um toque na grade tira o balão.
+      await tester.tap(slot(29));
+      await tester.pumpAndSettle();
+      expect(find.byType(BoxNoticeBalloon), findsNothing);
+    });
+
+    testWidgets('fim do dex: não há próximo slot', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      final boxes = await tester.runAsync(
+        () => FakeBackend.seeded().fetchBoxes(1),
+      );
+      final last = boxes!.length - 1;
+      for (var i = 0; i < last; i++) {
+        await tester.tap(find.byTooltip('Próxima box'));
+        await tester.pumpAndSettle();
+      }
+      final slots = await tester.runAsync(
+        () => FakeBackend.seeded().fetchSlots(dexId: 1, boxId: boxes[last].id),
+      );
+      final lastSlot = navigableSlots(slots!, onlyMissing: false).last;
+      await tester.tap(slot(lastSlot.id));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<IconButton>(
+              find.ancestor(
+                of: find.byTooltip('Próximo slot'),
+                matching: find.byType(IconButton),
+              ),
+            )
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('com o filtro de faltantes, só os faltantes', (tester) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await tester.tap(find.byTooltip('Destacar faltantes'));
+      await tester.pumpAndSettle();
+      // Um registrado (apagado) ainda abre, e a navegação parte dele.
+      await tester.tap(slot(1));
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 1 · L1 C1 · 1 de 11'), findsOneWidget);
+      await tester.tap(find.byTooltip('Próximo slot'));
+      await tester.pumpAndSettle();
+      // Saindo do registrado, ele deixa a lista: só os 10 faltantes.
+      expect(find.text('HOME 1 · L1 C3 · 1 de 10'), findsOneWidget);
+      expect(find.text('Faltante'), findsOneWidget);
+    });
+
+    testWidgets('falha ao carregar a box vizinha mostra a mensagem', (
+      tester,
+    ) async {
+      final repository = _FlakyRepository(FakeBackend.seeded());
+      await pumpFullApp(
+        tester,
+        overrides: [
+          personalDexRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      await openShinyDex(tester);
+      await tester.tap(slot(30));
+      await tester.pumpAndSettle();
+      repository.slotFailures = 1;
+      await tester.tap(find.byTooltip('Próximo slot'));
+      await tester.pumpAndSettle();
+      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('HOME 1 · L5 C6 · 30 de 30'), findsOneWidget);
+    });
+
+    testWidgets('compacto: deslizar no bottom sheet troca a box da grade', (
+      tester,
+    ) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      await tester.tap(slot(29));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('HOME 1 · L5 C5 · 29 de 30'), findsOneWidget);
+      await swipe(tester, -300);
+      expect(find.text('HOME 1 · L5 C6 · 30 de 30'), findsOneWidget);
+      await swipe(tester, -300);
+      // O sheet continua aberto, já no slot da box seguinte.
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('HOME 2 · L1 C1 · 1 de 28'), findsOneWidget);
+      expect(balloon('HOME 2'), findsOneWidget);
+      await tester.pump(BoxNoticeBalloon.visibleFor);
+      await tester.pumpAndSettle();
+
+      // Atrás do sheet, a grade já está na HOME 2.
+      Navigator.of(tester.element(find.byType(SlotDetailPanel))).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('HOME 2 · 19/28'), findsOneWidget);
+    });
   });
 }
