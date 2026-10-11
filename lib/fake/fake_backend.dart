@@ -956,6 +956,9 @@ class FakeBackend
     String? pokeball,
     int? ot,
     DateTime? capturedAt,
+    String? observation,
+    DateTime? championsSince,
+    HuntRecord? hunt,
   }) {
     final id = _newId(_specimens.keys);
     final form = _forms[formId]!;
@@ -974,6 +977,9 @@ class FakeBackend
       pokeballSpriteUrl: _ballSprite(pokeball),
       ot: ot,
       capturedAt: capturedAt,
+      observation: observation,
+      championsSince: championsSince,
+      hunt: hunt,
     ).withOrigin(_originMarkOf, _otVersion(ot));
     return id;
   }

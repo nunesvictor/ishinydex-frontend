@@ -7,6 +7,7 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../../helpers/helpers.dart';
@@ -129,6 +130,35 @@ void main() {
     });
   }
 
+  for (final size in [compactSize, expandedSize]) {
+    testWidgets('campos, Champions e registro da caçada, como no inventário '
+        '(${size.width.toInt()}px)', (tester) async {
+      final ot = backend.addTrainer(
+        name: 'Ash',
+        trainerId: '1',
+        version: 'violet',
+      );
+      final id = backend.addSpecimen(
+        formId: 1,
+        isShiny: true,
+        ot: ot,
+        capturedAt: DateTime(2026, 10, 2),
+        observation: 'Do evento',
+        championsSince: DateTime(2026, 10, 5),
+        hunt: const HuntRecord(count: 12, unit: 'eggs'),
+      );
+      await pump(tester, slotWith(id), size: size);
+
+      expect(find.text('Treinador original'), findsOne);
+      expect(find.text('Data de captura'), findsOne);
+      expect(find.text('Do evento'), findsOne);
+      expect(find.text('Visitando o Champions'), findsOne);
+      expect(find.text('No HOME, visitando o Champions'), findsOne);
+      expect(find.text('Registro da caçada'), findsOne);
+      expect(find.text('12 ovos'), findsOne);
+    });
+  }
+
   testWidgets('sem gênero nem natureza: nada extra', (tester) async {
     final id = backend.addSpecimen(formId: 3, gender: 'genderless');
     await pump(tester, slotWith(id, formId: 3));
@@ -149,6 +179,7 @@ void main() {
     expect(find.text('Bulba'), findsOneWidget);
     expect(find.text('Editar espécime'), findsOneWidget);
     expect(find.byTooltip('Natureza'), findsNothing);
+    expect(find.text('Treinador original'), findsNothing);
   });
 
   group('caçada ativa da forma', () {
