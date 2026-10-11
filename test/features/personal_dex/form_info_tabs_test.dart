@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
@@ -283,6 +284,51 @@ void main() {
       expect(
         find.textContaining('não garante que dá para capturar'),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('na pokédex de: um jogo só fica no meio da largura de dois', (
+      tester,
+    ) async {
+      final form = FormDetail.fromJson(formDetailJson).copyWith(
+        pokedexes: const [
+          GamePokedex(
+            versionGroup: 'legends-arceus',
+            versions: ['legends-arceus'],
+            entries: [PokedexEntry(label: 'Hisui', number: 1)],
+          ),
+          GamePokedex(
+            versionGroup: 'scarlet-violet',
+            versions: ['scarlet', 'violet'],
+            entries: [PokedexEntry(label: 'Paldea', number: 316)],
+          ),
+        ],
+      );
+      await pumpWidgetApp(
+        tester,
+        Scaffold(
+          body: SingleChildScrollView(child: SpeciesInfo(form: form)),
+        ),
+        overrides: [savesProvider.overrideWith((ref) async => <Save>[])],
+      );
+      await tester.pumpAndSettle();
+
+      double centerX(Finder f) => tester.getCenter(f).dx;
+      final single = find.byWidgetPredicate(
+        (w) => w is GameIcon && w.version == 'legends-arceus',
+      );
+      final pair = [
+        for (final v in ['scarlet', 'violet'])
+          find.byWidgetPredicate((w) => w is GameIcon && w.version == v),
+      ];
+      // O ícone sozinho fica no centro do par, e os nomes seguem alinhados.
+      expect(
+        centerX(single),
+        moreOrLessEquals((centerX(pair[0]) + centerX(pair[1])) / 2),
+      );
+      expect(
+        tester.getTopLeft(find.text('Legends: Arceus')).dx,
+        tester.getTopLeft(find.text('Scarlet / Violet')).dx,
       );
     });
 
