@@ -238,10 +238,12 @@ class _Pokedexes extends ConsumerWidget {
               child: Row(
                 spacing: 12,
                 children: [
-                  // Largura de dois ícones: os nomes ficam alinhados.
+                  // Largura de dois ícones: os nomes ficam alinhados. Um jogo
+                  // só (Legends: Arceus, Z-A) fica no meio dessa largura.
                   SizedBox(
                     width: 47,
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       spacing: 3,
                       children: [
                         for (final version in game.versions) GameIcon(version),
