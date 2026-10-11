@@ -135,6 +135,25 @@ void main() {
       expect(backend.deleteSave(2), throwsA(isA<NotFoundFailure>()));
     });
 
+    test('save só de ida: vira save, mas nunca é destino', () async {
+      final ot = backend.addTrainer(
+        name: 'Red',
+        trainerId: '1996',
+        version: 'firered',
+      );
+      final save = await backend.createSave(trainerId: ot);
+      expect(save.isOneWay, isTrue);
+      final id = (await backend.fetchSlots(
+        dexId: 1,
+        boxId: 1,
+      )).first.specimen!.id;
+      final check = backend.transferCheck([id], save);
+      expect(check.allowed, isFalse);
+      expect(check.blocked.single.message, startsWith('Save só de ida'));
+      expect(backend.transfer([id], saveId: save.id), _validation('save'));
+      expect((await backend.fetchSpecimen(id)).location, isNull);
+    });
+
     test('transferir: tudo ou nada, data e contadores', () async {
       final slot = (await backend.fetchSlots(dexId: 1, boxId: 1)).first;
       final id = slot.specimen!.id;

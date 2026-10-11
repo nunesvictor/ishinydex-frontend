@@ -448,6 +448,20 @@ abstract class Save with _$Save {
     'legends-za',
   };
 
+  /// Jogos que só enviam Pokémon para o HOME (só de ida): o save serve
+  /// para caçar e para o OT, mas nunca é destino de transferência.
+  static const oneWayVersions = {'firered', 'leafgreen'};
+
+  /// Jogos cujos treinadores podem virar save: os que recebem do HOME e os
+  /// só de ida.
+  static const Set<String> homeVersions = {
+    ...transferVersions,
+    ...oneWayVersions,
+  };
+
+  /// Save de um jogo só de ida ([oneWayVersions]).
+  bool get isOneWay => oneWayVersions.contains(trainer.version);
+
   /// Jogos que só recebem Pokémon com uma marca de origem: o Let's Go só
   /// aceita de volta quem veio dele (ver [accepts]).
   static const requiredMarks = {
