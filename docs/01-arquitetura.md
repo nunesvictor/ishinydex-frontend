@@ -368,11 +368,15 @@ Pokémon num save, o espécime tem uma **localização**: `location` (um
   treinador original (nome, TID e versão) marcado como "meu", em
   **Ajustes → Meus saves**
   ([saves_page.dart](../lib/features/specimens/presentation/saves_page.dart)).
-  Só OTs de jogos que **recebem** do HOME servem (`Save.transferVersions`).
-  O OT continua sendo "de onde o Pokémon veio"; o save é "onde ele está".
-  FireRed/LeafGreen do Switch (HOME 4.1.0) são só ida: viram OT, com a
-  marca GBA, e jogo de caça (o catálogo traz as pokédex deles), mas não
-  save.
+  Servem OTs de jogos ligados ao HOME (`Save.homeVersions`). O OT continua
+  sendo "de onde o Pokémon veio"; o save é "onde ele está".
+- **Save só de ida** (`Save.isOneWay`, jogos em `Save.oneWayVersions`, hoje
+  o FireRed/LeafGreen do Switch): o jogo só envia para o HOME. O save
+  existe para a caçada (campo "Jogo", filtro "Jogo" das Caçadas e o OT do
+  "Encontrei!"), mas nunca é destino: fica fora da folha "Enviar para qual
+  save?" (com uma nota no pé), do filtro "Onde está" e numa seção própria
+  em Meus saves. O `transferCheck` do backend local recusa por garantia.
+  Só destinos ficam em `Save.transferVersions`.
 - **Fora do HOME, o espécime continua no slot**, que fica reservado para a
   volta (a API recusa depositar outro ali). Ele continua contando no
   progresso; as contagens trazem `away`, mostrado como "· 2 fora" na box,

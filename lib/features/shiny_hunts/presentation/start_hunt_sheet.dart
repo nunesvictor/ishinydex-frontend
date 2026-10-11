@@ -151,7 +151,10 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
                 value: _hunt.save?.toString(),
                 choices: [
                   for (final s in saves)
-                    Choice(value: '${s.id}', label: s.title),
+                    Choice(
+                      value: '${s.id}',
+                      label: s.isOneWay ? '${s.title} · só ida' : s.title,
+                    ),
                 ],
                 onChanged: (v) => setState(
                   () => _hunt = _hunt.copyWith(save: int.tryParse(v ?? '')),

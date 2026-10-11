@@ -65,6 +65,11 @@ void main() {
     expect(daysSince(DateTime(2026, 9, 30)), greaterThan(0));
     expect(locationLabel('99', const [_save]), 'Em save #99');
     expect(locationLabel('1', const [_save]), 'Em Scarlet · Switch');
+    expect(_save.isOneWay, isFalse);
+    final frlg = _save.copyWith(
+      trainer: _save.trainer.copyWith(version: 'leafgreen'),
+    );
+    expect(frlg.isOneWay, isTrue);
   });
 
   test('AwayPage.group: por save, o que saiu há mais tempo primeiro', () {
@@ -167,6 +172,145 @@ void main() {
     expect(find.textContaining('Nenhum save cadastrado.'), findsOneWidget);
   });
 
+  group('save só de ida', () {
+    /// O seed com um save do FireRed (só de ida).
+    Future<FakeBackend> withFireRed(
+      WidgetTester tester, {
+      FakeBackend? backend,
+      Size size = compactSize,
+    }) async {
+      final fake = backend ?? FakeBackend.seeded();
+      fake.addSave(
+        trainerId: fake.addTrainer(
+          name: 'Red',
+          trainerId: '1996',
+          version: 'firered',
+        ),
+      );
+      return await pumpFullApp(tester, size: size, backend: fake);
+    }
+
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('Meus saves: numa seção própria (${size.width.toInt()}px)', (
+        tester,
+      ) async {
+        await withFireRed(tester, size: size);
+        await _go(tester, Routes.saves);
+        expect(find.text('Recebem do HOME'), findsOneWidget);
+        expect(find.text('Só enviam para o HOME'), findsOneWidget);
+        expect(
+          find.text('Red (1996) · FireRed\nSó envia para o HOME'),
+          findsOneWidget,
+        );
+        double top(String text) => tester.getTopLeft(find.text(text)).dy;
+        expect(top('Scarlet · Switch'), lessThan(top('Só enviam para o HOME')));
+        expect(
+          top('Só enviam para o HOME'),
+          lessThan(top('FireRed · Red (1996)')),
+        );
+      });
+    }
+
+    testWidgets('Meus saves: só os de ida, sem a seção dos que recebem', (
+      tester,
+    ) async {
+      final fake = FakeBackend()..addForm(id: 1, name: 'bulbasaur');
+      await withFireRed(tester, backend: fake);
+      await _go(tester, Routes.saves);
+      expect(find.text('Recebem do HOME'), findsNothing);
+      expect(find.text('Só enviam para o HOME'), findsOneWidget);
+      expect(find.byType(Divider), findsNothing);
+    });
+
+    testWidgets('adicionar: um treinador do FireRed pode virar save', (
+      tester,
+    ) async {
+      final fake = FakeBackend.seeded()
+        ..addTrainer(name: 'Red', trainerId: '1996', version: 'firered');
+      await pumpFullApp(tester, size: compactSize, backend: fake);
+      await _go(tester, Routes.saves);
+      await _tap(tester, find.text('Adicionar save'));
+      await _tap(tester, find.text('Red (1996) · FireRed'));
+      expect(find.text('FireRed · Red (1996) adicionado.'), findsOneWidget);
+      expect(find.text('Só enviam para o HOME'), findsOneWidget);
+    });
+
+    testWidgets('destino: não aparece, com a nota no pé', (tester) async {
+      await withFireRed(tester, size: expandedSize);
+      await _go(tester, Routes.dex(1, boxId: 1, slotId: 1));
+      await tapMoreAction(tester, 'Enviar para jogo…');
+      expect(find.text('Enviar para qual save?'), findsOneWidget);
+      expect(find.text('Scarlet · Switch'), findsWidgets);
+      expect(find.text('FireRed · Red (1996)'), findsNothing);
+      expect(
+        find.text(
+          'FireRed não aparece: é um save só de ida, de onde o Pokémon só '
+          'vai para o HOME.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('destino: com dois só de ida, a nota lista os dois', (
+      tester,
+    ) async {
+      final fake = FakeBackend.seeded();
+      fake.addSave(
+        trainerId: fake.addTrainer(
+          name: 'Leaf',
+          trainerId: '2004',
+          version: 'leafgreen',
+        ),
+      );
+      await withFireRed(tester, backend: fake, size: expandedSize);
+      await _go(tester, Routes.dex(1, boxId: 1, slotId: 1));
+      await tapMoreAction(tester, 'Enviar para jogo…');
+      expect(
+        find.text(
+          'LeafGreen e FireRed não aparecem: são saves só de ida, de onde o '
+          'Pokémon só vai para o HOME.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('destino: só saves de ida explica que nenhum recebe', (
+      tester,
+    ) async {
+      final fake = FakeBackend()..addForm(id: 1, name: 'bulbasaur');
+      final dex = fake.addDex(name: 'Dex');
+      fake.addBox(dexId: dex, name: 'HOME 1', formIds: [1]);
+      final id = fake.addSpecimen(formId: 1);
+      await withFireRed(tester, backend: fake);
+      await _go(tester, Routes.specimen(id));
+      await tapMoreAction(tester, 'Enviar para jogo…');
+      expect(find.text('Nenhum save que recebe do HOME'), findsOneWidget);
+      await _tap(tester, find.text('Agora não'));
+    });
+
+    testWidgets('filtro "Onde está": sem o save só de ida', (tester) async {
+      await withFireRed(tester);
+      await _go(tester, Routes.specimens);
+      await _tap(tester, find.byTooltip('Filtros'));
+      final scarlet = find.widgetWithText(ChoiceChip, 'Scarlet · Switch');
+      await tester.scrollUntilVisible(
+        scarlet,
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(SpecimenFiltersPanel),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(scarlet, findsOneWidget);
+      expect(
+        find.widgetWithText(ChoiceChip, 'FireRed · Red (1996)'),
+        findsNothing,
+      );
+    });
+  });
+
   group('Meus saves', () {
     Finder field(String label) => find.widgetWithText(TextField, label);
 
@@ -217,7 +361,7 @@ void main() {
       await _dismissSnackBar(tester);
       await _tap(tester, find.text('Adicionar save'));
       expect(
-        find.text('Nenhum treinador de jogo que recebe do HOME.'),
+        find.text('Nenhum treinador de jogo ligado ao HOME.'),
         findsOneWidget,
       );
       await _tap(tester, find.text('Novo treinador…'));

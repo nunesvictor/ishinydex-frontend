@@ -68,8 +68,9 @@ void _notify(BuildContext context, String message) =>
       ..showSnackBar(SnackBar(content: Text(message)));
 
 /// Escolhe o save de destino dos [ids], com a checagem de quem pode ir
-/// ([TransferCheck]). Sem nenhum save cadastrado, explica e oferece abrir
-/// Ajustes → Meus saves. `null` = desistiu. Um save em que nenhum dos
+/// ([TransferCheck]). Os saves só de ida ([Save.isOneWay]) não são destino:
+/// ficam de fora, com uma nota no pé. Sem nenhum save que receba, explica e
+/// oferece abrir Ajustes → Meus saves. `null` = desistiu. Um save em que nenhum dos
 /// espécimes pode entrar fica desabilitado; os outros dizem quantos ficam,
 /// os avisos e quantos estão fora da pokédex do jogo.
 Future<({Save save, TransferCheck check})?> pickSave(
@@ -77,19 +78,31 @@ Future<({Save save, TransferCheck check})?> pickSave(
   WidgetRef ref,
   List<int> ids,
 ) async {
-  final List<Save> saves;
+  final List<Save> all;
   try {
-    saves = await ref.read(savesProvider.future);
+    all = await ref.read(savesProvider.future);
   } on AppFailure catch (failure) {
     if (context.mounted) _notify(context, failure.message);
     return null;
   }
   if (!context.mounted) return null;
+  final saves = [
+    for (final s in all)
+      if (!s.isOneWay) s,
+  ];
+  final oneWay = [
+    for (final s in all)
+      if (s.isOneWay) s.game,
+  ];
   if (saves.isEmpty) {
     final open = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nenhum save cadastrado'),
+        title: Text(
+          oneWay.isEmpty
+              ? 'Nenhum save cadastrado'
+              : 'Nenhum save que recebe do HOME',
+        ),
         content: const Text(
           'Cadastre seus saves (os jogos para onde você envia Pokémon) em '
           'Ajustes → Meus saves.',
@@ -124,8 +137,42 @@ Future<({Save save, TransferCheck check})?> pickSave(
             ),
           ),
           for (final save in saves) _saveOption(context, ref, save, ids),
+          if (oneWay.isNotEmpty) _oneWayNote(context, oneWay),
         ],
       ),
+    ),
+  );
+}
+
+/// O pé da escolha do destino: por que os saves só de ida não aparecem.
+Widget _oneWayNote(BuildContext context, List<String> games) {
+  final theme = Theme.of(context);
+  final names = {...games}.toList();
+  final list = names.length == 1
+      ? names.single
+      : '${names.sublist(0, names.length - 1).join(', ')} e ${names.last}';
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        Expanded(
+          child: Text(
+            '$list não ${names.length == 1 ? 'aparece' : 'aparecem'}: '
+            '${names.length == 1 ? 'é um save' : 'são saves'} só de ida, de '
+            'onde o Pokémon só vai para o HOME.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }

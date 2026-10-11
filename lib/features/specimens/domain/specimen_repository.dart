@@ -63,8 +63,8 @@ abstract interface class SpecimenRepository {
   /// Saves do usuário.
   Future<List<Save>> fetchSaves();
 
-  /// Torna o treinador [trainerId] um save. Só treinadores de jogos que
-  /// recebem do HOME ([Save.transferVersions]).
+  /// Torna o treinador [trainerId] um save. Só treinadores de jogos ligados
+  /// ao HOME ([Save.homeVersions]): os que recebem e os só de ida.
   Future<Save> createSave({required int trainerId, String label = ''});
 
   Future<Save> updateSave(int saveId, {required String label});

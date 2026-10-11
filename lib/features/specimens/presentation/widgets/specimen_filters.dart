@@ -230,7 +230,9 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                     ('', 'Qualquer lugar'),
                     (SpecimenQuery.locationHome, 'No HOME'),
                     (SpecimenQuery.locationAway, 'Fora do HOME'),
-                    for (final save in saves) ('${save.id}', save.title),
+                    // Um save só de ida nunca guarda espécimes.
+                    for (final save in saves)
+                      if (!save.isOneWay) ('${save.id}', save.title),
                   ])
                     ChoiceChip(
                       label: Text(label),

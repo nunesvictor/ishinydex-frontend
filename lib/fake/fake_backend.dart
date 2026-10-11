@@ -1863,7 +1863,7 @@ class FakeBackend
     return [..._saves.values];
   }
 
-  /// Como `POST /saves/`: só OT de jogo que recebe do HOME, e uma vez.
+  /// Como `POST /saves/`: só OT de jogo ligado ao HOME (inclusive os só de ida), e uma vez.
   @override
   Future<Save> createSave({required int trainerId, String label = ''}) async {
     await _delay();
@@ -1871,10 +1871,8 @@ class FakeBackend
     String? error;
     if (trainer == null) {
       error = 'Treinador inexistente.';
-    } else if (!Save.transferVersions.contains(trainer.version)) {
-      error =
-          'só treinadores de jogos que recebem Pokémon do HOME podem ser '
-          'saves.';
+    } else if (!Save.homeVersions.contains(trainer.version)) {
+      error = 'só treinadores de jogos ligados ao HOME podem ser saves.';
     } else if (_saves.values.any((s) => s.trainer.id == trainerId)) {
       error = 'este treinador já é um save.';
     }
@@ -1928,7 +1926,9 @@ class FakeBackend
     var outside = 0;
     for (final s in [for (final id in ids.toSet()) ?_specimens[id]]) {
       final name = _forms[s.form]?.name ?? '';
-      final block = s.isVisitingChampions
+      final block = save.isOneWay
+          ? 'Save só de ida: dele o Pokémon só vai para o HOME'
+          : s.isVisitingChampions
           ? 'Está visitando o Champions'
           : save.accepts(s.originMark, s.originVersion)
           ? transferBlock(name, s.originMark, version)
