@@ -85,12 +85,12 @@ void main() {
     ) async {
       await _openHunts(tester, size: size);
 
-      // Colorido: save seu; cinza: jogo sem save seu; exclusivos só na
-      // versão deles (Espeon: Scarlet; Vaporeon: Violet, sem save).
+      // Só os jogos dos seus saves (#202); exclusivos só na versão deles
+      // (Espeon: Scarlet; Vaporeon: Violet, sem save seu).
       expect(_icons(tester, 'Espeon'), ['scarlet']);
-      expect(_icons(tester, 'Vaporeon'), ['~sword', '~shield', '~violet']);
+      expect(_icons(tester, 'Vaporeon'), isEmpty);
       // Eevee: shiny lock em Scarlet (o catálogo de teste), sem o ícone.
-      expect(_icons(tester, 'Eevee'), ['~sword', '~shield', '~violet']);
+      expect(_icons(tester, 'Eevee'), isEmpty);
       expect(_icons(tester, 'Nihilego'), isEmpty);
 
       await _toggleGames(tester, 'Jogo', ['Scarlet']);
@@ -207,7 +207,7 @@ void main() {
     expect(find.byType(GameIcon), findsNothing);
   });
 
-  testWidgets('até 3 ícones sobrepostos: os seus primeiro, o resto vira "+N"', (
+  testWidgets('até 3 ícones sobrepostos, só dos seus saves; "+N" dos seus', (
     tester,
   ) async {
     await pumpWidgetApp(
@@ -218,11 +218,11 @@ void main() {
             'sword',
             'shield',
             'brilliant-diamond',
-            'shining-pearl',
             'legends-arceus',
             'scarlet',
+            'violet',
           ],
-          owned: {'scarlet'},
+          owned: {'sword', 'brilliant-diamond', 'scarlet', 'violet'},
         ),
       ),
     );
@@ -230,47 +230,41 @@ void main() {
     final icons = tester.widgetList<GameIcon>(find.byType(GameIcon));
     expect(
       [for (final i in icons) '${i.muted ? '~' : ''}${i.version}'],
-      ['scarlet', '~sword', '~shield'],
+      ['sword', 'brilliant-diamond', 'scarlet'],
     );
     // Cada um anda 14 px: os 8 px restantes ficam por baixo do seguinte.
     final lefts = [
       for (final i in icons) tester.getTopLeft(find.byWidget(i)).dx,
     ];
     expect([lefts[1] - lefts[0], lefts[2] - lefts[1]], [14, 14]);
-    expect(find.text('+3'), findsOneWidget);
-    expect(find.bySemanticsLabel('mais 3 jogos'), findsOneWidget);
+    // Shield e Legends: Arceus (sem save) não contam.
+    expect(find.text('+1'), findsOneWidget);
+    expect(find.bySemanticsLabel('mais 1 jogo'), findsOneWidget);
   });
 
-  testWidgets('mais de 3 saves seus: o "+N" conta os seus também', (
-    tester,
-  ) async {
+  testWidgets('até 3 saves seus: todos aparecem, sem "+N"', (tester) async {
     await pumpWidgetApp(
       tester,
       const Scaffold(
         body: HuntGames(
-          versions: ['sword', 'shield', 'scarlet', 'violet', 'legends-za'],
-          owned: {'sword', 'shield', 'scarlet', 'violet'},
+          versions: ['sword', 'shield', 'scarlet', 'violet'],
+          owned: {'scarlet', 'violet'},
         ),
-      ),
-    );
-
-    final icons = tester.widgetList<GameIcon>(find.byType(GameIcon));
-    expect(
-      [for (final i in icons) '${i.muted ? '~' : ''}${i.version}'],
-      ['sword', 'shield', 'scarlet'],
-    );
-    expect(find.text('+2'), findsOneWidget);
-  });
-
-  testWidgets('até 3 jogos: todos aparecem, sem "+N"', (tester) async {
-    await pumpWidgetApp(
-      tester,
-      const Scaffold(
-        body: HuntGames(versions: ['scarlet', 'violet'], owned: {}),
       ),
     );
 
     expect(find.byType(GameIcon), findsNWidgets(2));
     expect(find.textContaining('+'), findsNothing);
+  });
+
+  testWidgets('nenhum save seu serve: sem ícones', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const Scaffold(
+        body: HuntGames(versions: ['scarlet', 'violet'], owned: {'sword'}),
+      ),
+    );
+
+    expect(find.byType(GameIcon), findsNothing);
   });
 }

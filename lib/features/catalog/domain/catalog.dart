@@ -66,9 +66,18 @@ class Catalog {
           receives: v['receivesFromHome'] as bool,
         ),
     ];
+    // A ordem da série: o grupo (geração e lançamento) e, dentro dele, a
+    // ordem do par no grupo (Sun antes de Moon), não a alfabética.
     final groupOrder = {for (final g in groups) g.name: g.order};
+    int inGroup(({String name, String group, bool receives}) v) =>
+        groupByName[v.group]?.versions.indexOf(v.name) ?? 0;
     versionList.sort(
-      (a, b) => (groupOrder[a.group] ?? 0).compareTo(groupOrder[b.group] ?? 0),
+      (a, b) => switch ((groupOrder[a.group] ?? 0).compareTo(
+        groupOrder[b.group] ?? 0,
+      )) {
+        0 => inGroup(a).compareTo(inGroup(b)),
+        final c => c,
+      },
     );
 
     List<Choice> choices(String key) => [
@@ -431,12 +440,19 @@ class Catalog {
     }
     final groups = entries.keys.toList()
       ..sort((a, b) => (_groupOrder[a] ?? 0).compareTo(_groupOrder[b] ?? 0));
+    final exclusive = _exclusives[formId] ?? const <String>{};
+    List<String> exclusiveTo(List<String> versions) {
+      final only = [...versions.where(exclusive.contains)];
+      return only.length < versions.length ? only : const [];
+    }
+
     return [
       for (final group in groups)
         GamePokedex(
           versionGroup: group,
           versions: _homeVersions[group] ?? const [],
           entries: entries[group]!,
+          exclusiveTo: exclusiveTo(_homeVersions[group] ?? const []),
         ),
     ];
   }
@@ -481,6 +497,17 @@ class Catalog {
     ];
     return !pair.any(exclusive.contains) || exclusive.contains(version);
   }
+
+  late final Map<String, int> _versionIndex = {
+    for (final (i, v) in versions.indexed) v.name: i,
+  };
+
+  /// Compara duas versões na ordem da série: geração, lançamento e a ordem
+  /// do par (Sun antes de Moon). Versões fora do catálogo vão para o fim.
+  int compareVersions(String a, String b) =>
+      (_versionIndex[a] ?? versions.length).compareTo(
+        _versionIndex[b] ?? versions.length,
+      );
 
   /// Versões em que a forma não pode ser shiny (Solgaleo em Scarlet).
   Set<String> lockedVersions(int formId) =>

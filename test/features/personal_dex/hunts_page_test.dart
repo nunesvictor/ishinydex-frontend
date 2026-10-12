@@ -237,6 +237,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
     expect(find.text('1 para caçar'), findsOneWidget);
+
+    // Enter: busca na hora, sem esperar (#202).
+    await tester.enterText(find.byType(TextField), '');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('19 para caçar'), findsOneWidget);
   });
 
   testWidgets('shiny lock com cadeado; dex normal sem "Caçadas"', (

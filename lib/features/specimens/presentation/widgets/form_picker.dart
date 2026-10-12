@@ -55,6 +55,12 @@ class _FormPickerState extends ConsumerState<FormPicker> {
     );
   }
 
+  /// Enter: busca na hora, sem esperar o debounce.
+  void _onSubmitted(String text) {
+    _debounce?.cancel();
+    setState(() => _search = text.trim());
+  }
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -69,6 +75,7 @@ class _FormPickerState extends ConsumerState<FormPicker> {
                 autofocus: true,
                 hintText: 'Buscar forma pelo nome',
                 onChanged: _onChanged,
+                onSubmitted: _onSubmitted,
               ),
             ),
           ],

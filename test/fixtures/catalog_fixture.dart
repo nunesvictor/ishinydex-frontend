@@ -239,15 +239,17 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
     },
     {'name': 'x', 'versionGroup': 'x-y', 'receivesFromHome': false},
     {'name': 'y', 'versionGroup': 'x-y', 'receivesFromHome': false},
-    {'name': 'sun', 'versionGroup': 'sun-moon', 'receivesFromHome': false},
+    // Como no catálogo exportado: dentro do grupo, em ordem alfabética (o
+    // app reordena pelo par: Sun antes de Moon).
     {'name': 'moon', 'versionGroup': 'sun-moon', 'receivesFromHome': false},
+    {'name': 'sun', 'versionGroup': 'sun-moon', 'receivesFromHome': false},
     {'name': 'emerald', 'versionGroup': 'emerald', 'receivesFromHome': false},
-    {'name': 'sword', 'versionGroup': 'sword-shield', 'receivesFromHome': true},
     {
       'name': 'shield',
       'versionGroup': 'sword-shield',
       'receivesFromHome': true,
     },
+    {'name': 'sword', 'versionGroup': 'sword-shield', 'receivesFromHome': true},
     {
       'name': 'brilliant-diamond',
       'versionGroup': 'brilliant-diamond-shining-pearl',

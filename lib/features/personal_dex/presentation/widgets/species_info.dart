@@ -214,8 +214,12 @@ class _Pokedexes extends ConsumerWidget {
       for (final save in ref.watch(savesProvider).value ?? const <Save>[])
         ?save.trainer.version,
     };
+    // Os saves do usuário em que a forma aparece: num exclusivo (o
+    // Koraidon só no Scarlet), o save da outra versão não conta.
     List<String> mine(GamePokedex game) => [
-      ...game.versions.where(owned.contains),
+      ...(game.exclusiveTo.isEmpty ? game.versions : game.exclusiveTo).where(
+        owned.contains,
+      ),
     ];
     final ordered = [
       ...games.where((g) => mine(g).isNotEmpty),
@@ -255,9 +259,37 @@ class _Pokedexes extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: 2,
                       children: [
-                        Text(
-                          game.versions.map(versionLabel).join(' / '),
-                          style: theme.textTheme.bodyLarge,
+                        Wrap(
+                          spacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              game.versions.map(versionLabel).join(' / '),
+                              style: theme.textTheme.bodyLarge,
+                            ),
+                            // "exclusivo Scarlet", como a comunidade diz
+                            // ("Scarlet exclusive"); cor neutra do tema.
+                            for (final version in game.exclusiveTo)
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color:
+                                      theme.colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 1,
+                                  ),
+                                  child: Text(
+                                    'exclusivo ${versionLabel(version)}',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         if (mine(game) case final versions
                             when versions.isNotEmpty)

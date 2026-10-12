@@ -287,6 +287,47 @@ void main() {
       );
     });
 
+    testWidgets('na pokédex de: exclusivo da versão (#202)', (tester) async {
+      Save save(int id, String version) => Save(
+        id: id,
+        trainer: Trainer(
+          id: id,
+          name: 'Ash',
+          trainerId: '$id',
+          version: version,
+        ),
+      );
+      final form = FormDetail.fromJson(formDetailJson).copyWith(
+        pokedexes: const [
+          GamePokedex(
+            versionGroup: 'scarlet-violet',
+            versions: ['scarlet', 'violet'],
+            entries: [PokedexEntry(label: 'Paldea', number: 398)],
+            exclusiveTo: ['scarlet'],
+          ),
+        ],
+      );
+      Future<void> pumpWith(List<Save> saves) async {
+        await pumpWidgetApp(
+          tester,
+          Scaffold(
+            body: SingleChildScrollView(child: SpeciesInfo(form: form)),
+          ),
+          overrides: [savesProvider.overrideWith((ref) async => saves)],
+        );
+        await tester.pumpAndSettle();
+      }
+
+      // Save só da outra versão: a etiqueta, sem o destaque do save.
+      await pumpWith([save(1, 'violet')]);
+      expect(find.text('exclusivo Scarlet'), findsOneWidget);
+      expect(find.textContaining('Seu'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await pumpWith([save(1, 'violet'), save(2, 'scarlet')]);
+      expect(find.text('Seu: Scarlet'), findsOneWidget);
+    });
+
     testWidgets('na pokédex de: um jogo só fica no meio da largura de dois', (
       tester,
     ) async {

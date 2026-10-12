@@ -132,6 +132,17 @@ void main() {
       await search(tester, 'zzz');
       expect(find.text('Nenhum espécime encontrado.'), findsOneWidget);
 
+      // Enter: busca na hora, sem esperar o debounce (#202).
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Apelido, forma ou nº da dex'),
+        'pidgeotto',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Nenhum espécime encontrado.'), findsNothing);
+      await search(tester, 'zzz');
+
       // O "x" apaga o texto e volta à lista completa na hora.
       await tester.tap(find.byTooltip('Limpar busca'));
       await tester.pumpAndSettle();
@@ -229,8 +240,12 @@ void main() {
       await tester.tap(find.text('Novo espécime'));
       await tester.pumpAndSettle();
       expect(find.text('Digite ao menos 2 letras do nome.'), findsOneWidget);
+      // Enter: busca na hora, sem esperar o debounce (#202).
       await tester.enterText(find.byType(TextField).last, 'pidgey');
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Pidgey'), findsWidgets);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Pidgey').last);
       await tester.pumpAndSettle();

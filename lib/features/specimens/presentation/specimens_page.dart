@@ -101,6 +101,12 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     );
   }
 
+  /// Enter: busca na hora, sem esperar o debounce.
+  void _submitSearch(String text) {
+    _debounce?.cancel();
+    _setQuery(_query.copyWith(search: text.trim()));
+  }
+
   /// O "x" do campo: apaga o texto e busca na hora, sem esperar o debounce.
   void _clearSearch() {
     _debounce?.cancel();
@@ -117,6 +123,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
           query: _query,
           searchController: _search,
           onSearchChanged: _onSearchChanged,
+          onSearchSubmitted: _submitSearch,
           onSearchCleared: _clearSearch,
           onChanged: _setQuery,
           selectedCount: _checked.length,
@@ -422,6 +429,7 @@ class _Filters extends StatelessWidget {
     required this.query,
     required this.searchController,
     required this.onSearchChanged,
+    required this.onSearchSubmitted,
     required this.onSearchCleared,
     required this.onChanged,
     required this.selectedCount,
@@ -432,6 +440,7 @@ class _Filters extends StatelessWidget {
   final SpecimenQuery query;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onSearchSubmitted;
   final VoidCallback onSearchCleared;
   final ValueChanged<SpecimenQuery> onChanged;
 
@@ -510,6 +519,7 @@ class _Filters extends StatelessWidget {
                   controller: searchController,
                   hintText: 'Apelido, forma ou nº da dex',
                   onChanged: onSearchChanged,
+                  onSubmitted: onSearchSubmitted,
                   onCleared: onSearchCleared,
                 ),
               ),

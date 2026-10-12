@@ -9,6 +9,7 @@ class SearchField extends StatefulWidget {
     required this.hintText,
     this.onChanged,
     this.onCleared,
+    this.onSubmitted,
     this.controller,
     this.focusNode,
     this.autofocus = false,
@@ -21,6 +22,10 @@ class SearchField extends StatefulWidget {
 
   /// Depois de limpar o campo; sem ele, avisa [onChanged] com `''`.
   final VoidCallback? onCleared;
+
+  /// O Enter (a tecla "Buscar" do teclado). Nas buscas com debounce, quem
+  /// usa cancela a espera e busca na hora.
+  final ValueChanged<String>? onSubmitted;
 
   /// Sem ele, o campo cria e descarta o seu.
   final TextEditingController? controller;
@@ -91,6 +96,7 @@ class _SearchFieldState extends State<SearchField> {
           focusedBorder: pill(BorderSide(color: scheme.primary, width: 2)),
         ),
         onChanged: widget.onChanged,
+        onSubmitted: widget.onSubmitted,
       ),
     );
   }
