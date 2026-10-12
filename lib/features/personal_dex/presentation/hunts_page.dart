@@ -70,6 +70,12 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
     );
   }
 
+  /// Enter: busca na hora, sem esperar o debounce.
+  void _submitSearch(String text) {
+    _debounce?.cancel();
+    _setQuery(_query.copyWith(search: text.trim()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
@@ -125,6 +131,7 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
       dexId: widget.dexId,
       query: _query,
       onSearchChanged: _onSearchChanged,
+      onSearchSubmitted: _submitSearch,
       onChanged: _setQuery,
     ),
     Expanded(
@@ -152,12 +159,14 @@ class _Filters extends ConsumerWidget {
     required this.dexId,
     required this.query,
     required this.onSearchChanged,
+    required this.onSearchSubmitted,
     required this.onChanged,
   });
 
   final int dexId;
   final HuntQuery query;
   final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onSearchSubmitted;
   final ValueChanged<HuntQuery> onChanged;
 
   bool _isOn(HuntReason reason) => query.reasons.contains(reason);
@@ -213,12 +222,17 @@ class _Filters extends ConsumerWidget {
     final saves = ref.watch(knowsGamesProvider)
         ? ref.watch(savesProvider).value ?? const <Save>[]
         : const <Save>[];
-    final savesOf = <String, List<Save>>{};
-    for (final save in saves) {
-      if (save.trainer.version case final version?) {
-        (savesOf[version] ??= []).add(save);
-      }
-    }
+    // Na ordem da série (geração, lançamento, par), não na de cadastro.
+    final order = ref.watch(versionOrderProvider);
+    final versions = {for (final save in saves) ?save.trainer.version}.toList()
+      ..sort(order);
+    final savesOf = {
+      for (final version in versions)
+        version: [
+          for (final save in saves)
+            if (save.trainer.version == version) save,
+        ],
+    };
     final games = query.versions;
     final chips = <Widget>[
       MenuChip(
@@ -349,6 +363,7 @@ class _Filters extends ConsumerWidget {
                 child: SearchField(
                   hintText: 'Nome ou número',
                   onChanged: onSearchChanged,
+                  onSubmitted: onSearchSubmitted,
                 ),
               ),
               IconButton(
@@ -662,11 +677,11 @@ class HuntTile extends ConsumerWidget {
   }
 }
 
-/// Onde caçar, em até [max] ícones de jogo sobrepostos: os saves do usuário
-/// em que dá (coloridos) e depois os jogos em que ele não tem save (cinza); o
-/// resto vira "+N". Sobrepostos, os ícones ocupam pouca largura e o subtítulo
-/// do item continua legível no celular (#188). Sem ícone: fora das pokédex
-/// dos jogos do HOME.
+/// Onde caçar, em até [max] ícones de jogo sobrepostos: só os jogos em que o
+/// usuário tem save; o resto deles vira "+N". Os outros jogos ficam no "Na
+/// pokédex de" do detalhe da espécie (#202). Sobrepostos, os ícones ocupam
+/// pouca largura e o subtítulo do item continua legível no celular (#188).
+/// Sem ícone: nenhum save serve para caçar a forma.
 class HuntGames extends StatelessWidget {
   const HuntGames({
     required this.versions,
@@ -689,13 +704,10 @@ class HuntGames extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shown = [
-      for (final v in versions)
-        if (owned.contains(v)) (version: v, muted: false),
-      for (final v in versions)
-        if (!owned.contains(v)) (version: v, muted: true),
-    ].take(max).toList();
-    final rest = versions.length - shown.length;
+    final mine = [...versions.where(owned.contains)];
+    if (mine.isEmpty) return const SizedBox.shrink();
+    final shown = mine.take(max).toList();
+    final rest = mine.length - shown.length;
     final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -708,7 +720,7 @@ class HuntGames extends StatelessWidget {
           // anterior, separado dele por um contorno da cor do fundo.
           child: Stack(
             children: [
-              for (final (i, game) in shown.indexed)
+              for (final (i, version) in shown.indexed)
                 Positioned(
                   left: _step * i,
                   child: DecoratedBox(
@@ -720,7 +732,7 @@ class HuntGames extends StatelessWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
-                      child: GameIcon(game.version, muted: game.muted),
+                      child: GameIcon(version),
                     ),
                   ),
                 ),
@@ -730,7 +742,7 @@ class HuntGames extends StatelessWidget {
         if (rest > 0)
           Text(
             '+$rest',
-            semanticsLabel: 'mais $rest jogos',
+            semanticsLabel: 'mais $rest ${rest == 1 ? 'jogo' : 'jogos'}',
             style: Theme.of(context).textTheme.labelMedium
                 ?.copyWith(color: colors.outline),
           ),

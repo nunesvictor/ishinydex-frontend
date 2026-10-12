@@ -159,6 +159,21 @@ void main() {
         catalog.formDetail(196).pokedexes.single.versionGroup,
         'scarlet-violet',
       );
+      // Exclusivo de versão: a versão em que a forma aparece (#202).
+      expect(catalog.formDetail(196).pokedexes.single.exclusiveTo, ['scarlet']);
+      expect(catalog.pokedexesOf(133).first.exclusiveTo, isEmpty);
+    });
+
+    test('versões na ordem da série, com o par na ordem do grupo', () {
+      final names = [for (final v in catalog.versions) v.name];
+      expect(names.indexOf('sun'), lessThan(names.indexOf('moon')));
+      expect(names.indexOf('sword'), lessThan(names.indexOf('shield')));
+      expect(names.indexOf('moon'), lessThan(names.indexOf('sword')));
+      expect(
+        ['violet', 'shield', 'nenhum', 'sword', 'sun']
+          ..sort(catalog.compareVersions),
+        ['sun', 'sword', 'shield', 'violet', 'nenhum'],
+      );
     });
 
     test('forma lançada depois do jogo fica de fora; a de DLC, não', () {

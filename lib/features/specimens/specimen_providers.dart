@@ -108,6 +108,13 @@ final huntableInProvider = Provider<bool Function(int formId, String? version)>(
   },
 );
 
+/// Compara versões na ordem da série (`Catalog.compareVersions`); sem o
+/// catálogo, mantém a ordem recebida.
+final versionOrderProvider = Provider<int Function(String a, String b)>((ref) {
+  final catalog = ref.watch(fakeBackendProvider).catalog;
+  return catalog?.compareVersions ?? (_, _) => 0;
+});
+
 /// Quem dos espécimes pode ir para o save, quem fica e os avisos
 /// (`FakeBackend.transferCheck`).
 final transferCheckProvider =

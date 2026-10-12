@@ -330,6 +330,10 @@ abstract class GamePokedex with _$GamePokedex {
     /// As versões do jogo que recebem do HOME (`scarlet`, `violet`).
     required List<String> versions,
     required List<PokedexEntry> entries,
+
+    /// A forma só aparece nestas das [versions] (o Koraidon só no
+    /// Scarlet); vazio = em todas.
+    @Default(<String>[]) List<String> exclusiveTo,
   }) = _GamePokedex;
 
   factory GamePokedex.fromJson(Map<String, dynamic> json) =>
