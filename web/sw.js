@@ -55,6 +55,9 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.origin !== self.location.origin) return;
 
+  // canvaskit/ (o motor) só é do próprio site com o --no-web-resources-cdn
+  // do build do Pages; sem ele, viria do www.gstatic.com, fora do cache, e o
+  // app não abriria offline.
   if (/\/(v\/[0-9a-f]+|canvaskit)\//.test(url.pathname)) {
     event.respondWith(cacheFirst(APP_CACHE, request));
   } else {
@@ -66,6 +69,15 @@ async function cacheFirst(name, request) {
   const cache = await caches.open(name);
   const hit = await cache.match(request);
   if (hit) return hit;
+  // Guardado por outra versão do worker: na primeira abertura de uma versão
+  // nova, quem ainda controla a página é o worker anterior, e os arquivos da
+  // versão nova vão para o cache dele. Copia para o cache atual, que é o que
+  // fica quando o anterior for apagado.
+  const old = await caches.match(request);
+  if (old) {
+    cache.put(request, old.clone());
+    return old;
+  }
   const response = await fetch(request);
   if (response.ok) cache.put(request, response.clone());
   return response;
