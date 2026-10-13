@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -69,6 +70,14 @@ Widget? languageTag(WidgetRef ref, String? language) {
     ),
   );
 }
+
+/// A etiqueta do corte do HOME (#222) no cabeçalho, para o espécime num
+/// save cujo jogo deixa (ou deixou) de chegar ao HOME. `null` nos outros.
+Widget? homeTagOf(WidgetRef ref, Save? location) =>
+    switch (ref.watch(homeCutoffProvider)(location?.trainer.version)) {
+      final cutoff? => HomeTag(cutoff),
+      null => null,
+    };
 
 /// Chip "Visitando o Champions" (#174).
 class ChampionsChip extends StatelessWidget {

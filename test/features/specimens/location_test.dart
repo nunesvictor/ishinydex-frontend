@@ -202,10 +202,8 @@ void main() {
         await _go(tester, Routes.saves);
         expect(find.text('Recebem do HOME'), findsOneWidget);
         expect(find.text('Só enviam para o HOME'), findsOneWidget);
-        expect(
-          find.text('Red (1996) · FireRed\nSó envia para o HOME'),
-          findsOneWidget,
-        );
+        expect(find.text('Red (1996) · FireRed'), findsOneWidget);
+        expect(find.text('Só envia para o HOME'), findsOneWidget);
         double top(String text) => tester.getTopLeft(find.text(text)).dy;
         expect(top('Scarlet · Switch'), lessThan(top('Só enviam para o HOME')));
         expect(

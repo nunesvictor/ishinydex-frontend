@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:ishinydex/core/clock.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/web/browser.dart' as browser;
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
 import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
@@ -75,6 +77,21 @@ final FutureProvider<List<Trainer>> trainersProvider =
     FutureProvider.autoDispose<List<Trainer>>(
       (ref) => ref.watch(specimenRepositoryProvider).fetchTrainers(),
     );
+
+/// A data de corte do HOME do jogo (#222), com o relógio; `null` para os
+/// jogos sem corte (e em catálogo antigo).
+final homeCutoffProvider = Provider<HomeCutoff? Function(String? version)>((
+  ref,
+) {
+  final cutoffs =
+      ref.watch(fakeBackendProvider).catalog?.homeCutoffs ??
+      const <String, DateTime>{};
+  final clock = ref.watch(clockProvider);
+  return (version) => switch (cutoffs[version]) {
+    final until? => HomeCutoff(until: until, now: clock()),
+    null => null,
+  };
+});
 
 /// Os métodos de shiny do jogo do OT (`Catalog.shinyMethodsFor`); sem o
 /// catálogo, nenhum.

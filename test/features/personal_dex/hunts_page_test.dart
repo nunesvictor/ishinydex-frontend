@@ -15,6 +15,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
+import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -416,6 +417,78 @@ void main() {
           find.text('Rattata Alola · #10193 · HOME 1 · L4 C2 · Outra pokébola'),
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('Faltam: etiqueta do HOME só quando todos os jogos têm corte', (
+      tester,
+    ) async {
+      const ash = Trainer(id: 9, name: 'Ash', trainerId: '1', version: 'x');
+      const red = Trainer(
+        id: 8,
+        name: 'Red',
+        trainerId: '2',
+        version: 'scarlet',
+      );
+      answer(
+        1,
+        () async => Paginated(
+          count: 2,
+          results: [
+            hunt(20).copyWith(versions: ['x', 'y']),
+            hunt(21).copyWith(versions: ['x', 'scarlet']),
+          ],
+        ),
+      );
+      await pumpWidgetApp(
+        tester,
+        const HuntsPage(dexId: 1),
+        overrides: [
+          personalDexRepositoryProvider.overrideWithValue(repository),
+          specimenOptionsProvider.overrideWith(
+            (ref) => const SpecimenOptions(),
+          ),
+          savesProvider.overrideWith(
+            (ref) async => const [
+              Save(id: 1, trainer: ash),
+              Save(id: 2, trainer: red),
+              Save(
+                id: 3,
+                trainer: Trainer(
+                  id: 7,
+                  name: 'Ash',
+                  trainerId: '3',
+                  version: 'y',
+                ),
+              ),
+            ],
+          ),
+          homeCutoffProvider.overrideWithValue(
+            (version) => version == 'x' || version == 'y'
+                ? HomeCutoff(
+                    until: version == 'x'
+                        ? DateTime.utc(2027, 2, 26, 3)
+                        : DateTime.utc(2027, 2, 27, 3),
+                    now: DateTime(2027, 3),
+                  )
+                : null,
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('hunt-20')),
+          matching: find.byKey(const ValueKey('home-tag')),
+        ),
+        findsOne,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('hunt-21')),
+          matching: find.byKey(const ValueKey('home-tag')),
+        ),
+        findsNothing,
       );
     });
 

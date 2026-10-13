@@ -19,8 +19,10 @@ import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
+import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/game_picker.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -645,15 +647,10 @@ class HuntTile extends ConsumerWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (hunt.versions.isNotEmpty)
-            HuntGames(
-              versions: hunt.versions,
-              owned: {
-                for (final save
-                    in ref.watch(savesProvider).value ?? const <Save>[])
-                  ?save.trainer.version,
-              },
-            ),
+          if (hunt.versions.isNotEmpty) ...[
+            ?_homeTag(ref),
+            HuntGames(versions: hunt.versions, owned: _owned(ref)),
+          ],
           ?_huntAction(context, ref, form),
         ],
       ),
@@ -670,6 +667,28 @@ class HuntTile extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       ),
       onTap: onTap,
+    );
+  }
+
+  Set<String> _owned(WidgetRef ref) => {
+    for (final save in ref.watch(savesProvider).value ?? const <Save>[])
+      ?save.trainer.version,
+  };
+
+  /// A etiqueta do corte do HOME (#222) quando todos os jogos dos seus saves
+  /// em que a forma pode ser caçada têm corte: o shiny achado ali não chega
+  /// (ou deixa de chegar) ao HOME. A caçada continua possível.
+  Widget? _homeTag(WidgetRef ref) {
+    final cutoffOf = ref.watch(homeCutoffProvider);
+    final cutoffs = [
+      for (final v in hunt.versions)
+        if (_owned(ref).contains(v)) cutoffOf(v),
+    ];
+    if (cutoffs.isEmpty || cutoffs.any((c) => c == null)) return null;
+    return HomeTag(
+      cutoffs.cast<HomeCutoff>().reduce(
+        (a, b) => a.until.isAfter(b.until) ? a : b,
+      ),
     );
   }
 

@@ -7,6 +7,8 @@ import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_notice.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -44,12 +46,23 @@ class AwayPage extends ConsumerWidget {
             onRefresh: () => ref.refresh(awaySpecimensProvider.future),
             child: ListView(
               children: [
+                const HomeCutoffNotice(showAction: false),
                 for (final (save, items) in group(specimens)) ...[
                   ListTile(
                     leading: SaveIcon(save, size: 28),
-                    title: Text(
-                      save.title,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    title: Row(
+                      spacing: 8,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            save.title,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        if (ref.watch(homeCutoffProvider)(save.trainer.version)
+                            case final cutoff?)
+                          HomeTag(cutoff),
+                      ],
                     ),
                     subtitle: Text(
                       items.length == 1
@@ -83,6 +96,12 @@ class _AwayTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final since = specimen.locationSince;
     final form = specimen.formRef;
+    // Depois do corte do HOME (#222), não volta mais.
+    final stuck =
+        ref
+            .watch(homeCutoffProvider)(specimen.location?.trainer.version)
+            ?.passed ??
+        false;
     return ListTile(
       key: ValueKey('away-${specimen.id}'),
       leading: PokemonSprite(url: specimen.spriteUrl, size: 48),
@@ -107,14 +126,18 @@ class _AwayTile extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: IconButton(
-        tooltip: 'Trazer de volta ao HOME',
+        tooltip: stuck
+            ? '${specimen.location!.game} não envia mais para o HOME'
+            : 'Trazer de volta ao HOME',
         icon: const Icon(Icons.flight_land),
-        onPressed: () => bringBack(
-          context,
-          ref,
-          specimenId: specimen.id,
-          name: specimen.displayName,
-        ),
+        onPressed: stuck
+            ? null
+            : () => bringBack(
+                context,
+                ref,
+                specimenId: specimen.id,
+                name: specimen.displayName,
+              ),
       ),
       onTap: () => context.push(Routes.specimen(specimen.id)),
     );

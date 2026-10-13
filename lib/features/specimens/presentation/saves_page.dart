@@ -7,6 +7,8 @@ import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_notice.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -62,9 +64,17 @@ class _SaveList extends ConsumerWidget {
       for (final s in saves)
         if (!s.isOneWay) s,
     ];
+    final cutoffOf = ref.watch(homeCutoffProvider);
+    bool cut(Save s) => cutoffOf(s.trainer.version)?.passed ?? false;
     final oneWay = [
       for (final s in saves)
-        if (s.isOneWay) s,
+        if (s.isOneWay && !cut(s)) s,
+    ];
+    // Depois do corte do HOME (#222): continuam saves (caçadas, odds, OT),
+    // só não enviam mais para o HOME.
+    final noPath = [
+      for (final s in saves)
+        if (s.isOneWay && cut(s)) s,
     ];
     Widget header(String text) => Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -78,7 +88,8 @@ class _SaveList extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 88),
       children: [
-        if (oneWay.isNotEmpty && receivers.isNotEmpty)
+        const HomeCutoffNotice(),
+        if ((oneWay.isNotEmpty || noPath.isNotEmpty) && receivers.isNotEmpty)
           header('Recebem do HOME'),
         for (final save in receivers) _tile(context, ref, save),
         if (oneWay.isNotEmpty) ...[
@@ -96,32 +107,62 @@ class _SaveList extends ConsumerWidget {
           ),
           for (final save in oneWay) _tile(context, ref, save),
         ],
+        if (noPath.isNotEmpty) ...[
+          if (receivers.isNotEmpty || oneWay.isNotEmpty)
+            const Divider(indent: 16, endIndent: 16),
+          header('Sem caminho para o HOME'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              'Continuam saves como os outros: caçadas, odds, OT e '
+              'espécimes. Só não enviam mais para o HOME.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          for (final save in noPath) _tile(context, ref, save),
+        ],
       ],
     );
   }
 
-  Widget _tile(BuildContext context, WidgetRef ref, Save save) => ListTile(
-    key: ValueKey('save-${save.id}'),
-    leading: SaveIcon(save),
-    title: Text(save.title),
-    subtitle: Text(
-      save.isOneWay
-          ? '${save.trainer.label}\nSó envia para o HOME'
-          : save.trainer.label,
-    ),
-    isThreeLine: save.isOneWay,
-    trailing: PopupMenuButton<_SaveAction>(
-      tooltip: 'Ações do save',
-      onSelected: (action) => switch (action) {
-        _SaveAction.edit => _edit(context, ref, save),
-        _SaveAction.delete => _delete(context, ref, save),
-      },
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: _SaveAction.edit, child: Text('Editar')),
-        PopupMenuItem(value: _SaveAction.delete, child: Text('Remover')),
-      ],
-    ),
-  );
+  Widget _tile(BuildContext context, WidgetRef ref, Save save) {
+    final cutoff = ref.watch(homeCutoffProvider)(save.trainer.version);
+    return ListTile(
+      key: ValueKey('save-${save.id}'),
+      leading: SaveIcon(save),
+      title: Text(save.title),
+      subtitle: !save.isOneWay
+          ? Text(save.trainer.label)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(save.trainer.label),
+                Row(
+                  spacing: 6,
+                  children: [
+                    if (!(cutoff?.passed ?? false))
+                      const Flexible(child: Text('Só envia para o HOME')),
+                    if (cutoff != null) HomeTag(cutoff),
+                  ],
+                ),
+              ],
+            ),
+      isThreeLine: save.isOneWay,
+      trailing: PopupMenuButton<_SaveAction>(
+        tooltip: 'Ações do save',
+        onSelected: (action) => switch (action) {
+          _SaveAction.edit => _edit(context, ref, save),
+          _SaveAction.delete => _delete(context, ref, save),
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(value: _SaveAction.edit, child: Text('Editar')),
+          PopupMenuItem(value: _SaveAction.delete, child: Text('Remover')),
+        ],
+      ),
+    );
+  }
 }
 
 enum _SaveAction { edit, delete }

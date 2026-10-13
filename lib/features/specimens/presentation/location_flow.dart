@@ -447,12 +447,19 @@ List<SheetAction> locationActions(
   required String name,
   required bool away,
   required bool visiting,
+  Save? location,
 }) {
   if (away) {
+    // Depois do corte do HOME (#222), o jogo não envia mais: fica no save.
+    final stuck =
+        ref.read(homeCutoffProvider)(location?.trainer.version)?.passed ??
+        false;
     return [
       SheetAction(
         icon: Icons.flight_land,
         label: 'Trazer de volta ao HOME',
+        subtitle: stuck ? '${location!.game} não envia mais para o HOME' : null,
+        enabled: !stuck,
         onSelected: () => bringBack(context, ref, specimenId: id, name: name),
       ),
     ];
