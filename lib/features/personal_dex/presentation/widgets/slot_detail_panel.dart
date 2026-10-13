@@ -149,6 +149,7 @@ class SlotDetailPanel extends ConsumerWidget {
                     if (full?.isVisitingChampions ?? false)
                       const ChampionsChip(),
                     ?languageTag(ref, full?.language),
+                    ?homeTagOf(ref, specimen.location),
                   ],
                 ],
                 fields: full == null
@@ -194,6 +195,7 @@ class SlotDetailPanel extends ConsumerWidget {
                       name: specimen.displayName,
                       away: specimen.location != null,
                       visiting: specimen.isVisitingChampions,
+                      location: specimen.location,
                     ),
                     SheetAction(
                       icon: Icons.move_up,

@@ -1,12 +1,15 @@
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/clock.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+
+export 'package:ishinydex/core/clock.dart';
 
 final shinyHuntRepositoryProvider = Provider<ShinyHuntRepository>(
   (ref) => ref.watch(fakeBackendProvider),
@@ -17,9 +20,6 @@ final FutureProvider<List<ShinyHunt>> shinyHuntsProvider =
     FutureProvider.autoDispose<List<ShinyHunt>>(
       (ref) => ref.watch(shinyHuntRepositoryProvider).fetchShinyHunts(),
     );
-
-/// O relógio das caçadas (nos testes, fixo).
-final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 /// Formas com caçada em andamento (não pausada): o selo no slot da box.
 final Provider<Set<int>> huntedFormsProvider = Provider.autoDispose<Set<int>>(

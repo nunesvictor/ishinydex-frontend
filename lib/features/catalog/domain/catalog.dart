@@ -17,6 +17,7 @@ class Catalog {
     required this.options,
     required this.versions,
     required this.transferVersions,
+    required this.homeCutoffs,
     required this.shinyLocks,
     required this._forms,
     required this._pokemon,
@@ -68,6 +69,12 @@ class Catalog {
           receives: v['receivesFromHome'] as bool,
         ),
     ];
+    // A data de corte do HOME (#222): os jogos do Pokémon Bank.
+    final homeCutoffs = {
+      for (final v in _objects(json['versions']))
+        if (v['homeUntil'] case final String until)
+          v['name'] as String: DateTime.parse(until),
+    };
     // A ordem da série: o grupo (geração e lançamento) e, dentro dele, a
     // ordem do par no grupo (Sun antes de Moon), não a alfabética.
     final groupOrder = {for (final g in groups) g.name: g.order};
@@ -113,6 +120,7 @@ class Catalog {
             generation: groupByName[v.group]?.generation ?? '',
           ),
       ],
+      homeCutoffs: homeCutoffs,
       transferVersions: {
         for (final v in versionList)
           if (v.receives) v.name,
@@ -284,6 +292,10 @@ class Catalog {
 
   /// Jogos que recebem Pokémon do HOME (podem ser um save).
   final Set<String> transferVersions;
+
+  /// Jogo → até quando ele chega ao HOME (`homeUntil`, #222). Vazio em
+  /// catálogo antigo: tudo como antes.
+  final Map<String, DateTime> homeCutoffs;
 
   /// Shiny locks padrão (formas pelo id).
   final List<CatalogShinyLock> shinyLocks;

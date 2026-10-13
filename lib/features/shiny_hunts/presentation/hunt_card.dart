@@ -14,6 +14,7 @@ import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dar
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 void _notify(BuildContext context, String message) =>
@@ -280,6 +281,12 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          // O corte do HOME (#222): a caçada segue igual.
+                          if (ref.watch(homeCutoffProvider)(
+                                save?.trainer.version,
+                              )
+                              case final cutoff?)
+                            HomeTag(cutoff),
                         ],
                       ),
                       Text(

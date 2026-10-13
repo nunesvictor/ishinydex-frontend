@@ -119,6 +119,7 @@ class _Details extends ConsumerWidget {
                   OriginMarkChip(mark),
                 if (specimen.isVisitingChampions) const ChampionsChip(),
                 ?languageTag(ref, specimen.language),
+                ?homeTagOf(ref, specimen.location),
               ],
               fields: specimenFields(context, ref, specimen),
               footer: specimenFooter(
@@ -157,6 +158,7 @@ class _Details extends ConsumerWidget {
                 name: specimen.displayName,
                 away: specimen.isAway,
                 visiting: specimen.isVisitingChampions,
+                location: specimen.location,
               ),
               if (specimen.slot case final slotId?)
                 SheetAction(

@@ -297,6 +297,16 @@ class FakeBackend
     }
   }
 
+  /// O relógio da data de corte do HOME (#222); nos testes, fixo.
+  DateTime Function() now = DateTime.now;
+
+  /// O jogo do [save] já não chega ao HOME (o corte do catálogo passou).
+  bool _cutOff(Save save) =>
+      switch (catalog?.homeCutoffs[save.trainer.version]) {
+        final until? => !now().isBefore(until),
+        null => false,
+      };
+
   /// Tipos de registro do arquivo de dados, na ordem em que se restauram
   /// (cada um só referencia os anteriores).
   static const recordTypes = [
@@ -2019,7 +2029,21 @@ class FakeBackend
       });
     }
     var going = unique;
-    if (saveId != null) {
+    if (saveId == null) {
+      // De volta ao HOME: quem está num save cujo jogo não chega mais ao
+      // HOME fica (#222); se ninguém puder voltar, nada muda.
+      final stuck = {
+        for (final id in unique)
+          if (_specimens[id]!.location case final save? when _cutOff(save)) id,
+      };
+      if (stuck.length == unique.length) {
+        final game = _specimens[stuck.first]!.location!.game;
+        throw ValidationFailure({
+          'save': ['$game não envia mais para o HOME.'],
+        });
+      }
+      going = unique.difference(stuck);
+    } else {
       final check = transferCheck([...unique], _saves[saveId]!);
       if (!check.allowed) {
         throw ValidationFailure({
