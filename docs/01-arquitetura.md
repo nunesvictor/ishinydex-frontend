@@ -132,23 +132,28 @@ seguem o mesmo padrão, para as ações não empilharem botões:
   Ações novas entram ali sem a tela crescer.
 - **Corpo comum** (`DetailBody`, em
   [detail_body.dart](../lib/features/personal_dex/presentation/widgets/detail_body.dart)):
-  sprite, nome, as linhas da forma e as abas. O que muda entre o slot e o
-  espécime vem por parâmetro: a posição na caixa (só no slot), os chips de
-  situação (Registrado/Faltante × Depositado/Disponível), os campos (OT,
-  idioma, captura e observação, só no inventário) e a navegação da aba
-  Espécie. As ações ficam com cada tela.
+  compacto como o resumo do HOME (v2.8.0, #207), para o caso comum caber
+  sem rolar no iPhone. O cabeçalho fica em linha: o sprite à esquerda e, à
+  direita, o nome, as linhas da forma, os tipos e as etiquetas (situação,
+  marca de origem e idioma, este com a sigla do HOME, como "ENG", e o nome
+  completo no toque e no leitor de tela). Embaixo vêm as abas. O que muda
+  entre o slot e o espécime vem por parâmetro: a posição na caixa (só no
+  slot), as etiquetas de situação (Registrado/Faltante ×
+  Depositado/Disponível), os campos (OT, captura e observação) e a
+  navegação da aba Espécie. As ações ficam com cada tela.
 - **Abas** (`FormInfoTabs`): o resumo ("Espécime"; "Forma" num slot
   faltante ou na ficha) e **Espécie**. A altura fica a da aba aberta, e não a
   soma de tudo.
-  - **Resumo:** tipos e habilidades (a do espécime destacada), os chips, o
-    cartão **Status base** (`StatsCard`) e os campos. Em telas largas (a
-    partir de 640 px), o cartão vai para a direita dos campos. Como na tela
-    de resumo dos jogos, o hexágono (`BaseStatsChart`) fica junto dos dados:
+  - **Resumo:** as habilidades (a do espécime destacada), os campos em duas
+    colunas (`FieldGrid`; a observação em largura total, com até 2 linhas e
+    "ver mais"), o cartão **Status base** (`StatsCard`) e o rodapé (local,
+    Champions e registro da caçada). Como na tela de resumo dos jogos, o
+    hexágono (`BaseStatsChart`, no modo `compact`, com a natureza, o total e
+    o EV ao lado) fica junto dos dados:
     desenhado com `CustomPainter` (HP no topo e, no sentido horário, Ataque,
     Defesa, Velocidade, Def. Esp. e Atq. Esp.), com escala fixa até 200, o
     total e o EV. A natureza do espécime pinta os stats que muda e aparece
-    embaixo do hexágono (o chip solto saiu); sem status, ela continua à
-    vista.
+    ao lado do hexágono; sem status, ela continua à vista.
   - **Espécie** (`SpeciesInfo`): linha evolutiva e outras formas (Mega,
     Gigantamax, regionais) com sprite, e uma grade com gênero, taxa de
     captura, ciclos de ovo, estreia, altura e peso. No dex, tocar numa forma

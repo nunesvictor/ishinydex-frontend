@@ -75,6 +75,31 @@ void main() {
   }
 
   group('SpecimenDetailView', () {
+    testWidgets('cabe sem rolar no iPhone 17 (#207)', (tester) async {
+      // 874 pt menos a faixa da hora (62), a barra de título (56), a barra
+      // de ações (68) e a navegação com o indicador de início (90).
+      await pumpDetail(tester, size: const Size(402, 598 + 68));
+      final scroll = tester.state<ScrollableState>(
+        find.byType(Scrollable).first,
+      );
+      expect(scroll.position.maxScrollExtent, 0);
+    });
+
+    testWidgets('observação longa: 2 linhas e "ver mais" (#207)', (
+      tester,
+    ) async {
+      when(() => specimens.fetchSpecimen(1)).thenAnswer(
+        (_) async => _specimen.copyWith(observation: 'Pego no safári. ' * 20),
+      );
+      await pumpDetail(tester);
+      expect(find.text('ver mais'), findsOneWidget);
+      await tester.tap(find.text('ver mais'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ver menos'));
+      await tester.pumpAndSettle();
+      expect(find.text('ver mais'), findsOneWidget);
+    });
+
     for (final size in [compactSize, expandedSize]) {
       testWidgets('mostra os campos com os rótulos da API '
           '(${size.width.toInt()}px)', (tester) async {
@@ -86,8 +111,11 @@ void main() {
         expect(find.text('Natureza'), findsNothing);
         expect(find.text('Gênero'), findsNothing);
         expect(find.text('Status base'), findsOneWidget);
-        // Rótulos das opções (quando a API os tem) ou nome formatado.
-        expect(find.text('En'), findsOneWidget);
+        // O idioma é uma etiqueta no cabeçalho, com a sigla do HOME e o
+        // nome completo no toque (#207).
+        expect(find.text('ENG'), findsOneWidget);
+        expect(find.byTooltip('Idioma: En'), findsOneWidget);
+        expect(find.text('Idioma'), findsNothing);
         expect(find.text('Ash (123456) · Scarlet'), findsOneWidget);
         // Data com ano (o formato "médio" do Material em pt-BR omite o ano).
         expect(find.text('23/09/2024'), findsOneWidget);

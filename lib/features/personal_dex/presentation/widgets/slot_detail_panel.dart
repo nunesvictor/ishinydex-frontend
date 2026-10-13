@@ -103,11 +103,7 @@ class SlotDetailPanel extends ConsumerWidget {
                 spriteUrl: current.spriteUrl,
                 semanticLabel: form.displayName,
                 title: specimen == null
-                    ? Text(
-                        form.displayName,
-                        style: theme.textTheme.titleLarge,
-                        textAlign: TextAlign.center,
-                      )
+                    ? Text(form.displayName, style: theme.textTheme.titleLarge)
                     : SpecimenHeadline(
                         name: specimen.displayName,
                         pokeballSpriteUrl: specimen.pokeballSpriteUrl,
@@ -118,7 +114,6 @@ class SlotDetailPanel extends ConsumerWidget {
                         isShiny: specimen.isShiny,
                         isAlpha: specimen.isAlpha,
                         style: theme.textTheme.titleLarge,
-                        center: true,
                       ),
                 subtitle: [
                   if (specimen != null) form.displayName,
@@ -153,6 +148,7 @@ class SlotDetailPanel extends ConsumerWidget {
                       OriginMarkChip(mark),
                     if (full?.isVisitingChampions ?? false)
                       const ChampionsChip(),
+                    ?languageTag(ref, full?.language),
                   ],
                 ],
                 fields: full == null

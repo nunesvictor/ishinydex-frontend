@@ -12,9 +12,20 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// Carregamento e erro ficam contidos aqui: o resto do painel do slot (e
 /// as ações) continua funcionando.
 class FormDetails extends ConsumerWidget {
-  const FormDetails({required this.formId, this.highlightAbility, super.key});
+  const FormDetails({
+    required this.formId,
+    this.highlightAbility,
+    this.types = true,
+    this.abilities = true,
+    super.key,
+  });
 
   final int formId;
+
+  /// O que mostrar: no detalhe compacto (#207), os tipos vão para o
+  /// cabeçalho e as habilidades, para os campos.
+  final bool types;
+  final bool abilities;
 
   /// Habilidade do espécime depositado, destacada na lista (✓ e negrito).
   final String? highlightAbility;
@@ -25,6 +36,8 @@ class FormDetails extends ConsumerWidget {
         AsyncData(:final value) => _Details(
           form: value,
           highlightAbility: highlightAbility,
+          showTypes: types,
+          showAbilities: abilities,
         ),
         AsyncError() => Column(
           children: [
@@ -47,10 +60,17 @@ class FormDetails extends ConsumerWidget {
 }
 
 class _Details extends StatelessWidget {
-  const _Details({required this.form, this.highlightAbility});
+  const _Details({
+    required this.form,
+    required this.showTypes,
+    required this.showAbilities,
+    this.highlightAbility,
+  });
 
   final FormDetail form;
   final String? highlightAbility;
+  final bool showTypes;
+  final bool showAbilities;
 
   @override
   Widget build(BuildContext context) {
@@ -62,43 +82,50 @@ class _Details extends StatelessWidget {
       fontWeight: FontWeight.bold,
       color: theme.colorScheme.primary,
     );
+    // Só uma das partes: alinhada à esquerda, como o resto do cabeçalho e
+    // dos campos compactos.
+    final alone = showTypes != showAbilities;
     return Column(
       spacing: 8,
+      crossAxisAlignment: alone
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            for (final t in types)
-              Chip(
-                avatar: t.spriteUrl == null
-                    ? null
-                    : PokemonSprite(url: t.spriteUrl, size: 20),
-                label: Text(typeLabel(t.type)),
-                backgroundColor: typeColor(t.type),
-                labelStyle: TextStyle(
-                  color: typeOnColor(t.type),
-                  fontWeight: FontWeight.w600,
+        if (showTypes)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: alone ? WrapAlignment.start : WrapAlignment.center,
+            children: [
+              for (final t in types)
+                Chip(
+                  avatar: t.spriteUrl == null
+                      ? null
+                      : PokemonSprite(url: t.spriteUrl, size: 20),
+                  label: Text(typeLabel(t.type)),
+                  backgroundColor: typeColor(t.type),
+                  labelStyle: TextStyle(
+                    color: typeOnColor(t.type),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  side: BorderSide.none,
+                  visualDensity: VisualDensity.compact,
                 ),
-                side: BorderSide.none,
-                visualDensity: VisualDensity.compact,
-              ),
-            if (form.isShinylocked)
-              Chip(
-                avatar: Icon(Icons.lock, color: theme.colorScheme.error),
-                label: const Text('Shiny-lock'),
-                visualDensity: VisualDensity.compact,
-              ),
-            if (form.isDistroOnly)
-              const Chip(
-                avatar: Icon(Icons.card_giftcard),
-                label: Text('Só distribuição'),
-                visualDensity: VisualDensity.compact,
-              ),
-          ],
-        ),
-        if (abilities.isNotEmpty)
+              if (form.isShinylocked)
+                Chip(
+                  avatar: Icon(Icons.lock, color: theme.colorScheme.error),
+                  label: const Text('Shiny-lock'),
+                  visualDensity: VisualDensity.compact,
+                ),
+              if (form.isDistroOnly)
+                const Chip(
+                  avatar: Icon(Icons.card_giftcard),
+                  label: Text('Só distribuição'),
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+        if (showAbilities && abilities.isNotEmpty)
           Text.rich(
             TextSpan(
               children: [
@@ -113,7 +140,7 @@ class _Details extends StatelessWidget {
               ],
             ),
             style: theme.textTheme.bodySmall,
-            textAlign: TextAlign.center,
+            textAlign: alone ? TextAlign.start : TextAlign.center,
           ),
       ],
     );

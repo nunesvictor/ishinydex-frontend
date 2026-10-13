@@ -10,21 +10,20 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 // inventário mostrarem as mesmas coisas (#195): um dado novo do espécime
 // entra aqui e aparece nas duas telas.
 
-/// Os campos do espécime: treinador original, idioma, data de captura e
+/// Os campos do espécime: treinador original, data de captura e
 /// observação. Habilidade, natureza e gênero já aparecem no corpo (lista da
-/// forma, cartão de status e cabeçalho).
+/// forma, cartão de status e cabeçalho), e o idioma é uma etiqueta no
+/// cabeçalho ([languageTag]).
 List<(String, String?)> specimenFields(
   BuildContext context,
   WidgetRef ref,
   Specimen specimen,
 ) {
-  final options = ref.watch(specimenOptionsProvider).value;
   final trainers = ref.watch(trainersProvider).value;
   final ot = trainers?.where((t) => t.id == specimen.ot).firstOrNull;
   final capturedAt = specimen.capturedAt;
   return [
     ('Treinador original', ot?.label),
-    ('Idioma', choiceLabel(options?.language, specimen.language)),
     (
       'Data de captura',
       capturedAt == null
@@ -33,6 +32,42 @@ List<(String, String?)> specimenFields(
     ),
     ('Observação', specimen.observation),
   ];
+}
+
+/// As siglas de idioma do HOME (ENG, JPN...); os outros, em maiúsculas.
+const _languageCodes = {
+  'ja': 'JPN',
+  'ja-hrkt': 'JPN',
+  'ja-roma': 'JPN',
+  'en': 'ENG',
+  'fr': 'FRE',
+  'it': 'ITA',
+  'de': 'GER',
+  'es': 'SPA',
+  'es-419': 'SP-LA',
+  'ko': 'KOR',
+  'zh-hans': 'CHS',
+  'zh-hant': 'CHT',
+};
+
+/// A etiqueta de idioma do cabeçalho (#207), como no HOME: "ENG", com o
+/// nome completo no toque e no leitor de tela. `null` sem idioma.
+Widget? languageTag(WidgetRef ref, String? language) {
+  if (language == null) return null;
+  final name = choiceLabel(
+    ref.watch(specimenOptionsProvider).value?.language,
+    language,
+  );
+  final code = _languageCodes[language] ?? language.toUpperCase();
+  return Tooltip(
+    message: 'Idioma: $name',
+    excludeFromSemantics: true,
+    child: Semantics(
+      label: 'Idioma: $name',
+      excludeSemantics: true,
+      child: Chip(label: Text(code)),
+    ),
+  );
 }
 
 /// Chip "Visitando o Champions" (#174).

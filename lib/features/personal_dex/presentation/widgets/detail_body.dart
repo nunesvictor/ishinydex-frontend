@@ -4,10 +4,12 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 
-/// O corpo comum do detalhe do slot e do detalhe do espécime (inventário):
-/// sprite, [title] (o nome, ou o `SpecimenHeadline`), as linhas de
-/// [subtitle] e [caption] e as abas ([FormInfoTabs]) com o resumo: tipos e
-/// habilidades, os [chips], o cartão de status, os [fields] e o [footer].
+/// O corpo comum do detalhe do slot e do detalhe do espécime (inventário),
+/// compacto como o resumo do HOME (#207): o cabeçalho em linha (sprite; o
+/// [title], o `SpecimenHeadline` ou o nome; [subtitle], [caption], tipos e
+/// os [chips] como etiquetas) e as abas ([FormInfoTabs]) com o resumo:
+/// habilidades, os [fields] em duas colunas, o cartão de status e o
+/// [footer].
 ///
 /// O que muda entre as duas telas vem por parâmetro: a posição na caixa (o
 /// [caption], só no slot), os chips de situação, os campos (só no
@@ -69,79 +71,81 @@ class DetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // As etiquetas (situação, marca, idioma) ficam no cabeçalho, menores.
     final chipRow = chips.isEmpty
         ? null
-        : Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: chips,
+        : ChipTheme(
+            data: ChipTheme.of(context).copyWith(
+              labelStyle: theme.textTheme.labelSmall,
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+            ),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final chip in chips)
+                  Theme(
+                    data: theme.copyWith(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: chip,
+                  ),
+              ],
+            ),
           );
     final filled = [
       for (final (name, value) in fields)
         if (value != null && value.isNotEmpty) (name, value),
     ];
-    final fieldList = filled.isEmpty
-        ? null
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final (name, value) in filled)
-                ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(name),
-                  subtitle: Text(value),
-                ),
-            ],
-          );
+    final fieldGrid = filled.isEmpty ? null : FieldGrid(fields: filled);
     final formId = this.formId;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    // Cabeçalho em linha (#207), como no resumo do HOME: o sprite à
+    // esquerda; o nome, os tipos e as etiquetas à direita.
+    final header = Row(
+      spacing: 14,
       children: [
-        Center(
-          child: PokemonSprite(
-            url: spriteUrl,
-            size: 112,
-            semanticLabel: semanticLabel,
+        PokemonSprite(url: spriteUrl, size: 96, semanticLabel: semanticLabel),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              title,
+              if (subtitle case final subtitle?)
+                Text(subtitle, style: theme.textTheme.bodyMedium),
+              if (caption case final caption?)
+                Text(caption, style: theme.textTheme.bodySmall),
+              if (formId != null) FormDetails(formId: formId, abilities: false),
+              ?chipRow,
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        title,
-        if (subtitle case final subtitle?)
-          Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-        if (caption case final caption?)
-          Text(
-            caption,
-            style: theme.textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        header,
         ?position,
-        const SizedBox(height: 12),
         if (formId == null)
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 12,
-            children: [?chipRow, ?fieldList, ?footer],
+            children: [?fieldGrid, ?footer],
           )
         else
           FormInfoTabs(
             key: tabsKey,
             formId: formId,
             summaryLabel: summaryLabel,
-            header: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 12,
-              children: [
-                FormDetails(formId: formId, highlightAbility: highlightAbility),
-                ?chipRow,
-              ],
+            header: FormDetails(
+              formId: formId,
+              highlightAbility: highlightAbility,
+              types: false,
             ),
-            fields: fieldList,
+            fields: fieldGrid,
             footer: footer,
             nature: nature,
             dexId: dexId,
@@ -149,6 +153,114 @@ class DetailBody extends StatelessWidget {
             onOpenForm: onOpenForm,
           ),
       ],
+    );
+  }
+}
+
+/// Os campos do espécime em duas colunas (#207): rótulo pequeno em cima e
+/// o valor embaixo. A observação, texto livre, ocupa a largura toda, com
+/// até 2 linhas e "ver mais".
+class FieldGrid extends StatelessWidget {
+  const FieldGrid({required this.fields, super.key});
+
+  /// Campos já preenchidos (nome, valor).
+  final List<(String, String)> fields;
+
+  /// O campo de texto livre, em largura total.
+  static const wideField = 'Observação';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Widget cell(String name, Widget value) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
+      children: [
+        Text(
+          name,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        value,
+      ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 16.0;
+        final half = (constraints.maxWidth - gap) / 2;
+        return Wrap(
+          spacing: gap,
+          runSpacing: 10,
+          children: [
+            for (final (name, value) in fields)
+              if (name == wideField)
+                SizedBox(
+                  width: constraints.maxWidth,
+                  child: cell(name, _MoreText(value)),
+                )
+              else
+                SizedBox(
+                  width: half,
+                  child: cell(
+                    name,
+                    Text(value, style: theme.textTheme.bodyMedium),
+                  ),
+                ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Texto longo em até 2 linhas, com "ver mais" quando passa disso.
+class _MoreText extends StatefulWidget {
+  const _MoreText(this.text);
+
+  final String text;
+
+  @override
+  State<_MoreText> createState() => _MoreTextState();
+}
+
+class _MoreTextState extends State<_MoreText> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodyMedium;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: style),
+          maxLines: 2,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final long = painter.didExceedMaxLines;
+        painter.dispose();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.text,
+              style: style,
+              maxLines: _open ? null : 2,
+              overflow: _open ? null : TextOverflow.ellipsis,
+            ),
+            if (long)
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () => setState(() => _open = !_open),
+                child: Text(_open ? 'ver menos' : 'ver mais'),
+              ),
+          ],
+        );
+      },
     );
   }
 }

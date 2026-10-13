@@ -455,31 +455,22 @@ void main() {
       overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
     );
 
-    testWidgets('estreito: cabeçalho, cartão, campos e rodapé, em coluna', (
-      tester,
-    ) async {
-      await pump(tester, compactSize);
-      await tester.pumpAndSettle();
-      double top(Finder f) => tester.getTopLeft(f).dy;
-      expect(
-        top(find.text('cabeçalho')),
-        lessThan(top(find.text('Status base'))),
-      );
-      expect(top(find.text('Status base')), lessThan(top(find.text('campos'))));
-      expect(top(find.text('campos')), lessThan(top(find.text('rodapé'))));
-    });
-
-    testWidgets('largo: o cartão à direita dos campos', (tester) async {
-      await pump(tester, expandedSize);
-      await tester.pumpAndSettle();
-      expect(
-        tester.getTopLeft(find.text('Status base')).dx,
-        greaterThan(tester.getTopLeft(find.text('campos')).dx),
-      );
-      expect(
-        tester.getTopLeft(find.text('Status base')).dy,
-        tester.getTopLeft(find.byType(StatsCard)).dy + 12,
-      );
-    });
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('cabeçalho, campos, cartão e rodapé, em coluna (#207, '
+          '${size.width.toInt()}px)', (tester) async {
+        await pump(tester, size);
+        await tester.pumpAndSettle();
+        double top(Finder f) => tester.getTopLeft(f).dy;
+        expect(top(find.text('cabeçalho')), lessThan(top(find.text('campos'))));
+        expect(
+          top(find.text('campos')),
+          lessThan(top(find.text('Status base'))),
+        );
+        expect(
+          top(find.text('Status base')),
+          lessThan(top(find.text('rodapé'))),
+        );
+      });
+    }
   });
 }

@@ -11,9 +11,18 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 /// traça os polígonos com coordenadas calculadas (seno e cosseno de cada
 /// vértice), sem biblioteca de gráficos.
 class BaseStatsChart extends StatelessWidget {
-  const BaseStatsChart({required this.stats, this.nature, super.key});
+  const BaseStatsChart({
+    required this.stats,
+    this.nature,
+    this.compact = false,
+    super.key,
+  });
 
   final List<FormStat> stats;
+
+  /// Compacto (#207): o hexágono menor, com a natureza, o total e o EV ao
+  /// lado, como no resumo do HOME. Cabe no detalhe sem rolar.
+  final bool compact;
 
   /// Natureza do espécime registrado: o stat que ela aumenta fica vermelho
   /// com ↑ e o que diminui, azul com ↓, como nos jogos. Sem espécime (ou
@@ -91,55 +100,74 @@ class BaseStatsChart extends StatelessWidget {
       for (final stat in stats)
         if (stat.effort > 0) '${stat.effort} EV de ${stat.label}',
     ];
-    return Column(
-      spacing: 4,
-      children: [
-        Semantics(
-          label: [
-            for (final stat in vertices)
-              '${stat.label} ${stat.baseStat}${effect(stat.stat)}',
-          ].join('; '),
-          child: CustomPaint(
-            size: const Size(300, 252),
-            painter: _HexagonPainter(
-              stats: vertices,
-              grid: theme.colorScheme.outlineVariant,
-              fill: theme.colorScheme.primary,
-              label: theme.textTheme.labelSmall!.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              value: theme.textTheme.labelLarge!,
-              increased: up,
-              decreased: down,
-              increasedColor: upColor,
-              decreasedColor: downColor,
+    final align = compact ? TextAlign.start : TextAlign.center;
+    final chart = Semantics(
+      label: [
+        for (final stat in vertices)
+          '${stat.label} ${stat.baseStat}${effect(stat.stat)}',
+      ].join('; '),
+      child: CustomPaint(
+        size: compact ? const Size(190, 164) : const Size(300, 252),
+        painter: _HexagonPainter(
+          stats: vertices,
+          grid: theme.colorScheme.outlineVariant,
+          fill: theme.colorScheme.primary,
+          label: theme.textTheme.labelSmall!.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: compact ? 10 : null,
+          ),
+          value: compact
+              ? theme.textTheme.labelMedium!
+              : theme.textTheme.labelLarge!,
+          labelGap: compact ? 14 : 18,
+          increased: up,
+          decreased: down,
+          increasedColor: upColor,
+          decreasedColor: downColor,
+        ),
+      ),
+    );
+    final legend = [
+      if (nature != null)
+        _NatureCaption(
+          nature: nature,
+          byName: byName,
+          upColor: upColor,
+          downColor: downColor,
+          textAlign: align,
+        ),
+      Text.rich(
+        TextSpan(
+          children: [
+            const TextSpan(text: 'Total '),
+            TextSpan(
+              text: '$total',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            if (ev.isNotEmpty)
+              TextSpan(text: ' · derrotado, dá ${ev.join(' e ')}'),
+          ],
+        ),
+        style: compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium,
+        textAlign: align,
+      ),
+    ];
+    if (compact) {
+      return Row(
+        spacing: 8,
+        children: [
+          chart,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 6,
+              children: legend,
             ),
           ),
-        ),
-        if (nature != null)
-          _NatureCaption(
-            nature: nature,
-            byName: byName,
-            upColor: upColor,
-            downColor: downColor,
-          ),
-        Text.rich(
-          TextSpan(
-            children: [
-              const TextSpan(text: 'Total '),
-              TextSpan(
-                text: '$total',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              if (ev.isNotEmpty)
-                TextSpan(text: ' · derrotado, dá ${ev.join(' e ')}'),
-            ],
-          ),
-          style: theme.textTheme.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
+        ],
+      );
+    }
+    return Column(spacing: 4, children: [chart, ...legend]);
   }
 }
 
@@ -154,8 +182,11 @@ class _HexagonPainter extends CustomPainter {
     required this.decreased,
     required this.increasedColor,
     required this.decreasedColor,
+    this.labelGap = 18,
   });
 
+  /// Distância dos rótulos até a ponta do hexágono.
+  final double labelGap;
   final List<FormStat> stats;
   final Color grid;
   final Color fill;
@@ -170,7 +201,7 @@ class _HexagonPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     // Sobra espaço em volta para os rótulos.
-    final radius = size.height / 2 - 32;
+    final radius = size.height / 2 - labelGap - 14;
     Offset vertex(int i, double r) {
       final angle = (-90 + 60 * i) * math.pi / 180;
       return center + Offset(r * math.cos(angle), r * math.sin(angle));
@@ -232,7 +263,7 @@ class _HexagonPainter extends CustomPainter {
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
       )..layout();
-      final anchor = vertex(i, radius + 18);
+      final anchor = vertex(i, radius + labelGap);
       text.paint(canvas, anchor - Offset(text.width / 2, text.height / 2));
     }
   }
@@ -250,8 +281,10 @@ class _NatureCaption extends StatelessWidget {
     required this.byName,
     required this.upColor,
     required this.downColor,
+    this.textAlign = TextAlign.center,
   });
 
+  final TextAlign textAlign;
   final Choice nature;
   final Map<String, FormStat> byName;
   final Color upColor;
@@ -286,7 +319,7 @@ class _NatureCaption extends StatelessWidget {
         ],
       ),
       style: theme.textTheme.bodyMedium,
-      textAlign: TextAlign.center,
+      textAlign: textAlign,
     );
   }
 }
