@@ -152,7 +152,14 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     return draft.copyWith(
       isShiny: true,
       ot: draft.ot ?? save?.trainer.id,
-      hunt: hunt.toRecord(ref.read(shinyHuntActionsProvider).now()),
+      hunt: switch (ref.read(huntOddsProvider)(hunt)) {
+        (:final rule, :final hasCharm) => hunt.toRecord(
+          ref.read(shinyHuntActionsProvider).now(),
+          rule: rule,
+          hasCharm: hasCharm,
+        ),
+        null => hunt.toRecord(ref.read(shinyHuntActionsProvider).now()),
+      },
     );
   }
 

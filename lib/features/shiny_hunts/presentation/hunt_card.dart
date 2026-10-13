@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -163,7 +165,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
       builder: (_) => _CountDialog(widget.hunt.count),
     );
     if (typed != null) {
-      _run(() => _actions.save(widget.hunt.copyWith(count: typed)));
+      _run(() => _actions.setCount(widget.hunt, typed));
     }
   }
 
@@ -232,6 +234,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
         : '${huntCountLabel(hunt.count + _pending, null)} '
               '${huntUnitLabels[hunt.unit] ?? hunt.unit}';
     final enabled = !widget.locked;
+    final odds = ref.watch(huntOddsProvider)(hunt);
     return Card.outlined(
       key: ValueKey('hunt-card-${hunt.id}'),
       child: Padding(
@@ -324,6 +327,15 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                   ),
               ],
             ),
+            if (odds != null && !hunt.paused)
+              HuntOddsPanel(
+                hunt: hunt,
+                odds: odds,
+                save: save,
+                onBreak: enabled && hunt.chain > 0
+                    ? () => _run(() => _actions.breakChain(hunt))
+                    : null,
+              ),
             if (hunt.paused)
               Row(
                 spacing: 8,
@@ -577,4 +589,112 @@ class _DurationDialogState extends State<_DurationDialog> {
       ),
     ],
   );
+}
+
+/// As odds no cartão (#221): a chance do próximo encontro, por que (Charm,
+/// cadeia, a nota da regra), a cadeia com o "Quebrou" e a barra da chance
+/// acumulada com o múltiplo. Em horas, só as odds.
+class HuntOddsPanel extends StatelessWidget {
+  const HuntOddsPanel({
+    required this.hunt,
+    required this.odds,
+    this.save,
+    this.onBreak,
+    super.key,
+  });
+
+  final ShinyHunt hunt;
+  final HuntOdds odds;
+  final Save? save;
+  final VoidCallback? onBreak;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (:rule, :hasCharm) = odds;
+    final chance = hunt.chance(rule, hasCharm: hasCharm);
+    final charmOn = rule.charmApplies(hunt.form, hasCharm: hasCharm);
+    final why = [
+      if (rule.hasChain && hunt.chain > 0) 'cadeia ${hunt.chain}',
+      if (rule.modifiers.any((m) => m.isNumber))
+        for (final m in rule.modifiers)
+          if (m.isNumber) '${m.label} ${hunt.modifiers[m.id] ?? m.min ?? 0}',
+      if (charmOn)
+        'Shiny Charm (do save)'
+      else if (hasCharm && rule.charmCounts)
+        'O Charm não vale para este encontro'
+      else if (hasCharm)
+        'O Charm não vale neste método',
+      if (hunt.timed) 'em horas: só as odds',
+    ];
+    final miss = hunt.missChance(rule, hasCharm: hasCharm);
+    final percent = ((1 - miss) * 100).round();
+    final multiple = hunt.multiple(rule, hasCharm: hasCharm);
+    final number = NumberFormat.decimalPattern('pt_BR');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 6,
+      children: [
+        Row(
+          spacing: 10,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              chance > 0 ? oddsLabel(chance) : 'não pode ser shiny',
+              key: const ValueKey('hunt-odds'),
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (why.isNotEmpty)
+              Flexible(
+                child: Text(why.join(' · '), style: theme.textTheme.bodySmall),
+              ),
+          ],
+        ),
+        if (rule.hasChain && !hunt.timed)
+          Row(
+            spacing: 8,
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(text: 'Cadeia atual '),
+                      TextSpan(
+                        text: '${hunt.chain}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      TextSpan(
+                        text:
+                            '\nmaior cadeia: ${hunt.bestChain} · '
+                            '${number.format(hunt.count)} no total',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              OutlinedButton(onPressed: onBreak, child: const Text('Quebrou')),
+            ],
+          ),
+        if (!hunt.timed && hunt.count > 0) ...[
+          LinearProgressIndicator(
+            key: const ValueKey('hunt-odds-progress'),
+            value: 1 - miss,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          Text(
+            '$percent% das caçadas já teriam terminado · '
+            '${multiple.toStringAsFixed(1).replaceAll('.', ',')}× '
+            'as odds'
+            '${hunt.estimated ? ' (estimativa: contagem digitada)' : ''}',
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
+  }
 }

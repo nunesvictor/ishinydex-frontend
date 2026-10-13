@@ -85,6 +85,13 @@ abstract class HuntRecord with _$HuntRecord {
 
     /// Link do post (ex.: r/ShinyPokemon).
     String? postUrl,
+
+    /// As odds no fim da caçada (o x de 1/x), o múltiplo ("0,6× as odds")
+    /// e a maior cadeia (#221). Guardados no fim: mudar o Charm do save ou
+    /// os modificadores depois não altera o registro.
+    double? odds,
+    double? multiple,
+    int? bestChain,
   }) = _HuntRecord;
 
   const HuntRecord._();

@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 final shinyHuntRepositoryProvider = Provider<ShinyHuntRepository>(
   (ref) => ref.watch(fakeBackendProvider),
@@ -25,6 +28,30 @@ final Provider<Set<int>> huntedFormsProvider = Provider.autoDispose<Set<int>>(
       if (!h.paused) h.form,
   },
 );
+
+/// As odds de uma caçada (#221): a regra do método no jogo do save e se o
+/// save tem o Shiny Charm. `null` sem save, sem método ou sem regra no
+/// catálogo (catálogo antigo).
+typedef HuntOdds = ({OddsRule rule, bool hasCharm});
+
+/// A regra de odds do método no jogo do save.
+final oddsRuleProvider =
+    Provider<OddsRule? Function(String? method, Save? save)>((ref) {
+      final catalog = ref.watch(fakeBackendProvider).catalog;
+      return (method, save) => catalog?.oddsRule(method, save?.trainer.version);
+    });
+
+final Provider<HuntOdds? Function(ShinyHunt)> huntOddsProvider =
+    Provider.autoDispose<HuntOdds? Function(ShinyHunt)>((ref) {
+      final saves = ref.watch(savesProvider).value ?? const <Save>[];
+      final ruleFor = ref.watch(oddsRuleProvider);
+      return (hunt) {
+        final save = saves.where((s) => s.id == hunt.save).firstOrNull;
+        if (save == null) return null;
+        final rule = ruleFor(hunt.method, save);
+        return rule == null ? null : (rule: rule, hasCharm: save.hasShinyCharm);
+      };
+    });
 
 final shinyHuntActionsProvider = Provider<ShinyHuntActions>(
   ShinyHuntActions.new,
@@ -52,8 +79,33 @@ class ShinyHuntActions {
     return saved;
   }
 
+  HuntOdds? _odds(ShinyHunt hunt) => _ref.read(huntOddsProvider)(hunt);
+
+  /// +1/−1 (ou o que andou segurando): com odds, cada encontro entra na
+  /// chance acumulada e na cadeia.
   Future<ShinyHunt> add(ShinyHunt hunt, int delta) =>
-      save(hunt.copyWith(count: max(0, hunt.count + delta)));
+      save(switch (_odds(hunt)) {
+        (:final rule, :final hasCharm) => hunt.advanced(
+          rule,
+          delta,
+          hasCharm: hasCharm,
+        ),
+        null => hunt.copyWith(count: max(0, hunt.count + delta)),
+      });
+
+  /// A contagem digitada.
+  Future<ShinyHunt> setCount(ShinyHunt hunt, int count) =>
+      save(switch (_odds(hunt)) {
+        (:final rule, :final hasCharm) => hunt.withCount(
+          rule,
+          count,
+          hasCharm: hasCharm,
+        ),
+        null => hunt.copyWith(count: count),
+      });
+
+  /// "Quebrou": a cadeia volta a 0.
+  Future<ShinyHunt> breakChain(ShinyHunt hunt) => save(hunt.broken());
 
   /// Inicia ou para o cronômetro.
   Future<ShinyHunt> toggleTimer(ShinyHunt hunt) => save(

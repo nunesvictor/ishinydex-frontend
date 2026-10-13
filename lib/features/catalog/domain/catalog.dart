@@ -1,4 +1,5 @@
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
 /// Pacote do catálogo (`catalog.json`, gerado pelo `exportcatalog` do
@@ -28,6 +29,7 @@ class Catalog {
     required this._gameFormIds,
     required this._gameLocks,
     required this.shinyMethods,
+    required this.shinyOdds,
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
@@ -237,8 +239,20 @@ class Catalog {
             versions: {for (final v in m['versions'] as List) v as String},
           ),
       ],
+      shinyOdds: [
+        for (final o in _objects(json['shinyOdds'] ?? const <Object>[]))
+          OddsRule.fromJson(o),
+      ],
     );
   }
+
+  /// As regras de odds (backend#113; vazio em catálogo antigo).
+  final List<OddsRule> shinyOdds;
+
+  /// A regra de odds do [method] no jogo [version]; `null` sem regra.
+  OddsRule? oddsRule(String? method, String? version) => shinyOdds
+      .where((o) => o.method == method && o.versions.contains(version))
+      .firstOrNull;
 
   /// Métodos de shiny hunt (vazio em catálogo antigo).
   final List<ShinyMethod> shinyMethods;
