@@ -86,3 +86,36 @@ class GoIcon extends MarkIcon {
   /// O mesmo arquivo de `OriginMark.go.asset` (aqui como constante).
   static const defaultAsset = 'assets/origin_marks/go.png';
 }
+
+/// O brilho de shiny riscado: o motivo "Sem shiny" das Caçadas (#219).
+class NoShinyIcon extends StatelessWidget {
+  const NoShinyIcon({this.size = 20, super.key});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: size,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        ShinyIcon(size: size, semanticLabel: null),
+        Transform.rotate(
+          angle: -0.785,
+          child: Container(
+            width: size * 1.15,
+            height: size / 9,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onSurface,
+              borderRadius: BorderRadius.circular(size),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.surface,
+                width: 0.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}

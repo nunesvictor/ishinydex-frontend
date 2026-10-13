@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/menu_chip.dart';
@@ -217,8 +218,6 @@ class _Filters extends ConsumerWidget {
     final count = query.scopeCount;
     final balls = summarize(labelsOf(query.acceptedBalls, options.pokeball));
     final pokeballOn = _isOn(HuntReason.pokeball);
-    final first = query.reasons.first;
-    final more = query.reasons.length - 1;
     // Jogo: só com o catálogo das pokédex e algum save; um item por versão.
     final saves = ref.watch(knowsGamesProvider)
         ? ref.watch(savesProvider).value ?? const <Save>[]
@@ -237,9 +236,11 @@ class _Filters extends ConsumerWidget {
     final chips = <Widget>[
       // Situação · Motivos · Jogo, a mesma ordem do inventário (#217).
       MenuChip(
-        label: query.situation == HuntSituation.all
-            ? 'Situação'
-            : query.situation.label,
+        label: 'Situação',
+        icons: [?_situationIcon(query.situation)],
+        tooltip: query.situation == HuntSituation.all
+            ? null
+            : 'Situação: ${query.situation.label}',
         selected: query.situation != HuntSituation.all,
         menuChildren: [
           const MenuHeader('Situação do slot'),
@@ -248,13 +249,26 @@ class _Filters extends ConsumerWidget {
               value: situation,
               groupValue: query.situation,
               onChanged: (s) => onChanged(query.copyWith(situation: s!)),
-              child: MenuOptionText(situation.label, situation.hint),
+              child: MenuOptionText(
+                situation.label,
+                situation.hint,
+                leading: switch (_situationIcon(situation)) {
+                  final Icon icon => Icon(
+                    icon.icon,
+                    color: icon.color,
+                    size: 18,
+                  ),
+                  _ => null,
+                },
+              ),
             ),
         ],
       ),
       MenuChip(
-        label: more > 0 ? '${first.label} +$more' : first.label,
-        tooltip: 'Motivos',
+        label: 'Motivos',
+        icons: [for (final r in query.reasons) _reasonIcon(r)],
+        tooltip:
+            'Motivos: ${joinLabels([for (final r in query.reasons) r.label.replaceRange(0, 1, r.label[0].toLowerCase())])}',
         // Sempre há pelo menos um motivo: o chip está sempre "ativo".
         selected: true,
         menuChildren: [
@@ -266,7 +280,7 @@ class _Filters extends ConsumerWidget {
             child: MenuOptionText(
               HuntReason.noShiny.label,
               'Slot vazio ou com espécime não shiny',
-              leading: const ShinyIcon(size: 18, semanticLabel: null),
+              leading: const NoShinyIcon(size: 18),
             ),
           ),
           CheckboxMenuButton(
@@ -344,34 +358,6 @@ class _Filters extends ConsumerWidget {
   }
 }
 
-/// Os ícones dos jogos marcados, um por cima do outro (até 3), no chip Jogo.
-class _StackedGameIcons extends StatelessWidget {
-  const _StackedGameIcons(this.versions);
-
-  final List<String> versions;
-
-  static const _size = 18.0;
-  static const _step = 8.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final shown = versions.take(3).toList();
-    return SizedBox(
-      width: _size + _step * (shown.length - 1),
-      height: _size,
-      child: Stack(
-        children: [
-          for (final (i, version) in shown.indexed)
-            Positioned(
-              left: _step * i,
-              child: GameIcon(version, size: _size),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Quantas caçadas há em um jogo (com os outros filtros), à direita do item
 /// do menu Jogo.
 /// O chip Jogo: abre a folha dos jogos ([showGamePicker]) e aplica o que
@@ -392,16 +378,18 @@ class _GameChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final games = query.versions;
+    final names = joinLabels([for (final g in games) versionLabel(g)]);
     return FilterChip(
-      avatar: games.isEmpty ? null : _StackedGameIcons(games),
+      tooltip: games.isEmpty ? null : 'Jogo: $names',
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(switch (games) {
-            [] => 'Jogo',
-            [final one] => versionLabel(one),
-            [final first, ...] => '${versionLabel(first)} +${games.length - 1}',
-          }),
+          if (games.isEmpty)
+            const Text('Jogo')
+          else
+            ChipIcons([
+              for (final g in games) GameIcon(g, size: 18),
+            ], semanticLabel: 'Jogo: $names'),
           const Icon(Icons.arrow_drop_down, size: 18),
         ],
       ),
@@ -773,3 +761,20 @@ class HuntGames extends StatelessWidget {
     );
   }
 }
+
+/// O ícone de cada situação do slot (#219); "Todos" não tem.
+Widget? _situationIcon(HuntSituation situation) => switch (situation) {
+  HuntSituation.all => null,
+  HuntSituation.missing => const Icon(Icons.radio_button_unchecked),
+  HuntSituation.registered => const Icon(
+    Icons.check_circle,
+    color: Colors.green,
+  ),
+};
+
+/// O ícone de cada motivo (#219), os mesmos do menu.
+Widget _reasonIcon(HuntReason reason) => switch (reason) {
+  HuntReason.noShiny => const NoShinyIcon(size: 18),
+  HuntReason.fromGo => const GoIcon(size: 18, semanticLabel: null),
+  HuntReason.pokeball => const Icon(Icons.catching_pokemon),
+};

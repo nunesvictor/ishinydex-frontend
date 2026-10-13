@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 
 /// Chip de filtro que abre um menu (▾) com as opções de um grupo, como
 /// "Situação" ou "Motivos". Um grupo inteiro ocupa um chip só, então a
 /// linha de filtros cabe na largura do celular sem rolagem lateral.
 ///
-/// [selected] destaca o chip quando o grupo não está no padrão.
+/// [selected] destaca o chip quando o grupo não está no padrão. Com
+/// [icons] (#219), a face mostra só os ícones dos valores marcados, e o
+/// [tooltip] diz em palavras o que está marcado.
 class MenuChip extends StatelessWidget {
   const MenuChip({
     required this.label,
     required this.menuChildren,
     this.selected = false,
     this.tooltip,
-    this.avatar,
-    this.avatarBoxConstraints,
+    this.icons = const [],
     super.key,
   });
 
+  /// Os ícones dos valores marcados; vazio = a face mostra o [label].
+  final List<Widget> icons;
+
   final String label;
 
-  /// Antes do rótulo (ex.: o ícone do jogo escolhido).
-  final Widget? avatar;
-
-  /// Espaço do [avatar]; o padrão do chip é um quadrado de um ícone só.
-  final BoxConstraints? avatarBoxConstraints;
   final bool selected;
   final String? tooltip;
 
@@ -33,11 +33,15 @@ class MenuChip extends StatelessWidget {
   Widget build(BuildContext context) => MenuAnchor(
     menuChildren: menuChildren,
     builder: (context, controller, _) => FilterChip(
-      avatar: avatar,
-      avatarBoxConstraints: avatarBoxConstraints,
       label: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [Text(label), const Icon(Icons.arrow_drop_down, size: 18)],
+        children: [
+          if (icons.isEmpty)
+            Text(label)
+          else
+            ChipIcons(icons, semanticLabel: tooltip ?? label),
+          const Icon(Icons.arrow_drop_down, size: 18),
+        ],
       ),
       tooltip: tooltip,
       selected: selected,

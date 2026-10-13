@@ -143,11 +143,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Mostrar'));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(FilterChip, 'Scarlet'), findsOneWidget);
+      expect(find.byTooltip('Jogo: Scarlet'), findsOneWidget);
       expect(find.textContaining('capturados em Scarlet'), findsOneWidget);
 
       // Reaberta, a seção com jogo marcado já vem aberta.
-      await tester.tap(find.widgetWithText(FilterChip, 'Scarlet'));
+      await tester.tap(find.byTooltip('Jogo: Scarlet'));
       await tester.pumpAndSettle();
       expect(find.text('1 marcado'), findsOneWidget);
       expect(
@@ -180,14 +180,14 @@ void main() {
       );
       await tester.tap(find.textContaining('Mostrar'));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(FilterChip, 'Scarlet +1'), findsOneWidget);
+      expect(find.byTooltip('Jogo: Scarlet e Sword'), findsOneWidget);
       expect(
         find.textContaining('capturados em Scarlet e podem ir para Sword'),
         findsOneWidget,
       );
 
       // "Todos os jogos" limpa as duas seções.
-      await tester.tap(find.widgetWithText(FilterChip, 'Scarlet +1'));
+      await tester.tap(find.byTooltip('Jogo: Scarlet e Sword'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Todos os jogos'));
       await tester.pumpAndSettle();
