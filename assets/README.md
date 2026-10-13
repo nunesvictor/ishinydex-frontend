@@ -65,3 +65,7 @@ Usado por `AlphaIcon` (`lib/core/widgets/mark_icons.dart`), que volta ao emoji �
 As duas estrelas laranja que marcam um shiny no Pokémon HOME (44×44, colorido), baixadas da Bulbagarden Archives como [`ShinyHOMEStar.png`](https://archives.bulbagarden.net/wiki/File:ShinyHOMEStar.png) ("Image of the star indicating a Shiny Pokémon from the mobile version of Pokémon HOME"; artigo [Shiny Pokémon](https://bulbapedia.bulbagarden.net/wiki/Shiny_Pok%C3%A9mon)). Mesma ressalva de propriedade das marcas de origem.
 
 Usado por `ShinyIcon` (`lib/core/widgets/mark_icons.dart`), que volta ao emoji ✨ se o asset falhar. O "veio do GO" usa a marca de origem `go.png` pelo `GoIcon`, com o 📱 de reserva.
+
+## Fonte (`fonts/`)
+
+A Roboto (Regular, Medium e Bold), da pasta `web/static` da release [v3.015 do roboto-classic](https://github.com/googlefonts/roboto-classic/releases/tag/v3.015), sob a licença SIL Open Font License 1.1 (`fonts/OFL.txt`). Ela vai junto com o app (#212): sem uma família `Roboto` declarada no `pubspec.yaml`, o motor do Flutter na web baixa a fonte do `fonts.gstatic.com` antes do primeiro quadro. Esse download fica fora do cache do service worker e, se atrasar (comum na primeira abertura depois de uma atualização), os números saem espaçados. O `pubspec.yaml` declara os três arquivos um a um, então o `OFL.txt` não entra no bundle.

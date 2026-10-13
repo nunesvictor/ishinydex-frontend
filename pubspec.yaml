@@ -47,3 +47,14 @@ flutter:
     - assets/game_icons/
     - assets/icons/
     - assets/origin_marks/
+  # A Roboto vai junto com o app (#212): sem ela, o motor da web baixa a
+  # fonte do Google antes do primeiro quadro, e um atraso deixa os números
+  # espaçados. Daqui, o service worker guarda e funciona sem internet.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700

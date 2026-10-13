@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 abstract final class AppTheme {
   static const seed = Color(0xFF3F51B5);
 
+  /// A família declarada no `pubspec.yaml`.
+  static const fontFamily = 'Roboto';
+
   static ThemeData light() => _build(Brightness.light);
 
   static ThemeData dark() => _build(Brightness.dark);
@@ -17,6 +20,9 @@ abstract final class AppTheme {
     );
     return ThemeData(
       colorScheme: scheme,
+      // A Roboto do app (`assets/fonts/`, #212), a mesma em todas as
+      // plataformas.
+      fontFamily: fontFamily,
       appBarTheme: appBarTheme(scheme, defaultTargetPlatform),
       visualDensity: VisualDensity.standard,
       pageTransitionsTheme: const PageTransitionsTheme(
