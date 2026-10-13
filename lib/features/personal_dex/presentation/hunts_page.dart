@@ -235,6 +235,23 @@ class _Filters extends ConsumerWidget {
         ],
     };
     final chips = <Widget>[
+      // Situação · Motivos · Jogo, a mesma ordem do inventário (#217).
+      MenuChip(
+        label: query.situation == HuntSituation.all
+            ? 'Situação'
+            : query.situation.label,
+        selected: query.situation != HuntSituation.all,
+        menuChildren: [
+          const MenuHeader('Situação do slot'),
+          for (final situation in HuntSituation.values)
+            RadioMenuButton<HuntSituation>(
+              value: situation,
+              groupValue: query.situation,
+              onChanged: (s) => onChanged(query.copyWith(situation: s!)),
+              child: MenuOptionText(situation.label, situation.hint),
+            ),
+        ],
+      ),
       MenuChip(
         label: more > 0 ? '${first.label} +$more' : first.label,
         tooltip: 'Motivos',
@@ -276,22 +293,6 @@ class _Filters extends ConsumerWidget {
               leading: const Icon(Icons.catching_pokemon, size: 18),
             ),
           ),
-        ],
-      ),
-      MenuChip(
-        label: query.situation == HuntSituation.all
-            ? 'Situação'
-            : query.situation.label,
-        selected: query.situation != HuntSituation.all,
-        menuChildren: [
-          const MenuHeader('Situação do slot'),
-          for (final situation in HuntSituation.values)
-            RadioMenuButton<HuntSituation>(
-              value: situation,
-              groupValue: query.situation,
-              onChanged: (s) => onChanged(query.copyWith(situation: s!)),
-              child: MenuOptionText(situation.label, situation.hint),
-            ),
         ],
       ),
       if (savesOf.isNotEmpty)

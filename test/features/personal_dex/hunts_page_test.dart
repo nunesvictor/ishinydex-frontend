@@ -227,6 +227,13 @@ void main() {
     });
   }
 
+  testWidgets('chips: Situação · Motivos · Jogo (#217)', (tester) async {
+    await pumpFullApp(tester, size: compactSize);
+    await _openHunts(tester);
+    double left(String chip) => tester.getTopLeft(find.text(chip).first).dx;
+    expect(left('Situação'), lessThan(left('Sem shiny')));
+  });
+
   testWidgets('busca espera parar de digitar', (tester) async {
     await pumpFullApp(tester, size: compactSize);
     await _openHunts(tester);

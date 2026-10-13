@@ -27,7 +27,8 @@ Future<List<Specimen>> allSpecimens(FakeBackend backend) async =>
 
 /// Escolhe a situação [label] no menu do chip "Situação".
 Future<void> pickStatus(WidgetTester tester, String label) async {
-  await tester.tap(find.byType(MenuChip));
+  // O primeiro chip com menu é o da situação.
+  await tester.tap(find.byType(MenuChip).first);
   await tester.pumpAndSettle();
   await tester.tap(
     find.descendant(
@@ -47,6 +48,22 @@ Future<void> openBulkAction(WidgetTester tester, String label) async {
 
 Future<void> openSpecimensTab(WidgetTester tester) async {
   await tester.tap(find.text('Espécimes').first);
+  await tester.pumpAndSettle();
+}
+
+/// Abre o menu Raridade (o chip com o nome [chip]), toca em [option] e
+/// fecha em "Pronto".
+Future<void> pickRarity(WidgetTester tester, String chip, String option) async {
+  await tester.tap(find.widgetWithText(MenuChip, chip));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.descendant(
+      of: find.byType(CheckboxMenuButton),
+      matching: find.text(option),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Pronto'));
   await tester.pumpAndSettle();
 }
 
@@ -95,14 +112,13 @@ void main() {
       final total = specimens.length;
       expect(find.text('$total espécimes'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilterChip, 'Shiny'));
-      await tester.pumpAndSettle();
+      await pickRarity(tester, 'Raridade', 'Shiny');
       expect(specimenTile(plainBulba.id), findsNothing);
       // Com filtro: "filtrados de todos".
       final shiny = specimens.where((s) => s.isShiny).length;
       expect(find.text('$shiny de $total espécimes'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilterChip, 'Shiny'));
-      await tester.pumpAndSettle();
+      await pickRarity(tester, 'Shiny', 'Qualquer raridade');
+      expect(find.widgetWithText(MenuChip, 'Raridade'), findsOneWidget);
 
       await pickStatus(tester, 'Registrados');
       expect(specimenTile(saur.id), findsNothing);
@@ -115,12 +131,10 @@ void main() {
 
       // Alfa: só os que têm a marca (seed: 💢 nas formas 1, 6, 11…). O GO
       // não tem chip: fica no filtro de marca de origem.
-      await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
-      await tester.pumpAndSettle();
+      await pickRarity(tester, 'Raridade', 'Alfa');
       expect(specimenTile(saur.id), findsNothing); // Saur não é alfa
       expect(find.byType(AlphaIcon), findsWidgets);
-      await tester.tap(find.widgetWithText(FilterChip, 'Alfa'));
-      await tester.pumpAndSettle();
+      await pickRarity(tester, 'Alfa', 'Alfa');
       expect(find.widgetWithText(FilterChip, 'GO'), findsNothing);
 
       await search(tester, 'pidgeotto');
@@ -278,7 +292,7 @@ void main() {
   });
 
   group('compacto', () {
-    testWidgets('chips só com o ícone, nome no tooltip; sem rolar de lado', (
+    testWidgets('Raridade: shiny e alfa num chip com menu (#217)', (
       tester,
     ) async {
       final backend = FakeBackend.seeded();
@@ -286,20 +300,14 @@ void main() {
       await pumpFullApp(tester, size: compactSize, backend: backend);
       await openSpecimensTab(tester);
 
-      for (final label in ['Shiny', 'Alfa', 'GO']) {
-        expect(find.widgetWithText(FilterChip, label), findsNothing);
-      }
-      expect(
-        find.descendant(
-          of: find.byType(FilterChip),
-          matching: find.byType(ShinyIcon),
-        ),
-        findsOneWidget,
-      );
-      // A linha de filtros quebra em vez de rolar.
+      // Situação · Raridade · Jogo, sem chips só de ícone e sem rolar de
+      // lado.
+      double left(String chip) =>
+          tester.getTopLeft(find.widgetWithText(MenuChip, chip)).dx;
+      expect(left('Situação'), lessThan(left('Raridade')));
       expect(
         find.ancestor(
-          of: find.byTooltip('Só shiny'),
+          of: find.widgetWithText(MenuChip, 'Raridade'),
           matching: find.byWidgetPredicate(
             (w) =>
                 w is SingleChildScrollView &&
@@ -308,16 +316,29 @@ void main() {
         ),
         findsNothing,
       );
-
-      await tester.tap(find.byTooltip('Só shiny'));
+      // Sem filtro, "Qualquer raridade" fica marcado e não há o que limpar.
+      await tester.tap(find.widgetWithText(MenuChip, 'Raridade'));
       await tester.pumpAndSettle();
-      final shiny = specimens.where((s) => s.isShiny).length;
+      final any = tester.widget<CheckboxMenuButton>(
+        find.ancestor(
+          of: find.text('Qualquer raridade'),
+          matching: find.byType(CheckboxMenuButton),
+        ),
+      );
+      expect(any.value, isTrue);
+      expect(any.onChanged, isNull);
+      await tester.tap(find.text('Pronto'));
+      await tester.pumpAndSettle();
+
+      await pickRarity(tester, 'Raridade', 'Shiny');
+      await pickRarity(tester, 'Shiny', 'Alfa');
+      final both = specimens.where((s) => s.isShiny && s.isAlpha).length;
+      expect(find.widgetWithText(MenuChip, 'Shiny e alfa'), findsOneWidget);
       expect(
-        find.text('$shiny de ${specimens.length} espécimes'),
+        find.text('$both de ${specimens.length} espécimes'),
         findsOneWidget,
       );
-      await tester.tap(find.byTooltip('Só shiny'));
-      await tester.pumpAndSettle();
+      await pickRarity(tester, 'Shiny e alfa', 'Qualquer raridade');
       expect(find.text('${specimens.length} espécimes'), findsOneWidget);
     });
 

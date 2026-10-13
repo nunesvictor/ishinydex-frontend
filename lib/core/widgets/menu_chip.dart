@@ -12,6 +12,7 @@ class MenuChip extends StatelessWidget {
     this.selected = false,
     this.tooltip,
     this.avatar,
+    this.avatarBoxConstraints,
     super.key,
   });
 
@@ -19,6 +20,9 @@ class MenuChip extends StatelessWidget {
 
   /// Antes do rótulo (ex.: o ícone do jogo escolhido).
   final Widget? avatar;
+
+  /// Espaço do [avatar]; o padrão do chip é um quadrado de um ícone só.
+  final BoxConstraints? avatarBoxConstraints;
   final bool selected;
   final String? tooltip;
 
@@ -30,6 +34,7 @@ class MenuChip extends StatelessWidget {
     menuChildren: menuChildren,
     builder: (context, controller, _) => FilterChip(
       avatar: avatar,
+      avatarBoxConstraints: avatarBoxConstraints,
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [Text(label), const Icon(Icons.arrow_drop_down, size: 18)],
