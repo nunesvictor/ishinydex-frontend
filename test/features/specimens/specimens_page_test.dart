@@ -240,14 +240,9 @@ void main() {
       await tester.tap(find.text('Novo espécime'));
       await tester.pumpAndSettle();
       expect(find.text('Digite ao menos 2 letras do nome.'), findsOneWidget);
-      // Enter: busca na hora, sem esperar o debounce (#202).
+      // Enter: busca na hora e escolhe o primeiro resultado (#202, #205).
       await tester.enterText(find.byType(TextField).last, 'pidgey');
       await tester.testTextInput.receiveAction(TextInputAction.search);
-      await tester.pump();
-      await tester.pump();
-      expect(find.text('Pidgey'), findsWidgets);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Pidgey').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Novo Pidgey'), findsOneWidget);

@@ -163,16 +163,42 @@ void main() {
     await tap(tester, find.text('Cancelar'));
     expect((await hunt(counter.id)).count, 25);
 
+    // Tocar no tempo parado corrige o acumulado (#205).
+    await tap(
+      tester,
+      inCard(timed.id, find.byKey(const ValueKey('hunt-time'))),
+    );
+    await tap(tester, find.text('Cancelar'));
+    expect((await hunt(timed.id)).accumulatedSeconds, 0);
+    await tap(
+      tester,
+      inCard(timed.id, find.byKey(const ValueKey('hunt-time'))),
+    );
+    await tester.enterText(find.byKey(const ValueKey('hunt-hours-input')), '2');
+    await tester.enterText(
+      find.byKey(const ValueKey('hunt-minutes-input')),
+      '15',
+    );
+    await tap(tester, find.text('OK'));
+    expect((await hunt(timed.id)).accumulatedSeconds, 8100);
+    expect(find.text('2 h 15 min'), findsOne);
+
     await tap(tester, inCard(timed.id, find.text('Iniciar')));
+    // Rodando, o tempo não abre o diálogo.
+    await tap(
+      tester,
+      inCard(timed.id, find.byKey(const ValueKey('hunt-time'))),
+    );
+    expect(find.text('Tempo da caçada'), findsNothing);
     expect((await hunt(timed.id)).running, isTrue);
 
-    // Menu: Editar abre a folha; Desistir pausa.
+    // Menu: Editar abre a folha; Fazer uma pausa leva a Pausadas.
     await tap(tester, inCard(counter.id, find.byTooltip('Mais ações')));
     await tap(tester, find.text('Editar'));
     expect(find.text('Editar caçada'), findsOne);
     await tap(tester, find.text('Salvar'));
     await tap(tester, inCard(counter.id, find.byTooltip('Mais ações')));
-    await tap(tester, find.text('Desistir (pausar)'));
+    await tap(tester, find.text('Fazer uma pausa'));
     expect((await hunt(counter.id)).paused, isTrue);
 
     // Encontrei!: o cadastro preenchido; salvar apaga a caçada.

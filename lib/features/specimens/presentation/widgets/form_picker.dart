@@ -55,10 +55,23 @@ class _FormPickerState extends ConsumerState<FormPicker> {
     );
   }
 
-  /// Enter: busca na hora, sem esperar o debounce.
-  void _onSubmitted(String text) {
+  /// Enter: busca na hora, sem esperar o debounce, e escolhe o primeiro
+  /// resultado assim que ele chegar (#205), como a busca de slot no dex. Se
+  /// a busca falhar ou não achar nada, a lista mostra o porquê.
+  Future<void> _onSubmitted(String text) async {
     _debounce?.cancel();
-    setState(() => _search = text.trim());
+    final search = text.trim();
+    setState(() => _search = search);
+    if (search.length < FormPicker.minSearchLength) return;
+    final List<FormRef> forms;
+    try {
+      forms = await ref.read(formSearchProvider(search).future);
+    } on Exception {
+      return;
+    }
+    // O texto pode ter mudado enquanto a busca corria.
+    if (!mounted || _search != search || forms.isEmpty) return;
+    Navigator.of(context).pop(forms.first);
   }
 
   @override
