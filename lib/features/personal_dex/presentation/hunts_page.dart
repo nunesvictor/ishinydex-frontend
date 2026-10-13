@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
@@ -21,6 +20,7 @@ import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/game_picker.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -409,183 +409,37 @@ class _GameChip extends StatelessWidget {
       onSelected: (_) async {
         final picked = await showGamePicker(
           context,
-          dexId: dexId,
-          query: query,
-          savesOf: savesOf,
+          subtitle: 'Caçável em algum destes saves',
+          sections: [
+            GamePickerSection(
+              title: 'Jogo',
+              versions: [...savesOf.keys],
+              selected: games,
+              saves: {for (final e in savesOf.entries) e.key: e.value.length},
+              count: (version) => _GameCount(
+                dexId: dexId,
+                query: query.copyWith(versions: [version]),
+              ),
+            ),
+          ],
+          applyLabel: (ref, draft) {
+            final count = ref
+                .watch(
+                  huntPageProvider((
+                    dexId: dexId,
+                    query: query.copyWith(versions: draft.single),
+                    page: 1,
+                  )),
+                )
+                .value
+                ?.count;
+            return count == null
+                ? 'Mostrar resultados'
+                : 'Mostrar $count resultados';
+          },
         );
-        if (picked != null) onChanged(query.copyWith(versions: picked));
+        if (picked != null) onChanged(query.copyWith(versions: picked.single));
       },
-    );
-  }
-}
-
-/// A folha "Jogo" das caçadas (#205): no celular, uma folha de baixo; no
-/// PC, um diálogo. Em cima a busca, no meio a lista dos jogos dos saves
-/// (por geração, na ordem da série), embaixo o botão fixo. Só o meio rola:
-/// com 2 ou 40 jogos, a busca e o botão ficam à vista. Devolve os jogos
-/// marcados (vazio = todos) ou `null` se fechou sem aplicar.
-Future<List<String>?> showGamePicker(
-  BuildContext context, {
-  required int dexId,
-  required HuntQuery query,
-  required Map<String, List<Save>> savesOf,
-}) {
-  final panel = _GamePicker(dexId: dexId, query: query, savesOf: savesOf);
-  if (WindowSize.of(context).isCompact) {
-    return showModalBottomSheet<List<String>>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (context) => SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.85,
-        child: panel,
-      ),
-    );
-  }
-  return showDialog<List<String>>(
-    context: context,
-    builder: (context) => Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 640),
-        child: panel,
-      ),
-    ),
-  );
-}
-
-class _GamePicker extends ConsumerStatefulWidget {
-  const _GamePicker({
-    required this.dexId,
-    required this.query,
-    required this.savesOf,
-  });
-
-  final int dexId;
-  final HuntQuery query;
-
-  /// Os saves de cada versão, já na ordem da série.
-  final Map<String, List<Save>> savesOf;
-
-  @override
-  ConsumerState<_GamePicker> createState() => _GamePickerState();
-}
-
-class _GamePickerState extends ConsumerState<_GamePicker> {
-  /// Com poucos jogos a busca só ocuparia espaço (como nos filtros).
-  static const _searchFrom = 8;
-
-  late final Set<String> _draft = {...widget.query.versions};
-  String _search = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final generationOf = ref.watch(versionGenerationProvider);
-    final search = foldForSearch(_search.trim());
-    final versions = [
-      for (final v in widget.savesOf.keys)
-        if (foldForSearch(versionLabel(v)).contains(search)) v,
-    ];
-    final draft = widget.query.copyWith(versions: [..._draft]);
-    final count = ref
-        .watch(huntPageProvider((dexId: widget.dexId, query: draft, page: 1)))
-        .value
-        ?.count;
-    final rows = <Widget>[
-      if (search.isEmpty)
-        CheckboxListTile(
-          value: _draft.isEmpty,
-          controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('Todos os jogos'),
-          onChanged: (_) => setState(_draft.clear),
-        ),
-      for (final (i, version) in versions.indexed) ...[
-        if (i == 0 || generationOf[version] != generationOf[versions[i - 1]])
-          if (generationOf[version] case final generation?)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
-              child: Text(
-                'Geração ${generationNumber(generation)}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-        CheckboxListTile(
-          dense: true,
-          value: _draft.contains(version),
-          controlAffinity: ListTileControlAffinity.leading,
-          title: Row(
-            spacing: 12,
-            children: [
-              GameIcon(version),
-              Flexible(child: Text(versionLabel(version))),
-              if (widget.savesOf[version]!.length > 1)
-                Text(
-                  '${widget.savesOf[version]!.length} saves',
-                  style: theme.textTheme.bodySmall,
-                ),
-            ],
-          ),
-          secondary: _GameCount(
-            dexId: widget.dexId,
-            query: widget.query.copyWith(versions: [version]),
-          ),
-          onChanged: (on) => setState(
-            () => on! ? _draft.add(version) : _draft.remove(version),
-          ),
-        ),
-      ],
-      if (versions.isEmpty)
-        const Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('Nenhum jogo com esse nome.'),
-        ),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Jogo', style: theme.textTheme.titleLarge),
-              Text(
-                'Caçável em algum destes saves',
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-        if (widget.savesOf.length >= _searchFrom)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-            child: SearchField(
-              hintText: 'Buscar jogo',
-              dense: true,
-              onChanged: (text) => setState(() => _search = text),
-            ),
-          ),
-        const Divider(height: 1),
-        Expanded(child: ListView(children: rows)),
-        const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: FilledButton(
-            onPressed: () => Navigator.of(context).pop([
-              for (final v in widget.savesOf.keys)
-                if (_draft.contains(v)) v,
-            ]),
-            child: Text(
-              count == null
-                  ? 'Mostrar resultados'
-                  : 'Mostrar $count resultados',
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
