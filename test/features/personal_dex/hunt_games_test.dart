@@ -53,7 +53,9 @@ Future<void> _toggleGames(
   String chip,
   List<String> games,
 ) async {
-  await tester.tap(find.widgetWithText(FilterChip, chip));
+  // Sem filtro, o chip mostra o nome; com jogos, só os ícones (#219).
+  final byText = find.widgetWithText(FilterChip, chip);
+  await tester.tap(byText.evaluate().isEmpty ? find.byTooltip(chip) : byText);
   await tester.pumpAndSettle();
   for (final game in games) {
     await tester.tap(
@@ -96,15 +98,15 @@ void main() {
       expect(_icons(tester, 'Nihilego'), isEmpty);
 
       await _toggleGames(tester, 'Jogo', ['Scarlet']);
-      expect(find.widgetWithText(FilterChip, 'Scarlet'), findsOneWidget);
+      expect(find.byTooltip('Jogo: Scarlet'), findsOneWidget);
       expect(find.textContaining('para caçar em Scarlet'), findsOneWidget);
       expect(find.text('Espeon'), findsOneWidget);
       expect(find.text('Vaporeon'), findsNothing);
 
       // Vários: quem dá para caçar em qualquer um (Z-A não tem pokédex no
       // catálogo da fixture, então nada muda na lista).
-      await _toggleGames(tester, 'Scarlet', ['Legends: Z-A']);
-      expect(find.widgetWithText(FilterChip, 'Scarlet +1'), findsOneWidget);
+      await _toggleGames(tester, 'Jogo: Scarlet', ['Legends: Z-A']);
+      expect(find.byTooltip('Jogo: Scarlet e Legends: Z-A'), findsOneWidget);
       expect(
         find.textContaining('para caçar em Scarlet ou Legends: Z-A'),
         findsOneWidget,
@@ -112,7 +114,7 @@ void main() {
       expect(find.text('Espeon'), findsOneWidget);
 
       // A folha mostra o que está marcado e quantos há em cada jogo.
-      await tester.tap(find.widgetWithText(FilterChip, 'Scarlet +1'));
+      await tester.tap(find.byTooltip('Jogo: Scarlet e Legends: Z-A'));
       await tester.pumpAndSettle();
       expect(_checked(tester, 'Todos os jogos'), isFalse);
       expect(_checked(tester, 'Scarlet'), isTrue);
@@ -128,12 +130,12 @@ void main() {
       // Fechar sem aplicar não muda nada.
       Navigator.of(tester.element(find.byType(CheckboxListTile).first)).pop();
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(FilterChip, 'Scarlet +1'), findsOneWidget);
+      expect(find.byTooltip('Jogo: Scarlet e Legends: Z-A'), findsOneWidget);
 
-      await _toggleGames(tester, 'Scarlet +1', ['Scarlet']);
+      await _toggleGames(tester, 'Jogo: Scarlet e Legends: Z-A', ['Scarlet']);
       expect(find.text('Nada para caçar com estes filtros.'), findsOneWidget);
 
-      await _toggleGames(tester, 'Legends: Z-A', ['Todos os jogos']);
+      await _toggleGames(tester, 'Jogo: Legends: Z-A', ['Todos os jogos']);
       expect(find.widgetWithText(FilterChip, 'Jogo'), findsOneWidget);
       expect(find.text('Vaporeon'), findsOneWidget);
       // Já sem filtro, "Todos os jogos" fica marcado.

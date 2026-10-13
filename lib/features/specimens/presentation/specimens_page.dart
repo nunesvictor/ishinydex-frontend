@@ -9,6 +9,7 @@ import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
@@ -415,6 +416,17 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
 }
 
 /// Rótulo e explicação de cada situação, no menu "Situação".
+/// O ícone de cada situação (#219), os mesmos do detalhe ("Disponível" e
+/// "Depositado"); "Todos" não tem.
+Widget? _statusIcon(SpecimenStatus status) => switch (status) {
+  SpecimenStatus.all => null,
+  SpecimenStatus.available => const Icon(Icons.radio_button_unchecked),
+  SpecimenStatus.deposited => const Icon(
+    Icons.inventory_2,
+    color: Colors.green,
+  ),
+};
+
 const Map<SpecimenStatus, (String, String)> _statusLabels = {
   SpecimenStatus.all: ('Todos', 'Com ou sem slot'),
   SpecimenStatus.available: ('Disponíveis', 'Fora de qualquer slot'),
@@ -463,9 +475,11 @@ class _Filters extends StatelessWidget {
           onSelected: onOnlySelectedChanged,
         ),
       MenuChip(
-        label: query.status == SpecimenStatus.all
-            ? 'Situação'
-            : _statusLabels[query.status]!.$1,
+        label: 'Situação',
+        icons: [?_statusIcon(query.status)],
+        tooltip: query.status == SpecimenStatus.all
+            ? null
+            : 'Situação: ${_statusLabels[query.status]!.$1}',
         selected: query.status != SpecimenStatus.all,
         menuChildren: [
           const MenuHeader('Situação no dex'),
@@ -475,33 +489,32 @@ class _Filters extends StatelessWidget {
               value: status,
               groupValue: query.status,
               onChanged: (s) => onChanged(query.copyWith(status: s!)),
-              child: MenuOptionText(label, hint),
+              child: MenuOptionText(
+                label,
+                hint,
+                leading: switch (_statusIcon(status)) {
+                  final Icon icon => Icon(
+                    icon.icon,
+                    color: icon.color,
+                    size: 18,
+                  ),
+                  _ => null,
+                },
+              ),
             ),
         ],
       ),
       // Raridade (#217): shiny e alfa num chip com menu, como Situação e
       // Jogo, em vez de dois chips só de ícone.
       MenuChip(
-        label: switch ((query.shinyOnly, query.alphaOnly)) {
-          (false, false) => 'Raridade',
-          (true, false) => 'Shiny',
-          (false, true) => 'Alfa',
-          (true, true) => 'Shiny e alfa',
-        },
-        avatar: query.shinyOnly || query.alphaOnly
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 2,
-                children: [
-                  if (query.shinyOnly)
-                    const ShinyIcon(size: 16, semanticLabel: null),
-                  if (query.alphaOnly)
-                    const AlphaIcon(size: 16, semanticLabel: null),
-                ],
-              )
+        label: 'Raridade',
+        icons: [
+          if (query.shinyOnly) const ShinyIcon(size: 18, semanticLabel: null),
+          if (query.alphaOnly) const AlphaIcon(size: 18, semanticLabel: null),
+        ],
+        tooltip: query.shinyOnly || query.alphaOnly
+            ? 'Raridade: ${joinLabels([if (query.shinyOnly) 'shiny', if (query.alphaOnly) 'alfa'])}'
             : null,
-        // Os dois ícones lado a lado com shiny e alfa marcados.
-        avatarBoxConstraints: const BoxConstraints(maxWidth: 40, maxHeight: 20),
         selected: query.shinyOnly || query.alphaOnly,
         menuChildren: [
           const MenuHeader('Raridade'),
@@ -728,16 +741,20 @@ class _GameChip extends ConsumerWidget {
       '${countOf(q) ?? ''}',
       style: Theme.of(context).textTheme.bodySmall,
     );
+    final names = joinLabels([
+      ...{for (final g in games) versionLabel(g)},
+    ]);
     return FilterChip(
-      avatar: games.isEmpty ? null : GameIcon(games.first, size: 18),
+      tooltip: games.isEmpty ? null : 'Jogo: $names',
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(switch (games) {
-            [] => 'Jogo',
-            [final one] => versionLabel(one),
-            [final first, ...] => '${versionLabel(first)} +${games.length - 1}',
-          }),
+          if (games.isEmpty)
+            const Text('Jogo')
+          else
+            ChipIcons([
+              for (final g in {...games}) GameIcon(g, size: 18),
+            ], semanticLabel: 'Jogo: $names'),
           const Icon(Icons.arrow_drop_down, size: 18),
         ],
       ),

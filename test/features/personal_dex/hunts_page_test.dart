@@ -38,12 +38,22 @@ Future<void> _openHunts(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Finder _chip(String label) => find.widgetWithText(FilterChip, label);
+/// O chip pelo texto; com valores marcados, ele só mostra os ícones e se
+/// acha pelo tooltip (#219).
+Finder _chip(String label) {
+  final byText = find.widgetWithText(FilterChip, label);
+  return byText.evaluate().isEmpty ? find.byTooltip(label) : byText;
+}
+
+/// O chip Motivos: o tooltip diz os motivos marcados.
+final Finder _motivos = find.byWidgetPredicate(
+  (w) => w is Tooltip && (w.message ?? '').startsWith('Motivos'),
+);
 
 /// Abre o menu "Motivos" e toca no motivo [label]; se o menu continuar
 /// aberto (os motivos simples não o fecham), fecha tocando no chip.
 Future<void> _tapReason(WidgetTester tester, String label) async {
-  await tester.tap(find.byTooltip('Motivos'));
+  await tester.tap(_motivos);
   await tester.pumpAndSettle();
   await tester.tap(
     find.descendant(
@@ -53,7 +63,7 @@ Future<void> _tapReason(WidgetTester tester, String label) async {
   );
   await tester.pumpAndSettle();
   if (find.byType(CheckboxMenuButton).evaluate().isNotEmpty) {
-    await tester.tap(find.byTooltip('Motivos'));
+    await tester.tap(_motivos);
     await tester.pumpAndSettle();
   }
 }
@@ -163,10 +173,10 @@ void main() {
 
     await _tapReason(tester, 'Shiny do GO');
     expect(find.text('25 para caçar'), findsOneWidget);
-    expect(_chip('Sem shiny +1'), findsOneWidget);
+    expect(_chip('Motivos: sem shiny e shiny do GO'), findsOneWidget);
     await _tapReason(tester, 'Sem shiny');
     expect(find.text('6 para caçar'), findsOneWidget);
-    expect(_chip('Shiny do GO'), findsOneWidget);
+    expect(_chip('Motivos: shiny do GO'), findsOneWidget);
     // O GO aparece como a marca de origem no título, como no inventário.
     expect(
       find.descendant(of: find.byType(HuntTile), matching: find.byType(GoIcon)),
@@ -192,10 +202,10 @@ void main() {
     // GO (6) + shinies em Dream Ball (20), com 3 nos dois.
     expect(find.text('23 para caçar'), findsOneWidget);
     expect(find.textContaining('Outra pokébola'), findsWidgets);
-    await tester.tap(find.byTooltip('Motivos'));
+    await tester.tap(_motivos);
     await tester.pumpAndSettle();
     expect(find.text('Pokébola fora de: Poké Ball'), findsOneWidget);
-    await tester.tap(find.byTooltip('Motivos'));
+    await tester.tap(_motivos);
     await tester.pumpAndSettle();
 
     await _tapReason(tester, 'Shiny do GO');
@@ -220,9 +230,9 @@ void main() {
       // Os 19 slots vazios e os 6 shinies do GO já registrados.
       await _pickSituation(tester, 'Situação', 'Faltando');
       expect(find.text('19 para caçar'), findsOneWidget);
-      await _pickSituation(tester, 'Faltando', 'Registrados');
+      await _pickSituation(tester, 'Situação: Faltando', 'Registrados');
       expect(find.text('6 para caçar'), findsOneWidget);
-      await _pickSituation(tester, 'Registrados', 'Todos');
+      await _pickSituation(tester, 'Situação: Registrados', 'Todos');
       expect(find.text('25 para caçar'), findsOneWidget);
       expect(_chip('Situação'), findsOneWidget);
     });
@@ -231,8 +241,10 @@ void main() {
   testWidgets('chips: Situação · Motivos · Jogo (#217)', (tester) async {
     await pumpFullApp(tester, size: compactSize);
     await _openHunts(tester);
-    double left(String chip) => tester.getTopLeft(find.text(chip).first).dx;
-    expect(left('Situação'), lessThan(left('Sem shiny')));
+    expect(
+      tester.getTopLeft(find.text('Situação').first).dx,
+      lessThan(tester.getTopLeft(_motivos).dx),
+    );
   });
 
   testWidgets('busca espera parar de digitar', (tester) async {

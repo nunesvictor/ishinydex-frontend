@@ -54,7 +54,9 @@ Future<void> openSpecimensTab(WidgetTester tester) async {
 /// Abre o menu Raridade (o chip com o nome [chip]), toca em [option] e
 /// fecha em "Pronto".
 Future<void> pickRarity(WidgetTester tester, String chip, String option) async {
-  await tester.tap(find.widgetWithText(MenuChip, chip));
+  // Com valor marcado, o chip mostra só os ícones: acha pelo tooltip (#219).
+  final byText = find.widgetWithText(MenuChip, chip);
+  await tester.tap(byText.evaluate().isEmpty ? find.byTooltip(chip) : byText);
   await tester.pumpAndSettle();
   await tester.tap(
     find.descendant(
@@ -117,12 +119,12 @@ void main() {
       // Com filtro: "filtrados de todos".
       final shiny = specimens.where((s) => s.isShiny).length;
       expect(find.text('$shiny de $total espécimes'), findsOneWidget);
-      await pickRarity(tester, 'Shiny', 'Qualquer raridade');
+      await pickRarity(tester, 'Raridade: shiny', 'Qualquer raridade');
       expect(find.widgetWithText(MenuChip, 'Raridade'), findsOneWidget);
 
       await pickStatus(tester, 'Registrados');
       expect(specimenTile(saur.id), findsNothing);
-      expect(find.widgetWithText(MenuChip, 'Registrados'), findsOneWidget);
+      expect(find.byTooltip('Situação: Registrados'), findsOneWidget);
       await pickStatus(tester, 'Disponíveis');
       expect(specimenTile(shinyBulba.id), findsNothing);
       expect(specimenTile(saur.id), findsOneWidget);
@@ -134,7 +136,7 @@ void main() {
       await pickRarity(tester, 'Raridade', 'Alfa');
       expect(specimenTile(saur.id), findsNothing); // Saur não é alfa
       expect(find.byType(AlphaIcon), findsWidgets);
-      await pickRarity(tester, 'Alfa', 'Alfa');
+      await pickRarity(tester, 'Raridade: alfa', 'Alfa');
       expect(find.widgetWithText(FilterChip, 'GO'), findsNothing);
 
       await search(tester, 'pidgeotto');
@@ -331,14 +333,27 @@ void main() {
       await tester.pumpAndSettle();
 
       await pickRarity(tester, 'Raridade', 'Shiny');
-      await pickRarity(tester, 'Shiny', 'Alfa');
+      await pickRarity(tester, 'Raridade: shiny', 'Alfa');
       final both = specimens.where((s) => s.isShiny && s.isAlpha).length;
-      expect(find.widgetWithText(MenuChip, 'Shiny e alfa'), findsOneWidget);
+      expect(find.byTooltip('Raridade: shiny e alfa'), findsOneWidget);
+      // Com Situação e Raridade marcadas, os chips (só ícones, #219) ficam
+      // numa linha só no celular.
+      await pickStatus(tester, 'Registrados');
+      double top(Finder chip) => tester.getCenter(chip).dy;
+      expect(
+        top(find.byTooltip('Situação: Registrados')),
+        top(find.byTooltip('Raridade: shiny e alfa')),
+      );
+      expect(
+        top(find.byTooltip('Raridade: shiny e alfa')),
+        top(find.widgetWithText(FilterChip, 'Jogo')),
+      );
+      await pickStatus(tester, 'Todos');
       expect(
         find.text('$both de ${specimens.length} espécimes'),
         findsOneWidget,
       );
-      await pickRarity(tester, 'Shiny e alfa', 'Qualquer raridade');
+      await pickRarity(tester, 'Raridade: shiny e alfa', 'Qualquer raridade');
       expect(find.text('${specimens.length} espécimes'), findsOneWidget);
     });
 
