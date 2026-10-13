@@ -453,7 +453,6 @@ class _Filters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = query.advancedCount;
-    final compact = WindowSize.of(context).isCompact;
     final quick = <Widget>[
       // No modo de seleção, o primeiro chip lista só os marcados.
       if (selectedCount > 0)
@@ -480,32 +479,77 @@ class _Filters extends StatelessWidget {
             ),
         ],
       ),
-      // No celular, só o ícone (o nome fica no tooltip e no leitor de tela);
-      // com espaço, ícone + nome.
-      for (final (icon, label, tooltip, on, apply) in [
-        (
-          const ShinyIcon(size: 18, semanticLabel: null),
-          'Shiny',
-          'Só shiny',
-          query.shinyOnly,
-          (bool v) => query.copyWith(shinyOnly: v),
-        ),
-        (
-          const AlphaIcon(size: 18, semanticLabel: null),
-          'Alfa',
-          'Só alfa',
-          query.alphaOnly,
-          (bool v) => query.copyWith(alphaOnly: v),
-        ),
-      ])
-        FilterChip(
-          avatar: compact ? null : icon,
-          label: compact ? icon : Text(label),
-          tooltip: tooltip,
-          showCheckmark: !compact,
-          selected: on,
-          onSelected: (v) => onChanged(apply(v)),
-        ),
+      // Raridade (#217): shiny e alfa num chip com menu, como Situação e
+      // Jogo, em vez de dois chips só de ícone.
+      MenuChip(
+        label: switch ((query.shinyOnly, query.alphaOnly)) {
+          (false, false) => 'Raridade',
+          (true, false) => 'Shiny',
+          (false, true) => 'Alfa',
+          (true, true) => 'Shiny e alfa',
+        },
+        avatar: query.shinyOnly || query.alphaOnly
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 2,
+                children: [
+                  if (query.shinyOnly)
+                    const ShinyIcon(size: 16, semanticLabel: null),
+                  if (query.alphaOnly)
+                    const AlphaIcon(size: 16, semanticLabel: null),
+                ],
+              )
+            : null,
+        // Os dois ícones lado a lado com shiny e alfa marcados.
+        avatarBoxConstraints: const BoxConstraints(maxWidth: 40, maxHeight: 20),
+        selected: query.shinyOnly || query.alphaOnly,
+        menuChildren: [
+          const MenuHeader('Raridade'),
+          CheckboxMenuButton(
+            value: !query.shinyOnly && !query.alphaOnly,
+            closeOnActivate: false,
+            // Já sem filtro, não há o que limpar.
+            onChanged: query.shinyOnly || query.alphaOnly
+                ? (_) => onChanged(
+                    query.copyWith(shinyOnly: false, alphaOnly: false),
+                  )
+                : null,
+            child: const MenuOptionText(
+              'Qualquer raridade',
+              'Sem filtrar shiny nem alfa',
+            ),
+          ),
+          CheckboxMenuButton(
+            value: query.shinyOnly,
+            closeOnActivate: false,
+            onChanged: (on) => onChanged(query.copyWith(shinyOnly: on!)),
+            child: const MenuOptionText(
+              'Shiny',
+              'Só os shiny',
+              leading: ShinyIcon(size: 18, semanticLabel: null),
+            ),
+          ),
+          CheckboxMenuButton(
+            value: query.alphaOnly,
+            closeOnActivate: false,
+            onChanged: (on) => onChanged(query.copyWith(alphaOnly: on!)),
+            child: const MenuOptionText(
+              'Alfa',
+              'Só os alfa',
+              leading: AlphaIcon(size: 18, semanticLabel: null),
+            ),
+          ),
+          // As caixas não fecham o menu a cada toque; fechar é o próprio
+          // `closeOnActivate` deste botão.
+          Align(
+            alignment: Alignment.centerRight,
+            child: MenuItemButton(
+              onPressed: () {},
+              child: const Text('Pronto'),
+            ),
+          ),
+        ],
+      ),
       _GameChip(query: query, onChanged: onChanged),
     ];
     return Column(
