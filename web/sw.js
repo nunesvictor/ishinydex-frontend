@@ -35,6 +35,10 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
+  // A página compara com a versão dela para saber se há versão nova (#228).
+  if (event.data === 'version') {
+    event.source?.postMessage({ type: 'version', version: VERSION });
+  }
 });
 
 self.addEventListener('activate', (event) => {

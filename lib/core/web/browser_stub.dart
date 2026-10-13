@@ -15,3 +15,9 @@ void replaceUrl(String url) => throw UnsupportedError('Só no navegador.');
 
 /// Fora do navegador não há página: ver `browser_web.dart`.
 void openInNewTab(String url) => throw UnsupportedError('Só no navegador.');
+
+/// Fora do navegador não há versão nova de página: nunca chama.
+void onAppUpdateReady(void Function() onReady) {}
+
+/// Fora do navegador não há página: ver `browser_web.dart`.
+void reloadPage() => throw UnsupportedError('Só no navegador.');
