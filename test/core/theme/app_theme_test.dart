@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 
@@ -32,5 +33,45 @@ void main() {
       expect(pubspec, contains(asset));
       expect(File(asset).existsSync(), isTrue, reason: asset);
     }
+  });
+
+  testWidgets('iOS: a barra rolada fica da cor do fundo (#215)', (
+    tester,
+  ) async {
+    final theme = AppTheme.light().copyWith(
+      appBarTheme: AppTheme.appBarTheme(
+        AppTheme.light().colorScheme,
+        TargetPlatform.iOS,
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          appBar: AppBar(title: const Text('Espécimes')),
+          body: ListView(
+            children: [
+              for (var i = 0; i < 50; i++) ListTile(title: Text('$i')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    final bar = find.descendant(
+      of: find.byType(AppBar),
+      matching: find.byType(Material),
+    );
+    final material = tester.widget<Material>(bar.first);
+    // Rolada: a elevação da linha fina, sem a tinta que escurece.
+    expect(material.elevation, 1);
+    expect(material.color, theme.colorScheme.surface);
+    expect(material.surfaceTintColor, Colors.transparent);
+    // E a cor de fato pintada (o Material aplica a tinta por cima).
+    final physical = tester.widget<PhysicalModel>(
+      find.descendant(of: bar.first, matching: find.byType(PhysicalModel)),
+    );
+    expect(physical.color, theme.colorScheme.surface);
   });
 }
