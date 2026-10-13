@@ -14,8 +14,7 @@ enum _Tab { summary, species }
 ///
 /// O resumo junta o que era a aba Status, como na tela de resumo dos jogos:
 /// [header] (tipos, habilidades e chips), o cartão "Status base" com o
-/// hexágono (e a [nature], se houver), os [fields] e o [footer]. Em telas
-/// largas, o cartão vai para a direita dos campos.
+/// hexágono compacto (e a [nature], se houver), os [fields] e o [footer].
 class FormInfoTabs extends ConsumerStatefulWidget {
   const FormInfoTabs({
     required this.formId,
@@ -48,9 +47,6 @@ class FormInfoTabs extends ConsumerStatefulWidget {
   final int? dexId;
   final ValueChanged<Slot>? onOpenSlot;
   final ValueChanged<FormRef>? onOpenForm;
-
-  /// Largura a partir da qual o cartão de status fica ao lado dos campos.
-  static const sideBySideMinWidth = 640.0;
 
   @override
   ConsumerState<FormInfoTabs> createState() => _FormInfoTabsState();
@@ -88,40 +84,16 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
     ],
   );
 
-  Widget _summary() {
-    final card = _withForm(
-      (form) => StatsCard(stats: form.stats, nature: _nature()),
-    );
-    final fields = widget.fields;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 12,
-      children: [
-        ?widget.header,
-        if (fields == null)
-          card
-        else
-          LayoutBuilder(
-            builder: (context, constraints) =>
-                constraints.maxWidth < FormInfoTabs.sideBySideMinWidth
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 12,
-                    children: [card, fields],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 16,
-                    children: [
-                      Expanded(child: fields),
-                      SizedBox(width: StatsCard.width, child: card),
-                    ],
-                  ),
-          ),
-        ?widget.footer,
-      ],
-    );
-  }
+  Widget _summary() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    spacing: 12,
+    children: [
+      ?widget.header,
+      ?widget.fields,
+      _withForm((form) => StatsCard(stats: form.stats, nature: _nature())),
+      ?widget.footer,
+    ],
+  );
 
   /// A natureza entre as opções da API (com os stats que ela muda).
   Choice? _nature() {
@@ -165,9 +137,6 @@ class StatsCard extends StatelessWidget {
   final List<FormStat> stats;
   final Choice? nature;
 
-  /// Largura do cartão ao lado dos campos (cabe o hexágono de 300 px).
-  static const width = 332.0;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -183,7 +152,7 @@ class StatsCard extends StatelessWidget {
           spacing: 4,
           children: [
             Text('Status base', style: theme.textTheme.titleSmall),
-            BaseStatsChart(stats: stats, nature: nature),
+            BaseStatsChart(stats: stats, nature: nature, compact: true),
           ],
         ),
       ),

@@ -97,7 +97,6 @@ class _Details extends ConsumerWidget {
                 isAlpha: specimen.isAlpha,
                 isFromGo: specimen.isFromGo,
                 style: theme.textTheme.titleLarge,
-                center: true,
               ),
               subtitle: form == null
                   ? null
@@ -119,6 +118,7 @@ class _Details extends ConsumerWidget {
                 if (OriginMark.fromSlug(specimen.originMark) case final mark?)
                   OriginMarkChip(mark),
                 if (specimen.isVisitingChampions) const ChampionsChip(),
+                ?languageTag(ref, specimen.language),
               ],
               fields: specimenFields(context, ref, specimen),
               footer: specimenFooter(
