@@ -314,9 +314,8 @@ em "Mostrar resultados": fechar a folha descarta as mudanças, e a lista não
 recarrega a cada toque num chip.
 
 A data de captura usa `showDateRangePicker` com
-`DatePickerEntryMode.calendarOnly`: a digitação do Material segue o formato
-do locale (`dd/mm`), mas o app mostra datas no formato escolhido nos Ajustes
-(padrão `mm/dd`, como no HOME). Só com toques não há formato para confundir.
+`DatePickerEntryMode.calendarOnly`: só com toques, sem digitação. O app
+mostra as datas no formato do idioma (`dd/mm` em pt-BR), o mesmo do seletor.
 
 📚 [Documentação do Riverpod](https://riverpod.dev/docs/introduction/getting_started)
 

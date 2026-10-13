@@ -10,6 +10,7 @@ import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
+import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -21,6 +22,7 @@ import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/bulk_edit_sheet.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/game_picker.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -274,7 +276,6 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     if (changes == null || !mounted) return;
     final labels = BulkLabels(
       context,
-      ref,
       ref.read(specimenOptionsProvider).value ?? const SpecimenOptions(),
       ref.read(trainersProvider).value ?? const <Trainer>[],
     );
@@ -505,6 +506,7 @@ class _Filters extends StatelessWidget {
           selected: on,
           onSelected: (v) => onChanged(apply(v)),
         ),
+      _GameChip(query: query, onChanged: onChanged),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -652,6 +654,115 @@ class SpecimenList extends ConsumerWidget {
   }
 }
 
+/// O chip Jogo do inventário (#201): a folha Jogo com "Capturados em" (os
+/// jogos dos seus OTs) e "Podem ir para" (os jogos dos seus saves que
+/// recebem do HOME). Sem nenhum dos dois, o chip não aparece.
+class _GameChip extends ConsumerWidget {
+  const _GameChip({required this.query, required this.onChanged});
+
+  final SpecimenQuery query;
+  final ValueChanged<SpecimenQuery> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final order = ref.watch(versionOrderProvider);
+    List<String> sorted(Iterable<String?> versions) => [
+      ...{...versions.nonNulls},
+    ]..sort(order);
+    final trainers = ref.watch(trainersProvider).value ?? const <Trainer>[];
+    final saves = ref.watch(savesProvider).value ?? const <Save>[];
+    final otGames = sorted(trainers.map((t) => t.version));
+    final fitGames = sorted([
+      for (final s in saves)
+        if (!s.isOneWay) s.trainer.version,
+    ]);
+    if (otGames.isEmpty && fitGames.isEmpty) return const SizedBox.shrink();
+    final games = [...query.otVersions, ...query.fitVersions];
+    int? countOf(SpecimenQuery q) =>
+        ref.watch(specimenPageProvider((query: q, page: 1))).value?.count;
+    Widget count(SpecimenQuery q) => Text(
+      '${countOf(q) ?? ''}',
+      style: Theme.of(context).textTheme.bodySmall,
+    );
+    return FilterChip(
+      avatar: games.isEmpty ? null : GameIcon(games.first, size: 18),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(switch (games) {
+            [] => 'Jogo',
+            [final one] => versionLabel(one),
+            [final first, ...] => '${versionLabel(first)} +${games.length - 1}',
+          }),
+          const Icon(Icons.arrow_drop_down, size: 18),
+        ],
+      ),
+      selected: games.isNotEmpty,
+      showCheckmark: false,
+      onSelected: (_) async {
+        final picked = await showGamePicker(
+          context,
+          sections: [
+            GamePickerSection(
+              title: 'Capturados em',
+              hint: 'jogo do treinador original',
+              versions: otGames,
+              selected: query.otVersions,
+              count: (v) => count(query.copyWith(otVersions: [v])),
+            ),
+            GamePickerSection(
+              title: 'Podem ir para',
+              hint: 'na pokédex e sem bloqueio do HOME',
+              versions: fitGames,
+              selected: query.fitVersions,
+              count: (v) => count(query.copyWith(fitVersions: [v])),
+            ),
+          ],
+          applyLabel: (ref, draft) {
+            final n = ref
+                .watch(
+                  specimenPageProvider((
+                    query: query.copyWith(
+                      otVersions: draft[0],
+                      fitVersions: draft[1],
+                    ),
+                    page: 1,
+                  )),
+                )
+                .value
+                ?.count;
+            return n == null
+                ? 'Mostrar resultados'
+                : 'Mostrar $n ${n == 1 ? 'espécime' : 'espécimes'}';
+          },
+        );
+        if (picked != null) {
+          onChanged(
+            query.copyWith(otVersions: picked[0], fitVersions: picked[1]),
+          );
+        }
+      },
+    );
+  }
+}
+
+/// O filtro do chip Jogo em palavras (#201): "capturados em Sword ou
+/// Scarlet e podem ir para Legends: Z-A"; `null` sem ele.
+String? gameFilterLabel(SpecimenQuery query) {
+  String or(List<String> versions) {
+    final names = [for (final v in versions) versionLabel(v)];
+    return names.length == 1
+        ? names.single
+        : '${names.sublist(0, names.length - 1).join(', ')} ou ${names.last}';
+  }
+
+  final parts = [
+    if (query.otVersions.isNotEmpty) 'capturados em ${or(query.otVersions)}',
+    if (query.fitVersions.isNotEmpty) 'podem ir para ${or(query.fitVersions)}',
+  ];
+  return parts.isEmpty ? null : parts.join(' e ');
+}
+
 /// Contador acima da lista: "1.159 espécimes" sem filtro, ou
 /// "42 de 1.159 espécimes" com filtro. O [count] é o total da consulta (vem
 /// da 1ª página); o total geral vem da mesma consulta sem filtros, que fica
@@ -674,9 +785,14 @@ class ResultCount extends ConsumerWidget {
               .value
               ?.count
         : null;
-    final text = total == null
-        ? '${number.format(count)} ${noun(count)}'
-        : '${number.format(count)} de ${number.format(total)} ${noun(total)}';
+    final games = gameFilterLabel(query);
+    final text = [
+      if (total == null)
+        '${number.format(count)} ${noun(count)}'
+      else
+        '${number.format(count)} de ${number.format(total)} ${noun(total)}',
+      ?games,
+    ].join(' · ');
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Text(text, style: Theme.of(context).textTheme.bodySmall),

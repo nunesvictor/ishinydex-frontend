@@ -7,7 +7,6 @@ import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
-import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
@@ -477,12 +476,9 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
   );
 
   /// No PC a data é digitável; no celular, tocar abre o calendário. Nos
-  /// dois casos, no formato escolhido nos Ajustes.
+  /// dois casos, no formato do idioma do app.
   Widget _captureDate() {
-    final format =
-        ref.watch(captureDateFormatProvider).value ?? CaptureDateFormat.home;
     final pattern = CaptureDatePattern(
-      format,
       Localizations.localeOf(context).toString(),
     );
     if (isDesktopPlatform(Theme.of(context).platform)) {

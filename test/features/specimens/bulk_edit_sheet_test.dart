@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
-import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/bulk_edit_sheet.dart';
 
@@ -293,7 +292,6 @@ void main() {
         builder: (context, ref, _) {
           final labels = BulkLabels(
             context,
-            ref,
             FakeBackend.seeded().options,
             const [Trainer(id: 1, name: 'Ash', trainerId: '123456')],
           );
@@ -319,7 +317,6 @@ void main() {
           return const SizedBox();
         },
       ),
-      dateFormat: InMemoryDateFormatStorage(CaptureDateFormat.home),
     );
     await tester.pumpAndSettle();
     expect(summary, [
@@ -327,7 +324,7 @@ void main() {
       'OT → Ash (123456)',
       'Natureza → Timid',
       'Idioma → Xx Yy',
-      'Data de captura → 03/04/2026',
+      'Data de captura → 04/03/2026',
       'Gênero → Sem gênero',
       'Shiny → Sim',
       'Alfa → Não',

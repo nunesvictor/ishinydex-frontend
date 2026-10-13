@@ -492,8 +492,13 @@ abstract class Save with _$Save {
   /// entrar no save. Num jogo com [requiredMark], além da marca dele, vale
   /// a do GO quando o OT é de um jogo com a mesma marca: é quem foi do GO
   /// para o Let's Go pelo GO Park e pode voltar a ele.
-  bool accepts(String? mark, String? otVersion) {
-    final required = requiredMark;
+  bool accepts(String? mark, String? otVersion) =>
+      acceptsIn(trainer.version, mark, otVersion);
+
+  /// [accepts] para um save do jogo [version] (o filtro "Podem ir para" do
+  /// inventário, #201, não tem um save na mão).
+  static bool acceptsIn(String? version, String? mark, String? otVersion) {
+    final required = requiredMarks[version];
     return required == null ||
         mark == required ||
         (mark == 'go' && requiredMarks[otVersion] == required);
@@ -629,6 +634,13 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     /// Onde está: [locationHome], [locationAway] ou o id de um save (como
     /// texto); vazio = qualquer lugar.
     @Default('') String location,
+
+    /// Chip Jogo (#201), "Capturados em": o OT é de algum destes jogos.
+    @Default(<String>[]) List<String> otVersions,
+
+    /// Chip Jogo (#201), "Podem ir para": dá para mandar o espécime a um
+    /// save de algum destes jogos. As duas listas juntas valem "e".
+    @Default(<String>[]) List<String> fitVersions,
   }) = _SpecimenQuery;
 
   const SpecimenQuery._();
@@ -677,6 +689,8 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     status: status,
     shinyOnly: shinyOnly,
     alphaOnly: alphaOnly,
+    otVersions: otVersions,
+    fitVersions: fitVersions,
   );
 
   /// Parâmetros de `GET /specimens/`: só os filtros em uso.
@@ -697,6 +711,8 @@ abstract class SpecimenQuery with _$SpecimenQuery {
       if (categories.isNotEmpty)
         'category': join(categories.map((c) => c.param)),
       if (originMarks.isNotEmpty) 'origin_mark': join(originMarks),
+      if (otVersions.isNotEmpty) 'ot_version': join(otVersions),
+      if (fitVersions.isNotEmpty) 'fits_version': join(fitVersions),
       if (genders.isNotEmpty) 'gender': join(genders),
       if (natures.isNotEmpty) 'nature': join(natures),
       if (languages.isNotEmpty) 'language': join(languages),

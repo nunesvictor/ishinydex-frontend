@@ -61,6 +61,18 @@ class HuntCard extends ConsumerStatefulWidget {
 class _HuntCardState extends ConsumerState<HuntCard> {
   Timer? _tick;
 
+  /// Segurar +1/−1 (#209): o passo de cada repetição, os passos já dados e
+  /// o que ainda não foi gravado. A contagem mostra o pendente na hora; a
+  /// gravação é uma só, ao soltar.
+  Timer? _repeat;
+  int _repeats = 0;
+  int _pending = 0;
+
+  /// Os primeiros passos vão devagar; depois, acelera.
+  static const _slowRepeats = 4;
+  static const _slow = Duration(milliseconds: 400);
+  static const _fast = Duration(milliseconds: 100);
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +82,10 @@ class _HuntCardState extends ConsumerState<HuntCard> {
   @override
   void didUpdateWidget(HuntCard old) {
     super.didUpdateWidget(old);
+    // A contagem gravada chegou: o pendente do segurar já está nela.
+    if (old.hunt.count != widget.hunt.count && _repeat?.isActive != true) {
+      _pending = 0;
+    }
     _syncTick();
   }
 
@@ -89,8 +105,52 @@ class _HuntCardState extends ConsumerState<HuntCard> {
   @override
   void dispose() {
     _tick?.cancel();
+    _repeat?.cancel();
     super.dispose();
   }
+
+  void _startRepeat(int step) {
+    _repeats = 0;
+    _repeatStep(step);
+  }
+
+  void _repeatStep(int step) {
+    // O −1 para no 0.
+    if (widget.hunt.count + _pending + step < 0) return;
+    setState(() => _pending += step);
+    unawaited(HapticFeedback.selectionClick());
+    _repeats++;
+    _repeat = Timer(
+      _repeats < _slowRepeats ? _slow : _fast,
+      () => _repeatStep(step),
+    );
+  }
+
+  /// Soltou: grava de uma vez o que andou. O pendente fica na tela até a
+  /// contagem gravada chegar (ou a gravação falhar), sem piscar o valor
+  /// antigo.
+  void _endRepeat() {
+    _repeat?.cancel();
+    final delta = _pending;
+    if (delta == 0) return;
+    unawaited(
+      runHuntAction(
+        context,
+        () => _actions.add(widget.hunt, delta),
+      ).whenComplete(() {
+        if (mounted) setState(() => _pending = 0);
+      }),
+    );
+  }
+
+  /// O botão de [step] com o segurar que repete.
+  Widget _repeating(int step, {required bool enabled, required Widget child}) =>
+      GestureDetector(
+        onLongPressStart: enabled ? (_) => _startRepeat(step) : null,
+        onLongPressEnd: (_) => _endRepeat(),
+        onLongPressCancel: _endRepeat,
+        child: child,
+      );
 
   ShinyHuntActions get _actions => ref.read(shinyHuntActionsProvider);
 
@@ -169,7 +229,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
         : 'desde ${format(start)} · ${huntDuration(start, now)}';
     final countText = hunt.timed
         ? timerLabel(hunt.elapsed(now))
-        : '${huntCountLabel(hunt.count, null)} '
+        : '${huntCountLabel(hunt.count + _pending, null)} '
               '${huntUnitLabels[hunt.unit] ?? hunt.unit}';
     final enabled = !widget.locked;
     return Card.outlined(
@@ -355,12 +415,21 @@ class _HuntCardState extends ConsumerState<HuntCard> {
               Row(
                 spacing: 8,
                 children: [
-                  IconButton.outlined(
-                    tooltip: 'Menos um',
-                    onPressed: enabled
-                        ? () => _run(() => _actions.add(hunt, -1))
-                        : null,
-                    icon: const Icon(Icons.remove),
+                  _repeating(
+                    -1,
+                    enabled: enabled,
+                    // O tooltip abriria no segurar e tomaria o gesto: no
+                    // toque, só o mouse o mostra.
+                    child: Tooltip(
+                      message: 'Menos um (segure para repetir)',
+                      triggerMode: TooltipTriggerMode.manual,
+                      child: IconButton.outlined(
+                        onPressed: enabled
+                            ? () => _run(() => _actions.add(hunt, -1))
+                            : null,
+                        icon: const Icon(Icons.remove),
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: TextButton(
@@ -372,12 +441,16 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                   SizedBox(
                     width: 112,
                     height: 64,
-                    child: FilledButton.icon(
-                      onPressed: enabled
-                          ? () => _run(() => _actions.add(hunt, 1))
-                          : null,
-                      icon: const Icon(Icons.add),
-                      label: const Text('1'),
+                    child: _repeating(
+                      1,
+                      enabled: enabled,
+                      child: FilledButton.icon(
+                        onPressed: enabled
+                            ? () => _run(() => _actions.add(hunt, 1))
+                            : null,
+                        icon: const Icon(Icons.add),
+                        label: const Text('1'),
+                      ),
                     ),
                   ),
                 ],

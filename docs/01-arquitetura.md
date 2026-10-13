@@ -197,17 +197,18 @@ shiny" nas exceções de um shiny dex, e a opção **Só espécimes shiny**
 
 ## Data de captura
 
-- **Formato:** os Ajustes guardam o formato da data de captura
-  ([`settings_providers.dart`](../lib/features/settings/settings_providers.dart),
-  com `shared_preferences`). As opções são **Pokémon HOME** (`mm/dd/aaaa`,
-  padrão) e **a do idioma do app** (pt-BR: `dd/mm/aaaa`).
+- **Formato:** sempre o do idioma do app (pt-BR: `dd/mm/aaaa`), o mesmo do
+  seletor de data
+  ([`CaptureDatePattern`](../lib/features/settings/settings_providers.dart)).
+  Até a v2.7 os Ajustes deixavam escolher o formato do HOME (`mm/dd/aaaa`);
+  a opção saiu na v2.8.0 (#208), pensando na internacionalização.
 - **PC** (`isDesktopPlatform`): o formulário usa o
   [`CaptureDateField`](../lib/features/specimens/presentation/widgets/capture_date_field.dart),
   digitável, com leitura estrita pelo `CaptureDatePattern`.
   - Erros "Data inválida (formato)" e "Data no futuro"; enquanto houver erro,
     não dá para salvar.
   - O botão de calendário também preenche o campo.
-- **Celular:** tocar abre o calendário, e a data aparece no formato escolhido.
+- **Celular:** tocar abre o calendário, e a data aparece no formato do idioma.
 - **Onde vale:** só no formulário. O detalhe e o seletor de depósito
   continuam em `dd/mm/aaaa`.
 

@@ -2155,11 +2155,25 @@ class FakeBackend
           final save => '${s.location?.id}' == save,
         } &&
         (ability.isEmpty || (s.ability ?? '').contains(ability)) &&
+        (query.otVersions.isEmpty ||
+            query.otVersions.contains(_trainers[s.ot]?.version)) &&
+        (query.fitVersions.isEmpty ||
+            query.fitVersions.any((version) => _canGoTo(s, version))) &&
         (query.capturedAfter == null ||
             (captured != null && !captured.isBefore(query.capturedAfter!))) &&
         (query.capturedBefore == null ||
             (captured != null && !captured.isAfter(query.capturedBefore!)));
   }
+
+  /// O espécime pode ir para um save do jogo [version] (#201): as mesmas
+  /// regras do [transferCheck] (sem visita ao Champions, aceito pelo jogo e
+  /// sem bloqueio do HOME) e a forma numa pokédex do jogo.
+  bool _canGoTo(Specimen s, String version) =>
+      !s.isVisitingChampions &&
+      Save.acceptsIn(version, s.originMark, s.originVersion) &&
+      transferBlock(_forms[s.form]?.name ?? '', s.originMark, version) ==
+          null &&
+      (catalog?.inGame(s.form, version) ?? true);
 
   /// Mesmas ordens da API; o id faz as vezes do `created_at` e desempata, e
   /// o id da forma, do `form__order`.

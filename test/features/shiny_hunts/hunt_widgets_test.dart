@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -144,7 +145,10 @@ void main() {
 
     await tap(tester, plus);
     expect((await hunt(counter.id)).count, 11);
-    await tap(tester, inCard(counter.id, find.byTooltip('Menos um')));
+    await tap(
+      tester,
+      inCard(counter.id, find.byTooltip('Menos um (segure para repetir)')),
+    );
     expect((await hunt(counter.id)).count, 10);
     await tap(
       tester,
@@ -162,6 +166,31 @@ void main() {
     );
     await tap(tester, find.text('Cancelar'));
     expect((await hunt(counter.id)).count, 25);
+
+    // Segurar +1 repete e acelera; grava uma vez só, ao soltar (#209).
+    var gesture = await tester.startGesture(tester.getCenter(plus));
+    await tester.pump(kLongPressTimeout);
+    await tester.pump(const Duration(milliseconds: 1250));
+    expect(inCard(counter.id, find.text('29 encontros')), findsOne);
+    expect((await hunt(counter.id)).count, 25);
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect((await hunt(counter.id)).count, 29);
+    // Segurar −1 para no 0.
+    await tap(
+      tester,
+      inCard(counter.id, find.byKey(const ValueKey('hunt-count'))),
+    );
+    await tester.enterText(find.byKey(const ValueKey('hunt-count-input')), '1');
+    await tap(tester, find.text('OK'));
+    gesture = await tester.startGesture(
+      tester.getCenter(inCard(counter.id, find.byIcon(Icons.remove))),
+    );
+    await tester.pump(kLongPressTimeout);
+    await tester.pump(const Duration(milliseconds: 1250));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect((await hunt(counter.id)).count, 0);
 
     // Tocar no tempo parado corrige o acumulado (#205).
     await tap(

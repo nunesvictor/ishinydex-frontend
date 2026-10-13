@@ -1,36 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 
-final dateFormatStorageProvider = Provider<DateFormatStorage>(
-  (ref) => PrefsDateFormatStorage(),
-);
-
-/// Formato escolhido nos Ajustes; `home` enquanto não houver escolha.
-final captureDateFormatProvider =
-    AsyncNotifierProvider<CaptureDateFormatController, CaptureDateFormat>(
-      CaptureDateFormatController.new,
-    );
-
-class CaptureDateFormatController extends AsyncNotifier<CaptureDateFormat> {
-  @override
-  Future<CaptureDateFormat> build() async =>
-      await ref.read(dateFormatStorageProvider).read() ??
-      CaptureDateFormat.home;
-
-  Future<void> choose(CaptureDateFormat format) async {
-    state = AsyncData(format);
-    await ref.read(dateFormatStorageProvider).write(format);
-  }
-}
-
-/// Formatação e leitura da data de captura no formato escolhido.
+/// Formatação e leitura da data de captura, sempre no formato do idioma do
+/// app (#208): a mesma do seletor de data.
 class CaptureDatePattern {
-  CaptureDatePattern(CaptureDateFormat format, String locale)
-    : _format = switch (format) {
-        CaptureDateFormat.home => DateFormat('MM/dd/yyyy'),
-        CaptureDateFormat.locale => DateFormat.yMd(locale),
-      };
+  CaptureDatePattern(String locale) : _format = DateFormat.yMd(locale);
 
   final DateFormat _format;
 
@@ -39,7 +12,7 @@ class CaptureDatePattern {
 
   String format(DateTime date) => _format.format(date);
 
-  /// Texto de ajuda: `MM/dd/yyyy` → `mm/dd/aaaa`; `dd/MM/y` → `dd/mm/aaaa`.
+  /// Texto de ajuda: `dd/MM/y` → `dd/mm/aaaa`; `M/d/y` → `M/d/aaaa`.
   String get hint =>
       _format.pattern!.replaceAll('MM', 'mm').replaceAll(RegExp('y+'), 'aaaa');
 
