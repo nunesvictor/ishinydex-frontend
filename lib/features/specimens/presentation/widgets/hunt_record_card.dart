@@ -23,7 +23,15 @@ class HuntRecordCard extends ConsumerWidget {
     final headline = [
       ?method?.label,
       if (hunt.count case final count?) huntCountLabel(count, hunt.unit),
+      if (hunt.bestChain case final best?) 'maior cadeia $best',
       if ((start, end) case (final s?, final e?)) huntDuration(s, e),
+    ].join(' · ');
+    // As odds guardadas no fim da caçada (#221).
+    final odds = [
+      if (hunt.odds case final x?)
+        'Odds no fim: 1/${x < 10 ? x.toStringAsFixed(1).replaceAll('.', ',') : x.round()}',
+      if (hunt.multiple case final m?)
+        'achado em ${m.toStringAsFixed(1).replaceAll('.', ',')}× as odds',
     ].join(' · ');
     final dates = [
       if (start != null) 'Início ${format(start)}',
@@ -47,6 +55,8 @@ class HuntRecordCard extends ConsumerWidget {
                   Text('Registro da caçada', style: theme.textTheme.labelLarge),
                   if (headline.isNotEmpty)
                     Text(headline, style: theme.textTheme.bodyLarge),
+                  if (odds.isNotEmpty)
+                    Text(odds, style: theme.textTheme.bodyMedium),
                   if (dates.isNotEmpty)
                     Text(dates, style: theme.textTheme.bodySmall),
                 ],

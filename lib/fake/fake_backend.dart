@@ -367,6 +367,12 @@ class FakeBackend
           'runningSince': h.runningSince?.toUtc().toIso8601String(),
           'startedAt': _date(h.startedAt),
           'pausedAt': _date(h.pausedAt),
+          // Odds (#221): só quando há, para o registro antigo ficar igual.
+          if (h.modifiers.isNotEmpty) 'modifiers': h.modifiers,
+          if (h.chain > 0) 'chain': h.chain,
+          if (h.bestChain > 0) 'bestChain': h.bestChain,
+          'miss': ?h.miss,
+          if (h.estimated) 'estimated': true,
         },
       ...?_orphans['shinyHunts'],
     ],
@@ -409,6 +415,9 @@ class FakeBackend
               'unit': h.unit,
               'startedAt': _date(h.startedAt),
               'postUrl': h.postUrl,
+              'odds': ?h.odds,
+              'multiple': ?h.multiple,
+              'bestChain': ?h.bestChain,
             },
         },
       ...?_orphans['specimens'],
@@ -530,6 +539,16 @@ class FakeBackend
         },
         startedAt: date(h['startedAt']),
         pausedAt: date(h['pausedAt']),
+        modifiers: {
+          for (final MapEntry(:key, :value)
+              in ((h['modifiers'] as Map<String, dynamic>?) ?? const {})
+                  .entries)
+            key: value as int,
+        },
+        chain: h['chain'] as int? ?? 0,
+        bestChain: h['bestChain'] as int? ?? 0,
+        miss: (h['miss'] as num?)?.toDouble(),
+        estimated: h['estimated'] as bool? ?? false,
       );
     }
     for (final s in of('specimens')) {
@@ -569,6 +588,9 @@ class FakeBackend
             unit: h['unit'] as String?,
             startedAt: date(h['startedAt']),
             postUrl: h['postUrl'] as String?,
+            odds: (h['odds'] as num?)?.toDouble(),
+            multiple: (h['multiple'] as num?)?.toDouble(),
+            bestChain: h['bestChain'] as int?,
           ),
           _ => null,
         },
@@ -2375,6 +2397,11 @@ class FakeBackend
     if (hunt.count < 0) {
       throw ValidationFailure({
         'count': ['A contagem não pode ser negativa.'],
+      });
+    }
+    if (hunt.chain < 0 || hunt.bestChain < hunt.chain) {
+      throw ValidationFailure({
+        'chain': ['Cadeia inválida.'],
       });
     }
     if (hunt.running &&

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
@@ -100,6 +102,61 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
     }
   }
 
+  void _setModifier(String id, int value) => setState(
+    () => _hunt = _hunt.copyWith(modifiers: {..._hunt.modifiers, id: value}),
+  );
+
+  /// Um modificador das odds (#221): até 4 opções em segmentos, mais numa
+  /// lista; o numérico (Search Level) num campo.
+  Widget _modifier(ThemeData theme, OddsModifier m) {
+    final value = _hunt.modifiers[m.id] ?? m.min ?? 0;
+    if (m.isNumber) {
+      return TextFormField(
+        key: ValueKey('field-hunt-mod-${m.id}'),
+        initialValue: '$value',
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        decoration: InputDecoration(
+          labelText: m.label,
+          helperText: m.followsCount ? 'Sobe junto com o +1.' : null,
+        ),
+        onChanged: (text) => _setModifier(
+          m.id,
+          (int.tryParse(text) ?? 0).clamp(m.min ?? 0, m.max ?? 1 << 30),
+        ),
+      );
+    }
+    if (m.options.length > 4) {
+      return ChoiceSelect(
+        key: ValueKey('field-hunt-mod-${m.id}'),
+        label: m.label,
+        value: '$value',
+        choices: [
+          for (final (i, o) in m.options.indexed)
+            Choice(value: '$i', label: o.label),
+        ],
+        onChanged: (v) => _setModifier(m.id, int.tryParse(v ?? '') ?? 0),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 6,
+      children: [
+        Text(m.label, style: theme.textTheme.labelLarge),
+        SegmentedButton<int>(
+          key: ValueKey('field-hunt-mod-${m.id}'),
+          segments: [
+            for (final (i, o) in m.options.indexed)
+              ButtonSegment(value: i, label: Text(o.label)),
+          ],
+          selected: {value},
+          showSelectedIcon: false,
+          onSelectionChanged: (v) => _setModifier(m.id, v.single),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -119,6 +176,7 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
         .firstOrNull;
     final units = method?.units ?? const ['encounters', 'hours'];
     final start = _hunt.startedAt;
+    final rule = ref.watch(oddsRuleProvider)(_hunt.method, save);
     return SafeArea(
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -157,7 +215,10 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
                     ),
                 ],
                 onChanged: (v) => setState(
-                  () => _hunt = _hunt.copyWith(save: int.tryParse(v ?? '')),
+                  () => _hunt = _hunt.copyWith(
+                    save: int.tryParse(v ?? ''),
+                    modifiers: const {},
+                  ),
                 ),
               ),
             if (methods.isNotEmpty)
@@ -175,6 +236,7 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
                   setState(
                     () => _hunt = _hunt.copyWith(
                       method: id,
+                      modifiers: const {},
                       unit: units.contains(_hunt.unit)
                           ? _hunt.unit
                           : units.first,
@@ -182,6 +244,11 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
                   );
                 },
               ),
+            if (rule != null) ...[
+              for (final m in rule.visibleModifiers(_hunt.modifiers))
+                _modifier(theme, m),
+              _OddsPreview(hunt: _hunt, rule: rule, save: save!),
+            ],
             Text('Contar em', style: theme.textTheme.labelLarge),
             SegmentedButton<String>(
               key: const ValueKey('field-hunt-unit'),
@@ -227,6 +294,49 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// O Charm (vindo do save) e a prévia das odds na folha da caçada.
+class _OddsPreview extends StatelessWidget {
+  const _OddsPreview({
+    required this.hunt,
+    required this.rule,
+    required this.save,
+  });
+
+  final ShinyHunt hunt;
+  final OddsRule rule;
+  final Save save;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final chance = hunt.chance(rule, hasCharm: save.hasShinyCharm);
+    final charm = !rule.charmCounts
+        ? 'Shiny Charm: não vale neste método'
+        : !save.canHaveShinyCharm
+        ? 'Sem Shiny Charm neste jogo'
+        : rule.charmApplies(hunt.form, hasCharm: save.hasShinyCharm)
+        ? 'Shiny Charm: sim (do save)'
+        : save.hasShinyCharm
+        ? 'Shiny Charm: não vale para este encontro'
+        : 'Shiny Charm: não (marque no save)';
+    return Row(
+      spacing: 12,
+      children: [
+        const Icon(Icons.auto_awesome, size: 20),
+        Expanded(child: Text(charm, style: theme.textTheme.bodyMedium)),
+        Text(
+          chance > 0 ? oddsLabel(chance) : '—',
+          key: const ValueKey('hunt-odds-preview'),
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
