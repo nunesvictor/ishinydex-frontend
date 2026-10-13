@@ -115,6 +115,16 @@ final versionOrderProvider = Provider<int Function(String a, String b)>((ref) {
   return catalog?.compareVersions ?? (_, _) => 0;
 });
 
+/// A geração de cada versão (`scarlet` → `generation-ix`), do catálogo;
+/// vazio sem ele.
+final versionGenerationProvider = Provider<Map<String, String>>((ref) {
+  final catalog = ref.watch(fakeBackendProvider).catalog;
+  return {
+    for (final v in catalog?.versions ?? const <GameVersion>[])
+      v.name: v.generation,
+  };
+});
+
 /// Quem dos espécimes pode ir para o save, quem fica e os avisos
 /// (`FakeBackend.transferCheck`).
 final transferCheckProvider =

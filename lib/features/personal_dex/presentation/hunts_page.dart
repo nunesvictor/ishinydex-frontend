@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
@@ -233,7 +234,6 @@ class _Filters extends ConsumerWidget {
             if (save.trainer.version == version) save,
         ],
     };
-    final games = query.versions;
     final chips = <Widget>[
       MenuChip(
         label: more > 0 ? '${first.label} +$more' : first.label,
@@ -295,60 +295,11 @@ class _Filters extends ConsumerWidget {
         ],
       ),
       if (savesOf.isNotEmpty)
-        MenuChip(
-          label: switch (games) {
-            [] => 'Jogo',
-            [final one] => versionLabel(one),
-            [final first, ...] => '${versionLabel(first)} +${games.length - 1}',
-          },
-          avatar: games.isEmpty ? null : _StackedGameIcons(games),
-          selected: games.isNotEmpty,
-          menuChildren: [
-            const MenuHeader('Caçável em algum destes saves'),
-            CheckboxMenuButton(
-              value: games.isEmpty,
-              closeOnActivate: false,
-              // Já sem filtro, não há o que desmarcar.
-              onChanged: games.isEmpty
-                  ? null
-                  : (_) => onChanged(query.copyWith(versions: const [])),
-              child: const MenuOptionText(
-                'Todos os jogos',
-                'Sem filtrar por save',
-              ),
-            ),
-            for (final MapEntry(key: version, value: saves) in savesOf.entries)
-              CheckboxMenuButton(
-                value: games.contains(version),
-                closeOnActivate: false,
-                onChanged: (on) => onChanged(
-                  query.copyWith(
-                    versions: on!
-                        ? [...games, version]
-                        : [...games.where((v) => v != version)],
-                  ),
-                ),
-                trailingIcon: _GameCount(
-                  dexId: dexId,
-                  query: query.copyWith(versions: [version]),
-                ),
-                child: MenuOptionText(
-                  versionLabel(version),
-                  saves.map((s) => s.owner).join(' · '),
-                  leading: GameIcon(version, size: 24),
-                ),
-              ),
-            // Com caixas de seleção o menu não fecha a cada toque. Sem
-            // `onPressed` o botão ficaria desabilitado (e não fecharia);
-            // fechar é o próprio `closeOnActivate`.
-            Align(
-              alignment: Alignment.centerRight,
-              child: MenuItemButton(
-                onPressed: () {},
-                child: const Text('Pronto'),
-              ),
-            ),
-          ],
+        _GameChip(
+          dexId: dexId,
+          query: query,
+          savesOf: savesOf,
+          onChanged: onChanged,
         ),
     ];
     return Column(
@@ -422,6 +373,223 @@ class _StackedGameIcons extends StatelessWidget {
 
 /// Quantas caçadas há em um jogo (com os outros filtros), à direita do item
 /// do menu Jogo.
+/// O chip Jogo: abre a folha dos jogos ([showGamePicker]) e aplica o que
+/// ela devolver.
+class _GameChip extends StatelessWidget {
+  const _GameChip({
+    required this.dexId,
+    required this.query,
+    required this.savesOf,
+    required this.onChanged,
+  });
+
+  final int dexId;
+  final HuntQuery query;
+  final Map<String, List<Save>> savesOf;
+  final ValueChanged<HuntQuery> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final games = query.versions;
+    return FilterChip(
+      avatar: games.isEmpty ? null : _StackedGameIcons(games),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(switch (games) {
+            [] => 'Jogo',
+            [final one] => versionLabel(one),
+            [final first, ...] => '${versionLabel(first)} +${games.length - 1}',
+          }),
+          const Icon(Icons.arrow_drop_down, size: 18),
+        ],
+      ),
+      selected: games.isNotEmpty,
+      showCheckmark: false,
+      onSelected: (_) async {
+        final picked = await showGamePicker(
+          context,
+          dexId: dexId,
+          query: query,
+          savesOf: savesOf,
+        );
+        if (picked != null) onChanged(query.copyWith(versions: picked));
+      },
+    );
+  }
+}
+
+/// A folha "Jogo" das caçadas (#205): no celular, uma folha de baixo; no
+/// PC, um diálogo. Em cima a busca, no meio a lista dos jogos dos saves
+/// (por geração, na ordem da série), embaixo o botão fixo. Só o meio rola:
+/// com 2 ou 40 jogos, a busca e o botão ficam à vista. Devolve os jogos
+/// marcados (vazio = todos) ou `null` se fechou sem aplicar.
+Future<List<String>?> showGamePicker(
+  BuildContext context, {
+  required int dexId,
+  required HuntQuery query,
+  required Map<String, List<Save>> savesOf,
+}) {
+  final panel = _GamePicker(dexId: dexId, query: query, savesOf: savesOf);
+  if (WindowSize.of(context).isCompact) {
+    return showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (context) => SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.85,
+        child: panel,
+      ),
+    );
+  }
+  return showDialog<List<String>>(
+    context: context,
+    builder: (context) => Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 640),
+        child: panel,
+      ),
+    ),
+  );
+}
+
+class _GamePicker extends ConsumerStatefulWidget {
+  const _GamePicker({
+    required this.dexId,
+    required this.query,
+    required this.savesOf,
+  });
+
+  final int dexId;
+  final HuntQuery query;
+
+  /// Os saves de cada versão, já na ordem da série.
+  final Map<String, List<Save>> savesOf;
+
+  @override
+  ConsumerState<_GamePicker> createState() => _GamePickerState();
+}
+
+class _GamePickerState extends ConsumerState<_GamePicker> {
+  /// Com poucos jogos a busca só ocuparia espaço (como nos filtros).
+  static const _searchFrom = 8;
+
+  late final Set<String> _draft = {...widget.query.versions};
+  String _search = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final generationOf = ref.watch(versionGenerationProvider);
+    final search = foldForSearch(_search.trim());
+    final versions = [
+      for (final v in widget.savesOf.keys)
+        if (foldForSearch(versionLabel(v)).contains(search)) v,
+    ];
+    final draft = widget.query.copyWith(versions: [..._draft]);
+    final count = ref
+        .watch(huntPageProvider((dexId: widget.dexId, query: draft, page: 1)))
+        .value
+        ?.count;
+    final rows = <Widget>[
+      if (search.isEmpty)
+        CheckboxListTile(
+          value: _draft.isEmpty,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: const Text('Todos os jogos'),
+          onChanged: (_) => setState(_draft.clear),
+        ),
+      for (final (i, version) in versions.indexed) ...[
+        if (i == 0 || generationOf[version] != generationOf[versions[i - 1]])
+          if (generationOf[version] case final generation?)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
+              child: Text(
+                'Geração ${generationNumber(generation)}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+        CheckboxListTile(
+          dense: true,
+          value: _draft.contains(version),
+          controlAffinity: ListTileControlAffinity.leading,
+          title: Row(
+            spacing: 12,
+            children: [
+              GameIcon(version),
+              Flexible(child: Text(versionLabel(version))),
+              if (widget.savesOf[version]!.length > 1)
+                Text(
+                  '${widget.savesOf[version]!.length} saves',
+                  style: theme.textTheme.bodySmall,
+                ),
+            ],
+          ),
+          secondary: _GameCount(
+            dexId: widget.dexId,
+            query: widget.query.copyWith(versions: [version]),
+          ),
+          onChanged: (on) => setState(
+            () => on! ? _draft.add(version) : _draft.remove(version),
+          ),
+        ),
+      ],
+      if (versions.isEmpty)
+        const Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('Nenhum jogo com esse nome.'),
+        ),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Jogo', style: theme.textTheme.titleLarge),
+              Text(
+                'Caçável em algum destes saves',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        if (widget.savesOf.length >= _searchFrom)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: SearchField(
+              hintText: 'Buscar jogo',
+              dense: true,
+              onChanged: (text) => setState(() => _search = text),
+            ),
+          ),
+        const Divider(height: 1),
+        Expanded(child: ListView(children: rows)),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: FilledButton(
+            onPressed: () => Navigator.of(context).pop([
+              for (final v in widget.savesOf.keys)
+                if (_draft.contains(v)) v,
+            ]),
+            child: Text(
+              count == null
+                  ? 'Mostrar resultados'
+                  : 'Mostrar $count resultados',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _GameCount extends ConsumerWidget {
   const _GameCount({required this.dexId, required this.query});
 

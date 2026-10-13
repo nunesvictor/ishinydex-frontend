@@ -11,4 +11,13 @@ void main() {
       isA<CupertinoPageTransitionsBuilder>(),
     );
   });
+
+  test('barra de título: no iOS não muda de cor ao rolar (#205)', () {
+    final scheme = AppTheme.light().colorScheme;
+    final ios = AppTheme.appBarTheme(scheme, TargetPlatform.iOS)!;
+    expect(ios.backgroundColor, scheme.surface);
+    expect(ios.scrolledUnderElevation, 1);
+    expect(ios.shadowColor, scheme.outlineVariant);
+    expect(AppTheme.appBarTheme(scheme, TargetPlatform.android), isNull);
+  });
 }
