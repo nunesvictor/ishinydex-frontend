@@ -20,14 +20,21 @@ const SPRITES_CACHE = 'ishinydex-sprites';
 const SPRITES_HOST = 'raw.githubusercontent.com';
 
 self.addEventListener('install', (event) => {
-  // O essencial para abrir offline já na primeira vez.
+  // O essencial para abrir offline já na primeira vez. Sem skipWaiting():
+  // ao abrir a página, o navegador procura um sw.js novo sozinho, e um
+  // worker que assumisse logo derrubaria os downloads do boot no iOS (o app
+  // ficava no splash na primeira abertura de cada versão, #228). O novo
+  // espera a página pedir ('skip-waiting'), depois do primeiro quadro.
   event.waitUntil(
     caches
       .open(APP_CACHE)
       .then((cache) => cache.addAll(['./', 'flutter_bootstrap.js', 'manifest.json']))
-      .catch(() => undefined)
-      .then(() => self.skipWaiting()),
+      .catch(() => undefined),
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'skip-waiting') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

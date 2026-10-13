@@ -106,10 +106,21 @@
        parado no splash na primeira abertura da v2.5.0). Depois do primeiro
        quadro, a troca não atrapalha. -->
   <script>
+    // O worker novo de uma versão nova espera (#228): o navegador o instala
+    // sozinho ao abrir a página, mas ele só assume quando a página pede,
+    // depois do primeiro quadro.
     function registerServiceWorker() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      }
+      if (!('serviceWorker' in navigator)) return;
+      const skip = (worker) => worker && worker.postMessage('skip-waiting');
+      navigator.serviceWorker.register('sw.js').then((registration) => {
+        skip(registration.waiting);
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          worker?.addEventListener('statechange', () => {
+            if (worker.state === 'installed') skip(worker);
+          });
+        });
+      }).catch(() => {});
     }
   </script>
   <!-- No primeiro quadro do app, o splash some (fade de 200 ms, se já
