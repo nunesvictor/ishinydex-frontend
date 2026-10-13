@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Tema Material 3 compartilhado por web e iOS.
@@ -16,6 +17,7 @@ abstract final class AppTheme {
     );
     return ThemeData(
       colorScheme: scheme,
+      appBarTheme: appBarTheme(scheme, defaultTargetPlatform),
       visualDensity: VisualDensity.standard,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -36,4 +38,23 @@ abstract final class AppTheme {
       ),
     );
   }
+
+  /// A barra de título (#205). No iOS (também no navegador do iPhone), ela
+  /// não muda de cor quando a lista rola por baixo: fica igual à faixa da
+  /// hora, que o PWA não consegue trocar de cor com o app aberto. Ganha só
+  /// uma sombra de 1 px, a linha fina do iOS. Nas outras plataformas, fica
+  /// o padrão do Material 3 (a barra muda de tom).
+  @visibleForTesting
+  static AppBarThemeData? appBarTheme(
+    ColorScheme scheme,
+    TargetPlatform platform,
+  ) => platform == TargetPlatform.iOS
+      ? AppBarThemeData(
+          // Com a cor definida, o Material 3 não troca pela
+          // `surfaceContainer` ao rolar.
+          backgroundColor: scheme.surface,
+          scrolledUnderElevation: 1,
+          shadowColor: scheme.outlineVariant,
+        )
+      : null;
 }

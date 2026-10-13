@@ -60,7 +60,7 @@ class ShinyHuntActions {
     hunt.running ? hunt.stopped(_now) : hunt.copyWith(runningSince: _now),
   );
 
-  /// Desistir: vai para Pausadas, com o cronômetro parado.
+  /// Fazer uma pausa: vai para Pausadas, com o cronômetro parado.
   Future<ShinyHunt> pause(ShinyHunt hunt) =>
       save(hunt.stopped(_now).copyWith(paused: true, pausedAt: _today));
 

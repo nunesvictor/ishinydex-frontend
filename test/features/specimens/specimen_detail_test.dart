@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -371,5 +373,64 @@ void main() {
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(find.text('Nenhuma forma encontrada.'), findsOneWidget);
+  });
+
+  testWidgets('FormPicker: Enter escolhe o primeiro resultado (#205)', (
+    tester,
+  ) async {
+    FormRef form(int id, String name) => FormRef(
+      id: id,
+      name: name,
+      pokeapiId: id,
+      spriteUrl: 'http://x/$id.png',
+      shinySpriteUrl: 'http://x/shiny/$id.png',
+    );
+    final slow = Completer<List<FormRef>>();
+    when(() => specimens.searchForms('er'))
+        .thenAnswer((_) async => throw const ServerFailure());
+    when(() => specimens.searchForms('zz')).thenAnswer((_) async => const []);
+    when(() => specimens.searchForms('iv')).thenAnswer((_) => slow.future);
+    when(() => specimens.searchForms('ivy')).thenAnswer((_) async => const []);
+    when(() => specimens.searchForms('bu'))
+        .thenAnswer((_) async => [form(1, 'bulbasaur'), form(2, 'ivysaur')]);
+    FormRef? picked;
+    await pumpWidgetApp(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (context) => TextButton(
+            onPressed: () async => picked = await showFormPicker(context),
+            child: const Text('Abrir'),
+          ),
+        ),
+      ),
+      overrides: [specimenRepositoryProvider.overrideWithValue(specimens)],
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    Future<void> submit(String text) async {
+      await tester.enterText(find.byType(TextField), text);
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+    }
+
+    // Curto demais, com erro ou sem resultado: o seletor continua aberto.
+    await submit('b');
+    await submit('er');
+    await submit('zz');
+    expect(find.byType(FormPicker), findsOneWidget);
+    // O texto mudou antes de a busca chegar: não escolhe a busca antiga.
+    await tester.enterText(find.byType(TextField), 'iv');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'ivy');
+    await tester.pump(const Duration(milliseconds: 400));
+    slow.complete([form(2, 'ivysaur')]);
+    await tester.pumpAndSettle();
+    expect(find.byType(FormPicker), findsOneWidget);
+
+    await submit('bu');
+    expect(find.byType(FormPicker), findsNothing);
+    expect(picked?.id, 1);
   });
 }

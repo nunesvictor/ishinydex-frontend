@@ -41,8 +41,8 @@ class HuntCards extends ConsumerWidget {
             ? null
             : hunts.where((h) => h.running).firstOrNull;
         final empty = paused
-            ? 'Nenhuma caçada pausada. Desistir de uma a traz para cá, com a '
-                  'contagem guardada.'
+            ? 'Nenhuma caçada pausada. Fazer uma pausa numa caçada a traz '
+                  'para cá, com a contagem guardada.'
             : 'Nenhuma caçada em andamento. Comece por um item de Faltam ou '
                   'pelo botão abaixo.';
         return LayoutBuilder(
@@ -56,7 +56,7 @@ class HuntCards extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'Caçadas que você deixou de lado. A contagem fica '
+                      'Caçadas em pausa. A contagem fica '
                       'guardada.',
                       style: theme.textTheme.bodySmall,
                     ),

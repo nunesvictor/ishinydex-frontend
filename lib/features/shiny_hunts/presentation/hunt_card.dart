@@ -107,6 +107,22 @@ class _HuntCardState extends ConsumerState<HuntCard> {
     }
   }
 
+  /// Corrige o tempo de uma caçada em horas (#205): o valor digitado
+  /// substitui o acumulado. Só com o cronômetro parado.
+  Future<void> _typeTime() async {
+    final typed = await showDialog<Duration>(
+      context: context,
+      builder: (_) => _DurationDialog(widget.hunt.elapsed(_actions.now())),
+    );
+    if (typed != null) {
+      _run(
+        () => _actions.save(
+          widget.hunt.copyWith(accumulatedSeconds: typed.inSeconds),
+        ),
+      );
+    }
+  }
+
   Future<void> _delete() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -241,7 +257,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                         value: 'pause',
                         child: ListTile(
                           leading: Icon(Icons.pause),
-                          title: Text('Desistir (pausar)'),
+                          title: Text('Fazer uma pausa'),
                         ),
                       ),
                     ],
@@ -273,32 +289,39 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                 spacing: 8,
                 children: [
                   Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      spacing: 8,
-                      children: [
-                        // O ponto vermelho: o relógio está contando.
-                        if (hunt.running)
-                          Container(
-                            key: const ValueKey('hunt-recording'),
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.error,
-                              shape: BoxShape.circle,
+                    // Tocar no tempo corrige o acumulado; com o relógio
+                    // rodando, não (ele andaria enquanto você digita).
+                    child: InkWell(
+                      key: const ValueKey('hunt-time'),
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: enabled && !hunt.running ? _typeTime : null,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 8,
+                        children: [
+                          // O ponto vermelho: o relógio está contando.
+                          if (hunt.running)
+                            Container(
+                              key: const ValueKey('hunt-recording'),
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.error,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                countText,
+                                key: const ValueKey('hunt-timer'),
+                                style: theme.textTheme.headlineMedium,
+                              ),
                             ),
                           ),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              countText,
-                              key: const ValueKey('hunt-timer'),
-                              style: theme.textTheme.headlineMedium,
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   SizedBox(
@@ -403,6 +426,80 @@ class _CountDialogState extends State<_CountDialog> {
       FilledButton(
         onPressed: () =>
             Navigator.of(context).pop(int.tryParse(_controller.text)),
+        child: const Text('OK'),
+      ),
+    ],
+  );
+}
+
+/// Horas e minutos de uma caçada em horas (#205).
+class _DurationDialog extends StatefulWidget {
+  const _DurationDialog(this.elapsed);
+
+  final Duration elapsed;
+
+  @override
+  State<_DurationDialog> createState() => _DurationDialogState();
+}
+
+class _DurationDialogState extends State<_DurationDialog> {
+  late final _hours = TextEditingController(text: '${widget.elapsed.inHours}');
+  late final _minutes = TextEditingController(
+    text: '${widget.elapsed.inMinutes % 60}',
+  );
+
+  @override
+  void dispose() {
+    _hours.dispose();
+    _minutes.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Tempo da caçada'),
+    content: Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 12,
+      children: [
+        SizedBox(
+          width: 88,
+          child: TextField(
+            key: const ValueKey('hunt-hours-input'),
+            controller: _hours,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(labelText: 'Horas'),
+          ),
+        ),
+        SizedBox(
+          width: 72,
+          child: TextField(
+            key: const ValueKey('hunt-minutes-input'),
+            controller: _minutes,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(2),
+            ],
+            decoration: const InputDecoration(labelText: 'Min'),
+          ),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancelar'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.of(context).pop(
+          Duration(
+            hours: int.tryParse(_hours.text) ?? 0,
+            minutes: int.tryParse(_minutes.text) ?? 0,
+          ),
+        ),
         child: const Text('OK'),
       ),
     ],

@@ -8,6 +8,8 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';
@@ -44,8 +46,8 @@ List<String> _icons(WidgetTester tester, String name) => [
     '${icon.muted ? '~' : ''}${icon.version}',
 ];
 
-/// Abre o menu do chip [chip], marca ou desmarca os [games] (o menu fica
-/// aberto) e fecha em "Pronto".
+/// Abre a folha do chip [chip], marca ou desmarca os [games] e aplica em
+/// "Mostrar resultados".
 Future<void> _toggleGames(
   WidgetTester tester,
   String chip,
@@ -56,22 +58,22 @@ Future<void> _toggleGames(
   for (final game in games) {
     await tester.tap(
       find.descendant(
-        of: find.byType(CheckboxMenuButton),
+        of: find.byType(CheckboxListTile),
         matching: find.text(game),
       ),
     );
     await tester.pumpAndSettle();
   }
-  await tester.tap(find.text('Pronto'));
+  await tester.tap(find.textContaining('Mostrar'));
   await tester.pumpAndSettle();
 }
 
-/// A caixa do item [game] do menu Jogo (aberto).
+/// A caixa do item [game] da folha Jogo (aberta).
 bool? _checked(WidgetTester tester, String game) => tester
-    .widget<CheckboxMenuButton>(
+    .widget<CheckboxListTile>(
       find.ancestor(
         of: find.text(game),
-        matching: find.byType(CheckboxMenuButton),
+        matching: find.byType(CheckboxListTile),
       ),
     )
     .value;
@@ -109,7 +111,7 @@ void main() {
       );
       expect(find.text('Espeon'), findsOneWidget);
 
-      // O menu mostra o que está marcado e quantos há em cada jogo.
+      // A folha mostra o que está marcado e quantos há em cada jogo.
       await tester.tap(find.widgetWithText(FilterChip, 'Scarlet +1'));
       await tester.pumpAndSettle();
       expect(_checked(tester, 'Todos os jogos'), isFalse);
@@ -118,13 +120,15 @@ void main() {
       final zaCount = find.descendant(
         of: find.ancestor(
           of: find.text('Legends: Z-A'),
-          matching: find.byType(CheckboxMenuButton),
+          matching: find.byType(CheckboxListTile),
         ),
         matching: find.text('0'),
       );
       expect(zaCount, findsOneWidget);
-      await tester.tap(find.text('Pronto'));
+      // Fechar sem aplicar não muda nada.
+      Navigator.of(tester.element(find.byType(CheckboxListTile).first)).pop();
       await tester.pumpAndSettle();
+      expect(find.widgetWithText(FilterChip, 'Scarlet +1'), findsOneWidget);
 
       await _toggleGames(tester, 'Scarlet +1', ['Scarlet']);
       expect(find.text('Nada para caçar com estes filtros.'), findsOneWidget);
@@ -132,21 +136,10 @@ void main() {
       await _toggleGames(tester, 'Legends: Z-A', ['Todos os jogos']);
       expect(find.widgetWithText(FilterChip, 'Jogo'), findsOneWidget);
       expect(find.text('Vaporeon'), findsOneWidget);
-      // Já sem filtro, "Todos os jogos" fica marcado e desabilitado.
+      // Já sem filtro, "Todos os jogos" fica marcado.
       await tester.tap(find.widgetWithText(FilterChip, 'Jogo'));
       await tester.pumpAndSettle();
       expect(_checked(tester, 'Todos os jogos'), isTrue);
-      expect(
-        tester
-            .widget<CheckboxMenuButton>(
-              find.ancestor(
-                of: find.text('Todos os jogos'),
-                matching: find.byType(CheckboxMenuButton),
-              ),
-            )
-            .onChanged,
-        isNull,
-      );
     });
   }
 
@@ -266,5 +259,66 @@ void main() {
     );
 
     expect(find.byType(GameIcon), findsNothing);
+  });
+
+  testWidgets('folha Jogo com muitos saves: busca, gerações e "2 saves"', (
+    tester,
+  ) async {
+    final catalog = Catalog.fromJson(
+      catalogJson(),
+      spriteBase: Env.defaultSpritesBaseUrl,
+    );
+    final backend = FakeBackend.fromCatalog(catalog);
+    final dexId = backend.addDex(name: 'Caça', isShinyDex: true);
+    backend.addBox(dexId: dexId, name: 'Caça 1', formIds: catalog.defaultDex);
+    Save save(int id, String version) => Save(
+      id: id,
+      trainer: Trainer(id: id, name: 'Ash', trainerId: '$id', version: version),
+    );
+    final versions = [
+      'scarlet',
+      'scarlet',
+      'violet',
+      'sword',
+      'shield',
+      'brilliant-diamond',
+      'shining-pearl',
+      'sun',
+      'moon',
+    ];
+    await pumpFullApp(
+      tester,
+      size: compactSize,
+      backend: backend,
+      overrides: [
+        savesProvider.overrideWith(
+          (ref) async => [for (final (i, v) in versions.indexed) save(i, v)],
+        ),
+      ],
+    );
+    ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+        .read(routerProvider)
+        .go(Routes.dex(dexId));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Caçadas'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'Jogo'));
+    await tester.pumpAndSettle();
+
+    // Com 8 jogos ou mais, a busca; por geração, na ordem da série.
+    expect(find.widgetWithText(TextField, 'Buscar jogo'), findsOneWidget);
+    expect(find.text('2 saves'), findsOneWidget);
+    double top(String text) => tester.getTopLeft(find.text(text)).dy;
+    expect(top('Geração VII'), lessThan(top('Geração VIII')));
+    expect(top('Sun'), lessThan(top('Moon')));
+
+    await tester.enterText(find.byType(TextField).last, 'sun');
+    await tester.pumpAndSettle();
+    expect(find.text('Sun'), findsOneWidget);
+    expect(find.text('Moon'), findsNothing);
+    expect(find.text('Todos os jogos'), findsNothing);
+    await tester.enterText(find.byType(TextField).last, 'zzz');
+    await tester.pumpAndSettle();
+    expect(find.text('Nenhum jogo com esse nome.'), findsOneWidget);
   });
 }
