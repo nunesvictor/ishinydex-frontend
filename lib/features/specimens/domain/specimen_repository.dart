@@ -67,7 +67,9 @@ abstract interface class SpecimenRepository {
   /// ao HOME ([Save.homeVersions]): os que recebem e os só de ida.
   Future<Save> createSave({required int trainerId, String label = ''});
 
-  Future<Save> updateSave(int saveId, {required String label});
+  /// Muda o apelido e/ou o Shiny Charm do save; o Charm só em jogo que o
+  /// tem ([Save.canHaveShinyCharm]), senão falha (`ValidationFailure`).
+  Future<Save> updateSave(int saveId, {String? label, bool? hasShinyCharm});
 
   /// Apaga o save; com espécimes nele, falha (`ValidationFailure`).
   Future<void> deleteSave(int saveId);
