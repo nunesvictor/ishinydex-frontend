@@ -59,6 +59,9 @@ abstract final class AppTheme {
           // Com a cor definida, o Material 3 não troca pela
           // `surfaceContainer` ao rolar.
           backgroundColor: scheme.surface,
+          // Sem isto, com elevação o Material 3 pinta a barra com o
+          // `surfaceTint` (o índigo) e ela escurece do mesmo jeito (#215).
+          surfaceTintColor: Colors.transparent,
           scrolledUnderElevation: 1,
           shadowColor: scheme.outlineVariant,
         )
