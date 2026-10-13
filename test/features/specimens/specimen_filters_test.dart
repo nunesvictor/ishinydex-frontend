@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
-import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
@@ -232,7 +231,7 @@ void main() {
       await tester.tap(find.text('20').hitTestable().first);
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
-      expect(find.text('01/10/2026 – 01/20/2026'), findsOneWidget);
+      expect(find.text('10/01/2026 – 20/01/2026'), findsOneWidget);
       await tester.tap(find.byTooltip('Limpar datas'));
       await tester.pumpAndSettle();
       expect(find.text('Qualquer data'), findsOneWidget);
@@ -317,7 +316,6 @@ void main() {
           envProvider.overrideWithValue(fakeEnv),
           fakeBackendProvider.overrideWithValue(FakeBackend.seeded()),
         ],
-        dateFormat: InMemoryDateFormatStorage(CaptureDateFormat.home),
       );
       await tester.pumpAndSettle();
       return changes;
@@ -358,7 +356,7 @@ void main() {
         'Modest +1': query.copyWith(natures: const []),
         'Japonês': query.copyWith(languages: const []),
         'Habilidade: keen': query.copyWith(ability: ''),
-        'Desde 03/04/2026': query.copyWith(capturedAfter: null),
+        'Desde 04/03/2026': query.copyWith(capturedAfter: null),
       };
       for (final label in expected.keys) {
         final chip = find.widgetWithText(InputChip, label);
@@ -389,12 +387,12 @@ void main() {
     expect(summarize(['A']), 'A');
     expect(summarize(['A', 'B', 'C']), 'A +2');
     expect(generationNumber('generation-viii'), 'VIII');
-    final pattern = CaptureDatePattern(CaptureDateFormat.home, 'pt_BR');
+    final pattern = CaptureDatePattern('pt_BR');
     final a = DateTime(2026, 1, 2);
     final b = DateTime(2026, 3, 4);
-    expect(captureRangeLabel(pattern, a, b), '01/02/2026 – 03/04/2026');
-    expect(captureRangeLabel(pattern, a, null), 'Desde 01/02/2026');
-    expect(captureRangeLabel(pattern, null, b), 'Até 03/04/2026');
+    expect(captureRangeLabel(pattern, a, b), '02/01/2026 – 04/03/2026');
+    expect(captureRangeLabel(pattern, a, null), 'Desde 02/01/2026');
+    expect(captureRangeLabel(pattern, null, b), 'Até 04/03/2026');
     expect(captureRangeLabel(pattern, null, null), '');
   });
 }

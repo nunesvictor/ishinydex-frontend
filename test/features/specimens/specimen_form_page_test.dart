@@ -5,7 +5,6 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
-import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -42,7 +41,6 @@ void main() {
     int? specimenId,
     Size size = const Size(600, 1600),
     TargetPlatform platform = TargetPlatform.android,
-    CaptureDateFormat? dateFormat,
     List<Override> overrides = const [],
     ShinyHuntRepository? hunts,
   }) async {
@@ -67,7 +65,6 @@ void main() {
       ),
       size: size,
       platform: platform,
-      dateFormat: InMemoryDateFormatStorage(dateFormat),
       hunts: hunts,
       overrides: [
         specimenRepositoryProvider.overrideWithValue(repository),
@@ -419,14 +416,14 @@ void main() {
           .thenAnswer((_) async => const Specimen(id: 1, form: 1));
     });
 
-    testWidgets('PC: digitável no formato HOME (padrão)', (tester) async {
+    testWidgets('PC: digitável no formato do idioma (#208)', (tester) async {
       await pumpForm(tester, platform: TargetPlatform.linux);
       await tester.pumpAndSettle();
       expect(
-        find.descendant(of: dateField(), matching: find.text('mm/dd/aaaa')),
+        find.descendant(of: dateField(), matching: find.text('dd/mm/aaaa')),
         findsOneWidget,
       );
-      await tester.enterText(dateField(), '09/23/2024');
+      await tester.enterText(dateField(), '23/09/2024');
       await tester.pump();
       expect((await save(tester)).capturedAt, DateTime(2024, 9, 23));
     });
@@ -436,7 +433,7 @@ void main() {
     ) async {
       await pumpForm(tester, platform: TargetPlatform.linux);
       await tester.pumpAndSettle();
-      await tester.enterText(dateField(), '23/09/2024');
+      await tester.enterText(dateField(), '09/23/2024');
       await tester.pump();
       expect(find.textContaining('Data inválida'), findsOneWidget);
       await tester.enterText(dateField(), '01/01/2100');
@@ -455,11 +452,7 @@ void main() {
     testWidgets('PC: calendário preenche o campo; formato da localização', (
       tester,
     ) async {
-      await pumpForm(
-        tester,
-        platform: TargetPlatform.linux,
-        dateFormat: CaptureDateFormat.locale,
-      );
+      await pumpForm(tester, platform: TargetPlatform.linux);
       await tester.pumpAndSettle();
       // Inválida primeiro: escolher no calendário limpa o erro.
       await tester.enterText(dateField(), '99/99/9999');
@@ -483,7 +476,7 @@ void main() {
       expect((await save(tester)).capturedAt, isNull);
     });
 
-    testWidgets('celular: calendário, exibido no formato escolhido', (
+    testWidgets('celular: calendário, exibido no formato do idioma', (
       tester,
     ) async {
       await pumpForm(tester);
@@ -494,10 +487,10 @@ void main() {
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       final now = DateTime.now();
-      final home =
-          '${now.month.toString().padLeft(2, '0')}/'
-          '${now.day.toString().padLeft(2, '0')}/${now.year}';
-      expect(find.text(home), findsOneWidget);
+      final local =
+          '${now.day.toString().padLeft(2, '0')}/'
+          '${now.month.toString().padLeft(2, '0')}/${now.year}';
+      expect(find.text(local), findsOneWidget);
     });
   });
 }

@@ -9,8 +9,6 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
-import 'package:ishinydex/features/settings/data/date_format_storage.dart';
-import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 
@@ -49,7 +47,6 @@ Future<void> pumpWidgetApp(
   List<Override> overrides = const [],
   Size size = compactSize,
   TargetPlatform platform = TargetPlatform.android,
-  DateFormatStorage? dateFormat,
 
   /// As caçadas em andamento (#164); por padrão, nenhuma, sem latência.
   ShinyHuntRepository? hunts,
@@ -59,9 +56,6 @@ Future<void> pumpWidgetApp(
     ProviderScope(
       retry: noRetry,
       overrides: [
-        dateFormatStorageProvider.overrideWithValue(
-          dateFormat ?? InMemoryDateFormatStorage(),
-        ),
         shinyHuntRepositoryProvider.overrideWithValue(hunts ?? FakeBackend()),
         ...overrides,
       ],
@@ -82,7 +76,6 @@ Future<FakeBackend> pumpFullApp(
   Size size = expandedSize,
   FakeBackend? backend,
   LastDexStorage? lastDex,
-  DateFormatStorage? dateFormat,
   Env env = fakeEnv,
   List<Override> overrides = const [],
 }) async {
@@ -96,9 +89,6 @@ Future<FakeBackend> pumpFullApp(
         fakeBackendProvider.overrideWithValue(fake),
         lastDexStorageProvider.overrideWithValue(
           lastDex ?? InMemoryLastDexStorage(),
-        ),
-        dateFormatStorageProvider.overrideWithValue(
-          dateFormat ?? InMemoryDateFormatStorage(),
         ),
         ...overrides,
       ],

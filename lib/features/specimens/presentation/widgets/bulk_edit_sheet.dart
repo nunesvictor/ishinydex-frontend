@@ -93,7 +93,7 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
     final options =
         ref.watch(specimenOptionsProvider).value ?? const SpecimenOptions();
     final trainers = ref.watch(trainersProvider).value ?? const <Trainer>[];
-    final labels = BulkLabels(context, ref, options, trainers);
+    final labels = BulkLabels(context, options, trainers);
     final theme = Theme.of(context);
     final count = _changes.count;
     return Column(
@@ -312,8 +312,8 @@ const removeLabel = 'Remover';
 
 /// Textos das alterações (linhas da folha e resumo da confirmação).
 class BulkLabels {
-  BulkLabels(BuildContext context, WidgetRef ref, this.options, this.trainers)
-    : _pattern = capturePattern(context, ref);
+  BulkLabels(BuildContext context, this.options, this.trainers)
+    : _pattern = capturePattern(context);
 
   final SpecimenOptions options;
   final List<Trainer> trainers;

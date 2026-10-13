@@ -7,7 +7,6 @@ import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
-import 'package:ishinydex/features/settings/data/date_format_storage.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -459,7 +458,7 @@ class _CaptureRangeTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pattern = capturePattern(context, ref);
+    final pattern = capturePattern(context);
     final hasRange = after != null || before != null;
     return ListTile(
       dense: true,
@@ -623,7 +622,7 @@ class ActiveFilterChips extends ConsumerWidget {
     final options =
         ref.watch(specimenOptionsProvider).value ?? const SpecimenOptions();
     final trainers = ref.watch(trainersProvider).value ?? const <Trainer>[];
-    final pattern = capturePattern(context, ref);
+    final pattern = capturePattern(context);
     final q = query;
     final chips = <(String, SpecimenQuery)>[
       if (q.ordering != SpecimenOrdering.box)
@@ -736,12 +735,9 @@ String captureRangeLabel(
   (null, null) => '',
 };
 
-/// Formato de data escolhido nos Ajustes (o mesmo do formulário).
-CaptureDatePattern capturePattern(BuildContext context, WidgetRef ref) =>
-    CaptureDatePattern(
-      ref.watch(captureDateFormatProvider).value ?? CaptureDateFormat.home,
-      Localizations.localeOf(context).toString(),
-    );
+/// O formato de data do idioma do app (o mesmo do formulário).
+CaptureDatePattern capturePattern(BuildContext context) =>
+    CaptureDatePattern(Localizations.localeOf(context).toString());
 
 String? _pokeballSummary(SpecimenQuery q, SpecimenOptions options) =>
     summarize([

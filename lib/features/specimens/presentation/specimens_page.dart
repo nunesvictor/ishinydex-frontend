@@ -274,7 +274,6 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     if (changes == null || !mounted) return;
     final labels = BulkLabels(
       context,
-      ref,
       ref.read(specimenOptionsProvider).value ?? const SpecimenOptions(),
       ref.read(trainersProvider).value ?? const <Trainer>[],
     );
