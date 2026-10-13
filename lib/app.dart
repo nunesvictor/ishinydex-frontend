@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:ishinydex/core/widgets/update_notice.dart';
 import 'package:ishinydex/features/sync/presentation/sync_lifecycle.dart';
 
 /// Desliga o retry automático do Riverpod 3: as telas têm botão
@@ -28,11 +29,14 @@ class IShinyDexApp extends ConsumerWidget {
     // refeito quando o sistema troca entre claro e escuro.
     // O SyncLifecycle sincroniza com o Dropbox ao abrir e ao voltar ao app
     // (sem Dropbox neste build, não faz nada).
-    builder: (context, child) => SyncLifecycle(
-      child: Title(
-        title: 'iShinyDex',
-        color: Theme.of(context).colorScheme.surface,
-        child: child!,
+    // O UpdateNotice avisa quando sai uma versão nova com o app aberto.
+    builder: (context, child) => UpdateNotice(
+      child: SyncLifecycle(
+        child: Title(
+          title: 'iShinyDex',
+          color: Theme.of(context).colorScheme.surface,
+          child: child!,
+        ),
       ),
     ),
   );

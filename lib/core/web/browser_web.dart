@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
 import 'package:web/web.dart' as web;
@@ -60,6 +61,24 @@ void openUrl(String url) => web.window.location.assign(url);
 
 /// Abre [url] numa aba nova, sem sair do app (o post da caçada).
 void openInNewTab(String url) => web.window.open(url, '_blank');
+
+/// Chama [onReady] quando há uma versão nova do app pronta (#228): o
+/// `index.html` dispara `ishinydex-update-ready` quando o service worker
+/// novo assume. Se o aviso chegou antes do app ouvir, chama logo.
+void onAppUpdateReady(void Function() onReady) {
+  if (web.window.getProperty<JSBoolean?>('ishinydexUpdateReady'.toJS)?.toDart ??
+      false) {
+    onReady();
+    return;
+  }
+  web.window.addEventListener(
+    'ishinydex-update-ready',
+    ((web.Event _) => onReady()).toJS,
+  );
+}
+
+/// Recarrega a página: abre a versão nova do app.
+void reloadPage() => web.window.location.reload();
 
 /// Troca o endereço na barra sem recarregar (tira o `?code=` da volta do
 /// login, para um recarregamento não tentar usá-lo de novo).

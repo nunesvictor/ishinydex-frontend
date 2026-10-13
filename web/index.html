@@ -106,10 +106,44 @@
        parado no splash na primeira abertura da v2.5.0). Depois do primeiro
        quadro, a troca não atrapalha. -->
   <script>
+    // O worker novo de uma versão nova espera (#228): o navegador o instala
+    // sozinho ao abrir a página, mas ele só assume quando a página pede,
+    // depois do primeiro quadro.
+    //
+    // Versão nova com o app aberto (#228): a página procura um sw.js novo ao
+    // voltar ao app e a cada 30 minutos. Quando o worker novo assume, ela
+    // pergunta a versão dele; se não for a desta página (o código Dart que
+    // está rodando), avisa o app (evento "ishinydex-update-ready"), que
+    // oferece recarregar. Na abertura, a página já é a versão nova (veio da
+    // rede): a troca de worker não gera aviso.
     function registerServiceWorker() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      }
+      if (!('serviceWorker' in navigator)) return;
+      const sw = navigator.serviceWorker;
+      const skip = (worker) => worker && worker.postMessage('skip-waiting');
+      sw.addEventListener('controllerchange', () => {
+        sw.controller?.postMessage('version');
+      });
+      sw.addEventListener('message', (event) => {
+        const page = typeof buildVersion === 'string' ? buildVersion : '';
+        if (event.data?.type !== 'version' || page.startsWith('__')) return;
+        if (event.data.version === page) return;
+        window.ishinydexUpdateReady = true;
+        window.dispatchEvent(new Event('ishinydex-update-ready'));
+      });
+      sw.register('sw.js').then((registration) => {
+        skip(registration.waiting);
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          worker?.addEventListener('statechange', () => {
+            if (worker.state === 'installed') skip(worker);
+          });
+        });
+        const check = () => registration.update().catch(() => {});
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') check();
+        });
+        setInterval(check, 30 * 60 * 1000);
+      }).catch(() => {});
     }
   </script>
   <!-- No primeiro quadro do app, o splash some (fade de 200 ms, se já

@@ -93,16 +93,37 @@ void main() {
     final html = File('web/index.html').readAsStringSync();
     final sw = File('web/sw.js').readAsStringSync();
 
-    expect(html, contains("navigator.serviceWorker.register('sw.js')"));
+    expect(html, contains("sw.register('sw.js')"));
     // Só depois do primeiro quadro: a troca de worker numa atualização não
     // concorre com o boot (#176).
     final firstFrame = html.substring(
       html.indexOf("addEventListener('flutter-first-frame'"),
     );
     expect(firstFrame, contains('registerServiceWorker();'));
-    expect(RegExp(r'serviceWorker\.register\(').allMatches(html), hasLength(1));
+    expect(RegExp(r'\.register\(').allMatches(html), hasLength(1));
     // A versão é trocada no build, como no flutter_bootstrap.js.
     expect(sw, contains("const VERSION = '__BUILD_VERSION__';"));
     expect(sw, contains("if (request.method !== 'GET') return;"));
+  });
+
+  test('worker novo espera o primeiro quadro; aviso de versão nova (#228)', () {
+    final html = File('web/index.html').readAsStringSync();
+    final sw = File('web/sw.js').readAsStringSync();
+    final install = sw.substring(
+      sw.indexOf("addEventListener('install'"),
+      sw.indexOf("addEventListener('message'"),
+    );
+    // Sem assumir sozinho: o navegador instala o worker novo ao abrir a
+    // página, e assumir no boot derrubava os downloads no iOS.
+    expect(install, isNot(contains('self.skipWaiting')));
+    expect(
+      sw,
+      contains("if (event.data === 'skip-waiting') self.skipWaiting();"),
+    );
+    expect(sw, contains('version: VERSION'));
+    expect(html, contains("postMessage('skip-waiting')"));
+    expect(html, contains("postMessage('version')"));
+    expect(html, contains("new Event('ishinydex-update-ready')"));
+    expect(html, contains('registration.update()'));
   });
 }
