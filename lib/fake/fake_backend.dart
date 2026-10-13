@@ -332,7 +332,13 @@ class FakeBackend
     ],
     'saves': [
       for (final s in _saves.values)
-        {'id': s.id, 'trainer': s.trainer.id, 'label': s.label},
+        {
+          'id': s.id,
+          'trainer': s.trainer.id,
+          'label': s.label,
+          // Só quando tem: o registro de quem não tem fica como antes.
+          if (s.hasShinyCharm) 'shinyCharm': true,
+        },
     ],
     'dexes': [
       for (final d in _dexes.values)
@@ -461,6 +467,7 @@ class FakeBackend
         id: id,
         trainer: _trainers[s['trainer'] as int]!,
         label: s['label'] as String,
+        hasShinyCharm: s['shinyCharm'] as bool? ?? false,
       );
     }
     for (final d in of('dexes')) {
@@ -1891,11 +1898,23 @@ class FakeBackend
   }
 
   @override
-  Future<Save> updateSave(int saveId, {required String label}) async {
+  Future<Save> updateSave(
+    int saveId, {
+    String? label,
+    bool? hasShinyCharm,
+  }) async {
     await _delay();
     final save = _saves[saveId];
     if (save == null) throw const NotFoundFailure();
-    final updated = save.copyWith(label: label);
+    if ((hasShinyCharm ?? false) && !save.canHaveShinyCharm) {
+      throw ValidationFailure({
+        'shinyCharm': ['este jogo não tem o Shiny Charm.'],
+      });
+    }
+    final updated = save.copyWith(
+      label: label ?? save.label,
+      hasShinyCharm: hasShinyCharm ?? save.hasShinyCharm,
+    );
     _saves[saveId] = updated;
     // Os espécimes guardam uma cópia do save (como a resposta da API).
     for (final s in [..._specimens.values]) {

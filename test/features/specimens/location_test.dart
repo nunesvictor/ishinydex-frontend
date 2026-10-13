@@ -334,7 +334,7 @@ void main() {
       await _tap(tester, find.text('Salvar'));
     }
 
-    testWidgets('adicionar, renomear e remover', (tester) async {
+    testWidgets('adicionar, editar e remover', (tester) async {
       final backend = await pumpFullApp(tester, size: compactSize);
       await _go(tester, Routes.settings);
       await _tap(tester, find.text('Meus saves'));
@@ -377,21 +377,41 @@ void main() {
         matching: find.byTooltip('Ações do save'),
       );
 
-      // Renomear: Salvar, Enter e Cancelar.
+      // Editar (tela cheia no celular): apelido e Charm; Enter; Cancelar.
       await _tap(tester, menuOf('Scarlet · Switch'));
-      await _tap(tester, find.text('Renomear'));
+      await _tap(tester, find.text('Editar'));
+      expect(
+        find.descendant(
+          of: find.byType(Dialog),
+          matching: find.text('Ash (123456) · Scarlet'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('não vale em estáticos, Pokémon Tera e reides'),
+        findsOneWidget,
+      );
       await tester.enterText(find.byType(TextField), ' OLED ');
+      await _tap(tester, find.text('Tenho o Shiny Charm'));
       await _tap(tester, find.text('Salvar'));
       expect(find.text('Scarlet · OLED'), findsOneWidget);
+      expect(
+        (await backend.fetchSaves()).firstWhere((s) => s.id == 1).hasShinyCharm,
+        isTrue,
+      );
       await _tap(tester, menuOf('Scarlet · OLED'));
-      await _tap(tester, find.text('Renomear'));
+      await _tap(tester, find.text('Editar'));
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isTrue,
+      );
       await tester.enterText(find.byType(TextField), 'Lite');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
       expect(find.text('Scarlet · Lite'), findsOneWidget);
       await _tap(tester, menuOf('Scarlet · Lite'));
-      await _tap(tester, find.text('Renomear'));
-      await _tap(tester, find.text('Cancelar'));
+      await _tap(tester, find.text('Editar'));
+      await _tap(tester, find.byTooltip('Cancelar'));
       expect(find.text('Scarlet · Lite'), findsOneWidget);
       // O espécime fora do HOME mostra o apelido novo.
       final away = (await backend.fetchSlot(62)).specimen!;
@@ -420,8 +440,13 @@ void main() {
         return const [_save];
       });
       when(repository.fetchTrainers).thenThrow(const ServerFailure());
-      when(() => repository.updateSave(any(), label: any(named: 'label')))
-          .thenThrow(const ServerFailure());
+      when(
+        () => repository.updateSave(
+          any(),
+          label: any(named: 'label'),
+          hasShinyCharm: any(named: 'hasShinyCharm'),
+        ),
+      ).thenThrow(const ServerFailure());
       await pumpWidgetApp(
         tester,
         const SavesPage(),
@@ -436,9 +461,42 @@ void main() {
       await _tap(tester, find.text('Adicionar save'));
       expect(find.text(const ServerFailure().message), findsOneWidget);
       await _tap(tester, find.byTooltip('Ações do save'));
-      await _tap(tester, find.text('Renomear'));
+      await _tap(tester, find.text('Editar'));
       await _tap(tester, find.text('Salvar'));
       expect(find.text(const ServerFailure().message), findsOneWidget);
+    });
+
+    testWidgets('editar no PC é um diálogo; FRLG não tem o Charm', (
+      tester,
+    ) async {
+      final backend = await pumpFullApp(tester);
+      final ot = backend.addTrainer(
+        name: 'Red',
+        trainerId: '1996',
+        version: 'firered',
+      );
+      await backend.createSave(trainerId: ot);
+      await _go(tester, Routes.settings);
+      await _tap(tester, find.text('Meus saves'));
+      Finder menuOf(String title) => find.descendant(
+        of: find.widgetWithText(ListTile, title),
+        matching: find.byTooltip('Ações do save'),
+      );
+
+      await _tap(tester, menuOf('FireRed · Red (1996)'));
+      await _tap(tester, find.text('Editar'));
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Tenho o Shiny Charm'), findsNothing);
+      await _tap(tester, find.widgetWithText(TextButton, 'Cancelar'));
+
+      await _tap(tester, menuOf('Scarlet · Switch'));
+      await _tap(tester, find.text('Editar'));
+      await _tap(tester, find.text('Tenho o Shiny Charm'));
+      await _tap(tester, find.widgetWithText(FilledButton, 'Salvar'));
+      expect(
+        (await backend.fetchSaves()).firstWhere((s) => s.id == 1).hasShinyCharm,
+        isTrue,
+      );
     });
 
     for (final size in [compactSize, expandedSize]) {

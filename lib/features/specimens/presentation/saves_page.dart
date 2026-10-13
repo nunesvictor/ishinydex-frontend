@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -112,18 +113,18 @@ class _SaveList extends ConsumerWidget {
     trailing: PopupMenuButton<_SaveAction>(
       tooltip: 'Ações do save',
       onSelected: (action) => switch (action) {
-        _SaveAction.rename => _rename(context, ref, save),
+        _SaveAction.edit => _edit(context, ref, save),
         _SaveAction.delete => _delete(context, ref, save),
       },
       itemBuilder: (context) => const [
-        PopupMenuItem(value: _SaveAction.rename, child: Text('Renomear')),
+        PopupMenuItem(value: _SaveAction.edit, child: Text('Editar')),
         PopupMenuItem(value: _SaveAction.delete, child: Text('Remover')),
       ],
     ),
   );
 }
 
-enum _SaveAction { rename, delete }
+enum _SaveAction { edit, delete }
 
 void _notify(BuildContext context, String message) =>
     ScaffoldMessenger.of(context)
@@ -198,16 +199,20 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
   }
 }
 
-Future<void> _rename(BuildContext context, WidgetRef ref, Save save) async {
-  final label = await showDialog<String>(
+Future<void> _edit(BuildContext context, WidgetRef ref, Save save) async {
+  final edited = await showDialog<({String label, bool hasShinyCharm})>(
     context: context,
-    builder: (context) => _RenameDialog(initial: save.label),
+    builder: (context) => _EditSaveDialog(save: save),
   );
-  if (label == null || !context.mounted) return;
+  if (edited == null || !context.mounted) return;
   try {
     await ref
         .read(specimenRepositoryProvider)
-        .updateSave(save.id, label: label.trim());
+        .updateSave(
+          save.id,
+          label: edited.label.trim(),
+          hasShinyCharm: edited.hasShinyCharm,
+        );
     ref.invalidate(savesProvider);
     // Os espécimes fora do HOME mostram o apelido do save.
     ref.read(slotActionsProvider).specimensChanged();
@@ -235,20 +240,22 @@ Future<void> _delete(BuildContext context, WidgetRef ref, Save save) async {
   }
 }
 
-/// Apelido do save. O controller vive no `State` do diálogo: ele só é
-/// descartado quando o diálogo sai da árvore, depois da animação de
-/// fechamento (descartar logo após o `pop` quebraria o campo ainda visível).
-class _RenameDialog extends StatefulWidget {
-  const _RenameDialog({required this.initial});
+/// Edição do save: o apelido e, nos jogos que têm, o Shiny Charm (#220).
+/// Tela cheia no celular, diálogo no resto. O controller vive no `State`:
+/// ele só é descartado quando o diálogo sai da árvore, depois da animação
+/// de fechamento (descartar logo após o `pop` quebraria o campo visível).
+class _EditSaveDialog extends StatefulWidget {
+  const _EditSaveDialog({required this.save});
 
-  final String initial;
+  final Save save;
 
   @override
-  State<_RenameDialog> createState() => _RenameDialogState();
+  State<_EditSaveDialog> createState() => _EditSaveDialogState();
 }
 
-class _RenameDialogState extends State<_RenameDialog> {
-  late final _controller = TextEditingController(text: widget.initial);
+class _EditSaveDialogState extends State<_EditSaveDialog> {
+  late final _controller = TextEditingController(text: widget.save.label);
+  late bool _charm = widget.save.hasShinyCharm;
 
   @override
   void dispose() {
@@ -256,27 +263,84 @@ class _RenameDialogState extends State<_RenameDialog> {
     super.dispose();
   }
 
+  void _submit() =>
+      Navigator.of(context)
+          .pop((label: _controller.text, hasShinyCharm: _charm));
+
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Apelido do save'),
-    content: TextField(
-      controller: _controller,
-      autofocus: true,
-      decoration: const InputDecoration(
-        hintText: 'Ex.: Switch Lite',
-        helperText: 'Para diferenciar dois saves do mesmo jogo.',
+  Widget build(BuildContext context) {
+    final save = widget.save;
+    final fields = [
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.person_outline),
+        title: const Text('Treinador original'),
+        subtitle: Text(save.trainer.label),
       ),
-      onSubmitted: (text) => Navigator.of(context).pop(text),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancelar'),
+      TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: const InputDecoration(
+          labelText: 'Apelido do save (opcional)',
+          hintText: 'Ex.: Switch Lite',
+          helperText: 'Para diferenciar dois saves do mesmo jogo.',
+        ),
+        onSubmitted: (_) => _submit(),
       ),
-      FilledButton(
-        onPressed: () => Navigator.of(context).pop(_controller.text),
-        child: const Text('Salvar'),
+      if (save.canHaveShinyCharm)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.auto_awesome),
+          title: const Text('Tenho o Shiny Charm'),
+          subtitle: Text(save.shinyCharmHint),
+          value: _charm,
+          onChanged: (value) => setState(() => _charm = value),
+        ),
+    ];
+    if (WindowSize.of(context).isCompact) {
+      return Dialog.fullscreen(
+        child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              tooltip: 'Cancelar',
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: const Text('Editar save'),
+            actions: [
+              TextButton(onPressed: _submit, child: const Text('Salvar')),
+            ],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              for (final field in fields)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: field,
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    return AlertDialog(
+      title: const Text('Editar save'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 16,
+          children: fields,
+        ),
       ),
-    ],
-  );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Salvar')),
+      ],
+    );
+  }
 }

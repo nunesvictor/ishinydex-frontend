@@ -432,6 +432,10 @@ abstract class Save with _$Save {
     required int id,
     required Trainer trainer,
     @Default('') String label,
+
+    /// O save tem o Shiny Charm (#220): soma nas odds das caçadas deste
+    /// save em que o Charm vale.
+    @Default(false) bool hasShinyCharm,
   }) = _Save;
 
   const Save._();
@@ -474,6 +478,32 @@ abstract class Save with _$Save {
     ...transferVersions,
     ...oneWayVersions,
   };
+
+  /// Jogos sem Shiny Charm: o FRLG é da Gen III, anterior ao Charm.
+  static const _noCharmVersions = {'firered', 'leafgreen'};
+
+  /// Onde o Charm não vale, para a explicação no save.
+  static const _charmHints = {
+    'sword': 'não vale nos Regis, nos fósseis e nas reides',
+    'shield': 'não vale nos Regis, nos fósseis e nas reides',
+    'brilliant-diamond': 'no BDSP, só vale nos ovos',
+    'shining-pearl': 'no BDSP, só vale nos ovos',
+    'scarlet': 'não vale em estáticos, Pokémon Tera e reides',
+    'violet': 'não vale em estáticos, Pokémon Tera e reides',
+    'legends-za': 'não vale nos fósseis',
+  };
+
+  /// O jogo do save tem o Shiny Charm.
+  bool get canHaveShinyCharm =>
+      homeVersions.contains(trainer.version) &&
+      !_noCharmVersions.contains(trainer.version);
+
+  /// Explicação do "Tenho o Shiny Charm".
+  String get shinyCharmHint {
+    final hint = _charmHints[trainer.version];
+    return 'Vale nas caçadas deste save em que o Charm conta'
+        '${hint == null ? '' : ' ($hint)'}.';
+  }
 
   /// Save de um jogo só de ida ([oneWayVersions]).
   bool get isOneWay => oneWayVersions.contains(trainer.version);
