@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
@@ -19,5 +21,16 @@ void main() {
     expect(ios.scrolledUnderElevation, 1);
     expect(ios.shadowColor, scheme.outlineVariant);
     expect(AppTheme.appBarTheme(scheme, TargetPlatform.android), isNull);
+  });
+
+  test('a Roboto vai junto com o app (#212)', () {
+    expect(AppTheme.light().textTheme.bodyMedium!.fontFamily, 'Roboto');
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    expect(pubspec, contains('family: ${AppTheme.fontFamily}'));
+    for (final weight in ['Regular', 'Medium', 'Bold']) {
+      final asset = 'assets/fonts/Roboto-$weight.ttf';
+      expect(pubspec, contains(asset));
+      expect(File(asset).existsSync(), isTrue, reason: asset);
+    }
   });
 }
