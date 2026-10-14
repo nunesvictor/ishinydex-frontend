@@ -3,7 +3,9 @@ import 'package:ishinydex/core/network/app_failure.dart';
 
 void main() {
   test('NotFoundFailure e DataFailure: um problema', () {
-    expect(const NotFoundFailure().problems, [const Problem.notFound()]);
+    // Sem const: um construtor const só conta na cobertura quando roda.
+    // ignore: prefer_const_constructors
+    expect(NotFoundFailure().problems, [const Problem.notFound()]);
     expect(const DataFailure(Problem.notADataFile()).problems, [
       const Problem.notADataFile(),
     ]);
