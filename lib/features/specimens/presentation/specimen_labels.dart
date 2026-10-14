@@ -101,4 +101,14 @@ extension SpecimenLabels on AppLocalizations {
   List<Choice> choicesIn(List<Choice> choices) => [
     for (final c in choices) c.copyWith(label: choice(c)),
   ];
+
+  /// O rótulo do [value] entre as [choices], no idioma da tela (valor sem
+  /// opção: formatado; `null` ou vazio: `null`).
+  String? choiceOf(List<Choice>? choices, String? value) {
+    if (value == null || value.isEmpty) return null;
+    return switch (choices?.where((c) => c.value == value).firstOrNull) {
+      final c? => choice(c),
+      null => prettifyName(value),
+    };
+  }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -86,7 +87,7 @@ class _FormPickerState extends ConsumerState<FormPicker> {
             Expanded(
               child: SearchField(
                 autofocus: true,
-                hintText: 'Buscar forma pelo nome',
+                hintText: context.l10n.searchFormByName,
                 onChanged: _onChanged,
                 onSubmitted: _onSubmitted,
               ),
@@ -100,11 +101,11 @@ class _FormPickerState extends ConsumerState<FormPicker> {
 
   Widget _results() {
     if (_search.length < FormPicker.minSearchLength) {
-      return const EmptyView(message: 'Digite ao menos 2 letras do nome.');
+      return EmptyView(message: context.l10n.typeTwoLetters);
     }
     return switch (ref.watch(formSearchProvider(_search))) {
-      AsyncData(value: final forms) when forms.isEmpty => const EmptyView(
-        message: 'Nenhuma forma encontrada.',
+      AsyncData(value: final forms) when forms.isEmpty => EmptyView(
+        message: context.l10n.noFormFound,
       ),
       AsyncData(value: final forms) => ListView.builder(
         itemCount: forms.length,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -24,14 +26,14 @@ List<(String, String?)> specimenFields(
   final ot = trainers?.where((t) => t.id == specimen.ot).firstOrNull;
   final capturedAt = specimen.capturedAt;
   return [
-    ('Treinador original', ot?.label),
+    (context.l10n.originalTrainer, ot?.label),
     (
-      'Data de captura',
+      context.l10n.captureDate,
       capturedAt == null
           ? null
           : MaterialLocalizations.of(context).formatCompactDate(capturedAt),
     ),
-    ('Observação', specimen.observation),
+    (context.l10n.fieldObservation, specimen.observation),
   ];
 }
 
@@ -53,18 +55,18 @@ const _languageCodes = {
 
 /// A etiqueta de idioma do cabeçalho (#207), como no HOME: "ENG", com o
 /// nome completo no toque e no leitor de tela. `null` sem idioma.
-Widget? languageTag(WidgetRef ref, String? language) {
+Widget? languageTag(BuildContext context, WidgetRef ref, String? language) {
   if (language == null) return null;
-  final name = choiceLabel(
+  final name = context.l10n.choiceOf(
     ref.watch(specimenOptionsProvider).value?.language,
     language,
-  );
+  )!;
   final code = _languageCodes[language] ?? language.toUpperCase();
   return Tooltip(
-    message: 'Idioma: $name',
+    message: context.l10n.languageValue(name),
     excludeFromSemantics: true,
     child: Semantics(
-      label: 'Idioma: $name',
+      label: context.l10n.languageValue(name),
       excludeSemantics: true,
       child: Chip(label: Text(code)),
     ),
@@ -84,9 +86,9 @@ class ChampionsChip extends StatelessWidget {
   const ChampionsChip({super.key});
 
   @override
-  Widget build(BuildContext context) => const Chip(
-    avatar: ChampionsIcon(size: 18),
-    label: Text('Visitando o Champions'),
+  Widget build(BuildContext context) => Chip(
+    avatar: const ChampionsIcon(size: 18),
+    label: Text(context.l10n.visitingChampionsLabel),
   );
 }
 

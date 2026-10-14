@@ -154,7 +154,7 @@ class SlotDetailPanel extends ConsumerWidget {
                       OriginMarkChip(mark),
                     if (full?.isVisitingChampions ?? false)
                       const ChampionsChip(),
-                    ?languageTag(ref, full?.language),
+                    ?languageTag(context, ref, full?.language),
                     ?homeTagOf(ref, specimen.location),
                   ],
                 ],
@@ -210,6 +210,7 @@ class SlotDetailPanel extends ConsumerWidget {
                       onSelected: onWithdraw,
                     ),
                     releaseAction(
+                      context.l10n,
                       visiting: specimen.isVisitingChampions,
                       onSelected: onRelease,
                     ),

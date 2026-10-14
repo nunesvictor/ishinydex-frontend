@@ -54,6 +54,7 @@ void main() {
     WidgetTester tester, {
     // Alta o bastante para os botões no fim do detalhe caberem na tela.
     Size size = const Size(400, 1600),
+    Locale locale = portuguese,
   }) async {
     final released = <String>[];
     await pumpWidgetApp(
@@ -65,6 +66,7 @@ void main() {
         ),
       ),
       size: size,
+      locale: locale,
       overrides: [
         specimenRepositoryProvider.overrideWithValue(specimens),
         personalDexRepositoryProvider.overrideWithValue(dexes),
@@ -75,6 +77,20 @@ void main() {
   }
 
   group('SpecimenDetailView', () {
+    testWidgets('em inglês: campos, etiquetas e ações', (tester) async {
+      await pumpDetail(tester, locale: english);
+      expect(find.text('Original trainer'), findsOneWidget);
+      expect(find.text('Capture date'), findsOneWidget);
+      expect(find.text('Notes'), findsOneWidget);
+      expect(find.byTooltip('Language: En'), findsOneWidget);
+      expect(find.byTooltip('Origin mark: Pokémon GO'), findsOneWidget);
+      expect(find.text('Edit specimen'), findsOneWidget);
+      await tester.tap(find.byTooltip('More actions'));
+      await tester.pumpAndSettle();
+      expect(find.text('Release'), findsOneWidget);
+      expect(find.text('Deletes the record (asks for confirmation)'), findsOne);
+    });
+
     testWidgets('cabe sem rolar no iPhone 17 (#207)', (tester) async {
       // 874 pt menos a faixa da hora (62), a barra de título (56), a barra
       // de ações (68) e a navegação com o indicador de início (90).

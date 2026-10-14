@@ -29,7 +29,7 @@ class SpecimenDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Espécime')),
+    appBar: AppBar(title: Text(context.l10n.specimenTitle)),
     body: SpecimenDetailView(
       specimenId: specimenId,
       onReleased: () => context.go(Routes.specimens),
@@ -107,19 +107,19 @@ class _Details extends ConsumerWidget {
               highlightAbility: specimen.ability,
               chips: [
                 if (specimen.isDeposited)
-                  const Chip(
-                    avatar: Icon(Icons.inventory_2, color: Colors.green),
-                    label: Text('Depositado'),
+                  Chip(
+                    avatar: const Icon(Icons.inventory_2, color: Colors.green),
+                    label: Text(context.l10n.depositedLabel),
                   )
                 else
-                  const Chip(
-                    avatar: Icon(Icons.radio_button_unchecked),
-                    label: Text('Disponível'),
+                  Chip(
+                    avatar: const Icon(Icons.radio_button_unchecked),
+                    label: Text(context.l10n.availableLabel),
                   ),
                 if (OriginMark.fromSlug(specimen.originMark) case final mark?)
                   OriginMarkChip(mark),
                 if (specimen.isVisitingChampions) const ChampionsChip(),
-                ?languageTag(ref, specimen.language),
+                ?languageTag(context, ref, specimen.language),
                 ?homeTagOf(ref, specimen.location),
               ],
               fields: specimenFields(context, ref, specimen),
@@ -140,7 +140,7 @@ class _Details extends ConsumerWidget {
               : FilledButton.icon(
                   onPressed: () => _edit(context, ref, form),
                   icon: const Icon(Icons.edit),
-                  label: const Text('Editar espécime'),
+                  label: Text(context.l10n.editSpecimen),
                 ),
           onMore: () => showActionSheet(
             context,
@@ -149,7 +149,7 @@ class _Details extends ConsumerWidget {
               if (specimen.isDeposited)
                 SheetAction(
                   icon: Icons.catching_pokemon,
-                  label: 'Ver no dex',
+                  label: context.l10n.seeInDex,
                   onSelected: () => _openInDex(context, ref),
                 ),
               ...locationActions(
@@ -164,11 +164,12 @@ class _Details extends ConsumerWidget {
               if (specimen.slot case final slotId?)
                 SheetAction(
                   icon: Icons.move_up,
-                  label: 'Retirar do slot',
-                  subtitle: 'Fica disponível no inventário',
+                  label: context.l10n.withdrawFromSlot,
+                  subtitle: context.l10n.withdrawStaysAvailable,
                   onSelected: () => _withdraw(context, ref, slotId),
                 ),
               releaseAction(
+                context.l10n,
                 visiting: specimen.isVisitingChampions,
                 onSelected: () => _release(context, ref),
               ),
@@ -203,9 +204,9 @@ class _Details extends ConsumerWidget {
     final l10n = context.l10n;
     messenger.showSnackBar(
       SnackBar(
-        content: Text('${specimen.displayName} retirado do slot.'),
+        content: Text(l10n.withdrawn(specimen.displayName)),
         action: SnackBarAction(
-          label: 'Desfazer',
+          label: l10n.undo,
           onPressed: () async {
             try {
               await repository.deposit(slotId: slotId, specimenId: specimen.id);
@@ -229,7 +230,7 @@ class _Details extends ConsumerWidget {
       final dexId = slot.personalDex;
       if (!context.mounted) return;
       if (dexId == null) {
-        _notify(context, 'O slot deste espécime não pertence a um dex.');
+        _notify(context, context.l10n.slotNotInDex);
         return;
       }
       context.go(Routes.dex(dexId, boxId: slot.box.id, slotId: slot.id));
@@ -250,26 +251,24 @@ class _Details extends ConsumerWidget {
     if (edited == null) return;
     ref.invalidate(specimenProvider(specimen.id));
     ref.read(slotActionsProvider).specimensChanged();
-    if (context.mounted) _notify(context, 'Espécime atualizado.');
+    if (context.mounted) _notify(context, context.l10n.specimenUpdated);
   }
 
   Future<void> _release(BuildContext context, WidgetRef ref) async {
     final confirmed = await showConfirmDialog(
       context,
       icon: Icons.warning_amber_rounded,
-      title: 'Libertar ${specimen.displayName}?',
+      title: context.l10n.releaseQuestion(specimen.displayName),
       message: specimen.isDeposited
-          ? 'O cadastro deste espécime será apagado e o slot ficará '
-                'faltante. Esta ação não pode ser desfeita.'
-          : 'O cadastro deste espécime será apagado. Esta ação não pode ser '
-                'desfeita.',
-      confirmLabel: 'Libertar',
+          ? context.l10n.releaseMessage
+          : context.l10n.releaseAvailableMessage,
+      confirmLabel: context.l10n.releaseAction,
       destructive: true,
     );
     if (!confirmed) return;
     try {
       await ref.read(slotActionsProvider).releaseSpecimen(specimen.id);
-      if (context.mounted) _notify(context, 'Espécime libertado.');
+      if (context.mounted) _notify(context, context.l10n.specimenReleased);
       onReleased();
     } on AppFailure catch (failure) {
       if (context.mounted) _notify(context, context.failureText(failure));
