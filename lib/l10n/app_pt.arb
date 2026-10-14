@@ -1,0 +1,15 @@
+{
+  "@@locale": "pt",
+  "settingsTitle": "Ajustes",
+  "settingsMySaves": "Meus saves",
+  "settingsMySavesSubtitle": "Jogos para onde você envia Pokémon do HOME",
+  "settingsShinyLocks": "Shiny locks",
+  "settingsShinyLocksSubtitle": "Formas sem shiny, ou só por distribuição",
+  "settingsPreferences": "Preferências",
+  "settingsAbout": "Sobre o iShinyDex",
+  "settingsVersion": "Versão {version}",
+  "language": "Idioma",
+  "languageAutomatic": "Automático",
+  "languageAutomaticValue": "Automático ({language})",
+  "languageAutomaticSubtitle": "Segue o idioma do aparelho ({language})"
+}

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/app.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/presentation/boot_failure_app.dart';
 
@@ -13,7 +14,12 @@ Future<void> main() async {
   // Catálogo e dados locais (modo local, ou demonstração com CATALOG_URL).
   final List<Override> overrides;
   try {
-    overrides = await catalogOverrides(Env.fromEnvironment(), bootDio());
+    // O idioma escolhido em Ajustes, para o primeiro quadro já sair nele.
+    final language = await const PrefsLanguageStorage().read();
+    overrides = [
+      initialLanguageProvider.overrideWithValue(language),
+      ...await catalogOverrides(Env.fromEnvironment(), bootDio()),
+    ];
   } on Object catch (error) {
     runApp(BootFailureApp(error: error, onRetry: main));
     return;

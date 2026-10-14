@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:ishinydex/core/l10n/app_language.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/widgets/update_notice.dart';
@@ -19,9 +21,12 @@ class IShinyDexApp extends ConsumerWidget {
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light(),
     darkTheme: AppTheme.dark(),
-    locale: const Locale('pt', 'BR'),
-    supportedLocales: const [Locale('pt', 'BR')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    // O idioma escolhido em Ajustes; em "Automático" (`null`), o do
+    // aparelho, pelo [resolveLocale]: português vira pt-BR, o resto inglês.
+    locale: ref.watch(appLanguageProvider).locale,
+    supportedLocales: supportedLocales,
+    localeListResolutionCallback: (device, _) => resolveLocale(device),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
     routerConfig: ref.watch(routerProvider),
     // Na web, o `Title` grava o `<meta name="theme-color">`, que o iPhone usa
     // na barra de status (relógio, bateria). O do MaterialApp usa sempre o
@@ -30,14 +35,19 @@ class IShinyDexApp extends ConsumerWidget {
     // O SyncLifecycle sincroniza com o Dropbox ao abrir e ao voltar ao app
     // (sem Dropbox neste build, não faz nada).
     // O UpdateNotice avisa quando sai uma versão nova com o app aberto.
-    builder: (context, child) => UpdateNotice(
-      child: SyncLifecycle(
-        child: Title(
-          title: 'iShinyDex',
-          color: Theme.of(context).colorScheme.surface,
-          child: child!,
+    builder: (context, child) {
+      // Datas e números formatados sem `locale` explícito (`DateFormat`,
+      // `NumberFormat`) seguem o idioma da interface.
+      Intl.defaultLocale = Localizations.localeOf(context).toString();
+      return UpdateNotice(
+        child: SyncLifecycle(
+          child: Title(
+            title: 'iShinyDex',
+            color: Theme.of(context).colorScheme.surface,
+            child: child!,
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }

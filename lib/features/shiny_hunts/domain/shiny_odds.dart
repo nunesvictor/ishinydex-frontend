@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:ishinydex/features/catalog/domain/catalog_labels.dart';
+
 /// As odds de shiny de um método num jogo (`shinyOdds` do catálogo,
 /// backend#113). Curadoria: `docs/roadmap/ideias/odds-das-cacadas.md` no
 /// ishinydex.
@@ -30,6 +32,7 @@ class OddsRule {
     this.table,
     this.charmExceptForms = const {},
     this.note,
+    this.notes = const {},
   });
 
   factory OddsRule.fromJson(Map<String, dynamic> json) {
@@ -59,6 +62,7 @@ class OddsRule {
           f as int,
       },
       note: json['note'] as String?,
+      notes: catalogLabels(json['notes']),
     );
   }
 
@@ -93,6 +97,9 @@ class OddsRule {
 
   /// Observação curta da curadoria, para o cartão.
   final String? note;
+
+  /// [note] em cada idioma da interface; vazio em catálogos antigos.
+  final Map<String, String> notes;
 
   bool get hasChain => steps.isNotEmpty || kind == OddsKind.dexnav;
 
@@ -213,6 +220,7 @@ class OddsModifier {
   const OddsModifier({
     required this.id,
     required this.label,
+    this.labels = const {},
     this.options = const [],
     this.min,
     this.max,
@@ -225,10 +233,12 @@ class OddsModifier {
     return OddsModifier(
       id: json['id'] as String,
       label: json['label'] as String,
+      labels: catalogLabels(json['labels']),
       options: [
         for (final o in (json['options'] as List?) ?? const [])
           (
             label: (o as Map<String, dynamic>)['label'] as String,
+            labels: catalogLabels(o['labels']),
             rolls: o['rolls'] as int,
           ),
       ],
@@ -244,8 +254,12 @@ class OddsModifier {
   final String id;
   final String label;
 
-  /// Opções da escolha; a primeira é a padrão. Vazio = numérico.
-  final List<({String label, int rolls})> options;
+  /// [label] em cada idioma da interface; vazio em catálogos antigos.
+  final Map<String, String> labels;
+
+  /// Opções da escolha; a primeira é a padrão. Vazio = numérico. Os
+  /// `labels` são o `label` em cada idioma, como no modificador.
+  final List<({String label, Map<String, String> labels, int rolls})> options;
   final int? min;
   final int? max;
 

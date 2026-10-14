@@ -1,3 +1,4 @@
+import 'package:ishinydex/features/catalog/domain/catalog_labels.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -94,6 +95,7 @@ class Catalog {
         Choice(
           value: c['value'] as String,
           label: c['label'] as String,
+          labels: catalogLabels(c['labels']),
           spriteUrl: sprite(c['sprite']),
           increased: c['increased'] as String?,
           decreased: c['decreased'] as String?,
@@ -202,6 +204,7 @@ class Catalog {
         for (final p in _objects(json['pokedexes'] ?? const <Object>[]))
           _Pokedex(
             label: p['label'] as String,
+            labels: catalogLabels(p['labels']),
             versionGroups: [
               for (final g in p['versionGroups'] as List) g as String,
             ],
@@ -243,6 +246,7 @@ class Catalog {
           ShinyMethod(
             id: m['id'] as String,
             label: m['label'] as String,
+            labels: catalogLabels(m['labels']),
             units: [for (final u in m['units'] as List) u as String],
             versions: {for (final v in m['versions'] as List) v as String},
           ),
@@ -458,6 +462,7 @@ class Catalog {
         (entries[group] ??= []).add(
           PokedexEntry(
             label: dex.label,
+            labels: dex.labels,
             number: dex.entries[species],
             dlc: dex.dlc != null,
           ),
@@ -663,12 +668,14 @@ List<Map<String, dynamic>> _objects(Object? value) =>
 class _Pokedex {
   const _Pokedex({
     required this.label,
+    required this.labels,
     required this.versionGroups,
     required this.dlc,
     required this.entries,
   });
 
   final String label;
+  final Map<String, String> labels;
   final List<String> versionGroups;
 
   /// O grupo de versões da DLC (`null`: jogo base).
@@ -768,10 +775,14 @@ class ShinyMethod {
     required this.label,
     required this.units,
     required this.versions,
+    this.labels = const {},
   });
 
   final String id;
   final String label;
+
+  /// [label] em cada idioma da interface; vazio em catálogos antigos.
+  final Map<String, String> labels;
 
   /// Unidades aceitas; a primeira é a padrão.
   final List<String> units;

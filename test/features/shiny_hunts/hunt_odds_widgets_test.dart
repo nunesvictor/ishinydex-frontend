@@ -35,7 +35,10 @@ const _methods = [
 OddsModifier _choice(String id, List<String> labels) => OddsModifier(
   id: id,
   label: id,
-  options: [for (final (i, l) in labels.indexed) (label: l, rolls: i)],
+  options: [
+    for (final (i, l) in labels.indexed)
+      (label: l, labels: const <String, String>{}, rolls: i),
+  ],
 );
 
 final _rules = {

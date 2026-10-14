@@ -836,7 +836,9 @@ class ResultCount extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final number = NumberFormat.decimalPattern('pt_BR');
+    final number = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toString(),
+    );
     String noun(int n) => n == 1 ? 'espécime' : 'espécimes';
     // Com filtro, o total geral aparece assim que carregar; até lá, só o
     // número filtrado.

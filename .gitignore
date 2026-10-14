@@ -51,6 +51,9 @@ app.*.map.json
 *.g.dart
 *.freezed.dart
 
+# Código gerado pelo gen-l10n (flutter pub get)
+/lib/l10n/app_localizations*.dart
+
 # Cobertura
 /coverage/
 

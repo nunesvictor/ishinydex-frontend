@@ -46,6 +46,36 @@ final OddsRule dexnav = rule({
 });
 
 void main() {
+  test('nota, modificadores e opções em cada idioma (backend#105)', () {
+    final labeled = rule({
+      'kind': 'rolls',
+      'note': 'Nota.',
+      'notes': {'en': 'Note.', 'pt-BR': 'Nota.'},
+      'modifiers': [
+        {
+          'id': 'lure',
+          'label': 'Lure',
+          'labels': {'en': 'Lure', 'pt-BR': 'Lure'},
+          'type': 'choice',
+          'options': [
+            {
+              'label': 'Sem',
+              'labels': {'en': 'Off', 'pt-BR': 'Sem'},
+              'rolls': 0,
+            },
+          ],
+        },
+      ],
+    });
+    expect(labeled.notes['en'], 'Note.');
+    final lure = labeled.modifiers.single;
+    expect(lure.labels['pt-BR'], 'Lure');
+    expect(lure.options.single.labels['en'], 'Off');
+    // Catálogo antigo: sem os labels.
+    expect(sos.notes, isEmpty);
+    expect(dexnav.modifiers.single.labels, isEmpty);
+  });
+
   group('regras', () {
     test('sorteios: base, Charm, exceções e base 8192', () {
       final r = rule({
