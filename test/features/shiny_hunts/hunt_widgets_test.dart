@@ -6,6 +6,7 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/active_hunt_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -78,9 +79,11 @@ void main() {
     WidgetTester tester,
     Widget child, {
     ShinyHuntRepository? hunts,
+    Locale locale = portuguese,
   }) => pumpWidgetApp(
     tester,
     child,
+    locale: locale,
     size: const Size(420, 2400),
     hunts: hunts ?? backend,
     overrides: [
@@ -240,6 +243,49 @@ void main() {
       counter.id,
       running.id,
     ]);
+  });
+
+  testWidgets('linha da caçada em andamento: jogo, método e contagem', (
+    tester,
+  ) async {
+    await add(
+      ShinyHunt(id: 0, form: 1, save: saveId, method: 'random', count: 10),
+    );
+    await pump(tester, const Scaffold(body: ActiveHuntTile(formId: 1)));
+    await tester.pumpAndSettle();
+    expect(find.text('Caçada em andamento'), findsOne);
+    expect(find.text('Scarlet · Encontro aleatório · 10 encontros'), findsOne);
+  });
+
+  testWidgets('em inglês: cartão, menu, pausadas e vazias', (tester) async {
+    final hunt = await add(
+      ShinyHunt(id: 0, form: 1, save: saveId, method: 'random', count: 1204),
+    );
+    await pump(
+      tester,
+      const Scaffold(body: HuntCards(paused: false)),
+      locale: english,
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('no start date'), findsOne);
+    expect(inCard(hunt.id, find.text('1,204 encounters')), findsOne);
+    await tap(tester, inCard(hunt.id, find.byTooltip('More actions')));
+    expect(find.text('Found it!'), findsOne);
+    expect(find.text('Take a break'), findsOne);
+    await tap(tester, find.text('Take a break'));
+
+    await pump(
+      tester,
+      const Scaffold(body: HuntCards(paused: true)),
+      locale: english,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Paused hunts. The count is kept.'), findsOne);
+    expect(find.text('Resume'), findsOne);
+    await tap(tester, find.text('Delete'));
+    expect(find.text('Delete the hunt?'), findsOne);
+    await tap(tester, find.text('Delete').last);
+    expect(find.textContaining('No paused hunts'), findsOne);
   });
 
   testWidgets('pausadas: retomar e excluir com confirmação', (tester) async {

@@ -68,18 +68,16 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded),
-        title: const Text('Trocar a data de início?'),
-        content: const Text(
-          'A duração da caçada vai mudar. A contagem continua a mesma.',
-        ),
+        title: Text(context.l10n.huntChangeStartQuestion),
+        content: Text(context.l10n.huntChangeStartMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Trocar'),
+            child: Text(context.l10n.changeAction),
           ),
         ],
       ),
@@ -119,8 +117,8 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(
-          labelText: m.label,
-          helperText: m.followsCount ? 'Sobe junto com o +1.' : null,
+          labelText: context.catalogText(m.label, m.labels),
+          helperText: m.followsCount ? context.l10n.modifierFollowsCount : null,
         ),
         onChanged: (text) => _setModifier(
           m.id,
@@ -131,11 +129,11 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
     if (m.options.length > 4) {
       return ChoiceSelect(
         key: ValueKey('field-hunt-mod-${m.id}'),
-        label: m.label,
+        label: context.catalogText(m.label, m.labels),
         value: '$value',
         choices: [
           for (final (i, o) in m.options.indexed)
-            Choice(value: '$i', label: o.label),
+            Choice(value: '$i', label: context.catalogText(o.label, o.labels)),
         ],
         onChanged: (v) => _setModifier(m.id, int.tryParse(v ?? '') ?? 0),
       );
@@ -144,12 +142,18 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 6,
       children: [
-        Text(m.label, style: theme.textTheme.labelLarge),
+        Text(
+          context.catalogText(m.label, m.labels),
+          style: theme.textTheme.labelLarge,
+        ),
         SegmentedButton<int>(
           key: ValueKey('field-hunt-mod-${m.id}'),
           segments: [
             for (final (i, o) in m.options.indexed)
-              ButtonSegment(value: i, label: Text(o.label)),
+              ButtonSegment(
+                value: i,
+                label: Text(context.catalogText(o.label, o.labels)),
+              ),
           ],
           selected: {value},
           showSelectedIcon: false,
@@ -192,7 +196,9 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
           spacing: 12,
           children: [
             Text(
-              widget.editing == null ? 'Começar caçada' : 'Editar caçada',
+              widget.editing == null
+                  ? context.l10n.huntStart
+                  : context.l10n.huntEdit,
               style: theme.textTheme.headlineSmall,
             ),
             ListTile(
@@ -207,13 +213,15 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
             if (saves.isNotEmpty)
               ChoiceSelect(
                 key: const ValueKey('field-hunt-save'),
-                label: 'Jogo',
+                label: context.l10n.fieldGame,
                 value: _hunt.save?.toString(),
                 choices: [
                   for (final s in saves)
                     Choice(
                       value: '${s.id}',
-                      label: s.isOneWay ? '${s.title} · só ida' : s.title,
+                      label: s.isOneWay
+                          ? context.l10n.saveOneWay(s.title)
+                          : s.title,
                     ),
                 ],
                 onChanged: (v) => setState(
@@ -226,11 +234,14 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
             if (methods.isNotEmpty)
               ChoiceSelect(
                 key: const ValueKey('field-hunt-method'),
-                label: 'Método',
+                label: context.l10n.fieldMethod,
                 value: _hunt.method,
                 choices: [
                   for (final m in {...methods, ?method})
-                    Choice(value: m.id, label: m.label),
+                    Choice(
+                      value: m.id,
+                      label: context.catalogText(m.label, m.labels),
+                    ),
                 ],
                 onChanged: (id) {
                   final picked = methods.where((m) => m.id == id).firstOrNull;
@@ -251,7 +262,7 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
                 _modifier(theme, m),
               _OddsPreview(hunt: _hunt, rule: rule, save: save!),
             ],
-            Text('Contar em', style: theme.textTheme.labelLarge),
+            Text(context.l10n.countIn, style: theme.textTheme.labelLarge),
             SegmentedButton<String>(
               key: const ValueKey('field-hunt-unit'),
               segments: [
@@ -272,17 +283,17 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
               key: const ValueKey('field-hunt-start'),
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.event),
-              title: const Text('Início'),
+              title: Text(context.l10n.fieldStart),
               subtitle: Text(
                 start == null
-                    ? 'Opcional; dá para preencher depois'
+                    ? context.l10n.huntStartOptional
                     : MaterialLocalizations.of(context)
                           .formatCompactDate(start),
               ),
               trailing: start == null
                   ? null
                   : IconButton(
-                      tooltip: 'Limpar o início',
+                      tooltip: context.l10n.huntClearStart,
                       onPressed: () => setState(
                         () => _hunt = _hunt.copyWith(startedAt: null),
                       ),
@@ -294,7 +305,11 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
               Text(error, style: TextStyle(color: theme.colorScheme.error)),
             FilledButton(
               onPressed: _saving ? null : _submit,
-              child: Text(widget.editing == null ? 'Começar' : 'Salvar'),
+              child: Text(
+                widget.editing == null
+                    ? context.l10n.huntStartAction
+                    : context.l10n.save,
+              ),
             ),
           ],
         ),
@@ -320,14 +335,14 @@ class _OddsPreview extends StatelessWidget {
     final theme = Theme.of(context);
     final chance = hunt.chance(rule, hasCharm: save.hasShinyCharm);
     final charm = !rule.charmCounts
-        ? 'Shiny Charm: não vale neste método'
+        ? context.l10n.charmNotForMethod
         : !save.canHaveShinyCharm
-        ? 'Sem Shiny Charm neste jogo'
+        ? context.l10n.charmNoneInGame
         : rule.charmApplies(hunt.form, hasCharm: save.hasShinyCharm)
-        ? 'Shiny Charm: sim (do save)'
+        ? context.l10n.charmYes
         : save.hasShinyCharm
-        ? 'Shiny Charm: não vale para este encontro'
-        : 'Shiny Charm: não (marque no save)';
+        ? context.l10n.charmNotForEncounter
+        : context.l10n.charmNo;
     return Row(
       spacing: 12,
       children: [

@@ -77,13 +77,15 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
     return Scaffold(
       appBar: AppBar(
         leading: const CloseButton(),
-        title: Text(_isNew ? 'Novo shiny lock' : 'Editar shiny lock'),
+        title: Text(
+          _isNew ? context.l10n.shinyLockNew : context.l10n.shinyLockEdit,
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton(
               onPressed: _busy ? null : _save,
-              child: const Text('Salvar'),
+              child: Text(context.l10n.save),
             ),
           ),
         ],
@@ -109,7 +111,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
                 textCapitalization: TextCapitalization.words,
                 onChanged: (_) => _clearError('caption'),
                 decoration: InputDecoration(
-                  labelText: 'Nome',
+                  labelText: context.l10n.fieldName,
                   errorText: context.fieldError(_validation, 'caption'),
                 ),
               ),
@@ -120,12 +122,12 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
                 minLines: 2,
                 maxLines: 5,
                 decoration: InputDecoration(
-                  labelText: 'Descrição (opcional)',
+                  labelText: context.l10n.fieldDescriptionOptional,
                   errorText: context.fieldError(_validation, 'description'),
                 ),
               ),
               const SizedBox(height: 24),
-              Text('Tipo', style: theme.textTheme.titleSmall),
+              Text(context.l10n.fieldType, style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
               SegmentedButton<ShinyLockType>(
                 showSelectedIcon: false,
@@ -145,11 +147,8 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
               Text(
                 switch (_lockType) {
                   ShinyLockType.unobtainable =>
-                    'Não existe shiny desta forma. Nas caçadas, ela só '
-                        'aparece com "incluir shiny impossível".',
-                  ShinyLockType.distroOnly =>
-                    'Ainda dá para conseguir, por distribuição (evento). Nas '
-                        'caçadas, aparece com o aviso.',
+                    context.l10n.shinyLockUnobtainableHint,
+                  ShinyLockType.distroOnly => context.l10n.shinyLockDistroHint,
                 },
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -158,8 +157,8 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
               const SizedBox(height: 16),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Ativo'),
-                subtitle: const Text('Inativo, o lock não vale nas caçadas.'),
+                title: Text(context.l10n.shinyLockActive),
+                subtitle: Text(context.l10n.shinyLockInactiveHint),
                 value: _active,
                 onChanged: (value) => setState(() => _active = value),
               ),
@@ -175,7 +174,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
                   title: Text(form.displayName),
                   subtitle: Text(form.dexNumber),
                   trailing: IconButton(
-                    tooltip: 'Remover forma',
+                    tooltip: context.l10n.removeForm,
                     onPressed: () => setState(
                       () => _forms = [
                         for (final f in _forms)
@@ -195,7 +194,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
                     ),
                     onPressed: _busy ? null : _delete,
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Apagar shiny lock'),
+                    label: Text(context.l10n.shinyLockDelete),
                   ),
                 ),
               ],
@@ -210,14 +209,14 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
     children: [
       Expanded(
         child: Text(
-          'Formas · ${_forms.length}',
+          context.l10n.shinyLockForms(_forms.length),
           style: theme.textTheme.titleSmall,
         ),
       ),
       TextButton.icon(
         onPressed: _addForm,
         icon: const Icon(Icons.add),
-        label: const Text('Adicionar forma'),
+        label: Text(context.l10n.addForm),
       ),
     ],
   );
@@ -279,11 +278,9 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
     final confirmed = await showConfirmDialog(
       context,
       icon: Icons.warning_amber_rounded,
-      title: 'Apagar ${lock.caption}?',
-      message:
-          'As formas deixam de ter este shiny lock e voltam a aparecer nas '
-          'caçadas como as outras.',
-      confirmLabel: 'Apagar',
+      title: context.l10n.deleteNamedQuestion(lock.caption),
+      message: context.l10n.shinyLockDeleteMessage,
+      confirmLabel: context.l10n.deleteAction,
       destructive: true,
     );
     if (!confirmed || !mounted) return;

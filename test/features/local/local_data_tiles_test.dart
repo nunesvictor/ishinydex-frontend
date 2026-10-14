@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/local/data/data_file_io.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';

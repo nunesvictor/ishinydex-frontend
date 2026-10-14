@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
-import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/data/catalog_loader.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';

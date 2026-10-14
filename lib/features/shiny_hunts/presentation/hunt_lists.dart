@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_card.dart';
@@ -41,10 +42,8 @@ class HuntCards extends ConsumerWidget {
             ? null
             : hunts.where((h) => h.running).firstOrNull;
         final empty = paused
-            ? 'Nenhuma caçada pausada. Fazer uma pausa numa caçada a traz '
-                  'para cá, com a contagem guardada.'
-            : 'Nenhuma caçada em andamento. Comece por um item de Faltam ou '
-                  'pelo botão abaixo.';
+            ? context.l10n.huntsPausedEmpty
+            : context.l10n.huntsActiveEmpty;
         return LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 720;
@@ -56,8 +55,7 @@ class HuntCards extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'Caçadas em pausa. A contagem fica '
-                      'guardada.',
+                      context.l10n.huntsPausedNote,
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
@@ -71,9 +69,9 @@ class HuntCards extends ConsumerWidget {
                         color: theme.colorScheme.onErrorContainer,
                       ),
                       title: Text(
-                        'Cronômetro de ${running.formRef?.displayName} '
-                        'rodando. As outras caçadas ficam bloqueadas até '
-                        'você parar.',
+                        context.l10n.huntTimerRunning(
+                          running.formRef?.displayName ?? '',
+                        ),
                         style: TextStyle(
                           color: theme.colorScheme.onErrorContainer,
                         ),
@@ -128,7 +126,7 @@ class StartHuntButton extends ConsumerWidget {
       heroTag: 'start-hunt',
       onPressed: () => unawaited(startHuntFromPicker(context)),
       icon: const Icon(Icons.add),
-      label: const Text('Começar caçada'),
+      label: Text(context.l10n.huntStart),
     );
   }
 }
