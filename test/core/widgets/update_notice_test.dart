@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/web/browser_stub.dart' as stub;
 import 'package:ishinydex/core/widgets/update_notice.dart';
 
@@ -24,6 +25,9 @@ void main() {
       ProviderScope(
         overrides: [appUpdatesProvider.overrideWithValue(updates)],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('pt'),
           home: Scaffold(body: UpdateNotice(child: Text('app'))),
         ),
       ),

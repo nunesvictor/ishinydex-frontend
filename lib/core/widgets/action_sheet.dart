@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 
 /// Uma ação da [showActionSheet].
 class SheetAction {
@@ -116,12 +117,12 @@ class DetailActionBar extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: more,
                   icon: const Icon(Icons.more_horiz),
-                  label: const Text('Mais ações'),
+                  label: Text(context.l10n.moreActions),
                 ),
               ),
             if (primary != null && more != null)
               IconButton.outlined(
-                tooltip: 'Mais ações',
+                tooltip: context.l10n.moreActions,
                 onPressed: more,
                 icon: const Icon(Icons.more_horiz),
               ),

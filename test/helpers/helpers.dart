@@ -20,6 +20,10 @@ Finder ballSprite(Pattern label) => find.byWidgetPredicate(
 );
 
 /// Tamanhos de tela usados nos testes responsivos.
+/// Os textos de cada idioma, para testar rótulos sem montar uma tela.
+final AppLocalizations ptText = lookupAppLocalizations(const Locale('pt'));
+final AppLocalizations enText = lookupAppLocalizations(const Locale('en'));
+
 const compactSize = Size(400, 800);
 const mediumSize = Size(900, 900);
 const expandedSize = Size(1400, 900);

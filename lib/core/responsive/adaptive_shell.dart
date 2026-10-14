@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 
 class ShellDestination {
@@ -9,24 +10,25 @@ class ShellDestination {
     required this.selectedIcon,
   });
 
-  final String label;
+  /// O nome no idioma da tela.
+  final String Function(AppLocalizations l10n) label;
   final IconData icon;
   final IconData selectedIcon;
 }
 
-const shellDestinations = [
+final shellDestinations = [
   ShellDestination(
-    label: 'PersonalDex',
+    label: (l10n) => l10n.navPersonalDex,
     icon: Icons.catching_pokemon_outlined,
     selectedIcon: Icons.catching_pokemon,
   ),
   ShellDestination(
-    label: 'Espécimes',
+    label: (l10n) => l10n.navSpecimens,
     icon: Icons.inventory_2_outlined,
     selectedIcon: Icons.inventory_2,
   ),
   ShellDestination(
-    label: 'Ajustes',
+    label: (l10n) => l10n.settingsTitle,
     icon: Icons.settings_outlined,
     selectedIcon: Icons.settings,
   ),
@@ -90,7 +92,7 @@ class AdaptiveShell extends StatelessWidget {
               NavigationDestination(
                 icon: _icon(i, d.icon),
                 selectedIcon: _icon(i, d.selectedIcon),
-                label: d.label,
+                label: d.label(context.l10n),
               ),
           ],
         ),
@@ -117,7 +119,7 @@ class AdaptiveShell extends StatelessWidget {
                 NavigationRailDestination(
                   icon: _icon(i, d.icon),
                   selectedIcon: _icon(i, d.selectedIcon),
-                  label: Text(d.label),
+                  label: Text(d.label(context.l10n)),
                 ),
             ],
           ),

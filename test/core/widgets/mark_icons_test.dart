@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 
 Future<void> pumpIcon(WidgetTester tester, Widget icon) => tester.pumpWidget(
   MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('pt'),
     home: IconTheme(
       data: const IconThemeData(color: Colors.teal),
       child: Center(child: icon),
@@ -38,6 +42,8 @@ void main() {
     ),
   ];
 
+  // O nome de cada marca em pt-BR (o idioma do pumpIcon).
+  const labels = {'shiny': 'Shiny', 'alfa': 'Alfa', 'GO': 'Pokémon GO'};
   for (final (name, icon, broken, asset, emoji) in cases) {
     testWidgets('$name: mostra o asset do HOME, com rótulo', (tester) async {
       await pumpIcon(tester, icon);
@@ -46,7 +52,7 @@ void main() {
       final image = tester.widget<Image>(find.byType(Image));
       expect((image.image as AssetImage).assetName, asset);
       expect(image.width, 32);
-      expect(find.bySemanticsLabel(icon.semanticLabel!), findsOneWidget);
+      expect(find.bySemanticsLabel(labels[name]!), findsOneWidget);
       expect(find.text(emoji), findsNothing);
     });
 
@@ -55,7 +61,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(emoji), findsOneWidget);
-      expect(find.bySemanticsLabel(broken.semanticLabel!), findsOneWidget);
+      expect(find.bySemanticsLabel(labels[name]!), findsOneWidget);
     });
   }
 

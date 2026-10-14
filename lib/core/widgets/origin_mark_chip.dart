@@ -34,7 +34,7 @@ class OriginMarkChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-    message: 'Marca de origem: ${context.l10n.originMarkGames(mark)}',
+    message: context.l10n.originMarkTooltip(context.l10n.originMarkGames(mark)),
     child: Chip(
       avatar: ExcludeSemantics(child: OriginMarkIcon(mark)),
       label: Text(mark.label),

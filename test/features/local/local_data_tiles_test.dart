@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/local/data/data_file_io.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
@@ -134,5 +135,27 @@ void main() {
     );
     expect(find.textContaining('1 dex · 1 espécime · 0 saves'), findsOneWidget);
     expect(find.textContaining('03/10/2026 09:30'), findsOneWidget);
+  });
+
+  testWidgets('diálogo em inglês: plural e data do idioma', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      ImportDialog(
+        name: 'a.json',
+        summary: (
+          dexes: 2,
+          specimens: 1,
+          saves: 0,
+          savedAt: DateTime(2026, 10, 3, 9, 30),
+        ),
+        syncing: true,
+      ),
+      locale: english,
+    );
+    expect(find.text('Import data?'), findsOneWidget);
+    expect(find.textContaining('2 dexes · 1 specimen · 0 saves'), findsOne);
+    expect(find.textContaining('Exported on 10/3/2026'), findsOneWidget);
+    expect(find.textContaining('With Dropbox on'), findsOneWidget);
+    expect(find.text('Import'), findsOneWidget);
   });
 }

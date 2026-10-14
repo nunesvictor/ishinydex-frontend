@@ -32,10 +32,10 @@ void main() {
   }
 }
 
-/// Abre Ajustes no app completo (a aba da navegação ainda está em
-/// português até a migração do shell).
+/// Abre Ajustes no app completo, pelo ícone da navegação (o nome muda com
+/// o idioma).
 Future<void> openSettings(WidgetTester tester) async {
-  await tester.tap(find.text('Ajustes').first);
+  await tester.tap(find.byIcon(Icons.settings_outlined).first);
   await tester.pumpAndSettle();
 }
 
@@ -64,7 +64,8 @@ void languageTests() {
     await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsNothing);
-    expect(find.text('Settings'), findsOneWidget);
+    // O título e o destino da navegação.
+    expect(find.text('Settings'), findsWidgets);
     expect(find.text('Language'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
     expect(await storage.read(), AppLanguage.en);
