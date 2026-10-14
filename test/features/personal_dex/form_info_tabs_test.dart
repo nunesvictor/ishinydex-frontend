@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -7,6 +8,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/species_info.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,6 +24,9 @@ FormRef _ref(int id, {String formName = ''}) => FormRef(
   spriteUrl: 'http://x/$id.png',
   shinySpriteUrl: 'http://x/shiny/$id.png',
 );
+
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
   group('BaseStatsChart', () {
@@ -388,7 +393,8 @@ void main() {
       });
       final game = form.pokedexes.single;
       expect(game.versions, ['legends-za']);
-      expect(game.entries.single.description, 'Hiperespaço (DLC)');
+      final entry = game.entries.single;
+      expect(_pt.pokedexEntry(entry, entry.label), 'Hiperespaço (DLC)');
     });
 
     test('genderRatio e decimal', () {

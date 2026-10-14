@@ -1,9 +1,15 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../../fixtures/api_fixtures.dart';
+
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
   test('Specimen.fromJson com dados reais', () {
@@ -346,7 +352,7 @@ void main() {
           'speed',
           'accuracy',
         ])
-          FormStat(stat: stat, baseStat: 1).label,
+          _pt.stat(stat),
       ],
       [
         'HP',

@@ -9,6 +9,7 @@ import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -255,7 +256,10 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
               key: const ValueKey('field-hunt-unit'),
               segments: [
                 for (final u in units)
-                  ButtonSegment(value: u, label: Text(huntUnitLabels[u] ?? u)),
+                  ButtonSegment(
+                    value: u,
+                    label: Text(context.l10n.huntUnit(u)),
+                  ),
               ],
               selected: {
                 if (units.contains(_hunt.unit)) _hunt.unit else units.first,
@@ -330,7 +334,7 @@ class _OddsPreview extends StatelessWidget {
         const Icon(Icons.auto_awesome, size: 20),
         Expanded(child: Text(charm, style: theme.textTheme.bodyMedium)),
         Text(
-          chance > 0 ? oddsLabel(chance) : '—',
+          chance > 0 ? oddsLabel(chance, context.l10n.localeName) : '—',
           key: const ValueKey('hunt-odds-preview'),
           style: theme.textTheme.titleLarge?.copyWith(
             color: theme.colorScheme.primary,

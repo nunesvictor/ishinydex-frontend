@@ -11,6 +11,7 @@ import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -57,7 +58,7 @@ class LocationTile extends StatelessWidget {
           ? const Text('Fora do HOME')
           : Text(
               'Desde ${MaterialLocalizations.of(context).formatCompactDate(date)}'
-              ' · ${awayFor(date)}',
+              ' · ${context.l10n.awayFor(date)}',
             ),
     );
   }
@@ -441,7 +442,7 @@ class ChampionsTile extends StatelessWidget {
     title: const Text('No HOME, visitando o Champions'),
     subtitle: Text(
       'Desde ${MaterialLocalizations.of(context).formatCompactDate(since)}'
-      ' · ${awayFor(since)}',
+      ' · ${context.l10n.awayFor(since)}',
     ),
   );
 }

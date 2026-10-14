@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/progress_badge.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 
 /// Progresso do dex [dexId] por geração. Tela cheia no compacto, diálogo
 /// nos demais. Retorna o id da primeira box da geração tocada, ou `null`.
@@ -64,7 +66,9 @@ class GenerationProgressView extends ConsumerWidget {
                 key: ValueKey('generation-$i'),
                 title: Row(
                   children: [
-                    Expanded(child: Text(gen.label)),
+                    Expanded(
+                      child: Text(context.l10n.generation(gen.generation)),
+                    ),
                     Text(
                       gen.missing == 0 ? 'Completa!' : 'Faltam ${gen.missing}',
                       style: Theme.of(context).textTheme.bodySmall,

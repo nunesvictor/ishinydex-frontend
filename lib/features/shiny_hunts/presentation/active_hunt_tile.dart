@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// "Caçada em andamento" no painel do slot (#183): jogo, método e contagem
@@ -30,8 +32,8 @@ class ActiveHuntTile extends ConsumerWidget {
         .firstOrNull;
     final count = hunt.timed
         ? timerLabel(hunt.elapsed(ref.read(shinyHuntActionsProvider).now()))
-        : '${huntCountLabel(hunt.count, null)} '
-              '${huntUnitLabels[hunt.unit] ?? hunt.unit}';
+        : '${context.l10n.huntCount(hunt.count, null)} '
+              '${context.l10n.huntUnit(hunt.unit)}';
     return ListTile(
       key: const ValueKey('active-hunt-tile'),
       contentPadding: EdgeInsets.zero,

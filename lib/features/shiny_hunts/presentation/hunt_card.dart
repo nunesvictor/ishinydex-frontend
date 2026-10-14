@@ -15,6 +15,7 @@ import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dar
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -230,11 +231,11 @@ class _HuntCardState extends ConsumerState<HuntCard> {
     final start = hunt.startedAt;
     final since = start == null
         ? 'sem data de início'
-        : 'desde ${format(start)} · ${huntDuration(start, now)}';
+        : 'desde ${format(start)} · ${context.l10n.huntDuration(start, now)}';
     final countText = hunt.timed
         ? timerLabel(hunt.elapsed(now))
-        : '${huntCountLabel(hunt.count + _pending, null)} '
-              '${huntUnitLabels[hunt.unit] ?? hunt.unit}';
+        : '${context.l10n.huntCount(hunt.count + _pending, null)} '
+              '${context.l10n.huntUnit(hunt.unit)}';
     final enabled = !widget.locked;
     final odds = ref.watch(huntOddsProvider)(hunt);
     return Card.outlined(
@@ -651,7 +652,9 @@ class HuntOddsPanel extends StatelessWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              chance > 0 ? oddsLabel(chance) : 'não pode ser shiny',
+              chance > 0
+                  ? oddsLabel(chance, context.l10n.localeName)
+                  : 'não pode ser shiny',
               key: const ValueKey('hunt-odds'),
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.primary,

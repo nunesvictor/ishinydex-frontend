@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Aba "Espécie": linha evolutiva, outras formas, os jogos do HOME em cuja
@@ -311,7 +313,14 @@ class _Pokedexes extends ConsumerWidget {
                             ),
                           ),
                         Text(
-                          game.entries.map((e) => e.description).join(' · '),
+                          game.entries
+                              .map(
+                                (e) => context.l10n.pokedexEntry(
+                                  e,
+                                  context.catalogText(e.label, e.labels),
+                                ),
+                              )
+                              .join(' · '),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],

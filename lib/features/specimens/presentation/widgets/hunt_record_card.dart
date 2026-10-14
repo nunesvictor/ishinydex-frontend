@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// O registro da caçada no detalhe do espécime (#163): "Soft reset · 4.213
@@ -22,9 +24,11 @@ class HuntRecordCard extends ConsumerWidget {
     final (start, end) = (hunt.startedAt, capturedAt);
     final headline = [
       ?method?.label,
-      if (hunt.count case final count?) huntCountLabel(count, hunt.unit),
+      if (hunt.count case final count?)
+        context.l10n.huntCount(count, hunt.unit),
       if (hunt.bestChain case final best?) 'maior cadeia $best',
-      if ((start, end) case (final s?, final e?)) huntDuration(s, e),
+      if ((start, end) case (final s?, final e?))
+        context.l10n.huntDuration(s, e),
     ].join(' · ');
     // As odds guardadas no fim da caçada (#221).
     final odds = [

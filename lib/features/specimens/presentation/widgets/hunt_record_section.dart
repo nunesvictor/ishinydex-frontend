@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 
 /// Seção recolhível "Registro da caçada" do formulário do espécime (#163):
@@ -133,7 +135,8 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
     }
     return [
       ?_method(hunt.method)?.label,
-      if (hunt.count case final count?) huntCountLabel(count, hunt.unit),
+      if (hunt.count case final count?)
+        context.l10n.huntCount(count, hunt.unit),
     ].join(' · ');
   }
 
@@ -241,7 +244,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
                     for (final u in _units)
                       ButtonSegment(
                         value: u,
-                        label: Text(huntUnitLabels[u] ?? u),
+                        label: Text(context.l10n.huntUnit(u)),
                       ),
                   ],
                   selected: {_unit},
@@ -270,7 +273,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
                     (null, _) => 'Não informado',
                     (final s?, final e?) =>
                       '${MaterialLocalizations.of(context).formatCompactDate(s)}'
-                          ' · ${huntDuration(s, e)} até a captura',
+                          ' · ${context.l10n.huntDuration(s, e)} até a captura',
                     (final s?, null) => MaterialLocalizations.of(
                       context,
                     ).formatCompactDate(s),

@@ -1,15 +1,21 @@
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 
 import '../../fixtures/catalog_fixture.dart';
 
 const _base = 'https://sprites.example/sprites';
+
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
   final catalog = Catalog.fromJson(catalogJson(), spriteBase: '$_base/');
@@ -176,7 +182,7 @@ void main() {
       for (final game in catalog.pokedexesOf(formId))
         [
           game.versions.join('/'),
-          game.entries.map((e) => e.description).join(', '),
+          game.entries.map((e) => _pt.pokedexEntry(e, e.label)).join(', '),
         ].join(': '),
     ].join(' | ');
 

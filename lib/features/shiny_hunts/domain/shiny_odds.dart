@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:intl/intl.dart';
+
 import 'package:ishinydex/features/catalog/domain/catalog_labels.dart';
 
 /// As odds de shiny de um método num jogo (`shinyOdds` do catálogo,
@@ -301,11 +303,12 @@ class OddsTable {
   double? oddsAt(int row, int column) => odds[row][column];
 }
 
-/// `"1/1365"`: a chance como fração (arredonda o denominador).
-String oddsLabel(double chance) {
+/// `"1/1365"`: a chance como fração (arredonda o denominador). Abaixo de
+/// 10, com uma casa no formato do [locale] (`"1/4,1"`, `"1/4.1"`).
+String oddsLabel(double chance, String locale) {
   if (chance <= 0) return '—';
   final x = 1 / chance;
   return x < 10
-      ? '1/${x.toStringAsFixed(1).replaceAll('.', ',')}'
+      ? '1/${NumberFormat('0.0', locale).format(x)}'
       : '1/${x.round()}';
 }

@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 
 /// Status base num hexágono, como nos jogos: HP no topo e, no sentido
 /// horário, Ataque, Defesa, Velocidade, Def. Esp. e Atq. Esp. Embaixo, o
@@ -98,18 +100,20 @@ class BaseStatsChart extends StatelessWidget {
         : '';
     final ev = [
       for (final stat in stats)
-        if (stat.effort > 0) '${stat.effort} EV de ${stat.label}',
+        if (stat.effort > 0)
+          '${stat.effort} EV de ${context.l10n.stat(stat.stat)}',
     ];
     final align = compact ? TextAlign.start : TextAlign.center;
     final chart = Semantics(
       label: [
         for (final stat in vertices)
-          '${stat.label} ${stat.baseStat}${effect(stat.stat)}',
+          '${context.l10n.stat(stat.stat)} ${stat.baseStat}${effect(stat.stat)}',
       ].join('; '),
       child: CustomPaint(
         size: compact ? const Size(190, 164) : const Size(300, 252),
         painter: _HexagonPainter(
           stats: vertices,
+          statName: context.l10n.stat,
           grid: theme.colorScheme.outlineVariant,
           fill: theme.colorScheme.primary,
           label: theme.textTheme.labelSmall!.copyWith(
@@ -174,6 +178,7 @@ class BaseStatsChart extends StatelessWidget {
 class _HexagonPainter extends CustomPainter {
   _HexagonPainter({
     required this.stats,
+    required this.statName,
     required this.grid,
     required this.fill,
     required this.label,
@@ -188,6 +193,9 @@ class _HexagonPainter extends CustomPainter {
   /// Distância dos rótulos até a ponta do hexágono.
   final double labelGap;
   final List<FormStat> stats;
+
+  /// O nome do status no idioma da tela (`AppLocalizations.stat`).
+  final String Function(String stat) statName;
   final Color grid;
   final Color fill;
   final TextStyle label;
@@ -256,7 +264,10 @@ class _HexagonPainter extends CustomPainter {
       final text = TextPainter(
         text: TextSpan(
           children: [
-            TextSpan(text: '${stat.label}$arrow\n', style: label.merge(bold)),
+            TextSpan(
+              text: '${statName(stat.stat)}$arrow\n',
+              style: label.merge(bold),
+            ),
             TextSpan(text: '${stat.baseStat}', style: value.merge(bold)),
           ],
         ),
@@ -290,9 +301,6 @@ class _NatureCaption extends StatelessWidget {
   final Color upColor;
   final Color downColor;
 
-  String _label(String stat) =>
-      (byName[stat] ?? FormStat(stat: stat, baseStat: 0)).label;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -312,9 +320,15 @@ class _NatureCaption extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           if (up != null)
-            TextSpan(text: '   ↑ ${_label(up)}', style: colored(upColor)),
+            TextSpan(
+              text: '   ↑ ${context.l10n.stat(up)}',
+              style: colored(upColor),
+            ),
           if (down != null)
-            TextSpan(text: '   ↓ ${_label(down)}', style: colored(downColor)),
+            TextSpan(
+              text: '   ↓ ${context.l10n.stat(down)}',
+              style: colored(downColor),
+            ),
           if (up == null && down == null) const TextSpan(text: ' (neutra)'),
         ],
       ),

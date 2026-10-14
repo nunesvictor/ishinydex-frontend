@@ -8,6 +8,7 @@ import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_notice.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
@@ -334,7 +335,7 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
           contentPadding: EdgeInsets.zero,
           secondary: const Icon(Icons.auto_awesome),
           title: const Text('Tenho o Shiny Charm'),
-          subtitle: Text(save.shinyCharmHint),
+          subtitle: Text(context.l10n.shinyCharmHint(save)),
           value: _charm,
           onChanged: (value) => setState(() => _charm = value),
         ),

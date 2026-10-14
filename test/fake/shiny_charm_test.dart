@@ -1,7 +1,13 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
+
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
   test(
@@ -65,12 +71,12 @@ void main() {
     expect(of('firered').canHaveShinyCharm, isFalse);
     expect(of('red').canHaveShinyCharm, isFalse);
     expect(
-      of('sword').shinyCharmHint,
+      _pt.shinyCharmHint(of('sword')),
       'Vale nas caçadas deste save em que o Charm conta '
       '(não vale nos Regis, nos fósseis e nas reides).',
     );
     expect(
-      of('legends-arceus').shinyCharmHint,
+      _pt.shinyCharmHint(of('legends-arceus')),
       'Vale nas caçadas deste save em que o Charm conta.',
     );
   });

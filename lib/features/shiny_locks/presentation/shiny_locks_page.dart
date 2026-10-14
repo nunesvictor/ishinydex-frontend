@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/presentation/shiny_lock_form_page.dart';
 import 'package:ishinydex/features/shiny_locks/shiny_lock_providers.dart';
@@ -194,7 +196,7 @@ class ShinyLockTypeAvatar extends StatelessWidget {
     return CircleAvatar(
       backgroundColor: background,
       foregroundColor: foreground,
-      child: Icon(type.icon, semanticLabel: type.label),
+      child: Icon(type.icon, semanticLabel: context.l10n.shinyLockType(type)),
     );
   }
 }

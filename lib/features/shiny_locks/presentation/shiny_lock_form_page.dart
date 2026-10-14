@@ -5,6 +5,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/presentation/shiny_locks_page.dart';
 import 'package:ishinydex/features/shiny_locks/shiny_lock_providers.dart';
@@ -133,7 +134,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
                     ButtonSegment(
                       value: type,
                       icon: Icon(type.icon),
-                      label: Text(type.label),
+                      label: Text(context.l10n.shinyLockType(type)),
                     ),
                 ],
                 selected: {_lockType},
