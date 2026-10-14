@@ -87,4 +87,18 @@ extension SpecimenLabels on AppLocalizations {
     final text = number == null ? name : pokedexNumber(name, '$number');
     return entry.dlc ? '$text (DLC)' : text;
   }
+
+  /// A chave do idioma nos `labels` do catálogo (`en` ou `pt-BR`).
+  String get _catalogLanguage => localeName.startsWith('pt') ? 'pt-BR' : 'en';
+
+  /// O rótulo de uma opção do catálogo no idioma da tela; num catálogo
+  /// antigo (sem `labels`), o `label` em pt-BR.
+  String choice(Choice choice) =>
+      choice.labels[_catalogLanguage] ?? choice.label;
+
+  /// As [choices] com o `label` no idioma da tela, para os seletores (que
+  /// mostram e buscam pelo `label`).
+  List<Choice> choicesIn(List<Choice> choices) => [
+    for (final c in choices) c.copyWith(label: choice(c)),
+  ];
 }

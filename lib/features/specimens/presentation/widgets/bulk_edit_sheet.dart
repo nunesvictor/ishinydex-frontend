@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
@@ -7,6 +8,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -47,7 +49,7 @@ Future<bool> confirmBulkEdit(
     await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Alterar $count ${count == 1 ? 'espécime' : 'espécimes'}?'),
+        title: Text(context.l10n.changeSpecimensQuestion(count)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,17 +57,17 @@ Future<bool> confirmBulkEdit(
           children: [
             for (final line in summary) Text('• $line'),
             const SizedBox(height: 8),
-            const Text('Não é possível desfazer.'),
+            Text(context.l10n.cannotUndoShort),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Aplicar'),
+            child: Text(context.l10n.applyAction),
           ),
         ],
       ),
@@ -105,8 +107,7 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
             children: [
               Expanded(
                 child: Text(
-                  'Editar ${widget.count} '
-                  '${widget.count == 1 ? 'espécime' : 'espécimes'}',
+                  context.l10n.editSpecimens(widget.count),
                   style: theme.textTheme.titleLarge,
                 ),
               ),
@@ -114,7 +115,7 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
                 onPressed: _changes.isEmpty
                     ? null
                     : () => _update(const SpecimenChanges()),
-                child: const Text('Limpar'),
+                child: Text(context.l10n.clearAction),
               ),
             ],
           ),
@@ -124,10 +125,10 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
               _EditTile(
-                title: 'Pokébola',
+                title: context.l10n.filterPokeball,
                 value: labels.pokeball(_changes.pokeball),
                 onTap: () => _pick(
-                  'Pokébola',
+                  context.l10n.filterPokeball,
                   options.pokeball,
                   _changes.pokeball,
                   canRemove: true,
@@ -135,50 +136,50 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
                 ),
               ),
               _EditTile(
-                title: 'Treinador original (OT)',
+                title: context.l10n.originalTrainerOt,
                 value: labels.ot(_changes.ot),
                 onTap: () => _pickOt(trainers),
               ),
               _EditTile(
-                title: 'Natureza',
+                title: context.l10n.fieldNature,
                 value: labels.choice(_changes.nature, options.nature),
                 onTap: () => _pick(
-                  'Natureza',
+                  context.l10n.fieldNature,
                   options.nature,
                   _changes.nature,
                   apply: (edit) => _changes.copyWith(nature: edit),
                 ),
               ),
               _EditTile(
-                title: 'Idioma',
+                title: context.l10n.language,
                 value: labels.choice(_changes.language, options.language),
                 onTap: () => _pick(
-                  'Idioma',
+                  context.l10n.language,
                   options.language,
                   _changes.language,
                   apply: (edit) => _changes.copyWith(language: edit),
                 ),
               ),
               _EditTile(
-                title: 'Data de captura',
+                title: context.l10n.captureDate,
                 value: labels.capturedAt(_changes.capturedAt),
                 onTap: _pickCapturedAt,
               ),
               _Section(
-                title: 'Gênero',
+                title: context.l10n.factGender,
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 4,
                   children: [
                     ChoiceChip(
-                      label: const Text(keepLabel),
+                      label: Text(context.l10n.keepAction),
                       selected: _changes.gender is Keep,
                       onSelected: (_) =>
                           _update(_changes.copyWith(gender: const Keep())),
                     ),
                     for (final gender in options.gender)
                       ChoiceChip(
-                        label: Text(gender.label),
+                        label: Text(context.l10n.choice(gender)),
                         selected: _changes.gender == SetTo(gender.value),
                         onSelected: (_) => _update(
                           _changes.copyWith(gender: SetTo(gender.value)),
@@ -189,13 +190,13 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
               ),
               _FlagRow(
                 icon: const ShinyIcon(semanticLabel: null),
-                label: 'Shiny',
+                label: context.l10n.markShiny,
                 edit: _changes.isShiny,
                 onChanged: (edit) => _update(_changes.copyWith(isShiny: edit)),
               ),
               _FlagRow(
                 icon: const AlphaIcon(semanticLabel: null),
-                label: 'Alfa',
+                label: context.l10n.markAlpha,
                 edit: _changes.isAlpha,
                 onChanged: (edit) => _update(_changes.copyWith(isAlpha: edit)),
               ),
@@ -217,8 +218,8 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
                 : () => Navigator.of(context).pop(_changes),
             child: Text(
               _changes.isEmpty
-                  ? 'Nada alterado'
-                  : 'Revisar $count ${count == 1 ? 'alteração' : 'alterações'}',
+                  ? context.l10n.nothingChanged
+                  : context.l10n.reviewChanges(count),
             ),
           ),
         ),
@@ -236,7 +237,7 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
     final picked = await showEditPicker(
       context,
       title: title,
-      choices: choices,
+      choices: context.l10n.choicesIn(choices),
       current: current,
       canRemove: canRemove,
     );
@@ -250,7 +251,7 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
     };
     final picked = await showEditPicker(
       context,
-      title: 'Treinador original (OT)',
+      title: context.l10n.originalTrainerOt,
       choices: [
         for (final t in trainers) Choice(value: '${t.id}', label: t.label),
       ],
@@ -272,12 +273,12 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
     final action = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Data de captura'),
+        title: Text(context.l10n.captureDate),
         children: [
-          for (final (value, label) in const [
-            ('keep', keepLabel),
-            ('pick', 'Escolher data…'),
-            ('remove', removeLabel),
+          for (final (value, label) in [
+            ('keep', context.l10n.keepAction),
+            ('pick', context.l10n.pickDate),
+            ('remove', context.l10n.removeAction),
           ])
             SimpleDialogOption(
               onPressed: () => Navigator.of(context).pop(value),
@@ -307,56 +308,60 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
   }
 }
 
-const keepLabel = 'Manter';
-const removeLabel = 'Remover';
-
 /// Textos das alterações (linhas da folha e resumo da confirmação).
 class BulkLabels {
   BulkLabels(BuildContext context, this.options, this.trainers)
-    : _pattern = capturePattern(context);
+    : _pattern = capturePattern(context),
+      _l10n = context.l10n;
 
+  final AppLocalizations _l10n;
   final SpecimenOptions options;
   final List<Trainer> trainers;
   final CaptureDatePattern _pattern;
 
   String choice(FieldEdit<String> edit, List<Choice> choices) => switch (edit) {
-    Keep() => keepLabel,
-    SetTo(value: null) => removeLabel,
-    SetTo(:final String value) => labelsOf([value], choices).single,
+    Keep() => _l10n.keepAction,
+    SetTo(value: null) => _l10n.removeAction,
+    SetTo(:final String value) => labelsOf(_l10n, [value], choices).single,
   };
 
   String pokeball(FieldEdit<String> edit) => choice(edit, options.pokeball);
 
   String ot(FieldEdit<int> edit) => switch (edit) {
-    Keep() => keepLabel,
-    SetTo(value: null) => removeLabel,
+    Keep() => _l10n.keepAction,
+    SetTo(value: null) => _l10n.removeAction,
     SetTo(:final int value) =>
       trainers.where((t) => t.id == value).firstOrNull?.label ?? '#$value',
   };
 
   String capturedAt(FieldEdit<DateTime> edit) => switch (edit) {
-    Keep() => keepLabel,
-    SetTo(value: null) => removeLabel,
+    Keep() => _l10n.keepAction,
+    SetTo(value: null) => _l10n.removeAction,
     SetTo(:final DateTime value) => _pattern.format(value),
   };
 
-  static String flag(FieldEdit<bool> edit) => switch (edit) {
-    Keep() => keepLabel,
-    SetTo(value: true) => 'Sim',
-    SetTo() => 'Não',
+  String flag(FieldEdit<bool> edit) => switch (edit) {
+    Keep() => _l10n.keepAction,
+    SetTo(value: true) => _l10n.yes,
+    SetTo() => _l10n.no,
   };
 
   /// Uma linha por campo alterado: "Pokébola → Dive Ball".
   List<String> summary(SpecimenChanges c) => [
-    if (c.pokeball is SetTo) 'Pokébola → ${pokeball(c.pokeball)}',
-    if (c.ot is SetTo) 'OT → ${ot(c.ot)}',
-    if (c.nature is SetTo) 'Natureza → ${choice(c.nature, options.nature)}',
-    if (c.language is SetTo) 'Idioma → ${choice(c.language, options.language)}',
-    if (c.capturedAt is SetTo) 'Data de captura → ${capturedAt(c.capturedAt)}',
-    if (c.gender is SetTo) 'Gênero → ${choice(c.gender, options.gender)}',
-    if (c.isShiny is SetTo) 'Shiny → ${flag(c.isShiny)}',
-    if (c.isAlpha is SetTo) 'Alfa → ${flag(c.isAlpha)}',
-    if (c.isFromGo is SetTo) 'GO → ${flag(c.isFromGo)}',
+    if (c.pokeball is SetTo)
+      _l10n.changeLine(_l10n.filterPokeball, pokeball(c.pokeball)),
+    if (c.ot is SetTo) _l10n.changeLine('OT', ot(c.ot)),
+    if (c.nature is SetTo)
+      _l10n.changeLine(_l10n.fieldNature, choice(c.nature, options.nature)),
+    if (c.language is SetTo)
+      _l10n.changeLine(_l10n.language, choice(c.language, options.language)),
+    if (c.capturedAt is SetTo)
+      _l10n.changeLine(_l10n.captureDate, capturedAt(c.capturedAt)),
+    if (c.gender is SetTo)
+      _l10n.changeLine(_l10n.factGender, choice(c.gender, options.gender)),
+    if (c.isShiny is SetTo) _l10n.changeLine(_l10n.markShiny, flag(c.isShiny)),
+    if (c.isAlpha is SetTo) _l10n.changeLine(_l10n.markAlpha, flag(c.isAlpha)),
+    if (c.isFromGo is SetTo) _l10n.changeLine('GO', flag(c.isFromGo)),
   ];
 }
 
@@ -374,7 +379,7 @@ class _EditTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final changed = value != keepLabel;
+    final changed = value != context.l10n.keepAction;
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -450,10 +455,19 @@ class _FlagRow extends StatelessWidget {
         SegmentedButton<FieldEdit<bool>>(
           showSelectedIcon: false,
           style: const ButtonStyle(visualDensity: VisualDensity.compact),
-          segments: const [
-            ButtonSegment(value: Keep(), label: Text(keepLabel)),
-            ButtonSegment(value: SetTo(true), label: Text('Sim')),
-            ButtonSegment(value: SetTo(false), label: Text('Não')),
+          segments: [
+            ButtonSegment(
+              value: const Keep(),
+              label: Text(context.l10n.keepAction),
+            ),
+            ButtonSegment(
+              value: const SetTo(true),
+              label: Text(context.l10n.yes),
+            ),
+            ButtonSegment(
+              value: const SetTo(false),
+              label: Text(context.l10n.no),
+            ),
           ],
           selected: {edit},
           onSelectionChanged: (s) => onChanged(s.single),
@@ -508,8 +522,9 @@ class _EditPickerDialogState extends State<_EditPickerDialog> {
     final search = foldForSearch(_search.trim());
     final options = <(FieldEdit<String>, String, String?)>[
       if (search.isEmpty) ...[
-        (const Keep(), keepLabel, null),
-        if (widget.canRemove) (const SetTo(null), removeLabel, null),
+        (const Keep(), context.l10n.keepAction, null),
+        if (widget.canRemove)
+          (const SetTo(null), context.l10n.removeAction, null),
       ],
       for (final c in widget.choices)
         if (foldForSearch(c.label).contains(search))
@@ -527,7 +542,7 @@ class _EditPickerDialogState extends State<_EditPickerDialog> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SearchField(
-                  hintText: 'Buscar',
+                  hintText: context.l10n.searchAction,
                   dense: true,
                   onChanged: (text) => setState(() => _search = text),
                 ),

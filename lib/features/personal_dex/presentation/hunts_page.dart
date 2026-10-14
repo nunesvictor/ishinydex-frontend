@@ -24,6 +24,7 @@ import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dar
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/game_picker.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
@@ -206,7 +207,7 @@ class _Filters extends ConsumerWidget {
     final picked = await showChoicePicker(
       context,
       title: context.l10n.acceptedBalls,
-      choices: options.pokeball,
+      choices: context.l10n.choicesIn(options.pokeball),
       selected: query.acceptedBalls.toSet(),
     );
     if (picked == null || picked.isEmpty) return;
@@ -223,7 +224,9 @@ class _Filters extends ConsumerWidget {
     final options =
         ref.watch(specimenOptionsProvider).value ?? const SpecimenOptions();
     final count = query.scopeCount;
-    final balls = summarize(labelsOf(query.acceptedBalls, options.pokeball));
+    final balls = summarize(
+      labelsOf(context.l10n, query.acceptedBalls, options.pokeball),
+    );
     final pokeballOn = _isOn(HuntReason.pokeball);
     // Jogo: só com o catálogo das pokédex e algum save; um item por versão.
     final saves = ref.watch(knowsGamesProvider)

@@ -101,9 +101,10 @@ void main() {
   });
 
   test('o filtro em palavras', () {
-    expect(gameFilterLabel(const SpecimenQuery()), isNull);
+    expect(gameFilterLabel(ptText, const SpecimenQuery()), isNull);
     expect(
       gameFilterLabel(
+        ptText,
         const SpecimenQuery(
           otVersions: ['sword', 'shield', 'scarlet'],
           fitVersions: ['legends-za'],

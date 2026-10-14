@@ -379,7 +379,7 @@ void main() {
 
   test('helpers de texto', () {
     const choices = [Choice(value: 'poke-ball', label: 'Poké Ball')];
-    expect(labelsOf(['poke-ball', 'safari-ball'], choices), [
+    expect(labelsOf(ptText, ['poke-ball', 'safari-ball'], choices), [
       'Poké Ball',
       'Safari Ball',
     ]);
@@ -390,9 +390,9 @@ void main() {
     final pattern = CaptureDatePattern('pt_BR');
     final a = DateTime(2026, 1, 2);
     final b = DateTime(2026, 3, 4);
-    expect(captureRangeLabel(pattern, a, b), '02/01/2026 – 04/03/2026');
-    expect(captureRangeLabel(pattern, a, null), 'Desde 02/01/2026');
-    expect(captureRangeLabel(pattern, null, b), 'Até 04/03/2026');
-    expect(captureRangeLabel(pattern, null, null), '');
+    expect(captureRangeLabel(ptText, pattern, a, b), '02/01/2026 – 04/03/2026');
+    expect(captureRangeLabel(ptText, pattern, a, null), 'Desde 02/01/2026');
+    expect(captureRangeLabel(ptText, pattern, null, b), 'Até 04/03/2026');
+    expect(captureRangeLabel(ptText, pattern, null, null), '');
   });
 }

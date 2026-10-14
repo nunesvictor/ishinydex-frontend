@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
@@ -126,7 +127,7 @@ class _GamePickerState extends ConsumerState<GamePicker> {
         CheckboxListTile(
           value: _draft.every((d) => d.isEmpty),
           controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('Todos os jogos'),
+          title: Text(context.l10n.allGames),
           onChanged: (_) => setState(() {
             for (final d in _draft) {
               d.clear();
@@ -144,7 +145,7 @@ class _GamePickerState extends ConsumerState<GamePicker> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Jogo', style: theme.textTheme.titleLarge),
+              Text(context.l10n.fieldGame, style: theme.textTheme.titleLarge),
               if (widget.subtitle case final subtitle?)
                 Text(subtitle, style: theme.textTheme.bodySmall),
             ],
@@ -154,7 +155,7 @@ class _GamePickerState extends ConsumerState<GamePicker> {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
             child: SearchField(
-              hintText: 'Buscar jogo',
+              hintText: context.l10n.searchGame,
               dense: true,
               onChanged: (text) => setState(() => _search = text),
             ),
@@ -192,7 +193,10 @@ class _GamePickerState extends ConsumerState<GamePicker> {
           key: ValueKey('game-section-$i'),
           title: Text(section.title),
           subtitle: Text(
-            [?section.hint, '${section.versions.length} jogos'].join(' · '),
+            [
+              ?section.hint,
+              context.l10n.countGames(section.versions.length),
+            ].join(' · '),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -200,7 +204,7 @@ class _GamePickerState extends ConsumerState<GamePicker> {
             children: [
               if (marked > 0)
                 Badge(
-                  label: Text(marked == 1 ? '1 marcado' : '$marked marcados'),
+                  label: Text(context.l10n.countMarked(marked)),
                   backgroundColor: theme.colorScheme.secondaryContainer,
                   textColor: theme.colorScheme.onSecondaryContainer,
                 ),
@@ -219,7 +223,7 @@ class _GamePickerState extends ConsumerState<GamePicker> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
                 child: Text(
-                  'Geração ${generationNumber(generation)}',
+                  context.l10n.generationNumber(generationNumber(generation)),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.primary,
                   ),
@@ -236,7 +240,7 @@ class _GamePickerState extends ConsumerState<GamePicker> {
                 Flexible(child: Text(versionLabel(version))),
                 if ((section.saves[version] ?? 0) > 1)
                   Text(
-                    '${section.saves[version]} saves',
+                    context.l10n.countSaves(section.saves[version]!),
                     style: theme.textTheme.bodySmall,
                   ),
               ],
@@ -252,8 +256,8 @@ class _GamePickerState extends ConsumerState<GamePicker> {
             padding: const EdgeInsets.all(24),
             child: Text(
               _collapsible
-                  ? 'Nenhum jogo com esse nome nesta seção.'
-                  : 'Nenhum jogo com esse nome.',
+                  ? context.l10n.noGameNamedInSection
+                  : context.l10n.noGameNamed,
             ),
           ),
       ],

@@ -40,7 +40,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: const Text('Novo treinador'),
+      title: Text(context.l10n.newTrainer),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
         child: SingleChildScrollView(
@@ -56,7 +56,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
                 autofocus: true,
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
-                  labelText: 'Nome',
+                  labelText: context.l10n.fieldName,
                   errorText: context.fieldError(_validation, 'name'),
                 ),
               ),
@@ -64,7 +64,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
                 controller: _trainerId,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'ID do treinador',
+                  labelText: context.l10n.trainerIdLabel,
                   errorText: context.fieldError(_validation, 'trainer_id'),
                 ),
               ),
@@ -76,7 +76,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
@@ -85,7 +85,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
                   dimension: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Salvar'),
+              : Text(context.l10n.save),
         ),
       ],
     );
@@ -95,7 +95,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
   Widget _versionField() => switch (ref.watch(versionsProvider)) {
     AsyncData(value: final versions) => ChoiceSelect(
       key: const ValueKey('field-version'),
-      label: 'Versão do jogo (opcional)',
+      label: context.l10n.gameVersionOptional,
       value: _version,
       choices: [
         for (final v in versions) Choice(value: v.name, label: v.label),
@@ -105,10 +105,10 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
     ),
     AsyncError() => Row(
       children: [
-        const Expanded(child: Text('Não foi possível carregar as versões.')),
+        Expanded(child: Text(context.l10n.versionsError)),
         TextButton(
           onPressed: () => ref.invalidate(versionsProvider),
-          child: const Text('Tentar novamente'),
+          child: Text(context.l10n.tryAgain),
         ),
       ],
     ),

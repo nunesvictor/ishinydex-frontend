@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/clock.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -73,9 +75,7 @@ class HomeCutoffNotice extends ConsumerWidget {
         ? (colors.errorContainer, colors.onErrorContainer)
         : (colors.tertiaryContainer, colors.onTertiaryContainer);
     final games = {for (final (s, _) in pending) s.location!.game}.toList();
-    final where = games.length == 1
-        ? games.single
-        : '${games.sublist(0, games.length - 1).join(', ')} e ${games.last}';
+    final where = joinLabels(context.l10n, games);
     final n = pending.length;
     final date = MaterialLocalizations.of(context)
         .formatCompactDate(cutoff.until.toLocal());
@@ -103,23 +103,15 @@ class HomeCutoffNotice extends ConsumerWidget {
                       Text(
                         cutoff.closing
                             ? (days == 0
-                                  ? 'Último dia do Pokémon Bank'
-                                  : 'Faltam $days '
-                                        '${days == 1 ? 'dia' : 'dias'} '
-                                        'para o fim do Pokémon Bank')
-                            : '$n ${n == 1 ? 'espécime' : 'espécimes'} '
-                                  'em $where',
+                                  ? context.l10n.bankLastDay
+                                  : context.l10n.bankDaysLeft(days))
+                            : context.l10n.specimensIn(n, where),
                         style: text.titleSmall?.copyWith(color: foreground),
                       ),
                       Text(
                         cutoff.closing
-                            ? '$n ${n == 1 ? 'espécime' : 'espécimes'} em '
-                                  '$where não ${n == 1 ? 'chega' : 'chegam'} '
-                                  'mais ao HOME depois de $date.'
-                            : 'O Pokémon Bank fecha em $date. Depois disso, '
-                                  '${n == 1 ? 'ele não chega' : 'eles não chegam'} '
-                                  'mais ao HOME. Mova antes (precisa do HOME '
-                                  'Premium).',
+                            ? context.l10n.cutoffClosingBody(n, where, date)
+                            : context.l10n.cutoffBankBody(n, date),
                         style: text.bodySmall?.copyWith(color: foreground),
                       ),
                     ],
@@ -141,7 +133,7 @@ class HomeCutoffNotice extends ConsumerWidget {
                           .write(_day(now));
                       ref.invalidate(_dismissedProvider);
                     },
-                    child: const Text('Entendi'),
+                    child: Text(context.l10n.gotIt),
                   ),
                 if (showAction)
                   OutlinedButton(
@@ -150,9 +142,7 @@ class HomeCutoffNotice extends ConsumerWidget {
                       side: BorderSide(color: foreground),
                     ),
                     onPressed: () => context.push(Routes.away),
-                    child: Text(
-                      n == 1 ? 'Ver o espécime' : 'Ver os $n espécimes',
-                    ),
+                    child: Text(context.l10n.seeSpecimens(n)),
                   ),
               ],
             ),

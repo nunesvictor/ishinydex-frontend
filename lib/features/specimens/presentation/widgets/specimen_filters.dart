@@ -93,11 +93,14 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
           child: Row(
             children: [
               Expanded(
-                child: Text('Filtros', style: theme.textTheme.titleLarge),
+                child: Text(
+                  context.l10n.filtersTitle,
+                  style: theme.textTheme.titleLarge,
+                ),
               ),
               TextButton(
                 onPressed: _draft.advancedCount == 0 ? null : _clear,
-                child: const Text('Limpar'),
+                child: Text(context.l10n.clearAction),
               ),
             ],
           ),
@@ -107,53 +110,55 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
               _PickerTile(
-                title: 'Ordenar por',
+                title: context.l10n.sortBy,
                 summary: context.l10n.ordering(_draft.ordering),
                 onTap: _pickOrdering,
               ),
               _PickerTile(
-                title: 'Pokébola',
-                any: 'Todas',
-                summary: _pokeballSummary(_draft, options),
+                title: context.l10n.filterPokeball,
+                any: context.l10n.anyFeminine,
+                summary: _pokeballSummary(context.l10n, _draft, options),
                 onTap: () => _pickPokeballs(options),
               ),
               _PickerTile(
-                title: 'Treinador original (OT)',
-                summary: _otSummary(_draft, trainers),
+                title: context.l10n.originalTrainerOt,
+                summary: _otSummary(context.l10n, _draft, trainers),
                 onTap: () => _pickOts(trainers),
               ),
               _PickerTile(
-                title: 'Natureza',
-                any: 'Todas',
-                summary: summarize(labelsOf(_draft.natures, options.nature)),
+                title: context.l10n.fieldNature,
+                any: context.l10n.anyFeminine,
+                summary: summarize(
+                  labelsOf(context.l10n, _draft.natures, options.nature),
+                ),
                 onTap: () => _pickStrings(
-                  'Natureza',
+                  context.l10n.fieldNature,
                   options.nature,
                   _draft.natures,
                   (values) => _draft.copyWith(natures: values),
                 ),
               ),
               _PickerTile(
-                title: 'Idioma',
+                title: context.l10n.language,
                 summary: summarize(
-                  labelsOf(_draft.languages, options.language),
+                  labelsOf(context.l10n, _draft.languages, options.language),
                 ),
                 onTap: () => _pickStrings(
-                  'Idioma',
+                  context.l10n.language,
                   options.language,
                   _draft.languages,
                   (values) => _draft.copyWith(languages: values),
                 ),
               ),
               _Section(
-                title: 'Tipo (até ${SpecimenQuery.maxTypes})',
+                title: context.l10n.typeUpTo(SpecimenQuery.maxTypes),
                 child: _chips([
                   for (final type in options.type)
                     FilterChip(
                       avatar: type.spriteUrl == null
                           ? null
                           : PokemonSprite(url: type.spriteUrl, size: 18),
-                      label: Text(type.label),
+                      label: Text(context.l10n.choice(type)),
                       selected: _draft.types.contains(type.value),
                       onSelected: _canToggleType(type.value)
                           ? (on) => _update(
@@ -166,7 +171,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 ]),
               ),
               _Section(
-                title: 'Categoria',
+                title: context.l10n.filterCategory,
                 child: _chips([
                   for (final category in SpeciesCategory.values)
                     FilterChip(
@@ -181,12 +186,12 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 ]),
               ),
               _Section(
-                title: 'Geração',
+                title: context.l10n.filterGeneration,
                 child: _chips([
                   for (final generation in options.generation)
                     FilterChip(
                       label: Text(generationNumber(generation.value)),
-                      tooltip: generation.label,
+                      tooltip: context.l10n.choice(generation),
                       selected: _draft.generations.contains(generation.value),
                       onSelected: (on) => _update(
                         _draft.copyWith(
@@ -201,7 +206,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 ]),
               ),
               _Section(
-                title: 'Marca de origem',
+                title: context.l10n.filterOriginMark,
                 child: _chips([
                   for (final choice in options.originMark)
                     FilterChip(
@@ -209,7 +214,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                         final mark? => OriginMarkIcon(mark, size: 18),
                         null => null,
                       },
-                      label: Text(choice.label),
+                      label: Text(context.l10n.choice(choice)),
                       // A sigla no chip; o nome dos jogos no tooltip.
                       tooltip: switch (OriginMark.fromSlug(choice.value)) {
                         final mark? => context.l10n.originMarkGames(mark),
@@ -229,12 +234,12 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 ]),
               ),
               _Section(
-                title: 'Onde está',
+                title: context.l10n.whereIs,
                 child: _chips([
                   for (final (value, label) in [
-                    ('', 'Qualquer lugar'),
-                    (SpecimenQuery.locationHome, 'No HOME'),
-                    (SpecimenQuery.locationAway, 'Fora do HOME'),
+                    ('', context.l10n.anywhere),
+                    (SpecimenQuery.locationHome, context.l10n.inHome),
+                    (SpecimenQuery.locationAway, context.l10n.awayFromHome),
                     // Um save só de ida nunca guarda espécimes.
                     for (final save in saves)
                       if (!save.isOneWay) ('${save.id}', save.title),
@@ -248,11 +253,11 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 ]),
               ),
               _Section(
-                title: 'Gênero',
+                title: context.l10n.factGender,
                 child: _chips([
                   for (final gender in options.gender)
                     FilterChip(
-                      label: Text(gender.label),
+                      label: Text(context.l10n.choice(gender)),
                       selected: _draft.genders.contains(gender.value),
                       onSelected: (on) => _update(
                         _draft.copyWith(
@@ -266,9 +271,9 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                 child: TextField(
                   controller: _ability,
-                  decoration: const InputDecoration(
-                    labelText: 'Habilidade',
-                    hintText: 'Parte do nome, ex.: levitate',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.fieldAbility,
+                    hintText: context.l10n.abilityHint,
                     isDense: true,
                   ),
                   onChanged: (text) => _update(_draft.copyWith(ability: text)),
@@ -289,7 +294,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
           child: FilledButton(
             onPressed: () => Navigator.of(context).pop(_draft),
-            child: const Text('Mostrar resultados'),
+            child: Text(context.l10n.showResults),
           ),
         ),
       ],
@@ -310,7 +315,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
     final picked = await showDialog<SpecimenOrdering>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Ordenar por'),
+        title: Text(context.l10n.sortBy),
         children: [
           for (final ordering in SpecimenOrdering.values)
             SimpleDialogOption(
@@ -336,10 +341,10 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
   Future<void> _pickPokeballs(SpecimenOptions options) async {
     final picked = await showChoicePicker(
       context,
-      title: 'Pokébola',
+      title: context.l10n.filterPokeball,
       choices: [
-        const Choice(value: SpecimenQuery.noneParam, label: 'Sem pokébola'),
-        ...options.pokeball,
+        Choice(value: SpecimenQuery.noneParam, label: context.l10n.noPokeball),
+        ...context.l10n.choicesIn(options.pokeball),
       ],
       selected: {
         ..._draft.pokeballs,
@@ -358,9 +363,9 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
   Future<void> _pickOts(List<Trainer> trainers) async {
     final picked = await showChoicePicker(
       context,
-      title: 'Treinador original (OT)',
+      title: context.l10n.originalTrainerOt,
       choices: [
-        const Choice(value: SpecimenQuery.noneParam, label: 'Sem OT'),
+        Choice(value: SpecimenQuery.noneParam, label: context.l10n.noOt),
         for (final t in trainers) Choice(value: '${t.id}', label: t.label),
       ],
       selected: {
@@ -386,7 +391,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
     final picked = await showChoicePicker(
       context,
       title: title,
-      choices: choices,
+      choices: context.l10n.choicesIn(choices),
       selected: selected.toSet(),
     );
     if (picked != null) _update(apply([...picked]));
@@ -394,11 +399,16 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
 }
 
 /// Rótulo do filtro "Onde está": `"No HOME"`, `"Fora do HOME"` ou o save.
-String locationLabel(String location, List<Save> saves) => switch (location) {
-  SpecimenQuery.locationHome => 'No HOME',
-  SpecimenQuery.locationAway => 'Fora do HOME',
-  final id =>
-    'Em ${saves.where((s) => '${s.id}' == id).firstOrNull?.title ?? 'save #$id'}',
+String locationLabel(
+  AppLocalizations l10n,
+  String location,
+  List<Save> saves,
+) => switch (location) {
+  SpecimenQuery.locationHome => l10n.inHome,
+  SpecimenQuery.locationAway => l10n.awayFromHome,
+  final id => l10n.awayIn(
+    saves.where((s) => '${s.id}' == id).firstOrNull?.title ?? 'save #$id',
+  ),
 };
 
 class _Section extends StatelessWidget {
@@ -428,7 +438,7 @@ class _PickerTile extends StatelessWidget {
     required this.title,
     required this.summary,
     required this.onTap,
-    this.any = 'Todos',
+    this.any,
   });
 
   final String title;
@@ -436,14 +446,14 @@ class _PickerTile extends StatelessWidget {
   final VoidCallback onTap;
 
   /// Texto quando nada está escolhido ("Todos"/"Todas").
-  final String any;
+  final String? any;
 
   @override
   Widget build(BuildContext context) => ListTile(
     dense: true,
     contentPadding: const EdgeInsets.symmetric(horizontal: 24),
     title: Text(title, style: Theme.of(context).textTheme.titleSmall),
-    subtitle: Text(summary ?? any),
+    subtitle: Text(summary ?? any ?? context.l10n.allLabel),
     trailing: const Icon(Icons.chevron_right),
     onTap: onTap,
   );
@@ -470,15 +480,17 @@ class _CaptureRangeTile extends ConsumerWidget {
       dense: true,
       contentPadding: const EdgeInsets.only(left: 24, right: 12),
       title: Text(
-        'Data de captura',
+        context.l10n.captureDate,
         style: Theme.of(context).textTheme.titleSmall,
       ),
       subtitle: Text(
-        hasRange ? captureRangeLabel(pattern, after, before) : 'Qualquer data',
+        hasRange
+            ? captureRangeLabel(context.l10n, pattern, after, before)
+            : context.l10n.anyDate,
       ),
       trailing: hasRange
           ? IconButton(
-              tooltip: 'Limpar datas',
+              tooltip: context.l10n.clearDates,
               onPressed: () => onChanged(null, null),
               icon: const Icon(Icons.clear),
             )
@@ -497,8 +509,8 @@ class _CaptureRangeTile extends ConsumerWidget {
           initialDateRange: after != null && before != null
               ? DateTimeRange(start: after!, end: before!)
               : null,
-          helpText: 'Capturados entre',
-          saveText: 'OK',
+          helpText: context.l10n.caughtBetween,
+          saveText: context.l10n.ok,
         );
         if (range != null) onChanged(range.start, range.end);
       },
@@ -560,7 +572,7 @@ class _ChoicePickerDialogState extends State<_ChoicePickerDialog> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SearchField(
-                  hintText: 'Buscar',
+                  hintText: context.l10n.searchAction,
                   dense: true,
                   onChanged: (text) => setState(() => _search = text),
                 ),
@@ -595,15 +607,15 @@ class _ChoicePickerDialogState extends State<_ChoicePickerDialog> {
       actions: [
         TextButton(
           onPressed: () => setState(_selected.clear),
-          child: const Text('Nenhum'),
+          child: Text(context.l10n.noneAction),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_selected),
-          child: const Text('OK'),
+          child: Text(context.l10n.ok),
         ),
       ],
     );
@@ -638,22 +650,24 @@ class ActiveFilterChips extends ConsumerWidget {
         ),
       if (q.hasPokeballFilter)
         (
-          _pokeballSummary(q, options)!,
+          _pokeballSummary(context.l10n, q, options)!,
           q.copyWith(pokeballs: const [], withoutPokeball: false),
         ),
       if (q.types.isNotEmpty)
         (
-          labelsOf(q.types, options.type).join(' / '),
+          labelsOf(context.l10n, q.types, options.type).join(' / '),
           q.copyWith(types: const []),
         ),
       if (q.hasOtFilter)
         (
-          'OT: ${_otSummary(q, trainers)}',
+          context.l10n.otChip(_otSummary(context.l10n, q, trainers)!),
           q.copyWith(ots: const [], withoutOt: false),
         ),
       if (q.generations.isNotEmpty)
         (
-          'Geração ${q.generations.map(generationNumber).join(', ')}',
+          context.l10n.generationNumber(
+            q.generations.map(generationNumber).join(', '),
+          ),
           q.copyWith(generations: const []),
         ),
       if (q.categories.isNotEmpty)
@@ -665,34 +679,47 @@ class ActiveFilterChips extends ConsumerWidget {
         ),
       if (q.originMarks.isNotEmpty)
         (
-          'Origem: ${summarize(labelsOf(q.originMarks, options.originMark))}',
+          context.l10n.originChip(
+            summarize(
+              labelsOf(context.l10n, q.originMarks, options.originMark),
+            )!,
+          ),
           q.copyWith(originMarks: const []),
         ),
       if (q.genders.isNotEmpty)
         (
-          summarize(labelsOf(q.genders, options.gender))!,
+          summarize(labelsOf(context.l10n, q.genders, options.gender))!,
           q.copyWith(genders: const []),
         ),
       if (q.natures.isNotEmpty)
         (
-          summarize(labelsOf(q.natures, options.nature))!,
+          summarize(labelsOf(context.l10n, q.natures, options.nature))!,
           q.copyWith(natures: const []),
         ),
       if (q.languages.isNotEmpty)
         (
-          summarize(labelsOf(q.languages, options.language))!,
+          summarize(labelsOf(context.l10n, q.languages, options.language))!,
           q.copyWith(languages: const []),
         ),
       if (q.ability.trim().isNotEmpty)
-        ('Habilidade: ${q.ability.trim()}', q.copyWith(ability: '')),
+        (context.l10n.abilityChip(q.ability.trim()), q.copyWith(ability: '')),
       if (q.location.isNotEmpty)
         (
-          locationLabel(q.location, ref.watch(savesProvider).value ?? const []),
+          locationLabel(
+            context.l10n,
+            q.location,
+            ref.watch(savesProvider).value ?? const [],
+          ),
           q.copyWith(location: ''),
         ),
       if (q.hasCaptureFilter)
         (
-          captureRangeLabel(pattern, q.capturedAfter, q.capturedBefore),
+          captureRangeLabel(
+            context.l10n,
+            pattern,
+            q.capturedAfter,
+            q.capturedBefore,
+          ),
           q.copyWith(capturedAfter: null, capturedBefore: null),
         ),
     ];
@@ -706,7 +733,7 @@ class ActiveFilterChips extends ConsumerWidget {
             InputChip(
               label: Text(label),
               visualDensity: VisualDensity.compact,
-              deleteButtonTooltipMessage: 'Remover filtro',
+              deleteButtonTooltipMessage: context.l10n.removeFilter,
               onDeleted: () => onChanged(cleared),
             ),
         ],
@@ -715,11 +742,18 @@ class ActiveFilterChips extends ConsumerWidget {
   }
 }
 
-/// Labels dos [values] segundo as [choices] (valor sem label: formatado).
-List<String> labelsOf(List<String> values, List<Choice> choices) => [
+/// Labels dos [values] segundo as [choices], no idioma da tela (valor sem
+/// label: formatado).
+List<String> labelsOf(
+  AppLocalizations l10n,
+  List<String> values,
+  List<Choice> choices,
+) => [
   for (final value in values)
-    choices.where((c) => c.value == value).firstOrNull?.label ??
-        prettifyName(value),
+    switch (choices.where((c) => c.value == value).firstOrNull) {
+      final choice? => l10n.choice(choice),
+      null => prettifyName(value),
+    },
 ];
 
 /// `[]` → `null`; `["A"]` → `"A"`; `["A", "B", "C"]` → `"A +2"`.
@@ -735,14 +769,15 @@ String generationNumber(String generation) =>
 
 /// `"01/02/2026 – 03/04/2026"`, `"Desde 01/02/2026"` ou `"Até 03/04/2026"`.
 String captureRangeLabel(
+  AppLocalizations l10n,
   CaptureDatePattern pattern,
   DateTime? after,
   DateTime? before,
 ) => switch ((after, before)) {
   (final DateTime a, final DateTime b) =>
     '${pattern.format(a)} – ${pattern.format(b)}',
-  (final DateTime a, null) => 'Desde ${pattern.format(a)}',
-  (null, final DateTime b) => 'Até ${pattern.format(b)}',
+  (final DateTime a, null) => l10n.sinceDate(pattern.format(a)),
+  (null, final DateTime b) => l10n.untilDate(pattern.format(b)),
   (null, null) => '',
 };
 
@@ -750,14 +785,21 @@ String captureRangeLabel(
 CaptureDatePattern capturePattern(BuildContext context) =>
     CaptureDatePattern(Localizations.localeOf(context).toString());
 
-String? _pokeballSummary(SpecimenQuery q, SpecimenOptions options) =>
-    summarize([
-      if (q.withoutPokeball) 'Sem pokébola',
-      ...labelsOf(q.pokeballs, options.pokeball),
-    ]);
+String? _pokeballSummary(
+  AppLocalizations l10n,
+  SpecimenQuery q,
+  SpecimenOptions options,
+) => summarize([
+  if (q.withoutPokeball) l10n.noPokeball,
+  ...labelsOf(l10n, q.pokeballs, options.pokeball),
+]);
 
-String? _otSummary(SpecimenQuery q, List<Trainer> trainers) => summarize([
-  if (q.withoutOt) 'Sem OT',
+String? _otSummary(
+  AppLocalizations l10n,
+  SpecimenQuery q,
+  List<Trainer> trainers,
+) => summarize([
+  if (q.withoutOt) l10n.noOt,
   for (final id in q.ots)
     trainers.where((t) => t.id == id).firstOrNull?.name ?? '#$id',
 ]);

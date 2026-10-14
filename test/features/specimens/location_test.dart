@@ -68,8 +68,8 @@ void main() {
     expect(_pt.awayFor(DateTime(2026, 9, 30), today: today), 'há 1 dia');
     expect(_pt.awayFor(DateTime(2026, 3, 12), today: today), 'há 203 dias');
     expect(daysSince(DateTime(2026, 9, 30)), greaterThan(0));
-    expect(locationLabel('99', const [_save]), 'Em save #99');
-    expect(locationLabel('1', const [_save]), 'Em Scarlet · Switch');
+    expect(locationLabel(ptText, '99', const [_save]), 'Em save #99');
+    expect(locationLabel(ptText, '1', const [_save]), 'Em Scarlet · Switch');
     expect(_save.isOneWay, isFalse);
     final frlg = _save.copyWith(
       trainer: _save.trainer.copyWith(version: 'leafgreen'),
@@ -160,6 +160,20 @@ void main() {
     final evolved = await backend.fetchSpecimen(id);
     expect((evolved.form, evolved.location, evolved.slot), (3, null, null));
     expect((await backend.fetchSlot(62)).isMissing, true);
+  });
+
+  testWidgets('em inglês: Meus saves e Fora do HOME', (tester) async {
+    await pumpFullApp(tester, language: AppLanguage.en);
+    await _go(tester, Routes.saves);
+    expect(find.widgetWithText(AppBar, 'My saves'), findsOneWidget);
+    expect(find.text('Add save'), findsOneWidget);
+    await tester.tap(find.byTooltip('Save actions').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Remove'), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    await _go(tester, Routes.away);
+    expect(find.widgetWithText(AppBar, 'Away from HOME'), findsOneWidget);
   });
 
   testWidgets('sem saves: explica e abre Meus saves', (tester) async {
