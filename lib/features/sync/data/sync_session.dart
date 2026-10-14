@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:ishinydex/core/l10n/problem.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
 import 'package:ishinydex/features/sync/data/dropbox_client.dart';
 import 'package:ishinydex/features/sync/data/pkce.dart';
@@ -118,14 +119,17 @@ class DropboxLogin {
     // O verificador só serve uma vez, desse login dar certo ou não.
     await store.write(const SyncSession());
     if (error != null) {
+      final reason = params['error_description'];
       throw DropboxAuthException(
-        params['error_description'] ?? 'O login no Dropbox foi recusado.',
+        reason ?? 'login refused',
+        problem: Problem.dropboxLoginRefused(reason),
       );
     }
     final verifier = session.verifier;
     if (verifier == null || params['state'] != session.state) {
       throw const DropboxAuthException(
-        'O login no Dropbox não foi iniciado neste aparelho. Tente de novo.',
+        'login not started on this device',
+        problem: Problem.dropboxLoginElsewhere(),
       );
     }
     final refreshToken = await DropboxClient.exchangeCode(

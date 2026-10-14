@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -159,7 +160,7 @@ class _AutoDepositSheetState extends ConsumerState<AutoDepositSheet> {
     } on AppFailure catch (failure) {
       setState(() {
         _busy = false;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }

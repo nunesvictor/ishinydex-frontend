@@ -76,11 +76,13 @@ void main(List<String> args) {
   }
 }
 
-/// Interfaces (`abstract interface class`) não têm linhas executáveis.
+/// Interfaces (`abstract interface class`) e uniões do freezed só com
+/// `const factory` (o `Problem`) não têm linhas executáveis.
 ///
 /// Um corpo de método aparece como `) {` ou `) async {`. Parâmetros nomeados
 /// (`metodo({`) não contam: vêm depois de `(`, não de `)`.
 bool _isInterfaceOnly(String source) =>
-    source.contains('abstract interface class') &&
+    (source.contains('abstract interface class') ||
+        source.contains('@freezed')) &&
     !source.contains('=>') &&
     !RegExp(r'\)\s*(async\s*)?\{').hasMatch(source);

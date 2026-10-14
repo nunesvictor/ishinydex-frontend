@@ -133,17 +133,14 @@ void main() {
     await pumpFlow(tester, backend: backend, slot: wrong);
     await tester.tap(find.text('Charizard'));
     await tester.pumpAndSettle();
-    expect(
-      find.text("specimen form doesn't match with slot form."),
-      findsOneWidget,
-    );
+    expect(find.text('A forma do espécime não é a do slot.'), findsOneWidget);
   });
 
   testWidgets('erro ao carregar e tentar novamente', (tester) async {
     final specimens = MockSpecimenRepository();
     var calls = 0;
     when(() => specimens.fetchAvailable(6)).thenAnswer((_) async {
-      if (calls++ == 0) throw const NetworkFailure();
+      if (calls++ == 0) throw const NotFoundFailure();
       return const [];
     });
     await pumpFlow(
@@ -152,7 +149,7 @@ void main() {
       slot: await slotAt(5),
       specimens: specimens,
     );
-    expect(find.text(const NetworkFailure().message), findsOneWidget);
+    expect(find.text('Não encontrado.'), findsOneWidget);
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(

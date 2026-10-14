@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -16,7 +17,13 @@ void main() {
   test('formato mais novo que o do app é recusado', () {
     expect(
       () => Catalog.fromJson(catalogJson(schemaVersion: 2), spriteBase: _base),
-      throwsA(isA<FormatException>()),
+      throwsA(
+        isA<DataFailure>().having(
+          (f) => f.problem,
+          'problem',
+          const Problem.catalogTooNew(schema: 2, supported: 1),
+        ),
+      ),
     );
   });
 

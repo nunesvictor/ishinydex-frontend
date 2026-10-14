@@ -2,12 +2,17 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:ishinydex/core/l10n/problem.dart';
 
 /// O login do Dropbox não vale mais (revogado no site do Dropbox, por
 /// exemplo): é preciso conectar de novo.
 class DropboxAuthException implements Exception {
-  const DropboxAuthException(this.message);
+  const DropboxAuthException(this.message, {this.problem});
   final String message;
+
+  /// O que dizer ao usuário, quando é mais que "o acesso expirou" (o login
+  /// recusado ou iniciado em outro aparelho).
+  final Problem? problem;
   @override
   String toString() => message;
 }

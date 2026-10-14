@@ -80,7 +80,7 @@ class _FlakyRepository implements PersonalDexRepository {
 
   @override
   Future<List<BoxSummary>> fetchBoxes(int dexId) async {
-    if (boxFailures-- > 0) throw const ServerFailure();
+    if (boxFailures-- > 0) throw const DataFailure(Problem.invalidData());
     return await inner.fetchBoxes(dexId);
   }
 
@@ -89,7 +89,7 @@ class _FlakyRepository implements PersonalDexRepository {
     required int dexId,
     required int boxId,
   }) async {
-    if (slotFailures-- > 0) throw const NetworkFailure();
+    if (slotFailures-- > 0) throw const NotFoundFailure();
     return await inner.fetchSlots(dexId: dexId, boxId: boxId);
   }
 
@@ -375,8 +375,9 @@ void main() {
 
     testWidgets('falha ao libertar mostra a mensagem', (tester) async {
       final specimens = MockSpecimenRepository();
-      when(() => specimens.release(any()))
-          .thenThrow(ValidationFailure(const {}, detail: 'Não pode.'));
+      when(() => specimens.release(any())).thenThrow(
+        const ValidationFailure({}, detail: Problem.nothingToChange()),
+      );
       await pumpFullApp(
         tester,
         overrides: [specimenRepositoryProvider.overrideWithValue(specimens)],
@@ -387,7 +388,7 @@ void main() {
       await tapMoreAction(tester, 'Libertar');
       await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
       await tester.pumpAndSettle();
-      expect(find.text('Não pode.'), findsOneWidget);
+      expect(find.text('Nada para alterar.'), findsOneWidget);
       expect(find.text('Registrado'), findsOneWidget);
     });
 
@@ -402,10 +403,10 @@ void main() {
         ],
       );
       await openShinyDex(tester);
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.byType(SlotTile), findsNWidgets(30));
@@ -429,7 +430,7 @@ void main() {
         ],
       );
       await openShinyDex(tester);
-      expect(find.text(const NotFoundFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.byType(SlotTile), findsNWidgets(30));
@@ -978,10 +979,7 @@ void main() {
         expect(find.text('Este campo não pode ser em branco.'), findsOneWidget);
         await tester.enterText(nameField(), 'Living Dex');
         await save(tester);
-        expect(
-          find.text('personal dex com este name já existe.'),
-          findsOneWidget,
-        );
+        expect(find.text('Já existe uma dex com este nome.'), findsOneWidget);
 
         await tester.enterText(nameField(), ' Minha Dex ');
         await tester.tap(find.text('Dex shiny'));
@@ -1022,8 +1020,8 @@ void main() {
 
     testWidgets('falhas ao editar e apagar mostram a mensagem', (tester) async {
       final repository = _FlakyRepository(FakeBackend.seeded())
-        ..updateFailure = const NetworkFailure()
-        ..deleteFailure = const ServerFailure();
+        ..updateFailure = const NotFoundFailure()
+        ..deleteFailure = const DataFailure(Problem.invalidData());
       await pumpFullApp(
         tester,
         overrides: [
@@ -1034,20 +1032,20 @@ void main() {
 
       await openMenuItem(tester, 'Editar dex');
       await save(tester);
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       // Erro de validação fora do nome também vai para o topo do diálogo.
-      repository.updateFailure = ValidationFailure(const {
-        ValidationFailure.nonFieldKey: ['Não pode.'],
+      repository.updateFailure = const ValidationFailure({
+        ValidationFailure.nonFieldKey: [Problem.nothingToChange()],
       });
       await save(tester);
-      expect(find.text('Não pode.'), findsOneWidget);
+      expect(find.text('Nada para alterar.'), findsOneWidget);
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();
 
       await openMenuItem(tester, 'Apagar dex');
       await tester.tap(find.widgetWithText(TextButton, 'Apagar'));
       await tester.pumpAndSettle();
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
       expect(find.byType(DexDetailPage), findsOneWidget);
     });
   });
@@ -1109,7 +1107,7 @@ void main() {
 
     testWidgets('falhas ao retirar e ao desfazer', (tester) async {
       final repository = _FlakyRepository(FakeBackend.seeded())
-        ..withdrawFailure = const NetworkFailure();
+        ..withdrawFailure = const NotFoundFailure();
       await pumpFullApp(
         tester,
         overrides: [
@@ -1121,15 +1119,15 @@ void main() {
       await tester.pumpAndSettle();
 
       await tapMoreAction(tester, 'Retirar do slot');
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
 
       repository
         ..withdrawFailure = null
-        ..depositFailure = const ServerFailure();
+        ..depositFailure = const DataFailure(Problem.invalidData());
       await tapMoreAction(tester, 'Retirar do slot');
       await tester.tap(find.text('Desfazer'));
       await tester.pumpAndSettle();
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
     });
   });
 
@@ -1227,7 +1225,7 @@ void main() {
 
     testWidgets('erro na prévia (com retry) e ao depositar', (tester) async {
       final repository = _FlakyRepository(FakeBackend.seeded())
-        ..linkFailure = const NetworkFailure();
+        ..linkFailure = const NotFoundFailure();
       await pumpFullApp(
         tester,
         overrides: [
@@ -1237,16 +1235,16 @@ void main() {
       await openShinyDex(tester);
 
       await open(tester);
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       repository.linkFailure = null;
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.text('Depositar 10'), findsOneWidget);
 
-      repository.linkFailure = const ServerFailure();
+      repository.linkFailure = const DataFailure(Problem.invalidData());
       await tester.tap(find.text('Depositar 10'));
       await tester.pumpAndSettle();
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
       expect(find.text('Depositar automaticamente'), findsOneWidget);
     });
   });
@@ -1433,7 +1431,7 @@ void main() {
       repository.slotFailures = 1;
       await tester.tap(find.byTooltip('Próximo slot'));
       await tester.pumpAndSettle();
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       expect(find.text('HOME 1 · L5 C6 · 30 de 30'), findsOneWidget);
     });
 

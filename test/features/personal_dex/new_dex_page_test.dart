@@ -171,7 +171,7 @@ void main() {
       var calls = 0;
       when(() => repository.previewNewDex(forceNewBox: false))
           .thenAnswer((_) async {
-            if (calls++ == 0) throw const NetworkFailure();
+            if (calls++ == 0) throw const NotFoundFailure();
             return const DexPreview(
               forms: 3,
               boxesNeeded: 1,
@@ -181,7 +181,7 @@ void main() {
             );
           });
       await pump(tester);
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(
@@ -207,15 +207,15 @@ void main() {
           forceNewBox: false,
         ),
       ).thenThrow(
-        ValidationFailure({
-          'name': ['personal dex com este name já existe.'],
+        const ValidationFailure({
+          'name': [Problem.dexNameTaken()],
         }),
       );
       await pump(tester);
       await tester.enterText(nameField(), 'Shiny');
       await tester.tap(find.text('Criar PersonalDex'));
       await tester.pumpAndSettle();
-      expect(find.text('personal dex com este name já existe.'), findsWidgets);
+      expect(find.text('Já existe uma dex com este nome.'), findsWidgets);
     });
 
     testWidgets('simulação que não é AppFailure mostra mensagem genérica', (

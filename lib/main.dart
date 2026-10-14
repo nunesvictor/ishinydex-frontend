@@ -13,15 +13,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Catálogo e dados locais (modo local, ou demonstração com CATALOG_URL).
   final List<Override> overrides;
+  var language = AppLanguage.system;
   try {
     // O idioma escolhido em Ajustes, para o primeiro quadro já sair nele.
-    final language = await const PrefsLanguageStorage().read();
+    language = await const PrefsLanguageStorage().read();
     overrides = [
       initialLanguageProvider.overrideWithValue(language),
       ...await catalogOverrides(Env.fromEnvironment(), bootDio()),
     ];
   } on Object catch (error) {
-    runApp(BootFailureApp(error: error, onRetry: main));
+    runApp(BootFailureApp(error: error, onRetry: main, language: language));
     return;
   }
   runApp(

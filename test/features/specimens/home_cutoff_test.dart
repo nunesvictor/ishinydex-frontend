@@ -115,8 +115,8 @@ void main() {
       throwsA(
         isA<ValidationFailure>().having(
           (f) => f.fieldErrors['save'],
-          'mensagem',
-          ['X não envia mais para o HOME.'],
+          'problema',
+          [const Problem.gameCutOff('X')],
         ),
       ),
     );

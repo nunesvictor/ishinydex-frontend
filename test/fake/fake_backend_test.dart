@@ -8,7 +8,7 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import '../helpers/helpers.dart';
 
 Matcher _validation(String field) => throwsA(
-  isA<ValidationFailure>().having((f) => f.errorFor(field), field, isNotNull),
+  isA<ValidationFailure>().having((f) => f.errorsFor(field), field, isNotNull),
 );
 
 void main() {
@@ -149,7 +149,7 @@ void main() {
       )).first.specimen!.id;
       final check = backend.transferCheck([id], save);
       expect(check.allowed, isFalse);
-      expect(check.blocked.single.message, startsWith('Save só de ida'));
+      expect(check.blocked.single.problem, const Problem.oneWaySave());
       expect(backend.transfer([id], saveId: save.id), _validation('save'));
       expect((await backend.fetchSpecimen(id)).location, isNull);
     });
@@ -700,11 +700,9 @@ void main() {
         await expectLater(
           backend.bulkUpdate(ids: const [1, 9999], changes: changes),
           throwsA(
-            isA<ValidationFailure>().having(
-              (f) => f.errorFor('ids'),
-              'ids',
-              contains('9999'),
-            ),
+            isA<ValidationFailure>().having((f) => f.errorsFor('ids'), 'ids', [
+              const Problem.specimensNotFound([9999]),
+            ]),
           ),
         );
         expect((await backend.fetchSpecimen(1)).isAlpha, true); // seed: forma 1
@@ -1059,8 +1057,8 @@ void main() {
       backend.createTrainer(name: ' ', trainerId: ''),
       throwsA(
         isA<ValidationFailure>()
-            .having((f) => f.errorFor('name'), 'name', isNotNull)
-            .having((f) => f.errorFor('trainer_id'), 'trainer_id', isNotNull),
+            .having((f) => f.errorsFor('name'), 'name', isNotNull)
+            .having((f) => f.errorsFor('trainer_id'), 'trainer_id', isNotNull),
       ),
     );
     expect(
@@ -1334,14 +1332,14 @@ void main() {
       final blank = await invalid(
         () => fake.createShinyLock(const ShinyLockDraft(caption: ' ')),
       );
-      expect(blank.errorFor('caption'), isNotNull);
-      expect(blank.errorFor('forms'), isNotNull);
+      expect(blank.errorsFor('caption'), isNotNull);
+      expect(blank.errorsFor('forms'), isNotNull);
       final unknown = await invalid(
         () => fake.createShinyLock(
           ShinyLockDraft(caption: 'x', forms: [ref(99)]),
         ),
       );
-      expect(unknown.errorFor('forms'), 'Forma inválida.');
+      expect(unknown.errorsFor('forms'), [const Problem.invalidForm()]);
 
       final keldeo = await fake.createShinyLock(
         ShinyLockDraft(
@@ -1373,7 +1371,7 @@ void main() {
           ShinyLockDraft(caption: 'keldeo', forms: [ref(1)]),
         ),
       );
-      expect(duplicate.errorFor('caption'), isNotNull);
+      expect(duplicate.errorsFor('caption'), isNotNull);
 
       // Inativo não vale; a forma que saiu fica sem lock.
       final edited = await fake.updateShinyLock(

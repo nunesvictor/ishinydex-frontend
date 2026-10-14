@@ -95,10 +95,6 @@ const _accents = {
   'y': 'ýÿ',
 };
 
-const _reservedSlotMessage =
-    'este slot está reservado para um espécime que está fora do HOME; '
-    'traga-o de volta ou retire-o antes.';
-
 /// Cadeias de evolução do seed: forma → forma da qual evolui.
 const _seedEvolvesFrom = {
   2: 1, 3: 2, 5: 4, 6: 5, 8: 7, 9: 8, 11: 10, 12: 11, 14: 13, 15: 14, //
@@ -1141,25 +1137,26 @@ class FakeBackend
   }) async {
     await _delay();
     if (name.trim().isEmpty) {
-      throw ValidationFailure({
-        'name': ['Este campo não pode ser em branco.'],
+      throw const ValidationFailure({
+        'name': [Problem.blank()],
       });
     }
     if (_dexes.values.any((d) => d.name == name)) {
-      throw ValidationFailure({
-        'name': ['personal dex com este name já existe.'],
+      throw const ValidationFailure({
+        'name': [Problem.dexNameTaken()],
       });
     }
     final plan = _planDex(forceNewBox);
     final boxes = plan.boxes;
     if (boxes == null) {
-      final message =
-          'Não há boxes livres seguidas suficientes para este PersonalDex: '
-          'ele precisa de ${plan.needed}, a maior sequência livre tem '
-          '${plan.largest}, e criar as boxes que faltam passaria das '
-          '$maxBoxes boxes do Pokémon HOME.';
       throw ValidationFailure({
-        ValidationFailure.nonFieldKey: [message],
+        ValidationFailure.nonFieldKey: [
+          Problem.noFreeBoxes(
+            needed: plan.needed,
+            largest: plan.largest,
+            max: maxBoxes,
+          ),
+        ],
       });
     }
     final id = addDex(name: name, isShinyDex: isShinyDex);
@@ -1196,13 +1193,13 @@ class FakeBackend
     final dex = _dexes[dexId];
     if (dex == null) throw const NotFoundFailure();
     if (name.trim().isEmpty) {
-      throw ValidationFailure({
-        'name': ['Este campo não pode ser em branco.'],
+      throw const ValidationFailure({
+        'name': [Problem.blank()],
       });
     }
     if (_dexes.values.any((d) => d.id != dexId && d.name == name)) {
-      throw ValidationFailure({
-        'name': ['personal dex com este name já existe.'],
+      throw const ValidationFailure({
+        'name': [Problem.dexNameTaken()],
       });
     }
     _dexes[dexId] = dex.copyWith(name: name, isShinyDex: isShinyDex);
@@ -1333,19 +1330,19 @@ class FakeBackend
     final slot = _slots[slotId];
     if (slot == null) throw const NotFoundFailure();
     if (slot.formId == null) {
-      throw ValidationFailure({
-        ValidationFailure.nonFieldKey: ['Este slot não possui forma definida.'],
+      throw const ValidationFailure({
+        ValidationFailure.nonFieldKey: [Problem.slotWithoutForm()],
       });
     }
     final specimen = _specimens[specimenId];
     if (specimen == null) {
-      throw ValidationFailure({
-        'specimen_id': ['Specimen inexistente.'],
+      throw const ValidationFailure({
+        'specimen_id': [Problem.specimenNotFound()],
       });
     }
     if (specimen.form != slot.formId) {
-      throw ValidationFailure({
-        'specimen_id': ["specimen form doesn't match with slot form."],
+      throw const ValidationFailure({
+        'specimen_id': [Problem.slotFormMismatch()],
       });
     }
     // Slot reservado: o espécime dele está num save e volta para cá.
@@ -1353,14 +1350,14 @@ class FakeBackend
     if (current != null &&
         current.id != specimenId &&
         current.location != null) {
-      throw ValidationFailure({
-        ValidationFailure.nonFieldKey: [_reservedSlotMessage],
+      throw const ValidationFailure({
+        ValidationFailure.nonFieldKey: [Problem.slotReserved()],
       });
     }
     final holder = _slotHolding(specimenId);
     if (holder != null && holder.id != slotId) {
-      throw ValidationFailure({
-        'specimen_id': ['Este specimen já está depositado em outro slot.'],
+      throw const ValidationFailure({
+        'specimen_id': [Problem.alreadyDeposited()],
       });
     }
     slot.specimenId = specimenId;
@@ -1451,10 +1448,8 @@ class FakeBackend
     final dex = _dexes[dexId];
     if (dex == null) throw const NotFoundFailure();
     if (!dex.isShinyDex) {
-      throw ValidationFailure({
-        ValidationFailure.nonFieldKey: [
-          'A lista de caçadas só existe para shiny dex.',
-        ],
+      throw const ValidationFailure({
+        ValidationFailure.nonFieldKey: [Problem.huntsNeedShinyDex()],
       });
     }
     final search = query.search.trim().toLowerCase();
@@ -1555,8 +1550,8 @@ class FakeBackend
     await _delay();
     final form = _forms[draft.form];
     if (form == null) {
-      throw ValidationFailure({
-        'form': ['Forma inválida.'],
+      throw const ValidationFailure({
+        'form': [Problem.invalidForm()],
       });
     }
     _validateAbility(form, draft.ability);
@@ -1641,14 +1636,16 @@ class FakeBackend
     await _delay();
     final unique = ids.toSet();
     if (unique.isEmpty || changes.isEmpty) {
-      throw ValidationFailure({
-        ValidationFailure.nonFieldKey: ['Nada para alterar.'],
+      throw const ValidationFailure({
+        ValidationFailure.nonFieldKey: [Problem.nothingToChange()],
       });
     }
     final missing = unique.where((id) => !_specimens.containsKey(id));
     if (missing.isNotEmpty) {
       throw ValidationFailure({
-        'ids': ['espécimes não encontrados: ${missing.join(', ')}'],
+        'ids': [
+          Problem.specimensNotFound([...missing]),
+        ],
       });
     }
     if (changes.gender case SetTo(value: final String gender)) {
@@ -1663,8 +1660,7 @@ class FakeBackend
       if (conflicts.isNotEmpty) {
         throw GenderConflictFailure(
           conflicts,
-          message:
-              'este gênero não é possível para ${conflicts.length} espécime(s).',
+          problem: Problem.impossibleGender(conflicts.length),
         );
       }
     }
@@ -1721,8 +1717,8 @@ class FakeBackend
     final specimen = _specimens[specimenId];
     if (specimen == null) throw const NotFoundFailure();
     if (draft.form != specimen.form) {
-      throw ValidationFailure({
-        'form': ['a forma de um espécime não pode ser alterada.'],
+      throw const ValidationFailure({
+        'form': [Problem.formUnchangeable()],
       });
     }
     _validateAbility(_forms[specimen.form]!, draft.ability);
@@ -1763,8 +1759,8 @@ class FakeBackend
     final specimen = _specimens[specimenId];
     if (specimen == null) throw const NotFoundFailure();
     if (visiting && specimen.isAway) {
-      throw ValidationFailure({
-        'champions': ['Só quem está no HOME visita o Champions.'],
+      throw const ValidationFailure({
+        'champions': [Problem.championsHomeOnly()],
       });
     }
     if (visiting == specimen.isVisitingChampions) return specimen;
@@ -1777,8 +1773,8 @@ class FakeBackend
 
   void _checkNotVisiting(Iterable<int> ids) {
     if (ids.any((id) => _specimens[id]?.isVisitingChampions ?? false)) {
-      throw ValidationFailure({
-        'champions': ['Não dá para libertar quem visita o Champions.'],
+      throw const ValidationFailure({
+        'champions': [Problem.championsNoRelease()],
       });
     }
   }
@@ -1798,14 +1794,16 @@ class FakeBackend
     await _delay();
     final unique = ids.toSet();
     if (unique.isEmpty) {
-      throw ValidationFailure({
-        'ids': ['Esta lista não pode estar vazia.'],
+      throw const ValidationFailure({
+        'ids': [Problem.emptyList()],
       });
     }
     final missing = unique.where((id) => !_specimens.containsKey(id));
     if (missing.isNotEmpty) {
       throw ValidationFailure({
-        'ids': ['espécimes não encontrados: ${missing.join(', ')}'],
+        'ids': [
+          Problem.specimensNotFound([...missing]),
+        ],
       });
     }
     _checkNotVisiting(unique);
@@ -1913,13 +1911,13 @@ class FakeBackend
   Future<Save> createSave({required int trainerId, String label = ''}) async {
     await _delay();
     final trainer = _trainers[trainerId];
-    String? error;
+    Problem? error;
     if (trainer == null) {
-      error = 'Treinador inexistente.';
+      error = const Problem.trainerNotFound();
     } else if (!Save.homeVersions.contains(trainer.version)) {
-      error = 'só treinadores de jogos ligados ao HOME podem ser saves.';
+      error = const Problem.saveNeedsHomeGame();
     } else if (_saves.values.any((s) => s.trainer.id == trainerId)) {
-      error = 'este treinador já é um save.';
+      error = const Problem.trainerAlreadySave();
     }
     if (error != null) {
       throw ValidationFailure({
@@ -1939,8 +1937,8 @@ class FakeBackend
     final save = _saves[saveId];
     if (save == null) throw const NotFoundFailure();
     if ((hasShinyCharm ?? false) && !save.canHaveShinyCharm) {
-      throw ValidationFailure({
-        'shinyCharm': ['este jogo não tem o Shiny Charm.'],
+      throw const ValidationFailure({
+        'shinyCharm': [Problem.noShinyCharm()],
       });
     }
     final updated = save.copyWith(
@@ -1962,11 +1960,7 @@ class FakeBackend
     await _delay();
     if (!_saves.containsKey(saveId)) throw const NotFoundFailure();
     if (_specimens.values.any((s) => s.location?.id == saveId)) {
-      throw ValidationFailure(
-        const {},
-        detail:
-            'este save ainda tem espécimes; traga-os de volta ao HOME antes.',
-      );
+      throw const ValidationFailure({}, detail: Problem.saveHasSpecimens());
     }
     _saves.remove(saveId);
   }
@@ -1984,21 +1978,21 @@ class FakeBackend
     for (final s in [for (final id in ids.toSet()) ?_specimens[id]]) {
       final name = _forms[s.form]?.name ?? '';
       final block = save.isOneWay
-          ? 'Save só de ida: dele o Pokémon só vai para o HOME'
+          ? const Problem.oneWaySave()
           : s.isVisitingChampions
-          ? 'Está visitando o Champions'
+          ? const Problem.visitingChampions()
           : save.accepts(s.originMark, s.originVersion)
           ? transferBlock(name, s.originMark, version)
-          : '${save.restriction} entram nesse save';
+          : const Problem.letsGoOnly();
       if (block != null) {
-        blocked.add((id: s.id, name: s.displayName, message: block));
+        blocked.add((id: s.id, name: s.displayName, problem: block));
         continue;
       }
       movable.add(s.id);
       final category = _categories[s.form] ?? SpeciesCategory.regular;
       final warning = transferWarning(name, s.originMark, category);
       if (warning != null) {
-        warnings.add((id: s.id, name: s.displayName, message: warning));
+        warnings.add((id: s.id, name: s.displayName, problem: warning));
       }
       if (!(catalog?.inGame(s.form, version) ?? true)) outside++;
     }
@@ -2020,12 +2014,14 @@ class FakeBackend
     final missing = unique.where((id) => !_specimens.containsKey(id));
     if (unique.isEmpty || missing.isNotEmpty) {
       throw ValidationFailure({
-        'ids': ['espécimes não encontrados: ${missing.join(', ')}'],
+        'ids': [
+          Problem.specimensNotFound([...missing]),
+        ],
       });
     }
     if (saveId != null && !_saves.containsKey(saveId)) {
-      throw ValidationFailure({
-        'save': ['Save inexistente.'],
+      throw const ValidationFailure({
+        'save': [Problem.saveNotFound()],
       });
     }
     var going = unique;
@@ -2039,7 +2035,7 @@ class FakeBackend
       if (stuck.length == unique.length) {
         final game = _specimens[stuck.first]!.location!.game;
         throw ValidationFailure({
-          'save': ['$game não envia mais para o HOME.'],
+          'save': [Problem.gameCutOff(game)],
         });
       }
       going = unique.difference(stuck);
@@ -2047,7 +2043,7 @@ class FakeBackend
       final check = transferCheck([...unique], _saves[saveId]!);
       if (!check.allowed) {
         throw ValidationFailure({
-          'save': ['${check.blocked.first.message}.'],
+          'save': [check.blocked.first.problem],
         });
       }
       going = check.movable.toSet();
@@ -2072,8 +2068,8 @@ class FakeBackend
       current = _evolvesFrom[current];
     }
     if (current == null || !_forms.containsKey(formId)) {
-      throw ValidationFailure({
-        'form': ['esta forma não é uma evolução do espécime.'],
+      throw const ValidationFailure({
+        'form': [Problem.notAnEvolution()],
       });
     }
     final old = _forms[specimen.form]!.abilities
@@ -2105,21 +2101,19 @@ class FakeBackend
     String? version,
   }) async {
     await _delay();
-    const blank = ['Este campo não pode ser em branco.'];
-    final errors = <String, List<String>>{
+    const blank = [Problem.blank()];
+    final errors = <String, List<Problem>>{
       if (name.trim().isEmpty) 'name': blank,
       if (trainerId.trim().isEmpty) 'trainer_id': blank,
       if (version != null && !versions.any((v) => v.name == version))
-        'version': ['Objeto com name=$version não existe.'],
+        'version': [Problem.unknownVersion(version)],
     };
     if (errors.isNotEmpty) throw ValidationFailure(errors);
     if (_trainers.values.any(
       (t) => t.name == name && t.trainerId == trainerId,
     )) {
-      throw ValidationFailure({
-        ValidationFailure.nonFieldKey: [
-          'Os campos name, trainer_id devem criar um set único.',
-        ],
+      throw const ValidationFailure({
+        ValidationFailure.nonFieldKey: [Problem.trainerTaken()],
       });
     }
     final id = addTrainer(name: name, trainerId: trainerId, version: version);
@@ -2312,28 +2306,28 @@ class FakeBackend
   HuntRecord? _validHunt(SpecimenDraft draft) {
     final hunt = draft.hunt;
     if (hunt == null || !draft.isShiny || hunt.isBlank) return null;
-    final errors = <String, List<String>>{};
+    final errors = <String, List<Problem>>{};
     final methods = catalog?.shinyMethods ?? const <ShinyMethod>[];
     final method = methods.where((m) => m.id == hunt.method).firstOrNull;
     if (hunt.method != null && methods.isNotEmpty && method == null) {
-      errors['huntMethod'] = ['Método desconhecido.'];
+      errors['huntMethod'] = [const Problem.unknownHuntMethod()];
     }
     if (hunt.count case final count? when count <= 0) {
-      errors['huntCount'] = ['A contagem precisa ser maior que zero.'];
+      errors['huntCount'] = [const Problem.huntCountNotPositive()];
     }
     if (hunt.unit case final unit?
         when method != null && !method.units.contains(unit)) {
-      errors['huntUnit'] = ['Unidade que não é do método.'];
+      errors['huntUnit'] = [const Problem.huntUnitNotOfMethod()];
     }
     final (start, end) = (hunt.startedAt, draft.capturedAt);
     if (start != null && end != null && start.isAfter(end)) {
-      errors['huntStartedAt'] = ['O início é depois da data de captura.'];
+      errors['huntStartedAt'] = [const Problem.huntStartAfterCapture()];
     }
     final url = hunt.postUrl;
     if (url != null && url.isNotEmpty) {
       final uri = Uri.tryParse(url);
       if (uri == null || !{'http', 'https'}.contains(uri.scheme)) {
-        errors['huntPostUrl'] = ['Link inválido (use http:// ou https://).'];
+        errors['huntPostUrl'] = [const Problem.invalidLink()];
       }
     }
     if (errors.isNotEmpty) throw ValidationFailure(errors);
@@ -2344,8 +2338,8 @@ class FakeBackend
     if (ability != null &&
         ability.isNotEmpty &&
         !form.abilities.any((a) => a.ability == ability)) {
-      throw ValidationFailure({
-        'ability': ['Habilidade inválida para esta forma.'],
+      throw const ValidationFailure({
+        'ability': [Problem.invalidAbility()],
       });
     }
   }
@@ -2406,32 +2400,32 @@ class FakeBackend
     await _delay();
     final form = _forms[hunt.form];
     if (form == null) {
-      throw ValidationFailure({
-        'form': ['Forma inválida.'],
+      throw const ValidationFailure({
+        'form': [Problem.invalidForm()],
       });
     }
     if (hunt.id != 0 && !_hunts.containsKey(hunt.id)) {
       throw const NotFoundFailure();
     }
     if (hunt.save != null && !_saves.containsKey(hunt.save)) {
-      throw ValidationFailure({
-        'save': ['Save inexistente.'],
+      throw const ValidationFailure({
+        'save': [Problem.saveNotFound()],
       });
     }
     if (hunt.count < 0) {
-      throw ValidationFailure({
-        'count': ['A contagem não pode ser negativa.'],
+      throw const ValidationFailure({
+        'count': [Problem.negativeCount()],
       });
     }
     if (hunt.chain < 0 || hunt.bestChain < hunt.chain) {
-      throw ValidationFailure({
-        'chain': ['Cadeia inválida.'],
+      throw const ValidationFailure({
+        'chain': [Problem.invalidChain()],
       });
     }
     if (hunt.running &&
         _hunts.values.any((h) => h.running && h.id != hunt.id)) {
-      throw ValidationFailure({
-        'runningSince': ['Já há um cronômetro rodando: pare-o antes.'],
+      throw const ValidationFailure({
+        'runningSince': [Problem.timerRunning()],
       });
     }
     final id = hunt.id == 0 ? _newId(_hunts.keys) : hunt.id;
@@ -2495,17 +2489,17 @@ class FakeBackend
   /// existente.
   void _validateShinyLock(ShinyLockDraft draft, {int? exceptId}) {
     final caption = draft.caption.trim();
-    final errors = <String, List<String>>{
+    final errors = <String, List<Problem>>{
       if (caption.isEmpty)
-        'caption': ['Este campo não pode ser em branco.']
+        'caption': [const Problem.blank()]
       else if (_shinyLocks.values.any(
         (l) => l.id != exceptId && l.caption == caption,
       ))
-        'caption': ['Já existe um shiny lock com este nome.'],
+        'caption': [const Problem.shinyLockNameTaken()],
       if (draft.forms.isEmpty)
-        'forms': ['Esta lista não pode estar vazia.']
+        'forms': [const Problem.emptyList()]
       else if (draft.forms.any((f) => !_forms.containsKey(f.id)))
-        'forms': ['Forma inválida.'],
+        'forms': [const Problem.invalidForm()],
     };
     if (errors.isNotEmpty) throw ValidationFailure(errors);
   }

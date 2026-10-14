@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/local/local_data_providers.dart';
@@ -68,7 +69,10 @@ class _SyncPageState extends ConsumerState<SyncPage> {
         padding: const EdgeInsets.all(16),
         children: [
           if (state.error case final error?) ...[
-            _Banner(offline: state.phase == SyncPhase.offline, message: error),
+            _Banner(
+              offline: state.phase == SyncPhase.offline,
+              message: context.l10n.problem(error),
+            ),
             const SizedBox(height: 16),
           ],
           if (state.connected)

@@ -143,7 +143,7 @@ void main() {
     await _tap(tester, find.text('Evoluiu…'));
     await _pickForm(tester, 'charmander', 4);
     expect(
-      find.text('esta forma não é uma evolução do espécime.'),
+      find.text('Esta forma não é uma evolução do espécime.'),
       findsOneWidget,
     );
     expect((await backend.fetchSpecimen(id)).form, 2);
@@ -358,7 +358,7 @@ void main() {
       expect(find.text('Sword · Blue (777) adicionado.'), findsOneWidget);
       // Jogo que não recebe do HOME: o backend recusa.
       await newTrainer(tester, 'Red', '1', 'Red');
-      expect(find.textContaining('só treinadores de jogos'), findsOneWidget);
+      expect(find.textContaining('Só treinadores de jogos'), findsOneWidget);
       // Desistir do cadastro.
       await _dismissSnackBar(tester);
       await _tap(tester, find.text('Adicionar save'));
@@ -434,17 +434,18 @@ void main() {
       final repository = MockSpecimenRepository();
       var fail = true;
       when(repository.fetchSaves).thenAnswer((_) async {
-        if (fail) throw const NetworkFailure();
+        if (fail) throw const NotFoundFailure();
         return const [_save];
       });
-      when(repository.fetchTrainers).thenThrow(const ServerFailure());
+      when(repository.fetchTrainers)
+          .thenThrow(const DataFailure(Problem.invalidData()));
       when(
         () => repository.updateSave(
           any(),
           label: any(named: 'label'),
           hasShinyCharm: any(named: 'hasShinyCharm'),
         ),
-      ).thenThrow(const ServerFailure());
+      ).thenThrow(const DataFailure(Problem.invalidData()));
       await pumpWidgetApp(
         tester,
         const SavesPage(),
@@ -457,11 +458,11 @@ void main() {
       await _tap(tester, find.text('Tentar novamente'));
       expect(find.text('Scarlet · Switch'), findsOneWidget);
       await _tap(tester, find.text('Adicionar save'));
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
       await _tap(tester, find.byTooltip('Ações do save'));
       await _tap(tester, find.text('Editar'));
       await _tap(tester, find.text('Salvar'));
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
     });
 
     testWidgets('editar no PC é um diálogo; FRLG não tem o Charm', (
@@ -554,7 +555,7 @@ void main() {
           pageSize: any(named: 'pageSize'),
         ),
       ).thenAnswer((_) async {
-        if (fail) throw const NetworkFailure();
+        if (fail) throw const NotFoundFailure();
         final fake = FakeBackend.seeded();
         final away = (await fake.fetchSlot(62)).specimen!.id;
         final other = (await fake.fetchSlot(61)).specimen!.id;
@@ -696,7 +697,7 @@ void main() {
           visiting: any(named: 'visiting'),
         ),
       ).thenAnswer((_) async {
-        if (fail) throw const ServerFailure();
+        if (fail) throw const DataFailure(Problem.invalidData());
         return const Specimen(id: 7, form: 1);
       });
       await pump(tester, away: false);
@@ -713,7 +714,7 @@ void main() {
       expect(find.text('Voltou do Champions.'), findsOne);
       fail = true;
       await _tap(tester, find.text('Voltou do Champions'));
-      expect(find.text(const ServerFailure().message), findsOne);
+      expect(find.text('Dados inválidos.'), findsOne);
     });
 
     testWidgets('plural e save sem marca de origem', (tester) async {
@@ -763,7 +764,11 @@ void main() {
                 ? TransferCheck(
                     blocked: [
                       for (final id in ids)
-                        (id: id, name: 'P$id', message: save.restriction!),
+                        (
+                          id: id,
+                          name: 'P$id',
+                          problem: const Problem.letsGoOnly(),
+                        ),
                     ],
                   )
                 : TransferCheck(movable: ids, outside: outside),
@@ -803,8 +808,8 @@ void main() {
       var ids = [7, 8, 9];
       var check = const TransferCheck(
         movable: [8, 9],
-        blocked: [(id: 7, name: 'Spinda', message: 'Não vai')],
-        warnings: [(id: 9, name: 'Mewtwo', message: 'Do GO')],
+        blocked: [(id: 7, name: 'Spinda', problem: Problem.spindaNotInBdsp())],
+        warnings: [(id: 9, name: 'Mewtwo', problem: Problem.goNeedsForm())],
         outside: 1,
       );
       await pumpWidgetApp(
@@ -832,8 +837,11 @@ void main() {
       );
       await _tap(tester, find.text('Scarlet · Switch'));
       expect(find.text('Enviar 2 de 3 para Scarlet · Switch?'), findsOne);
-      expect(find.text('Spinda: Não vai'), findsOne);
-      expect(find.text('Mewtwo: Do GO'), findsOne);
+      expect(find.text('Spinda: O Spinda não vai para o BDSP'), findsOne);
+      expect(
+        find.text('Mewtwo: Do GO: só entra se o save já obteve essa forma'),
+        findsOne,
+      );
       await _tap(tester, find.text('Cancelar'));
       verifyNever(
         () => repository.transfer(any(), saveId: any(named: 'saveId')),
@@ -852,8 +860,8 @@ void main() {
       check = const TransferCheck(
         movable: [8],
         blocked: [
-          (id: 7, name: 'A', message: 'Não vai'),
-          (id: 9, name: 'B', message: 'Não vai'),
+          (id: 7, name: 'A', problem: Problem.spindaNotInBdsp()),
+          (id: 9, name: 'B', problem: Problem.spindaNotInBdsp()),
         ],
       );
       await _tap(tester, find.text('Enviar'));
@@ -872,16 +880,16 @@ void main() {
 
       check = const TransferCheck(
         blocked: [
-          (id: 7, name: 'A', message: 'Não vai'),
-          (id: 9, name: 'B', message: 'Não vai'),
+          (id: 7, name: 'A', problem: Problem.spindaNotInBdsp()),
+          (id: 9, name: 'B', problem: Problem.spindaNotInBdsp()),
         ],
       );
       await _tap(tester, find.text('Enviar'));
-      expect(find.textContaining('Não vai'), findsOne);
+      expect(find.textContaining('O Spinda não vai'), findsOne);
       check = const TransferCheck(
         blocked: [
-          (id: 7, name: 'A', message: 'Não vai'),
-          (id: 9, name: 'B', message: 'Outro motivo'),
+          (id: 7, name: 'A', problem: Problem.spindaNotInBdsp()),
+          (id: 9, name: 'B', problem: Problem.formStaysInHome()),
         ],
       );
       await reopen();
@@ -891,52 +899,52 @@ void main() {
       ids = [9];
       check = const TransferCheck(
         movable: [9],
-        warnings: [(id: 9, name: 'Mewtwo', message: 'Do GO')],
+        warnings: [(id: 9, name: 'Mewtwo', problem: Problem.goNeedsForm())],
       );
       await reopen();
       expect(find.textContaining('Do GO'), findsOne);
       check = const TransferCheck(
-        blocked: [(id: 9, name: 'Mewtwo', message: 'Não sai')],
+        blocked: [(id: 9, name: 'Mewtwo', problem: Problem.formStaysInHome())],
       );
       await reopen();
-      expect(find.textContaining('Não sai'), findsOne);
+      expect(find.textContaining('Essa forma não sai'), findsOne);
     });
 
     testWidgets('enviar: saves e transferência', (tester) async {
       var savesFail = true;
       when(repository.fetchSaves).thenAnswer((_) async {
-        if (savesFail) throw const NetworkFailure();
+        if (savesFail) throw const NotFoundFailure();
         return const [_save];
       });
       when(() => repository.transfer(any(), saveId: any(named: 'saveId')))
-          .thenThrow(const ServerFailure());
+          .thenThrow(const DataFailure(Problem.invalidData()));
       await pump(tester, away: false);
 
       await _tap(tester, find.text('Enviar para jogo…'));
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       savesFail = false;
       await _tap(tester, find.text('Enviar para jogo…'));
       await _tap(tester, find.text('Scarlet · Switch'));
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
     });
 
     testWidgets('trazer de volta: igual e evoluído', (tester) async {
       when(() => repository.transfer(any(), saveId: any(named: 'saveId')))
-          .thenThrow(const ServerFailure());
+          .thenThrow(const DataFailure(Problem.invalidData()));
       when(() => repository.evolve(any(), formId: any(named: 'formId')))
-          .thenThrow(const NetworkFailure());
+          .thenThrow(const NotFoundFailure());
       when(() => repository.searchForms(any()))
           .thenAnswer((_) => FakeBackend.seeded().searchForms('ivysaur'));
       await pump(tester, away: true);
 
       await _tap(tester, find.text('Trazer de volta ao HOME'));
       await _tap(tester, find.text('Voltou igual'));
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
 
       await _tap(tester, find.text('Trazer de volta ao HOME'));
       await _tap(tester, find.text('Evoluiu…'));
       await _pickForm(tester, 'ivysaur', 2);
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       // Só o "Voltou igual" transferiu: a evolução falhou antes.
       verify(() => repository.transfer([7], saveId: null)).called(1);
     });

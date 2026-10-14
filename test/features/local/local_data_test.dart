@@ -5,6 +5,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:file_picker_platform_interface/file_picker_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/web/browser_stub.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
@@ -115,7 +116,7 @@ void main() {
     expect(summary.savedAt, isA<DateTime>());
   });
 
-  test('arquivo inválido: FormatException com a mensagem', () {
+  test('arquivo inválido: DataFailure', () {
     for (final bytes in [
       Uint8List.fromList([0xff, 0xfe]),
       utf8.encode('não é json'),
@@ -125,10 +126,10 @@ void main() {
       expect(
         () => LocalData.read(bytes),
         throwsA(
-          isA<FormatException>().having(
-            (e) => e.message,
-            'message',
-            contains('iShinyDex'),
+          isA<DataFailure>().having(
+            (e) => e.problem,
+            'problem',
+            const Problem.notADataFile(),
           ),
         ),
       );
@@ -208,15 +209,15 @@ void main() {
       expect(() => pickFileInPage(accept: '.json'), throwsUnsupportedError);
     });
 
-    test('arquivo ilegível vira FormatException', () async {
+    test('arquivo ilegível vira DataFailure', () async {
       picker.picked = _MemoryFile('a.json', Uint8List(0), unreadable: true);
       await expectLater(
         FilePickerDataFileIo().pick(),
         throwsA(
-          isA<FormatException>().having(
-            (e) => e.message,
-            'message',
-            'Não foi possível ler a.json.',
+          isA<DataFailure>().having(
+            (e) => e.problem,
+            'problem',
+            const Problem.unreadableFile('a.json'),
           ),
         ),
       );

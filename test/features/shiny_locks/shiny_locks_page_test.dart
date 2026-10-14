@@ -162,12 +162,12 @@ void main() {
     testWidgets('erro com retry e lista vazia', (tester) async {
       var calls = 0;
       when(() => repository.fetchShinyLocks()).thenAnswer((_) async {
-        if (calls++ == 0) throw const NetworkFailure();
+        if (calls++ == 0) throw const NotFoundFailure();
         return const [];
       });
       await pump(tester);
       await tester.pumpAndSettle();
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await _tap(tester, find.text('Tentar novamente'));
       expect(
         find.textContaining('Nenhum shiny lock cadastrado'),
@@ -180,9 +180,9 @@ void main() {
     ) async {
       when(() => repository.fetchShinyLocks()).thenAnswer((_) async => [lock]);
       when(() => repository.updateShinyLock(any(), any()))
-          .thenThrow(const NetworkFailure());
+          .thenThrow(const NotFoundFailure());
       when(() => repository.deleteShinyLock(any()))
-          .thenThrow(const ServerFailure());
+          .thenThrow(const DataFailure(Problem.invalidData()));
       await pump(tester);
       await tester.pumpAndSettle();
       // O ícone do tipo e a forma de exemplo.
@@ -190,11 +190,11 @@ void main() {
       await _tap(tester, find.text('Treasures of Ruin'));
 
       await _tap(tester, find.text('Salvar'));
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
 
       await _tap(tester, find.text('Apagar shiny lock'));
       await _tap(tester, find.widgetWithText(TextButton, 'Apagar'));
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
       expect(find.text('Editar shiny lock'), findsOneWidget);
       verify(() => repository.updateShinyLock(25, any())).called(1);
     });

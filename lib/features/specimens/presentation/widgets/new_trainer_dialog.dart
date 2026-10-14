@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
@@ -56,7 +57,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
                   labelText: 'Nome',
-                  errorText: _validation?.errorFor('name'),
+                  errorText: context.fieldError(_validation, 'name'),
                 ),
               ),
               TextField(
@@ -64,7 +65,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'ID do treinador',
-                  errorText: _validation?.errorFor('trainer_id'),
+                  errorText: context.fieldError(_validation, 'trainer_id'),
                 ),
               ),
               _versionField(),
@@ -99,7 +100,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
       choices: [
         for (final v in versions) Choice(value: v.name, label: v.label),
       ],
-      errorText: _validation?.errorFor('version'),
+      errorText: context.fieldError(_validation, 'version'),
       onChanged: (v) => setState(() => _version = v),
     ),
     AsyncError() => Row(
@@ -133,7 +134,7 @@ class _NewTrainerDialogState extends ConsumerState<NewTrainerDialog> {
       setState(() {
         _saving = false;
         _validation = failure is ValidationFailure ? failure : null;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }

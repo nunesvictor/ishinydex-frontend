@@ -549,12 +549,6 @@ abstract class Save with _$Save {
         (mark == 'go' && requiredMarks[otVersion] == required);
   }
 
-  /// Por que o save recusa um Pokémon (ver [accepts]); `null` = aceita
-  /// qualquer um.
-  String? get restriction => requiredMark == null
-      ? null
-      : "Só Pokémon do Let's Go, ou do GO com OT de Let's Go (GO Park)";
-
   /// `"Scarlet"`: o jogo do save.
   String get game => versionLabel(trainer.version ?? '');
 
@@ -858,9 +852,9 @@ typedef GenderConflict = ({int id, String formName});
 /// O lote pediu um gênero impossível para alguns espécimes; nada foi
 /// gravado.
 class GenderConflictFailure extends ValidationFailure {
-  GenderConflictFailure(this.conflicts, {required String message})
+  GenderConflictFailure(this.conflicts, {required Problem problem})
     : super({
-        'gender': [message],
+        'gender': [problem],
       });
 
   final List<GenderConflict> conflicts;

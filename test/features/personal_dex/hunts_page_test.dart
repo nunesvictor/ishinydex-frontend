@@ -507,7 +507,7 @@ void main() {
     testWidgets('erro na 1ª página tem "Tentar novamente"', (tester) async {
       var fail = true;
       answer(1, () async {
-        if (fail) throw const ServerFailure();
+        if (fail) throw const DataFailure(Problem.invalidData());
         return Paginated(count: 1, results: [hunt(1)]);
       });
       await pump(tester);
@@ -554,7 +554,7 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -3000));
       await tester.pump();
       expect(find.byType(LinearProgressIndicator), findsWidgets);
-      second.completeError(const ServerFailure());
+      second.completeError(const DataFailure(Problem.invalidData()));
       await tester.pumpAndSettle();
       expect(
         find.text('Não foi possível carregar mais caçadas.'),

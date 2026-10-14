@@ -1,3 +1,4 @@
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/catalog/domain/catalog_labels.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
@@ -35,15 +36,15 @@ class Catalog {
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
-  /// [FormatException] (o app precisa ser atualizado).
+  /// [DataFailure] (o app precisa ser atualizado).
   factory Catalog.fromJson(
     Map<String, dynamic> json, {
     required String spriteBase,
   }) {
     final schema = json['schemaVersion'] as int;
     if (schema > schemaVersion) {
-      throw FormatException(
-        'Catálogo no formato $schema; este app lê até o $schemaVersion.',
+      throw DataFailure(
+        Problem.catalogTooNew(schema: schema, supported: schemaVersion),
       );
     }
     final base = spriteBase.endsWith('/')

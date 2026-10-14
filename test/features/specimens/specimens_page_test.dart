@@ -649,13 +649,13 @@ void main() {
       when(repository.fetchOptions).thenAnswer((_) async => fake.options);
       when(repository.fetchTrainers).thenAnswer((_) async => const []);
       when(() => repository.fetchSpecimenIds(any()))
-          .thenThrow(const NetworkFailure());
+          .thenThrow(const NotFoundFailure());
       when(
         () => repository.bulkUpdate(
           ids: any(named: 'ids'),
           changes: any(named: 'changes'),
         ),
-      ).thenThrow(const ServerFailure());
+      ).thenThrow(const DataFailure(Problem.invalidData()));
       await pumpWidgetApp(
         tester,
         const SpecimensPage(),
@@ -667,7 +667,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Selecionar todos os resultados'));
       await tester.pumpAndSettle();
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
 
       // Fechar a folha sem alterar não chega na API.
       await tester.tap(find.byTooltip('Editar em lote'));
@@ -679,7 +679,7 @@ void main() {
         await tester.tap(find.widgetWithText(ChoiceChip, 'Fêmea'));
         await tester.pumpAndSettle();
       });
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
       expect(find.text('1 selecionado'), findsOneWidget);
       verify(
         () => repository.bulkUpdate(
@@ -790,11 +790,11 @@ void main() {
       when(repository.fetchTrainers).thenAnswer((_) async => const []);
       var idsFail = true;
       when(() => repository.fetchSpecimenIds(any())).thenAnswer((_) async {
-        if (idsFail) throw const NetworkFailure();
+        if (idsFail) throw const NotFoundFailure();
         return const <int>[];
       });
       when(() => repository.bulkRelease(any()))
-          .thenThrow(const ServerFailure());
+          .thenThrow(const DataFailure(Problem.invalidData()));
       await pumpWidgetApp(
         tester,
         const SpecimensPage(),
@@ -807,7 +807,7 @@ void main() {
       // Sem a contagem de depositados, nem pergunta.
       await openBulkAction(tester, 'Libertar em lote');
       await tester.pumpAndSettle();
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       expect(find.text('Libertar 1 espécime?'), findsNothing);
 
       idsFail = false;
@@ -815,7 +815,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
       await tester.pumpAndSettle();
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
       expect(find.text('1 selecionado'), findsOneWidget);
       verify(() => repository.bulkRelease([specimen.id])).called(1);
     });

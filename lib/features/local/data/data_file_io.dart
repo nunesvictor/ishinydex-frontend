@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/web/browser.dart' as browser;
 
 /// Baixar e escolher o arquivo de dados (exportar/importar).
@@ -9,7 +10,7 @@ abstract interface class DataFileIo {
   Future<void> save(String name, Uint8List bytes);
 
   /// Nome e conteúdo do arquivo escolhido; `null` se a pessoa desistir.
-  /// [FormatException] se o arquivo não puder ser lido.
+  /// [DataFailure] se o arquivo não puder ser lido.
   Future<({String name, Uint8List bytes})?> pick();
 }
 
@@ -46,7 +47,7 @@ class FilePickerDataFileIo implements DataFileIo {
     try {
       return (name: file.name, bytes: await file.xFile.readAsBytes());
     } on Object {
-      throw FormatException('Não foi possível ler ${file.name}.');
+      throw DataFailure(Problem.unreadableFile(file.name));
     }
   }
 }

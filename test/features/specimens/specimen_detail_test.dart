@@ -204,7 +204,7 @@ void main() {
         return _specimen;
       });
       await pumpDetail(tester);
-      expect(find.text(const NotFoundFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.text('Editar espécime'), findsOneWidget);
@@ -215,7 +215,7 @@ void main() {
       var calls = 0;
       when(() => dexes.fetchSlot(1)).thenAnswer((_) async {
         if (calls++ == 0) return slot.copyWith(personalDex: null);
-        throw const NetworkFailure();
+        throw const NotFoundFailure();
       });
       await pumpDetail(tester);
 
@@ -225,19 +225,20 @@ void main() {
         findsOneWidget,
       );
       await tapMoreAction(tester, 'Ver no dex');
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
     });
 
     testWidgets('falha ao libertar mantém o espécime', (tester) async {
-      when(() => specimens.release(1))
-          .thenThrow(ValidationFailure(const {}, detail: 'Não pode.'));
+      when(() => specimens.release(1)).thenThrow(
+        const ValidationFailure({}, detail: Problem.nothingToChange()),
+      );
       final released = await pumpDetail(tester);
       await tapMoreAction(tester, 'Libertar');
       // Depositado: o aviso fala do slot.
       expect(find.textContaining('slot ficará faltante'), findsOneWidget);
       await tester.tap(find.widgetWithText(TextButton, 'Libertar'));
       await tester.pumpAndSettle();
-      expect(find.text('Não pode.'), findsOneWidget);
+      expect(find.text('Nada para alterar.'), findsOneWidget);
       expect(released, isEmpty);
     });
 
@@ -245,24 +246,24 @@ void main() {
       final slot = Slot.fromJson(registeredSlotJson);
       var withdraws = 0;
       when(() => dexes.withdraw(1)).thenAnswer((_) async {
-        if (withdraws++ == 0) throw const NetworkFailure();
+        if (withdraws++ == 0) throw const NotFoundFailure();
         return slot;
       });
       var deposits = 0;
       when(() => dexes.deposit(slotId: 1, specimenId: 1)).thenAnswer((_) async {
-        if (deposits++ == 0) throw const ServerFailure();
+        if (deposits++ == 0) throw const DataFailure(Problem.invalidData());
         return slot;
       });
       await pumpDetail(tester);
 
       await tapMoreAction(tester, 'Retirar do slot');
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
 
       await tapMoreAction(tester, 'Retirar do slot');
       expect(find.textContaining('retirado do slot.'), findsOneWidget);
       await tester.tap(find.text('Desfazer'));
       await tester.pumpAndSettle();
-      expect(find.text(const ServerFailure().message), findsOneWidget);
+      expect(find.text('Dados inválidos.'), findsOneWidget);
 
       await tapMoreAction(tester, 'Retirar do slot');
       await tester.tap(find.text('Desfazer'));
@@ -329,12 +330,12 @@ void main() {
           pageSize: any(named: 'pageSize'),
         ),
       ).thenAnswer((_) async {
-        if (calls++ == 0) throw const NetworkFailure();
+        if (calls++ == 0) throw const NotFoundFailure();
         return const Paginated(count: 0, results: []);
       });
       await pumpList(tester);
       await tester.pumpAndSettle();
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.text('Nenhum espécime encontrado.'), findsOneWidget);
@@ -364,7 +365,7 @@ void main() {
           pageSize: any(named: 'pageSize'),
         ),
       ).thenAnswer((_) async {
-        if (calls++ == 0) throw const NetworkFailure();
+        if (calls++ == 0) throw const NotFoundFailure();
         // Encolheu entre as páginas: só 1 dos 3 itens esperados.
         return Paginated(count: 21, results: [numbered(21)]);
       });
@@ -386,7 +387,7 @@ void main() {
   ) async {
     var calls = 0;
     when(() => specimens.searchForms('xy')).thenAnswer((_) async {
-      if (calls++ == 0) throw const ServerFailure();
+      if (calls++ == 0) throw const DataFailure(Problem.invalidData());
       return const [];
     });
     await pumpWidgetApp(
@@ -397,7 +398,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'xy');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    expect(find.text(const ServerFailure().message), findsOneWidget);
+    expect(find.text('Dados inválidos.'), findsOneWidget);
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(find.text('Nenhuma forma encontrada.'), findsOneWidget);
@@ -414,8 +415,9 @@ void main() {
       shinySpriteUrl: 'http://x/shiny/$id.png',
     );
     final slow = Completer<List<FormRef>>();
-    when(() => specimens.searchForms('er'))
-        .thenAnswer((_) async => throw const ServerFailure());
+    when(
+      () => specimens.searchForms('er'),
+    ).thenAnswer((_) async => throw const DataFailure(Problem.invalidData()));
     when(() => specimens.searchForms('zz')).thenAnswer((_) async => const []);
     when(() => specimens.searchForms('iv')).thenAnswer((_) => slow.future);
     when(() => specimens.searchForms('ivy')).thenAnswer((_) async => const []);

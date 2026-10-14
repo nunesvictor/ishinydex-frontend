@@ -53,7 +53,7 @@ void main() {
     final repository = MockPersonalDexRepository();
     var calls = 0;
     when(repository.fetchDexes).thenAnswer((_) async {
-      if (calls++ == 0) throw const NetworkFailure();
+      if (calls++ == 0) throw const NotFoundFailure();
       return const [PersonalDex(id: 1, name: 'Ok', total: 1, registered: 0)];
     });
     await pumpFullApp(
@@ -83,6 +83,6 @@ void main() {
     );
     container.read(routerProvider).go('/dexes/abc');
     await tester.pumpAndSettle();
-    expect(find.text('Recurso não encontrado.'), findsOneWidget);
+    expect(find.text('Não encontrado.'), findsOneWidget);
   });
 }

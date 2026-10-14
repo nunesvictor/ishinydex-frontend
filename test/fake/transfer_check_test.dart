@@ -30,7 +30,7 @@ void main() {
     expect(mixed.allowed, isTrue);
     expect(mixed.movable, [fromLgpe.id]);
     expect(mixed.blocked.single.id, other);
-    expect(mixed.blocked.single.message, contains('entram nesse save'));
+    expect(mixed.blocked.single.problem, const Problem.letsGoOnly());
     expect(mixed.outside, 0); // sem catálogo, sem aviso
     await expectLater(
       backend.transfer([other], saveId: save.id),
@@ -78,15 +78,15 @@ void main() {
       throwsA(
         isA<ValidationFailure>().having(
           (f) => f.fieldErrors['save'],
-          'mensagem',
-          ['${save.restriction} entram nesse save.'],
+          'problema',
+          [const Problem.letsGoOnly()],
         ),
       ),
     );
     expect(await backend.transfer([goPark.id], saveId: save.id), 1);
   });
 
-  test('Save.accepts e restriction', () {
+  test('Save.accepts', () {
     Save save(String version) => Save(
       id: 1,
       trainer: Trainer(id: 1, name: 'Ash', trainerId: '1', version: version),
@@ -98,11 +98,9 @@ void main() {
     expect(lgpe.accepts('go', null), isFalse);
     expect(lgpe.accepts('paldea', 'lets-go-pikachu'), isFalse);
     expect(lgpe.accepts(null, null), isFalse);
-    expect(lgpe.restriction, contains('GO Park'));
     final scarlet = save('scarlet');
     expect(scarlet.accepts(null, null), isTrue);
     expect(scarlet.accepts('go', null), isTrue);
-    expect(scarlet.restriction, isNull);
   });
 
   test('aviso: quantos estão fora da pokédex do jogo do save', () async {
@@ -154,9 +152,9 @@ void main() {
     final mewtwo = await make(9003, go: true);
     final check = backend.transferCheck([spinda, kyurem, mewtwo], save);
     expect(check.movable, [mewtwo]);
-    expect(check.blocked.map((b) => b.message), [
-      'O Spinda não vai para o BDSP',
-      'Essa forma não sai do HOME',
+    expect(check.blocked.map((b) => b.problem), [
+      const Problem.spindaNotInBdsp(),
+      const Problem.formStaysInHome(),
     ]);
     expect(check.warnings.single.id, mewtwo);
     expect(await backend.transfer([spinda, mewtwo], saveId: save.id), 1);

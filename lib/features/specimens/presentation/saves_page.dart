@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
@@ -186,7 +187,7 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
         if (Save.homeVersions.contains(t.version) && !taken.contains(t.id)) t,
     ];
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
     return;
   }
   if (!context.mounted) return;
@@ -236,7 +237,7 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
     ref.invalidate(savesProvider);
     if (context.mounted) _notify(context, '${save.title} adicionado.');
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
   }
 }
 
@@ -258,7 +259,7 @@ Future<void> _edit(BuildContext context, WidgetRef ref, Save save) async {
     // Os espécimes fora do HOME mostram o apelido do save.
     ref.read(slotActionsProvider).specimensChanged();
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
   }
 }
 
@@ -277,7 +278,7 @@ Future<void> _delete(BuildContext context, WidgetRef ref, Save save) async {
     await ref.read(specimenRepositoryProvider).deleteSave(save.id);
     ref.invalidate(savesProvider);
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
   }
 }
 

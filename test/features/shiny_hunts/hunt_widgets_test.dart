@@ -32,17 +32,18 @@ class _Failing implements ShinyHuntRepository {
   Future<List<ShinyHunt>> fetchShinyHunts() async {
     if (failRead) {
       failRead = false;
-      throw const NetworkFailure();
+      throw const NotFoundFailure();
     }
     return const [];
   }
 
   @override
   Future<ShinyHunt> saveShinyHunt(ShinyHunt hunt) async =>
-      throw const ServerFailure();
+      throw const DataFailure(Problem.invalidData());
 
   @override
-  Future<void> deleteShinyHunt(int huntId) async => throw const ServerFailure();
+  Future<void> deleteShinyHunt(int huntId) async =>
+      throw const DataFailure(Problem.invalidData());
 }
 
 void main() {
@@ -281,7 +282,7 @@ void main() {
       hunts: failing,
     );
     await tester.pumpAndSettle();
-    expect(find.text(const NetworkFailure().message), findsOne);
+    expect(find.text('Não encontrado.'), findsOne);
     await tap(tester, find.text('Tentar novamente'));
     expect(find.textContaining('Nenhuma caçada em andamento'), findsOne);
   });
@@ -380,7 +381,7 @@ void main() {
     await tester.pumpAndSettle();
     await tap(tester, find.byKey(const ValueKey('form-2')));
     await tap(tester, find.text('Começar'));
-    expect(find.text(const ServerFailure().message), findsOne);
+    expect(find.text('Dados inválidos.'), findsOne);
   });
 
   testWidgets('falha numa ação do cartão vira mensagem', (tester) async {
@@ -393,7 +394,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tap(tester, find.widgetWithText(FilledButton, '1'));
-    expect(find.text(const ServerFailure().message), findsOne);
+    expect(find.text('Dados inválidos.'), findsOne);
   });
 }
 
@@ -408,7 +409,7 @@ class _FailingSaves implements ShinyHuntRepository {
 
   @override
   Future<ShinyHunt> saveShinyHunt(ShinyHunt hunt) async =>
-      throw const ServerFailure();
+      throw const DataFailure(Problem.invalidData());
 
   @override
   Future<void> deleteShinyHunt(int huntId) => backend.deleteShinyHunt(huntId);

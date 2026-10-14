@@ -23,8 +23,8 @@ void main() {
     expect(await backend.setChampionsVisit(id, visiting: true), visiting);
     expect((await backend.fetchSlot(1)).specimen!.isVisitingChampions, isTrue);
     expect(
-      backend.transferCheck([id], save).blocked.single.message,
-      'Está visitando o Champions',
+      backend.transferCheck([id], save).blocked.single.problem,
+      const Problem.visitingChampions(),
     );
     Matcher locked() => throwsA(
       isA<ValidationFailure>().having((f) => f.fieldErrors.keys, 'campos', [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
@@ -104,7 +105,7 @@ Future<void> deleteDex(
     _notify(context, 'Dex apagado.');
     context.go(Routes.dexes);
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
   }
 }
 
@@ -155,12 +156,14 @@ class _EditDexDialogState extends ConsumerState<_EditDexDialog> {
         _saving = false;
         _validation = failure;
         // Erros fora do nome (ex.: non_field_errors) vão para o topo.
-        if (failure.errorFor('name') == null) _error = failure.message;
+        if (failure.errorsFor('name') == null) {
+          _error = context.failureText(failure);
+        }
       });
     } on AppFailure catch (failure) {
       setState(() {
         _saving = false;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }
@@ -184,7 +187,7 @@ class _EditDexDialogState extends ConsumerState<_EditDexDialog> {
           autofocus: true,
           decoration: InputDecoration(
             labelText: 'Nome',
-            errorText: _validation?.errorFor('name'),
+            errorText: context.fieldError(_validation, 'name'),
           ),
           onSubmitted: (_) => _saving ? null : _save(),
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
@@ -169,7 +170,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
   bool _saving = false;
 
   /// Erro do campo de data digitável; enquanto houver, não dá para salvar.
-  String? _dateError;
+  Problem? _dateError;
   ValidationFailure? _validation;
   String? _error;
 
@@ -215,7 +216,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               controller: _nickname,
               decoration: InputDecoration(
                 labelText: 'Apelido',
-                errorText: _validation?.errorFor('nickname'),
+                errorText: context.fieldError(_validation, 'nickname'),
               ),
             ),
             const SizedBox(height: 12),
@@ -323,7 +324,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               maxLines: 5,
               decoration: InputDecoration(
                 labelText: 'Observação',
-                errorText: _validation?.errorFor('observation'),
+                errorText: context.fieldError(_validation, 'observation'),
               ),
             ),
             const SizedBox(height: 24),
@@ -366,7 +367,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       allMethods: methods(null),
       game: version == null ? null : versionLabel(version),
       capturedAt: _draft.capturedAt,
-      errorFor: (field) => _validation?.errorFor(field),
+      errorFor: (field) => context.fieldError(_validation, field),
       onChanged: (hunt) => setState(() => _draft = _draft.copyWith(hunt: hunt)),
     );
   }
@@ -477,7 +478,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       label: label,
       value: value,
       choices: choices,
-      errorText: _validation?.errorFor(field),
+      errorText: context.fieldError(_validation, field),
       onChanged: (v) => setState(() => onChanged(v)),
     ),
   );
@@ -566,7 +567,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       setState(() {
         _saving = false;
         _validation = failure is ValidationFailure ? failure : null;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }

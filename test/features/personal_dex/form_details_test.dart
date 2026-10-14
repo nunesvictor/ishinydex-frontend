@@ -79,7 +79,7 @@ void main() {
     var calls = 0;
     when(() => repository.fetchForm(1)).thenAnswer((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 10));
-      if (calls++ == 0) throw const NetworkFailure();
+      if (calls++ == 0) throw const NotFoundFailure();
       return FormDetail.fromJson(formDetailJson);
     });
     await pump(tester);

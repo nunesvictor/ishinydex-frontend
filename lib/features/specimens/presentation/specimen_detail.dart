@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
@@ -194,11 +195,12 @@ class _Details extends ConsumerWidget {
       await repository.withdraw(slotId);
       refresh();
     } on AppFailure catch (failure) {
-      if (context.mounted) _notify(context, failure.message);
+      if (context.mounted) _notify(context, context.failureText(failure));
       return;
     }
     if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    final l10n = context.l10n;
     messenger.showSnackBar(
       SnackBar(
         content: Text('${specimen.displayName} retirado do slot.'),
@@ -209,7 +211,9 @@ class _Details extends ConsumerWidget {
               await repository.deposit(slotId: slotId, specimenId: specimen.id);
               refresh();
             } on AppFailure catch (failure) {
-              messenger.showSnackBar(SnackBar(content: Text(failure.message)));
+              messenger.showSnackBar(
+                SnackBar(content: Text(l10n.problems(failure.problems))),
+              );
             }
           },
         ),
@@ -230,7 +234,7 @@ class _Details extends ConsumerWidget {
       }
       context.go(Routes.dex(dexId, boxId: slot.box.id, slotId: slot.id));
     } on AppFailure catch (failure) {
-      if (context.mounted) _notify(context, failure.message);
+      if (context.mounted) _notify(context, context.failureText(failure));
     }
   }
 
@@ -268,7 +272,7 @@ class _Details extends ConsumerWidget {
       if (context.mounted) _notify(context, 'Espécime libertado.');
       onReleased();
     } on AppFailure catch (failure) {
-      if (context.mounted) _notify(context, failure.message);
+      if (context.mounted) _notify(context, context.failureText(failure));
     }
   }
 

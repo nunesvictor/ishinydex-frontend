@@ -1,89 +1,52 @@
-import 'package:dio/dio.dart';
+import 'package:ishinydex/core/l10n/problem.dart';
 
-/// Falha de domínio exibível ao usuário.
+export 'package:ishinydex/core/l10n/problem.dart';
+
+/// Falha de domínio exibível ao usuário: os [problems] que a tela traduz
+/// (`context.failureText`).
 sealed class AppFailure implements Exception {
-  const AppFailure(this.message);
+  const AppFailure();
 
-  final String message;
+  /// O que mostrar, sem campo: um ou mais problemas.
+  List<Problem> get problems;
 
   @override
-  String toString() => message;
-}
-
-class NetworkFailure extends AppFailure {
-  const NetworkFailure([
-    super.message = 'Não foi possível conectar ao servidor.',
-  ]);
-}
-
-class UnauthorizedFailure extends AppFailure {
-  const UnauthorizedFailure([
-    super.message = 'Sessão expirada. Entre novamente.',
-  ]);
+  String toString() => problems.join('\n');
 }
 
 class NotFoundFailure extends AppFailure {
-  const NotFoundFailure([super.message = 'Recurso não encontrado.']);
+  const NotFoundFailure();
+
+  @override
+  List<Problem> get problems => const [Problem.notFound()];
 }
 
-class ServerFailure extends AppFailure {
-  const ServerFailure([super.message = 'Erro no servidor. Tente novamente.']);
+/// Um arquivo (de dados ou o catálogo) que o app não lê, pelo [problem].
+class DataFailure extends AppFailure {
+  const DataFailure(this.problem);
+
+  final Problem problem;
+
+  @override
+  List<Problem> get problems => [problem];
 }
 
-/// Erros de validação do DRF: `{campo: [msgs]}` ou `{detail: msg}`.
+/// Erros de validação: `{campo: [problemas]}` ou um [detail] geral.
 class ValidationFailure extends AppFailure {
-  ValidationFailure(this.fieldErrors, {String? detail})
-    : super(detail ?? _joinMessages(fieldErrors));
+  const ValidationFailure(this.fieldErrors, {this.detail});
 
   static const nonFieldKey = 'non_field_errors';
 
-  final Map<String, List<String>> fieldErrors;
+  final Map<String, List<Problem>> fieldErrors;
+  final Problem? detail;
 
-  String? errorFor(String field) => fieldErrors[field]?.join('\n');
+  /// Os problemas do campo [field], se houver.
+  List<Problem>? errorsFor(String field) => fieldErrors[field];
 
-  static String _joinMessages(Map<String, List<String>> errors) {
-    final messages = errors.values.expand((m) => m).toList();
-    return messages.isEmpty ? 'Dados inválidos.' : messages.join('\n');
-  }
-}
-
-/// Converte uma [DioException] na [AppFailure] correspondente.
-AppFailure mapDioException(DioException error) {
-  final response = error.response;
-  if (response == null) return const NetworkFailure();
-  final status = response.statusCode ?? 0;
-  final detail = _detailOf(response.data);
-  if (status == 401) return const UnauthorizedFailure();
-  if (status == 404) return const NotFoundFailure();
-  if (status >= 500) return const ServerFailure();
-  if (status >= 400) {
-    return ValidationFailure(_fieldErrorsOf(response.data), detail: detail);
-  }
-  return const ServerFailure();
-}
-
-String? _detailOf(Object? data) {
-  if (data is Map && data['detail'] is String) return data['detail'] as String;
-  return null;
-}
-
-Map<String, List<String>> _fieldErrorsOf(Object? data) {
-  if (data is! Map) return const {};
-  return {
-    for (final entry in data.entries)
-      if (entry.key != 'detail')
-        '${entry.key}': switch (entry.value) {
-          final List<dynamic> list => [for (final item in list) '$item'],
-          final Object? other => ['$other'],
-        },
-  };
-}
-
-/// Executa [request] convertendo [DioException] em [AppFailure].
-Future<T> guardRequest<T>(Future<T> Function() request) async {
-  try {
-    return await request();
-  } on DioException catch (error) {
-    throw mapDioException(error);
+  @override
+  List<Problem> get problems {
+    if (detail case final detail?) return [detail];
+    final all = [for (final list in fieldErrors.values) ...list];
+    return all.isEmpty ? const [Problem.invalidData()] : all;
   }
 }

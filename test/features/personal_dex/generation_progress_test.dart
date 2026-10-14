@@ -58,11 +58,11 @@ void main() {
   testWidgets('vazio e erro com retry', (tester) async {
     var calls = 0;
     when(() => repository.fetchGenerations(1)).thenAnswer((_) async {
-      if (calls++ == 0) throw const ServerFailure();
+      if (calls++ == 0) throw const DataFailure(Problem.invalidData());
       return const [];
     });
     await pump(tester);
-    expect(find.text(const ServerFailure().message), findsOneWidget);
+    expect(find.text('Dados inválidos.'), findsOneWidget);
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(

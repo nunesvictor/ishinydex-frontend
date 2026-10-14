@@ -630,4 +630,10 @@ Qual idioma vale (`core/l10n/app_language.dart`):
 
 Os **rótulos do catálogo** (tipos, pokédex, métodos e odds) chegam do backend nos dois idiomas (`labels: {en, pt-BR}`) e ficam nos modelos ao lado do `label` em pt-BR, que os catálogos antigos trazem. Na tela: `context.catalogText(choice.label, choice.labels)`.
 
+**Mensagens fora das telas** (validações do `FakeBackend`, motivos de transferência, arquivos de dados, sync, datas digitadas): o domínio não monta texto, porque não sabe o idioma da tela. Ele relata um **`Problem`** (`core/l10n/problem.dart`), uma união selada do freezed com os dados que a mensagem precisa:
+```dart
+throw ValidationFailure({'save': [Problem.gameCutOff(game)]});
+```
+A tela traduz com `context.l10n.problem(p)` (ou `context.failureText(failure)` e `context.fieldError(validation, 'campo')`). A tradução (`core/l10n/problem_text.dart`) é um `switch` sobre a classe selada **sem `_`**: o compilador sabe todas as variantes, então um `Problem` novo sem texto não compila. Nos testes do domínio, compare os problemas (`[const Problem.blank()]`): o freezed gera o `==`.
+
 **Testes**: o "aparelho" dos testes é en-US. Os helpers (`pumpWidgetApp`, `pumpFullApp`) fixam pt-BR, porque os textos dos testes estão em português; para testar em inglês, `locale: english` ou `language: AppLanguage.en`.

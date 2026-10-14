@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
@@ -82,7 +83,7 @@ Future<({Save save, TransferCheck check})?> pickSave(
   try {
     all = await ref.read(savesProvider.future);
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
     return null;
   }
   if (!context.mounted) return null;
@@ -184,7 +185,7 @@ Widget _saveOption(
   List<int> ids,
 ) {
   final check = ref.read(transferCheckProvider)(ids, save);
-  final warning = _saveWarning(save, ids.length, check);
+  final warning = _saveWarning(context.l10n, save, ids.length, check);
   return ListTile(
     enabled: check.allowed,
     leading: SaveIcon(save),
@@ -216,15 +217,24 @@ Widget _saveOption(
 /// O texto embaixo do save: com um espécime, o motivo ou o aviso dele; com
 /// vários, as contagens (quantos ficam, quantos têm aviso, quantos estão
 /// fora da pokédex). `null` = nada a dizer.
-String? _saveWarning(Save save, int total, TransferCheck check) {
+String? _saveWarning(
+  AppLocalizations l10n,
+  Save save,
+  int total,
+  TransferCheck check,
+) {
   final outsideText = 'fora da pokédex de ${save.game}';
   if (total == 1) {
-    if (check.blocked.isNotEmpty) return check.blocked.first.message;
-    if (check.warnings.isNotEmpty) return check.warnings.first.message;
+    if (check.blocked.isNotEmpty) {
+      return l10n.problem(check.blocked.first.problem);
+    }
+    if (check.warnings.isNotEmpty) {
+      return l10n.problem(check.warnings.first.problem);
+    }
     return check.outside > 0 ? 'Fora da pokédex de ${save.game}' : null;
   }
   if (!check.allowed) {
-    final reasons = {for (final b in check.blocked) b.message};
+    final reasons = {for (final b in check.blocked) l10n.problem(b.problem)};
     return reasons.length == 1 ? reasons.first : 'Nenhum deles pode ir';
   }
   final parts = [
@@ -248,7 +258,7 @@ Future<bool> _confirmPartial(
   final theme = Theme.of(context);
   Widget issue(TransferIssue i) => Padding(
     padding: const EdgeInsets.only(top: 4),
-    child: Text('${i.name}: ${i.message}'),
+    child: Text('${i.name}: ${context.l10n.problem(i.problem)}'),
   );
   final ok = await showDialog<bool>(
     context: context,
@@ -314,7 +324,7 @@ Future<bool> sendToGame(
     }
     return true;
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
     return false;
   }
 }
@@ -341,7 +351,7 @@ Future<bool> bringBackMany(
     }
     return true;
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
     return false;
   }
 }
@@ -403,7 +413,7 @@ Future<void> bringBack(
     }
   } on AppFailure catch (failure) {
     ref.read(slotActionsProvider).specimensChanged();
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
   }
 }
 
@@ -524,6 +534,6 @@ Future<void> _champions(
       );
     }
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
   }
 }

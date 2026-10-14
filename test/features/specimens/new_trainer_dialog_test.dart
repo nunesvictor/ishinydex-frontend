@@ -74,7 +74,7 @@ void main() {
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Os campos name, trainer_id devem criar um set único.'),
+      find.text('Já existe um treinador com este nome e ID.'),
       findsOneWidget,
     );
   });
@@ -92,7 +92,7 @@ void main() {
     final repository = MockSpecimenRepository();
     var calls = 0;
     when(repository.fetchVersions).thenAnswer((_) async {
-      if (calls++ == 0) throw const NetworkFailure();
+      if (calls++ == 0) throw const NotFoundFailure();
       return const [
         GameVersion(name: 'red', versionGroup: 'red-blue', generation: 'i'),
       ];

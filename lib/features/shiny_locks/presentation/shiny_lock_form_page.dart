@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -108,7 +109,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
                 onChanged: (_) => _clearError('caption'),
                 decoration: InputDecoration(
                   labelText: 'Nome',
-                  errorText: _validation?.errorFor('caption'),
+                  errorText: context.fieldError(_validation, 'caption'),
                 ),
               ),
               const SizedBox(height: 16),
@@ -119,7 +120,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
                 maxLines: 5,
                 decoration: InputDecoration(
                   labelText: 'Descrição (opcional)',
-                  errorText: _validation?.errorFor('description'),
+                  errorText: context.fieldError(_validation, 'description'),
                 ),
               ),
               const SizedBox(height: 24),
@@ -163,7 +164,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
               ),
               const SizedBox(height: 8),
               _formsHeader(theme),
-              if (_validation?.errorFor('forms') case final error?)
+              if (context.fieldError(_validation, 'forms') case final error?)
                 Text(error, style: TextStyle(color: theme.colorScheme.error)),
               for (final form in _forms)
                 ListTile(
@@ -240,7 +241,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
   /// outros campos ficam até o próximo "Salvar").
   void _clearError(String field) {
     final validation = _validation;
-    if (validation?.errorFor(field) == null) return;
+    if (validation?.errorsFor(field) == null) return;
     final rest = {...validation!.fieldErrors}..remove(field);
     setState(() => _validation = rest.isEmpty ? null : ValidationFailure(rest));
   }
@@ -267,7 +268,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
     } on AppFailure catch (failure) {
       setState(() {
         _busy = false;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }
@@ -295,7 +296,7 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
     } on AppFailure catch (failure) {
       setState(() {
         _busy = false;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }

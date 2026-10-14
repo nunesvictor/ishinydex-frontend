@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
 
 /// Registros canônicos por tipo (`dexes`, `specimens`...), como o
@@ -45,7 +46,7 @@ class LocalStore {
 
   /// Lê o arquivo salvo e devolve os registros (sem as datas) para
   /// restaurar o backend; vazio num aparelho novo. Formato mais novo que o
-  /// do app → [FormatException].
+  /// do app → [DataFailure].
   Future<Records> load() async {
     final raw = await storage.read();
     if (raw == null) return const {};
@@ -58,15 +59,13 @@ class LocalStore {
     try {
       file = jsonDecode(raw);
     } on FormatException {
-      throw const FormatException('Não é um arquivo de dados do iShinyDex.');
+      throw const DataFailure(Problem.notADataFile());
     }
     if (file is! Map<String, dynamic> || file['kind'] != kind) {
-      throw const FormatException('Não é um arquivo de dados do iShinyDex.');
+      throw const DataFailure(Problem.notADataFile());
     }
     if ((file['schemaVersion'] as int) > schemaVersion) {
-      throw const FormatException(
-        'Os dados foram salvos por uma versão mais nova do app.',
-      );
+      throw const DataFailure(Problem.dataFromNewerApp());
     }
     return file;
   }

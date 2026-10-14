@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
@@ -267,7 +268,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
           .fetchSpecimenIds(_listQuery);
       if (mounted) _setChecked({..._checked, ...ids});
     } on AppFailure catch (failure) {
-      if (mounted) _showMessage(failure.message);
+      if (mounted) _showMessage(context.failureText(failure));
     }
   }
 
@@ -299,7 +300,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     } on GenderConflictFailure catch (failure) {
       if (mounted) await _showGenderConflicts(failure);
     } on AppFailure catch (failure) {
-      if (mounted) _showMessage(failure.message);
+      if (mounted) _showMessage(context.failureText(failure));
     }
   }
 
@@ -354,7 +355,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
         '$released ${released == 1 ? 'espécime libertado' : 'espécimes libertados'}.',
       );
     } on AppFailure catch (failure) {
-      if (mounted) _showMessage(failure.message);
+      if (mounted) _showMessage(context.failureText(failure));
     }
   }
 
@@ -370,7 +371,9 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 4,
             children: [
-              Text('${failure.message} Nenhum espécime foi alterado.'),
+              Text(
+                '${context.failureText(failure)} Nenhum espécime foi alterado.',
+              ),
               const SizedBox(height: 4),
               for (final c in failure.conflicts)
                 Text('• ${prettifyName(c.formName)} (#${c.id})'),
