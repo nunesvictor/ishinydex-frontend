@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/action_sheet.dart';
@@ -67,13 +68,10 @@ class SlotDetailPanel extends ConsumerWidget {
     final current = slot;
     final form = current?.form;
     if (current == null || form == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Selecione um slot para ver os detalhes.',
-            textAlign: TextAlign.center,
-          ),
+          padding: const EdgeInsets.all(24),
+          child: Text(context.l10n.selectSlot, textAlign: TextAlign.center),
         ),
       );
     }
@@ -121,8 +119,11 @@ class SlotDetailPanel extends ConsumerWidget {
                   if (form.formName.isNotEmpty) prettifyName(form.formName),
                 ].join(' · '),
                 caption: navigation == null
-                    ? '${current.box.name} · linha ${current.row + 1}, '
-                          'coluna ${current.col + 1}'
+                    ? context.l10n.slotPosition(
+                        current.box.name,
+                        current.row + 1,
+                        current.col + 1,
+                      )
                     : null,
                 position: switch (navigation) {
                   final navigation? => SlotNavigationBar(navigation),
@@ -131,18 +132,23 @@ class SlotDetailPanel extends ConsumerWidget {
                 formId: form.id,
                 // Uma aba por slot: trocar de slot volta para o resumo.
                 tabsKey: ValueKey('tabs-${current.id}'),
-                summaryLabel: specimen == null ? 'Forma' : 'Espécime',
+                summaryLabel: specimen == null
+                    ? context.l10n.summaryForm
+                    : context.l10n.summarySpecimen,
                 highlightAbility: specimen?.ability,
                 chips: [
                   if (specimen == null)
-                    const Chip(
-                      avatar: Icon(Icons.radio_button_unchecked),
-                      label: Text('Faltante'),
+                    Chip(
+                      avatar: const Icon(Icons.radio_button_unchecked),
+                      label: Text(context.l10n.slotMissing),
                     )
                   else ...[
-                    const Chip(
-                      avatar: Icon(Icons.check_circle, color: Colors.green),
-                      label: Text('Registrado'),
+                    Chip(
+                      avatar: const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                      ),
+                      label: Text(context.l10n.slotRegistered),
                     ),
                     if (OriginMark.fromSlug(full?.originMark) case final mark?)
                       OriginMarkChip(mark),
@@ -175,12 +181,12 @@ class SlotDetailPanel extends ConsumerWidget {
               ? FilledButton.icon(
                   onPressed: onDeposit,
                   icon: const Icon(Icons.move_to_inbox),
-                  label: const Text('Depositar'),
+                  label: Text(context.l10n.depositAction),
                 )
               : FilledButton.icon(
                   onPressed: onEdit,
                   icon: const Icon(Icons.edit),
-                  label: const Text('Editar espécime'),
+                  label: Text(context.l10n.editSpecimen),
                 ),
           onMore: specimen == null
               ? null
@@ -199,8 +205,8 @@ class SlotDetailPanel extends ConsumerWidget {
                     ),
                     SheetAction(
                       icon: Icons.move_up,
-                      label: 'Retirar do slot',
-                      subtitle: 'Volta para o inventário, disponível',
+                      label: context.l10n.withdrawFromSlot,
+                      subtitle: context.l10n.withdrawSubtitle,
                       onSelected: onWithdraw,
                     ),
                     releaseAction(

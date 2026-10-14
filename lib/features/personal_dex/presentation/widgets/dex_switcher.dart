@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -48,11 +49,11 @@ class DexSwitcher extends ConsumerWidget {
         MenuItemButton(
           leadingIcon: const Icon(Icons.view_list),
           onPressed: () => context.go(Routes.dexes),
-          child: const Text('Ver todos'),
+          child: Text(context.l10n.seeAll),
         ),
       ],
       builder: (context, controller, _) => Tooltip(
-        message: 'Trocar PersonalDex',
+        message: context.l10n.switchDex,
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: controller.isOpen ? controller.close : controller.open,

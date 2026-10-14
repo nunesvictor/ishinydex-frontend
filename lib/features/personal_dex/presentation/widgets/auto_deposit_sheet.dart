@@ -64,13 +64,9 @@ class _AutoDepositSheetState extends ConsumerState<AutoDepositSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 4,
             children: [
+              Text(context.l10n.autoDeposit, style: theme.textTheme.titleLarge),
               Text(
-                'Depositar automaticamente',
-                style: theme.textTheme.titleLarge,
-              ),
-              Text(
-                'Preenche os slots vazios de ${_dex.name} com espécimes do '
-                'inventário que ainda não estão em nenhum slot.',
+                context.l10n.autoDepositIntro(_dex.name),
                 style: theme.textTheme.bodyMedium,
               ),
             ],
@@ -79,12 +75,14 @@ class _AutoDepositSheetState extends ConsumerState<AutoDepositSheet> {
         SwitchListTile.adaptive(
           contentPadding: const EdgeInsets.symmetric(horizontal: 24),
           title: Text(
-            _dex.isShinyDex ? 'Só espécimes shiny' : 'Só espécimes não shiny',
+            _dex.isShinyDex
+                ? context.l10n.onlyShinySpecimens
+                : context.l10n.onlyNonShinySpecimens,
           ),
           subtitle: Text(
             _dex.isShinyDex
-                ? 'Desligado: usa um não shiny quando não há shiny da forma.'
-                : 'Desligado: usa um shiny quando não há outro da forma.',
+                ? context.l10n.autoDepositOffShiny
+                : context.l10n.autoDepositOffNonShiny,
           ),
           value: _strict,
           onChanged: _busy ? null : (value) => setState(() => _strict = value),
@@ -99,10 +97,10 @@ class _AutoDepositSheetState extends ConsumerState<AutoDepositSheet> {
           ),
         Flexible(
           child: switch (preview) {
-            AsyncData(:final value) when value.linked == 0 => const Padding(
-              padding: EdgeInsets.all(24),
+            AsyncData(:final value) when value.linked == 0 => Padding(
+              padding: const EdgeInsets.all(24),
               child: Text(
-                'Nenhum espécime livre para os slots vazios deste dex.',
+                context.l10n.autoDepositNone,
                 textAlign: TextAlign.center,
               ),
             ),
@@ -130,14 +128,16 @@ class _AutoDepositSheetState extends ConsumerState<AutoDepositSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(linked == 0 ? 'Fechar' : 'Cancelar'),
+                  child: Text(
+                    linked == 0 ? context.l10n.close : context.l10n.cancel,
+                  ),
                 ),
               ),
               if (linked > 0)
                 Expanded(
                   child: FilledButton(
                     onPressed: _busy ? null : _confirm,
-                    child: Text('Depositar $linked'),
+                    child: Text(context.l10n.depositCount(linked)),
                   ),
                 ),
             ],
@@ -184,14 +184,8 @@ class _PreviewList extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
           child: Text(
             [
-              if (result.linked == 1)
-                '1 espécime pode ser depositado'
-              else
-                '${result.linked} espécimes podem ser depositados',
-              if (missing == 1)
-                '1 slot vazio continua sem'
-              else if (missing > 1)
-                '$missing slots vazios continuam sem',
+              context.l10n.autoDepositCanDeposit(result.linked),
+              if (missing > 0) context.l10n.autoDepositStillEmpty(missing),
             ].join(' · '),
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
@@ -211,14 +205,21 @@ class _PreviewList extends StatelessWidget {
                     slot.specimen?.displayName ?? slot.form!.displayName,
                   ),
                   subtitle: Text(
-                    '${slot.box.name} · linha ${slot.row + 1}, '
-                    'coluna ${slot.col + 1}',
+                    context.l10n.slotPosition(
+                      slot.box.name,
+                      slot.row + 1,
+                      slot.col + 1,
+                    ),
                   ),
                   // A exceção à preferência do dex fica marcada.
                   trailing: slot.specimen?.isShiny == isShinyDex
                       ? null
                       : Chip(
-                          label: Text(isShinyDex ? 'Não shiny' : 'Shiny'),
+                          label: Text(
+                            isShinyDex
+                                ? context.l10n.notShiny
+                                : context.l10n.markShiny,
+                          ),
                           visualDensity: VisualDensity.compact,
                         ),
                 ),

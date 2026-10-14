@@ -6,42 +6,25 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 
 /// Regras do conjunto padrão, as mesmas de `home/services.py` no backend.
-const List<String> standardSetRules = [
-  _ruleBattleOnly,
-  _ruleDefaultFormOnly,
-  _ruleExcludedForms,
-  _ruleExcludedVariants,
-  _ruleAlcremie,
+List<String> standardSetRules(AppLocalizations l10n) => [
+  l10n.ruleBattleOnly,
+  l10n.ruleDefaultFormOnly,
+  l10n.ruleExcludedForms,
+  l10n.ruleExcludedVariants,
+  l10n.ruleAlcremie,
 ];
-
-const _ruleBattleOnly =
-    'Todas as formas cadastradas que não são só de batalha (megas, '
-    'gigantamax e afins ficam de fora).';
-const _ruleDefaultFormOnly =
-    'Arceus, Calyrex, Genesect, Koraidon, Miraidon, Mothim, Pichu, '
-    'Scatterbug, Silvally e Spewpa: só a forma padrão.';
-const _ruleExcludedForms =
-    'Sem formas totem, "origin", "power-construct", "starter", Eternamax, '
-    'Greninja Battle Bond e Minior Red Meteor.';
-const _ruleExcludedVariants =
-    'Sem as variações de Calyrex, Kyurem, Necrozma, Ogerpon, Pikachu e '
-    'Rockruff.';
-const _ruleAlcremie = 'Alcremie: só as variações "vanilla".';
 
 /// Fluxo do dex personalizado (escolher as formas). Ainda não existe: por
 /// enquanto só avisa. É o ponto a substituir quando o fluxo for definido.
 Future<void> openCustomDexFlow(BuildContext context) => showDialog<void>(
   context: context,
   builder: (context) => AlertDialog(
-    title: const Text('Em breve'),
-    content: const Text(
-      'Escolher as formas de um dex personalizado ainda não está disponível. '
-      'Por enquanto, crie um dex com o conjunto padrão.',
-    ),
+    title: Text(context.l10n.comingSoon),
+    content: Text(context.l10n.customDexSoon),
     actions: [
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Entendi'),
+        child: Text(context.l10n.gotIt),
       ),
     ],
   ),
@@ -75,49 +58,46 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
     final preview = ref.watch(dexPreviewProvider(_forceNewBox));
     final canCreate = !_saving && (preview.value?.enoughSpace ?? false);
     return Scaffold(
-      appBar: AppBar(title: const Text('Novo PersonalDex')),
+      appBar: AppBar(title: Text(context.l10n.dexNew)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Tipo de dex', style: theme.textTheme.titleSmall),
+              Text(context.l10n.dexType, style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
-              const Card(
+              Card(
                 child: ListTile(
-                  leading: Icon(Icons.check_circle),
-                  title: Text('Padrão'),
-                  subtitle: Text(
-                    'O conjunto de formas usado pelo iShinyDex, na ordem da '
-                    'Pokédex nacional.',
-                  ),
+                  leading: const Icon(Icons.check_circle),
+                  title: Text(context.l10n.dexStandard),
+                  subtitle: Text(context.l10n.dexStandardSubtitle),
                 ),
               ),
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.tune),
                   // Wrap: em tela estreita o chip desce para a linha de baixo.
-                  title: const Wrap(
+                  title: Wrap(
                     spacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text('Personalizado'),
+                      Text(context.l10n.dexCustom),
                       Chip(
-                        label: Text('Em breve'),
+                        label: Text(context.l10n.comingSoon),
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
                   ),
-                  subtitle: const Text('Escolher as formas uma a uma.'),
+                  subtitle: Text(context.l10n.dexCustomSubtitle),
                   onTap: () => openCustomDexFlow(context),
                 ),
               ),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
-                title: const Text('O que entra no conjunto padrão?'),
+                title: Text(context.l10n.standardSetQuestion),
                 children: [
-                  for (final rule in standardSetRules)
+                  for (final rule in standardSetRules(context.l10n))
                     ListTile(
                       dense: true,
                       leading: const Icon(Icons.circle, size: 8),
@@ -137,27 +117,21 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
               TextField(
                 controller: _name,
                 decoration: InputDecoration(
-                  labelText: 'Nome',
+                  labelText: context.l10n.fieldName,
                   errorText: context.fieldError(_validation, 'name'),
                 ),
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Dex shiny'),
-                subtitle: const Text(
-                  'Mostra os sprites shiny e prioriza espécimes shiny ao '
-                  'depositar.',
-                ),
+                title: Text(context.l10n.shinyDex),
+                subtitle: Text(context.l10n.shinyDexNewSubtitle),
                 value: _isShinyDex,
                 onChanged: (v) => setState(() => _isShinyDex = v),
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Nova box a cada geração'),
-                subtitle: const Text(
-                  'Cada geração começa no primeiro slot de uma box; sobram '
-                  'slots vazios no fim da box anterior.',
-                ),
+                title: Text(context.l10n.newBoxPerGeneration),
+                subtitle: Text(context.l10n.newBoxPerGenerationSubtitle),
                 value: _forceNewBox,
                 onChanged: (v) => setState(() => _forceNewBox = v),
               ),
@@ -171,7 +145,7 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
                         dimension: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Criar PersonalDex'),
+                    : Text(context.l10n.createDex),
               ),
             ],
           ),
@@ -228,21 +202,26 @@ class _PreviewCard extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: switch (preview) {
-          AsyncData(value: final p) when p.enoughSpace => Text(switch (p
-              .firstBox) {
-            // Dex inteiro em boxes novas, criadas depois da última.
-            null =>
-              '${p.forms} formas em ${p.boxesNeeded} boxes novas, '
-                  'criadas no fim.',
-            final first =>
-              '${p.forms} formas em ${p.boxesNeeded} boxes, a partir da '
-                  '${first.name}'
-                  '${p.boxesToCreate > 0 ? ' (cria ${_boxes(p.boxesToCreate)} no fim)' : ''}.',
-          }),
+          AsyncData(value: final p) when p.enoughSpace => Text(
+            switch (p.firstBox) {
+              // Dex inteiro em boxes novas, criadas depois da última.
+              null => context.l10n.previewNewBoxes(p.forms, p.boxesNeeded),
+              final first => context.l10n.previewFrom(
+                p.forms,
+                p.boxesNeeded,
+                first.name,
+                p.boxesToCreate > 0
+                    ? context.l10n.previewCreates(p.boxesToCreate)
+                    : '',
+              ),
+            },
+          ),
           AsyncData(value: final p) => Text(
-            'Não há espaço: este dex precisa de ${p.boxesNeeded} boxes livres '
-            'seguidas, a maior sequência livre tem ${p.largestFreeRun}, e o '
-            'HOME tem no máximo $homeMaxBoxes boxes.',
+            context.l10n.previewNoSpace(
+              p.boxesNeeded,
+              p.largestFreeRun,
+              homeMaxBoxes,
+            ),
             style: TextStyle(color: scheme.onErrorContainer),
           ),
           AsyncError(:final error) => Row(
@@ -251,13 +230,13 @@ class _PreviewCard extends ConsumerWidget {
                 child: Text(
                   error is AppFailure
                       ? context.failureText(error)
-                      : 'Não foi possível simular o dex.',
+                      : context.l10n.previewError,
                 ),
               ),
               TextButton(
                 onPressed: () =>
                     ref.invalidate(dexPreviewProvider(forceNewBox)),
-                child: const Text('Tentar novamente'),
+                child: Text(context.l10n.tryAgain),
               ),
             ],
           ),
@@ -267,6 +246,3 @@ class _PreviewCard extends ConsumerWidget {
     );
   }
 }
-
-/// "1 box nova" / "3 boxes novas".
-String _boxes(int count) => count == 1 ? '1 box nova' : '$count boxes novas';

@@ -209,7 +209,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
                     ? TextButton(
                         key: const ValueKey('search-cancel'),
                         onPressed: _cancelSearch,
-                        child: const Text('Cancelar'),
+                        child: Text(context.l10n.cancel),
                       )
                     : const SizedBox.shrink(),
               ),
@@ -297,18 +297,21 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     return AppBar(
       title: DexSwitcher(
         dexId: _dexId,
-        title: dex?.name ?? 'PersonalDex',
+        title: dex?.name ?? context.l10n.navPersonalDex,
         subtitle: dex == null
             ? null
-            : '${dex.registered} de ${dex.total} registrados · '
-                  '${percentOf(dex.registered, dex.total)}%',
+            : context.l10n.dexProgress(
+                dex.registered,
+                dex.total,
+                percentOf(dex.registered, dex.total),
+              ),
       ),
       actions: [
         if (size.isExpanded)
           IconButton(
             tooltip: _isBoxListOpen(size)
-                ? 'Ocultar lista de boxes'
-                : 'Mostrar lista de boxes',
+                ? context.l10n.hideBoxList
+                : context.l10n.showBoxList,
             isSelected: _isBoxListOpen(size),
             onPressed: () =>
                 setState(() => _boxListOpen = !_isBoxListOpen(size)),
@@ -317,7 +320,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
           ),
         if (dex?.isShinyDex ?? false)
           IconButton(
-            tooltip: 'Caçadas',
+            tooltip: context.l10n.huntsTitle,
             onPressed: () => context.push(Routes.hunts(_dexId)),
             icon: const Icon(Icons.track_changes),
           ),
@@ -337,7 +340,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   Widget _missingToggle(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return IconButton(
-      tooltip: _onlyMissing ? 'Mostrar todos' : 'Destacar faltantes',
+      tooltip: _onlyMissing
+          ? context.l10n.showAll
+          : context.l10n.highlightMissing,
       isSelected: _onlyMissing,
       onPressed: () => setState(() => _onlyMissing = !_onlyMissing),
       style: _onlyMissing
@@ -363,7 +368,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     _ => boxes.when(
       skipLoadingOnRefresh: true,
       data: (items) => items.isEmpty
-          ? const EmptyView(message: 'Este dex ainda não tem boxes.')
+          ? EmptyView(message: context.l10n.dexNoBoxes)
           : _buildLayout(context, items),
       loading: () => const LoadingView(),
       error: (error, _) => ErrorView(
@@ -672,8 +677,8 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final slot = list[position];
     return SlotNavigation(
       label:
-          '${box.name} · L${slot.row + 1} C${slot.col + 1} · '
-          '${position + 1} de ${list.length}',
+          '${context.l10n.slotShort(box.name, slot.row + 1, slot.col + 1)} · '
+          '${context.l10n.positionOf(position + 1, list.length)}',
       onPrevious: position == 0 && index == 0
           ? null
           : () => unawaited(_step(-1)),
@@ -827,9 +832,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('${specimen.displayName} retirado do slot.'),
+          content: Text(l10n.withdrawn(specimen.displayName)),
           action: SnackBarAction(
-            label: 'Desfazer',
+            label: l10n.undo,
             onPressed: () async {
               try {
                 await actions.deposit(slot, specimenId: specimen.id);
@@ -843,25 +848,24 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   }
 
   Future<void> _autoDeposit(PersonalDex dex) async {
+    final l10n = context.l10n;
     final result = await showAutoDepositSheet(context, dex: dex);
     if (result == null) return;
-    _notify(
-      result.linked == 1
-          ? '1 espécime depositado.'
-          : '${result.linked} espécimes depositados.',
-    );
+    _notify(l10n.specimensDeposited(result.linked));
   }
 
   Future<void> _deposit(Slot slot) async {
+    final l10n = context.l10n;
     final deposited = await showDepositFlow(
       context,
       slot: slot,
       preferShiny: _preferShiny,
     );
-    if (deposited && mounted) _notify('Specimen depositado.');
+    if (deposited && mounted) _notify(l10n.specimenDeposited);
   }
 
   Future<void> _edit(Slot slot) async {
+    final l10n = context.l10n;
     // Navigator raiz: o formulário cobre a casca toda (inclusive a
     // NavigationBar do compacto), como um diálogo de tela cheia.
     final edited = await Navigator.of(context, rootNavigator: true)
@@ -876,7 +880,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
         );
     if (edited == null) return;
     ref.read(slotActionsProvider).specimenEdited(slot);
-    _notify('Espécime atualizado.');
+    _notify(l10n.specimenUpdated);
   }
 
   /// Libertar apaga o cadastro do specimen (como o *release* do HOME).
@@ -884,18 +888,16 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final confirmed = await showConfirmDialog(
       context,
       icon: Icons.warning_amber_rounded,
-      title: 'Libertar ${slot.specimen!.displayName}?',
-      message:
-          'O cadastro deste espécime será apagado e o slot ficará faltante. '
-          'Esta ação não pode ser desfeita.',
-      confirmLabel: 'Libertar',
+      title: context.l10n.releaseQuestion(slot.specimen!.displayName),
+      message: context.l10n.releaseMessage,
+      confirmLabel: context.l10n.releaseAction,
       destructive: true,
     );
     if (!confirmed || !mounted) return;
     final l10n = context.l10n;
     try {
       await ref.read(slotActionsProvider).release(slot);
-      _notify('Espécime libertado.');
+      _notify(l10n.specimenReleased);
     } on AppFailure catch (failure) {
       _notify(l10n.problems(failure.problems));
     }

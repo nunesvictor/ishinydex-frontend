@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/pokemon_types.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -42,13 +43,13 @@ class FormDetails extends ConsumerWidget {
         AsyncError() => Column(
           children: [
             Text(
-              'Não foi possível carregar os detalhes da forma.',
+              context.l10n.formDetailsError,
               style: Theme.of(context).textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
             TextButton(
               onPressed: () => ref.invalidate(formDetailProvider(formId)),
-              child: const Text('Tentar novamente'),
+              child: Text(context.l10n.tryAgain),
             ),
           ],
         ),
@@ -114,13 +115,13 @@ class _Details extends StatelessWidget {
               if (form.isShinylocked)
                 Chip(
                   avatar: Icon(Icons.lock, color: theme.colorScheme.error),
-                  label: const Text('Shiny-lock'),
+                  label: Text(context.l10n.shinyLockChip),
                   visualDensity: VisualDensity.compact,
                 ),
               if (form.isDistroOnly)
-                const Chip(
-                  avatar: Icon(Icons.card_giftcard),
-                  label: Text('Só distribuição'),
+                Chip(
+                  avatar: const Icon(Icons.card_giftcard),
+                  label: Text(context.l10n.distroOnlyChip),
                   visualDensity: VisualDensity.compact,
                 ),
             ],
@@ -129,7 +130,7 @@ class _Details extends StatelessWidget {
           Text.rich(
             TextSpan(
               children: [
-                const TextSpan(text: 'Habilidades: '),
+                TextSpan(text: context.l10n.abilitiesLabel),
                 for (final (i, a) in abilities.indexed) ...[
                   if (i > 0) const TextSpan(text: ' · '),
                   if (a.ability == highlightAbility)

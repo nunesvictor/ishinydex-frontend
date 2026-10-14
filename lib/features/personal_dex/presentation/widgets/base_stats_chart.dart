@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 
@@ -69,7 +70,7 @@ class BaseStatsChart extends StatelessWidget {
           spacing: 8,
           children: [
             Text(
-              'Sem status base para esta forma.',
+              context.l10n.noBaseStats,
               style: theme.textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
@@ -94,14 +95,14 @@ class BaseStatsChart extends StatelessWidget {
     final up = nature?.increased;
     final down = nature?.decreased;
     String effect(String stat) => stat == up
-        ? ', aumentado pela natureza'
+        ? context.l10n.raisedByNature
         : stat == down
-        ? ', diminuído pela natureza'
+        ? context.l10n.loweredByNature
         : '';
     final ev = [
       for (final stat in stats)
         if (stat.effort > 0)
-          '${stat.effort} EV de ${context.l10n.stat(stat.stat)}',
+          context.l10n.evOf(stat.effort, context.l10n.stat(stat.stat)),
     ];
     final align = compact ? TextAlign.start : TextAlign.center;
     final chart = Semantics(
@@ -143,13 +144,15 @@ class BaseStatsChart extends StatelessWidget {
       Text.rich(
         TextSpan(
           children: [
-            const TextSpan(text: 'Total '),
+            TextSpan(text: context.l10n.statTotal),
             TextSpan(
               text: '$total',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             if (ev.isNotEmpty)
-              TextSpan(text: ' · derrotado, dá ${ev.join(' e ')}'),
+              TextSpan(
+                text: context.l10n.defeatedGives(joinLabels(context.l10n, ev)),
+              ),
           ],
         ),
         style: compact ? theme.textTheme.bodySmall : theme.textTheme.bodyMedium,
@@ -312,11 +315,11 @@ class _NatureCaption extends StatelessWidget {
       TextSpan(
         children: [
           TextSpan(
-            text: 'Natureza ',
+            text: context.l10n.natureLabel,
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           TextSpan(
-            text: nature.label,
+            text: context.catalogText(nature.label, nature.labels),
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           if (up != null)
@@ -329,7 +332,8 @@ class _NatureCaption extends StatelessWidget {
               text: '   ↓ ${context.l10n.stat(down)}',
               style: colored(downColor),
             ),
-          if (up == null && down == null) const TextSpan(text: ' (neutra)'),
+          if (up == null && down == null)
+            TextSpan(text: context.l10n.natureNeutral),
         ],
       ),
       style: theme.textTheme.bodyMedium,

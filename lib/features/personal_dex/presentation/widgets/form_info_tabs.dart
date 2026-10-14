@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/species_info.dart';
@@ -18,7 +19,7 @@ enum _Tab { summary, species }
 class FormInfoTabs extends ConsumerStatefulWidget {
   const FormInfoTabs({
     required this.formId,
-    this.summaryLabel = 'Espécime',
+    this.summaryLabel,
     this.header,
     this.fields,
     this.footer,
@@ -32,7 +33,7 @@ class FormInfoTabs extends ConsumerStatefulWidget {
   final int formId;
 
   /// "Forma" num slot faltante ou na ficha da forma (não há espécime).
-  final String summaryLabel;
+  final String? summaryLabel;
 
   /// Partes do resumo (ver a classe); todas opcionais.
   final Widget? header;
@@ -63,8 +64,14 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
       SegmentedButton<_Tab>(
         showSelectedIcon: false,
         segments: [
-          ButtonSegment(value: _Tab.summary, label: Text(widget.summaryLabel)),
-          const ButtonSegment(value: _Tab.species, label: Text('Espécie')),
+          ButtonSegment(
+            value: _Tab.summary,
+            label: Text(widget.summaryLabel ?? context.l10n.summarySpecimen),
+          ),
+          ButtonSegment(
+            value: _Tab.species,
+            label: Text(context.l10n.tabSpecies),
+          ),
         ],
         selected: {_tab},
         onSelectionChanged: (selected) =>
@@ -111,14 +118,14 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
         AsyncError() => Column(
           children: [
             Text(
-              'Não foi possível carregar os detalhes da forma.',
+              context.l10n.formDetailsError,
               style: Theme.of(context).textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
             TextButton(
               onPressed: () =>
                   ref.invalidate(formDetailProvider(widget.formId)),
-              child: const Text('Tentar novamente'),
+              child: Text(context.l10n.tryAgain),
             ),
           ],
         ),
@@ -151,7 +158,7 @@ class StatsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 4,
           children: [
-            Text('Status base', style: theme.textTheme.titleSmall),
+            Text(context.l10n.baseStats, style: theme.textTheme.titleSmall),
             BaseStatsChart(stats: stats, nature: nature, compact: true),
           ],
         ),

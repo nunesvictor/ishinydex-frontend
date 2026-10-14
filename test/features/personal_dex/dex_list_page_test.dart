@@ -10,6 +10,17 @@ import '../../helpers/helpers.dart';
 import '../../helpers/mocks.dart';
 
 void main() {
+  testWidgets('em inglês: a lista e o detalhe do dex', (tester) async {
+    await pumpFullApp(tester, language: AppLanguage.en);
+    expect(find.text('19 missing'), findsOneWidget);
+    expect(find.text('New PersonalDex'), findsOneWidget);
+    await tester.tap(find.text('Shiny Living Dex'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('registered ·'), findsOneWidget);
+    expect(find.byTooltip('Hunts'), findsOneWidget);
+    expect(find.byTooltip('Highlight missing'), findsOneWidget);
+  });
+
   testWidgets('lista os dexes com progresso', (tester) async {
     await pumpFullApp(tester);
     expect(find.text('Shiny Living Dex'), findsOneWidget);

@@ -22,13 +22,13 @@ class BoxNavigator extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          tooltip: 'Box anterior',
+          tooltip: context.l10n.previousBox,
           onPressed: index > 0 ? () => onChanged(index - 1) : null,
           icon: const Icon(Icons.chevron_left),
         ),
         Flexible(
           child: PopupMenuButton<int>(
-            tooltip: 'Escolher box',
+            tooltip: context.l10n.chooseBox,
             initialValue: index,
             onSelected: onChanged,
             itemBuilder: (context) => [
@@ -52,7 +52,7 @@ class BoxNavigator extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Próxima box',
+          tooltip: context.l10n.nextBox,
           onPressed: index < boxes.length - 1
               ? () => onChanged(index + 1)
               : null,

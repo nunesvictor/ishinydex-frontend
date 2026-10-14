@@ -92,14 +92,17 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
         key: const ValueKey('hunts-tabs'),
         showSelectedIcon: false,
         segments: [
-          const ButtonSegment(value: HuntsTab.missing, label: Text('Faltam')),
+          ButtonSegment(
+            value: HuntsTab.missing,
+            label: Text(context.l10n.huntsTabMissing),
+          ),
           ButtonSegment(
             value: HuntsTab.active,
-            label: Text('Ativas ($active)'),
+            label: Text(context.l10n.huntsTabActive(active)),
           ),
           ButtonSegment(
             value: HuntsTab.paused,
-            label: Text('Pausadas (${hunts.length - active})'),
+            label: Text(context.l10n.huntsTabPaused(hunts.length - active)),
           ),
         ],
         selected: {_tab},
@@ -107,7 +110,7 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
       ),
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('Caçadas')),
+      appBar: AppBar(title: Text(context.l10n.huntsTitle)),
       floatingActionButton: _tab == HuntsTab.active
           ? const StartHuntButton()
           : null,
@@ -202,7 +205,7 @@ class _Filters extends ConsumerWidget {
     if (!on) return _toggler(HuntReason.pokeball)!(false);
     final picked = await showChoicePicker(
       context,
-      title: 'Pokébolas aceitas',
+      title: context.l10n.acceptedBalls,
       choices: options.pokeball,
       selected: query.acceptedBalls.toSet(),
     );
@@ -240,14 +243,16 @@ class _Filters extends ConsumerWidget {
     final chips = <Widget>[
       // Situação · Motivos · Jogo, a mesma ordem do inventário (#217).
       MenuChip(
-        label: 'Situação',
+        label: context.l10n.filterSituation,
         icons: [?_situationIcon(query.situation)],
         tooltip: query.situation == HuntSituation.all
             ? null
-            : 'Situação: ${context.l10n.huntSituation(query.situation)}',
+            : context.l10n.filterSituationValue(
+                context.l10n.huntSituation(query.situation),
+              ),
         selected: query.situation != HuntSituation.all,
         menuChildren: [
-          const MenuHeader('Situação do slot'),
+          MenuHeader(context.l10n.slotSituation),
           for (final situation in HuntSituation.values)
             RadioMenuButton<HuntSituation>(
               value: situation,
@@ -269,21 +274,24 @@ class _Filters extends ConsumerWidget {
         ],
       ),
       MenuChip(
-        label: 'Motivos',
+        label: context.l10n.filterReasons,
         icons: [for (final r in query.reasons) _reasonIcon(r)],
-        tooltip:
-            'Motivos: ${joinLabels(context.l10n, [for (final r in query.reasons) context.l10n.huntReason(r).replaceRange(0, 1, context.l10n.huntReason(r)[0].toLowerCase())])}',
+        tooltip: context.l10n.filterReasonsValue(
+          joinLabels(context.l10n, [
+            for (final r in query.reasons) _lower(context.l10n.huntReason(r)),
+          ]),
+        ),
         // Sempre há pelo menos um motivo: o chip está sempre "ativo".
         selected: true,
         menuChildren: [
-          const MenuHeader('Motivos (qualquer um; pelo menos um)'),
+          MenuHeader(context.l10n.reasonsHeader),
           CheckboxMenuButton(
             value: _isOn(HuntReason.noShiny),
             closeOnActivate: false,
             onChanged: _check(_toggler(HuntReason.noShiny)),
             child: MenuOptionText(
               context.l10n.huntReason(HuntReason.noShiny),
-              'Slot vazio ou com espécime não shiny',
+              context.l10n.reasonNoShinyHint,
               leading: const NoShinyIcon(size: 18),
             ),
           ),
@@ -293,7 +301,7 @@ class _Filters extends ConsumerWidget {
             onChanged: _check(_toggler(HuntReason.fromGo)),
             child: MenuOptionText(
               context.l10n.huntReason(HuntReason.fromGo),
-              'Shiny que veio do Pokémon GO',
+              context.l10n.reasonFromGoHint,
               leading: const GoIcon(size: 18, semanticLabel: null),
             ),
           ),
@@ -305,9 +313,9 @@ class _Filters extends ConsumerWidget {
                 : (on) => _togglePokeball(context, options, on!),
             child: MenuOptionText(
               pokeballOn && balls != null
-                  ? 'Pokébola fora de: $balls'
-                  : 'Pokébola fora das escolhidas',
-              'Shiny numa pokébola que não é a da caçada',
+                  ? context.l10n.reasonBallOutside(balls)
+                  : context.l10n.reasonBallOutsideChosen,
+              context.l10n.reasonBallHint,
               leading: const Icon(Icons.catching_pokemon, size: 18),
             ),
           ),
@@ -331,13 +339,13 @@ class _Filters extends ConsumerWidget {
             children: [
               Expanded(
                 child: SearchField(
-                  hintText: 'Nome ou número',
+                  hintText: context.l10n.searchNameOrNumber,
                   onChanged: onSearchChanged,
                   onSubmitted: onSearchSubmitted,
                 ),
               ),
               IconButton(
-                tooltip: 'Filtros',
+                tooltip: context.l10n.filtersTitle,
                 onPressed: () async {
                   final applied = await showHuntFilters(context, query);
                   if (applied != null) onChanged(applied);
@@ -386,16 +394,16 @@ class _GameChip extends StatelessWidget {
       for (final g in games) versionLabel(g),
     ]);
     return FilterChip(
-      tooltip: games.isEmpty ? null : 'Jogo: $names',
+      tooltip: games.isEmpty ? null : context.l10n.filterGameValue(names),
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (games.isEmpty)
-            const Text('Jogo')
+            Text(context.l10n.fieldGame)
           else
             ChipIcons([
               for (final g in games) GameIcon(g, size: 18),
-            ], semanticLabel: 'Jogo: $names'),
+            ], semanticLabel: context.l10n.filterGameValue(names)),
           const Icon(Icons.arrow_drop_down, size: 18),
         ],
       ),
@@ -404,10 +412,10 @@ class _GameChip extends StatelessWidget {
       onSelected: (_) async {
         final picked = await showGamePicker(
           context,
-          subtitle: 'Caçável em algum destes saves',
+          subtitle: context.l10n.huntableInSaves,
           sections: [
             GamePickerSection(
-              title: 'Jogo',
+              title: context.l10n.fieldGame,
               versions: [...savesOf.keys],
               selected: games,
               saves: {for (final e in savesOf.entries) e.key: e.value.length},
@@ -429,8 +437,8 @@ class _GameChip extends StatelessWidget {
                 .value
                 ?.count;
             return count == null
-                ? 'Mostrar resultados'
-                : 'Mostrar $count resultados';
+                ? context.l10n.showResults
+                : context.l10n.showCountResults(count);
           },
         );
         if (picked != null) onChanged(query.copyWith(versions: picked.single));
@@ -459,12 +467,11 @@ class _GameCount extends ConsumerWidget {
 }
 
 /// `"Scarlet"`, `"Scarlet ou Sword"`, `"Scarlet, Violet ou Sword"`.
-String _gameNames(List<String> versions) {
-  final names = [for (final v in versions) versionLabel(v)];
-  return names.length == 1
-      ? names.single
-      : '${names.sublist(0, names.length - 1).join(', ')} ou ${names.last}';
-}
+String _gameNames(AppLocalizations l10n, List<String> versions) =>
+    joinAlternatives(l10n, [for (final v in versions) versionLabel(v)]);
+
+/// O motivo em minúscula, no meio da frase ("Motivos: sem shiny").
+String _lower(String text) => text.replaceRange(0, 1, text[0].toLowerCase());
 
 /// Lista paginada: o total vem da 1ª página e cada item observa só a página
 /// em que está, carregada quando aparece na tela.
@@ -488,8 +495,8 @@ class HuntList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final firstPage = huntPageProvider((dexId: dexId, query: query, page: 1));
     return switch (ref.watch(firstPage)) {
-      AsyncData(value: final page) when page.count == 0 => const EmptyView(
-        message: 'Nada para caçar com estes filtros.',
+      AsyncData(value: final page) when page.count == 0 => EmptyView(
+        message: context.l10n.nothingToHunt,
       ),
       AsyncData(value: final page) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,8 +505,11 @@ class HuntList extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(
               query.versions.isEmpty
-                  ? '${page.count} para caçar'
-                  : '${page.count} para caçar em ${_gameNames(query.versions)}',
+                  ? context.l10n.toHunt(page.count)
+                  : context.l10n.toHuntIn(
+                      page.count,
+                      _gameNames(context.l10n, query.versions),
+                    ),
               style: Theme.of(context).textTheme.labelLarge,
             ),
           ),
@@ -563,10 +573,10 @@ class _HuntItem extends ConsumerWidget {
       // O erro aparece uma vez, no primeiro item da página.
       AsyncError() when offset == 0 => ListTile(
         leading: const Icon(Icons.error_outline),
-        title: const Text('Não foi possível carregar mais caçadas.'),
+        title: Text(context.l10n.huntsLoadMoreError),
         trailing: TextButton(
           onPressed: () => ref.invalidate(huntPageProvider(key)),
-          child: const Text('Tentar novamente'),
+          child: Text(context.l10n.tryAgain),
         ),
       ),
       AsyncError() => const SizedBox.shrink(),
@@ -607,9 +617,12 @@ class HuntTile extends ConsumerWidget {
     final reasons = [
       for (final reason in hunt.reasons)
         ?switch (reason) {
-          HuntReason.noShiny => specimen == null ? 'Faltando' : 'Não shiny',
+          HuntReason.noShiny =>
+            specimen == null
+                ? context.l10n.reasonMissing
+                : context.l10n.notShiny,
           HuntReason.fromGo => null,
-          HuntReason.pokeball => 'Outra pokébola',
+          HuntReason.pokeball => context.l10n.reasonOtherBall,
         },
     ];
     return ListTile(
@@ -652,7 +665,7 @@ class HuntTile extends ConsumerWidget {
         [
           if (hasNickname) ?form?.displayName,
           ?form?.dexNumber,
-          '${slot.box.name} · L${slot.row + 1} C${slot.col + 1}',
+          context.l10n.slotShort(slot.box.name, slot.row + 1, slot.col + 1),
           ...reasons,
         ].join(' · '),
         maxLines: 1,
@@ -693,13 +706,13 @@ class HuntTile extends ConsumerWidget {
     final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
     if (hunts.any((h) => !h.paused && h.form == form.id)) {
       return IconButton(
-        tooltip: 'Caçada em andamento',
+        tooltip: context.l10n.huntInProgress,
         onPressed: onShowActive,
         icon: const HuntBadge(size: 28),
       );
     }
     return IconButton(
-      tooltip: 'Começar caçada',
+      tooltip: context.l10n.huntStart,
       onPressed: hunts.any((h) => h.running)
           ? null
           : () async {
@@ -776,7 +789,7 @@ class HuntGames extends StatelessWidget {
         if (rest > 0)
           Text(
             '+$rest',
-            semanticsLabel: 'mais $rest ${rest == 1 ? 'jogo' : 'jogos'}',
+            semanticsLabel: context.l10n.moreGames(rest),
             style: Theme.of(context).textTheme.labelMedium
                 ?.copyWith(color: colors.outline),
           ),
