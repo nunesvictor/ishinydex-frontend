@@ -53,6 +53,21 @@ Future<void> _pickForm(WidgetTester tester, String search, int id) async {
 }
 
 void main() {
+  testWidgets('em inglês: lista, filtros e o formulário', (tester) async {
+    await pumpFullApp(tester, language: AppLanguage.en);
+    await _go(tester, Routes.settings);
+    await _tap(tester, find.text('Shiny locks'));
+    expect(find.text('1 form'), findsOneWidget);
+    expect(find.text('All · 1'), findsOneWidget);
+    await _tap(tester, find.text('Unobtainable · 0'));
+    expect(find.text('No shiny lock of this type.'), findsOneWidget);
+    await _tap(tester, find.text('New shiny lock'));
+    await _tap(tester, find.text('Save'));
+    expect(find.text("This field can't be blank."), findsOneWidget);
+    expect(find.text('Forms · 0'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+  });
+
   for (final size in [compactSize, expandedSize]) {
     testWidgets('criar, editar e apagar (${size.width.toInt()}px)', (
       tester,
@@ -202,7 +217,8 @@ void main() {
 
   test('ShinyLockTypeUi: ícones e rótulos curtos', () {
     expect(ShinyLockType.unobtainable.icon, Icons.lock_outline);
-    expect(ShinyLockType.distroOnly.shortLabel, 'Distribuição');
+    expect(ShinyLockType.distroOnly.shortLabel(ptText), 'Distribuição');
+    expect(ShinyLockType.distroOnly.shortLabel(enText), 'Distribution');
     expect(ShinyLockTypeUi.ordered.first, ShinyLockType.unobtainable);
   });
 }

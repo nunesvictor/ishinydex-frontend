@@ -68,6 +68,13 @@ final _rules = {
     steps: [ChainStep(0, rolls: 0), ChainStep(31, rolls: 12)],
   ),
   'raid': const OddsRule(method: 'raid', versions: {}, kind: OddsKind.rolls),
+  // Sem nenhuma chance: "não pode ser shiny".
+  'never': const OddsRule(
+    method: 'never',
+    versions: {},
+    kind: OddsKind.rolls,
+    rolls: 0,
+  ),
   'dexnav': const OddsRule(
     method: 'dexnav',
     versions: {},
@@ -110,9 +117,14 @@ void main() {
 
   Future<ShinyHunt> add(ShinyHunt hunt) => backend.saveShinyHunt(hunt);
 
-  Future<void> pump(WidgetTester tester, Widget child) => pumpWidgetApp(
+  Future<void> pump(
+    WidgetTester tester,
+    Widget child, {
+    Locale locale = portuguese,
+  }) => pumpWidgetApp(
     tester,
     child,
+    locale: locale,
     size: const Size(420, 2400),
     hunts: backend,
     overrides: [
@@ -143,6 +155,36 @@ void main() {
 
   Future<ShinyHunt> hunt(int id) async =>
       (await backend.fetchShinyHunts()).firstWhere((h) => h.id == id);
+
+  testWidgets('cartão em inglês: cadeia, Charm e o múltiplo com ponto', (
+    tester,
+  ) async {
+    await add(
+      ShinyHunt(
+        id: 0,
+        form: 4,
+        save: sword,
+        method: 'sos',
+        count: 30,
+        chain: 30,
+        bestChain: 40,
+      ),
+    );
+    await add(ShinyHunt(id: 0, form: 5, save: scarlet, method: 'never'));
+    await pump(
+      tester,
+      const Scaffold(body: HuntCards(paused: false)),
+      locale: english,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text("can't be shiny"), findsOne);
+    expect(find.textContaining(RegExp('^chain 30')), findsOne);
+    expect(find.textContaining('Current chain'), findsOne);
+    expect(find.textContaining('longest chain: 40'), findsOne);
+    expect(find.text('Broke'), findsOne);
+    expect(find.textContaining('of hunts would have ended by now'), findsOne);
+    expect(find.textContaining(RegExp(r'\d\.\d× the odds')), findsOne);
+  });
 
   testWidgets('cartão: odds, Charm, barra, cadeia e horas', (tester) async {
     final random = await add(

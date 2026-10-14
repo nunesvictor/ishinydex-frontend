@@ -13,6 +13,10 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 
+// Os idiomas, para `locale:`/`language:` nos testes em inglês.
+export 'package:ishinydex/core/l10n/app_language.dart'
+    show AppLanguage, english, portuguese;
+
 /// Sprite de pokébola do `SpecimenHeadline`: o nome da bola fica no rótulo
 /// de acessibilidade, não num texto.
 Finder ballSprite(Pattern label) => find.byWidgetPredicate(
@@ -20,6 +24,7 @@ Finder ballSprite(Pattern label) => find.byWidgetPredicate(
 );
 
 /// Tamanhos de tela usados nos testes responsivos.
+
 /// Os textos de cada idioma, para testar rótulos sem montar uma tela.
 final AppLocalizations ptText = lookupAppLocalizations(const Locale('pt'));
 final AppLocalizations enText = lookupAppLocalizations(const Locale('en'));

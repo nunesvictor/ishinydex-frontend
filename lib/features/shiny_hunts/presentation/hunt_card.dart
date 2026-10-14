@@ -192,22 +192,23 @@ class _HuntCardState extends ConsumerState<HuntCard> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Excluir a caçada?'),
+        title: Text(context.l10n.huntDeleteQuestion),
         content: Text(
-          'A contagem de ${widget.hunt.formRef?.displayName ?? 'Pokémon'} '
-          'será perdida.',
+          context.l10n.huntDeleteMessage(
+            widget.hunt.formRef?.displayName ?? 'Pokémon',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Excluir'),
+            child: Text(context.l10n.huntDeleteAction),
           ),
         ],
       ),
@@ -230,8 +231,11 @@ class _HuntCardState extends ConsumerState<HuntCard> {
         .firstOrNull;
     final start = hunt.startedAt;
     final since = start == null
-        ? 'sem data de início'
-        : 'desde ${format(start)} · ${context.l10n.huntDuration(start, now)}';
+        ? context.l10n.huntNoStart
+        : context.l10n.huntSince(
+            format(start),
+            context.l10n.huntDuration(start, now),
+          );
     final countText = hunt.timed
         ? timerLabel(hunt.elapsed(now))
         : '${context.l10n.huntCount(hunt.count + _pending, null)} '
@@ -278,7 +282,14 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                             GameIcon(v, size: 18),
                           Flexible(
                             child: Text(
-                              [?save?.game, ?method?.label].join(' · '),
+                              [
+                                ?save?.game,
+                                if (method != null)
+                                  context.catalogText(
+                                    method.label,
+                                    method.labels,
+                                  ),
+                              ].join(' · '),
                               style: theme.textTheme.bodySmall,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -293,7 +304,10 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                       ),
                       Text(
                         hunt.paused && hunt.pausedAt != null
-                            ? '$since · pausada em ${format(hunt.pausedAt!)}'
+                            ? context.l10n.huntPausedOn(
+                                since,
+                                format(hunt.pausedAt!),
+                              )
                             : since,
                         style: theme.textTheme.bodySmall,
                       ),
@@ -302,7 +316,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                 ),
                 if (!hunt.paused)
                   PopupMenuButton<String>(
-                    tooltip: 'Mais ações',
+                    tooltip: context.l10n.moreActions,
                     onSelected: (action) => switch (action) {
                       'found' => unawaited(finishHunt(context, hunt)),
                       'edit' => unawaited(
@@ -310,26 +324,26 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                       ),
                       _ => _run(() => _actions.pause(hunt)),
                     },
-                    itemBuilder: (_) => const [
+                    itemBuilder: (_) => [
                       PopupMenuItem(
                         value: 'found',
                         child: ListTile(
-                          leading: ShinyIcon(size: 22),
-                          title: Text('Encontrei!'),
+                          leading: const ShinyIcon(size: 22),
+                          title: Text(context.l10n.huntFound),
                         ),
                       ),
                       PopupMenuItem(
                         value: 'edit',
                         child: ListTile(
-                          leading: Icon(Icons.edit),
-                          title: Text('Editar'),
+                          leading: const Icon(Icons.edit),
+                          title: Text(context.l10n.edit),
                         ),
                       ),
                       PopupMenuItem(
                         value: 'pause',
                         child: ListTile(
-                          leading: Icon(Icons.pause),
-                          title: Text('Fazer uma pausa'),
+                          leading: const Icon(Icons.pause),
+                          title: Text(context.l10n.huntPause),
                         ),
                       ),
                     ],
@@ -356,12 +370,12 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                     ),
                     onPressed: _delete,
                     icon: const Icon(Icons.delete),
-                    label: const Text('Excluir'),
+                    label: Text(context.l10n.huntDeleteAction),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: () => _run(() => _actions.resume(hunt)),
                     icon: const Icon(Icons.play_arrow),
-                    label: const Text('Retomar'),
+                    label: Text(context.l10n.huntResume),
                   ),
                 ],
               )
@@ -420,14 +434,14 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                             onPressed: () =>
                                 _run(() => _actions.toggleTimer(hunt)),
                             icon: const Icon(Icons.stop),
-                            label: const Text('Parar'),
+                            label: Text(context.l10n.timerStop),
                           )
                         : FilledButton.icon(
                             onPressed: enabled
                                 ? () => _run(() => _actions.toggleTimer(hunt))
                                 : null,
                             icon: const Icon(Icons.play_arrow),
-                            label: const Text('Iniciar'),
+                            label: Text(context.l10n.timerStart),
                           ),
                   ),
                 ],
@@ -442,7 +456,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                     // O tooltip abriria no segurar e tomaria o gesto: no
                     // toque, só o mouse o mostra.
                     child: Tooltip(
-                      message: 'Menos um (segure para repetir)',
+                      message: context.l10n.huntMinusOne,
                       triggerMode: TooltipTriggerMode.manual,
                       child: IconButton.outlined(
                         onPressed: enabled
@@ -504,7 +518,7 @@ class _CountDialogState extends State<_CountDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Contagem'),
+    title: Text(context.l10n.huntCountTitle),
     content: TextField(
       key: const ValueKey('hunt-count-input'),
       controller: _controller,
@@ -515,12 +529,12 @@ class _CountDialogState extends State<_CountDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancelar'),
+        child: Text(context.l10n.cancel),
       ),
       FilledButton(
         onPressed: () =>
             Navigator.of(context).pop(int.tryParse(_controller.text)),
-        child: const Text('OK'),
+        child: Text(context.l10n.ok),
       ),
     ],
   );
@@ -551,7 +565,7 @@ class _DurationDialogState extends State<_DurationDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Tempo da caçada'),
+    title: Text(context.l10n.huntTimeTitle),
     content: Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 12,
@@ -564,7 +578,7 @@ class _DurationDialogState extends State<_DurationDialog> {
             autofocus: true,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(labelText: 'Horas'),
+            decoration: InputDecoration(labelText: context.l10n.hoursLabel),
           ),
         ),
         SizedBox(
@@ -577,7 +591,7 @@ class _DurationDialogState extends State<_DurationDialog> {
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(2),
             ],
-            decoration: const InputDecoration(labelText: 'Min'),
+            decoration: InputDecoration(labelText: context.l10n.minutesLabel),
           ),
         ),
       ],
@@ -585,7 +599,7 @@ class _DurationDialogState extends State<_DurationDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancelar'),
+        child: Text(context.l10n.cancel),
       ),
       FilledButton(
         onPressed: () => Navigator.of(context).pop(
@@ -594,7 +608,7 @@ class _DurationDialogState extends State<_DurationDialog> {
             minutes: int.tryParse(_minutes.text) ?? 0,
           ),
         ),
-        child: const Text('OK'),
+        child: Text(context.l10n.ok),
       ),
     ],
   );
@@ -623,25 +637,25 @@ class HuntOddsPanel extends StatelessWidget {
     final (:rule, :hasCharm) = odds;
     final chance = hunt.chance(rule, hasCharm: hasCharm);
     final charmOn = rule.charmApplies(hunt.form, hasCharm: hasCharm);
+    final l10n = context.l10n;
     final why = [
-      if (rule.hasChain && hunt.chain > 0) 'cadeia ${hunt.chain}',
+      if (rule.hasChain && hunt.chain > 0) l10n.oddsChain(hunt.chain),
       if (rule.modifiers.any((m) => m.isNumber))
         for (final m in rule.modifiers)
-          if (m.isNumber) '${m.label} ${hunt.modifiers[m.id] ?? m.min ?? 0}',
+          if (m.isNumber)
+            '${context.catalogText(m.label, m.labels)} ${hunt.modifiers[m.id] ?? m.min ?? 0}',
       if (charmOn)
-        'Shiny Charm (do save)'
+        l10n.oddsCharmFromSave
       else if (hasCharm && rule.charmCounts)
-        'O Charm não vale para este encontro'
+        l10n.oddsCharmNotForEncounter
       else if (hasCharm)
-        'O Charm não vale neste método',
-      if (hunt.timed) 'em horas: só as odds',
+        l10n.oddsCharmNotForMethod,
+      if (hunt.timed) l10n.oddsTimed,
     ];
     final miss = hunt.missChance(rule, hasCharm: hasCharm);
     final percent = ((1 - miss) * 100).round();
     final multiple = hunt.multiple(rule, hasCharm: hasCharm);
-    final number = NumberFormat.decimalPattern(
-      Localizations.localeOf(context).toString(),
-    );
+    final number = NumberFormat.decimalPattern(l10n.localeName);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 6,
@@ -653,8 +667,8 @@ class HuntOddsPanel extends StatelessWidget {
           children: [
             Text(
               chance > 0
-                  ? oddsLabel(chance, context.l10n.localeName)
-                  : 'não pode ser shiny',
+                  ? oddsLabel(chance, l10n.localeName)
+                  : l10n.oddsCantBeShiny,
               key: const ValueKey('hunt-odds'),
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.primary,
@@ -675,22 +689,21 @@ class HuntOddsPanel extends StatelessWidget {
                 child: Text.rich(
                   TextSpan(
                     children: [
-                      const TextSpan(text: 'Cadeia atual '),
+                      TextSpan(text: l10n.chainCurrent),
                       TextSpan(
                         text: '${hunt.chain}',
                         style: theme.textTheme.titleMedium,
                       ),
                       TextSpan(
                         text:
-                            '\nmaior cadeia: ${hunt.bestChain} · '
-                            '${number.format(hunt.count)} no total',
+                            '\n${l10n.chainSummary(hunt.bestChain, number.format(hunt.count))}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
               ),
-              OutlinedButton(onPressed: onBreak, child: const Text('Quebrou')),
+              OutlinedButton(onPressed: onBreak, child: Text(l10n.chainBroke)),
             ],
           ),
         if (!hunt.timed && hunt.count > 0) ...[
@@ -700,10 +713,8 @@ class HuntOddsPanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
           ),
           Text(
-            '$percent% das caçadas já teriam terminado · '
-            '${multiple.toStringAsFixed(1).replaceAll('.', ',')}× '
-            'as odds'
-            '${hunt.estimated ? ' (estimativa: contagem digitada)' : ''}',
+            '${l10n.oddsProgress(percent, NumberFormat('0.0', l10n.localeName).format(multiple))}'
+            '${hunt.estimated ? l10n.oddsEstimated : ''}',
             style: theme.textTheme.bodySmall,
           ),
         ],

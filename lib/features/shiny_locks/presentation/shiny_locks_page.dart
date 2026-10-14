@@ -25,18 +25,16 @@ class _ShinyLocksPageState extends ConsumerState<ShinyLocksPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Shiny locks')),
+    appBar: AppBar(title: Text(context.l10n.shinyLocksTitle)),
     floatingActionButton: FloatingActionButton.extended(
       heroTag: 'new-shiny-lock',
       onPressed: _open,
       icon: const Icon(Icons.add),
-      label: const Text('Novo shiny lock'),
+      label: Text(context.l10n.shinyLockNew),
     ),
     body: switch (ref.watch(shinyLocksProvider)) {
-      AsyncData(value: final locks) when locks.isEmpty => const EmptyView(
-        message:
-            'Nenhum shiny lock cadastrado. Um shiny lock marca formas sem '
-            'shiny, ou com shiny só por distribuição (evento).',
+      AsyncData(value: final locks) when locks.isEmpty => EmptyView(
+        message: context.l10n.shinyLocksEmpty,
       ),
       AsyncData(value: final locks) => _list(locks),
       AsyncError(:final error) => ErrorView(
@@ -65,14 +63,21 @@ class _ShinyLocksPageState extends ConsumerState<ShinyLocksPage> {
             spacing: 8,
             children: [
               ChoiceChip(
-                label: Text('Todos · ${locks.length}'),
+                label: Text(
+                  context.l10n.labelCount(context.l10n.allLabel, locks.length),
+                ),
                 selected: _type == null,
                 onSelected: (_) => setState(() => _type = null),
               ),
               for (final type in ShinyLockTypeUi.ordered)
                 ChoiceChip(
                   avatar: Icon(type.icon, size: 18),
-                  label: Text('${type.shortLabel} · ${count(type)}'),
+                  label: Text(
+                    context.l10n.labelCount(
+                      type.shortLabel(context.l10n),
+                      count(type),
+                    ),
+                  ),
                   selected: _type == type,
                   onSelected: (_) => setState(() => _type = type),
                 ),
@@ -81,7 +86,7 @@ class _ShinyLocksPageState extends ConsumerState<ShinyLocksPage> {
         ),
         Expanded(
           child: shown.isEmpty
-              ? const EmptyView(message: 'Nenhum shiny lock deste tipo.')
+              ? EmptyView(message: context.l10n.shinyLocksEmptyType)
               : ListView(
                   // Espaço para o botão flutuante não cobrir o último.
                   padding: const EdgeInsets.only(bottom: 88),
@@ -104,8 +109,8 @@ class _ShinyLocksPageState extends ConsumerState<ShinyLocksPage> {
       ..showSnackBar(
         SnackBar(
           content: Text(switch (result) {
-            ShinyLockFormResult.saved => 'Shiny lock salvo.',
-            ShinyLockFormResult.deleted => 'Shiny lock apagado.',
+            ShinyLockFormResult.saved => context.l10n.shinyLockSaved,
+            ShinyLockFormResult.deleted => context.l10n.shinyLockDeleted,
           }),
         ),
       );
@@ -148,7 +153,10 @@ class _ShinyLockTile extends StatelessWidget {
                     horizontal: 6,
                     vertical: 2,
                   ),
-                  child: Text('Inativo', style: theme.textTheme.labelSmall),
+                  child: Text(
+                    context.l10n.shinyLockInactive,
+                    style: theme.textTheme.labelSmall,
+                  ),
                 ),
               ),
           ],
@@ -163,7 +171,7 @@ class _ShinyLockTile extends StatelessWidget {
                 semanticLabel: form.displayName,
               ),
             const SizedBox(width: 4),
-            Text(forms == 1 ? '1 forma' : '$forms formas'),
+            Text(context.l10n.countForms(forms)),
           ],
         ),
         trailing: const Icon(Icons.chevron_right),
@@ -214,8 +222,9 @@ extension ShinyLockTypeUi on ShinyLockType {
     ShinyLockType.distroOnly => Icons.card_giftcard,
   };
 
-  String get shortLabel => switch (this) {
-    ShinyLockType.unobtainable => 'Impossível',
-    ShinyLockType.distroOnly => 'Distribuição',
+  /// O nome curto, nos chips.
+  String shortLabel(AppLocalizations l10n) => switch (this) {
+    ShinyLockType.unobtainable => l10n.shinyLockShortUnobtainable,
+    ShinyLockType.distroOnly => l10n.shinyLockShortDistro,
   };
 }

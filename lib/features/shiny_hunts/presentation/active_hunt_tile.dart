@@ -34,12 +34,15 @@ class ActiveHuntTile extends ConsumerWidget {
         ? timerLabel(hunt.elapsed(ref.read(shinyHuntActionsProvider).now()))
         : '${context.l10n.huntCount(hunt.count, null)} '
               '${context.l10n.huntUnit(hunt.unit)}';
+    final methodName = method == null
+        ? null
+        : context.catalogText(method.label, method.labels);
     return ListTile(
       key: const ValueKey('active-hunt-tile'),
       contentPadding: EdgeInsets.zero,
       leading: const HuntBadge(size: 28),
-      title: const Text('Caçada em andamento'),
-      subtitle: Text([?save?.game, ?method?.label, count].join(' · ')),
+      title: Text(context.l10n.huntInProgress),
+      subtitle: Text([?save?.game, ?methodName, count].join(' · ')),
       trailing: onTap == null ? null : const Icon(Icons.chevron_right),
       onTap: onTap,
     );
