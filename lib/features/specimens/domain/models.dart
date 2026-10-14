@@ -343,7 +343,6 @@ abstract class Choice with _$Choice {
   factory Choice.fromJson(Map<String, dynamic> json) => _$ChoiceFromJson(json);
 }
 
-
 @freezed
 abstract class SpecimenOptions with _$SpecimenOptions {
   const factory SpecimenOptions({
