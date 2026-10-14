@@ -134,9 +134,12 @@ class _Details extends StatelessWidget {
                 for (final (i, a) in abilities.indexed) ...[
                   if (i > 0) const TextSpan(text: ' · '),
                   if (a.ability == highlightAbility)
-                    TextSpan(text: '✓ ${_abilityName(a)}', style: highlight)
+                    TextSpan(
+                      text: '✓ ${_abilityName(context, a)}',
+                      style: highlight,
+                    )
                   else
-                    TextSpan(text: _abilityName(a)),
+                    TextSpan(text: _abilityName(context, a)),
                 ],
               ],
             ),
@@ -147,6 +150,8 @@ class _Details extends StatelessWidget {
     );
   }
 
-  static String _abilityName(FormAbility a) =>
-      '${prettifyName(a.ability)}${a.isHidden ? ' (oculta)' : ''}';
+  /// "Chlorophyll (oculta)" / "Chlorophyll (hidden)".
+  static String _abilityName(BuildContext context, FormAbility a) => a.isHidden
+      ? context.l10n.hiddenAbility(prettifyName(a.ability))
+      : prettifyName(a.ability);
 }
