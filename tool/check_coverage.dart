@@ -9,6 +9,9 @@ import 'dart:io';
 const _excluded = [
   '.g.dart',
   '.freezed.dart',
+  'lib/l10n/app_localizations.dart',
+  'lib/l10n/app_localizations_en.dart',
+  'lib/l10n/app_localizations_pt.dart',
   'lib/main.dart',
   'lib/core/web/browser.dart',
   'lib/core/web/browser_web.dart',

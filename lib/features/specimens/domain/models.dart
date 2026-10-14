@@ -353,6 +353,10 @@ abstract class GamePokedex with _$GamePokedex {
 abstract class PokedexEntry with _$PokedexEntry {
   const factory PokedexEntry({
     required String label,
+
+    /// [label] em cada idioma da interface (`en`, `pt-BR`); vazio em
+    /// catálogos antigos, que só têm o [label] em pt-BR.
+    @Default(<String, String>{}) Map<String, String> labels,
     int? number,
     @Default(false) bool dlc,
   }) = _PokedexEntry;
@@ -373,6 +377,10 @@ abstract class Choice with _$Choice {
   const factory Choice({
     required String value,
     required String label,
+
+    /// [label] em cada idioma da interface (`en`, `pt-BR`); vazio em
+    /// catálogos antigos, que só têm o [label] em pt-BR.
+    @Default(<String, String>{}) Map<String, String> labels,
     String? spriteUrl,
 
     /// Só nas naturezas: o stat que ela aumenta e o que diminui (nomes de

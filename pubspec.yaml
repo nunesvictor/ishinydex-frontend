@@ -43,6 +43,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Gera as traduções (l10n.yaml) a cada pub get, build e run.
+  generate: true
   assets:
     - assets/game_icons/
     - assets/icons/

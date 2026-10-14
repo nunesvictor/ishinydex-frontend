@@ -609,3 +609,25 @@ backend de verdade (`FakeBackend.local`), alimentado pelo catálogo.
 - **`WidgetsFlutterBinding.ensureInitialized()`** no `main`: plugins como o
   `shared_preferences` falam com a plataforma por canais, que só existem
   depois do binding. Fora do `runApp`, é preciso pedir antes.
+
+## 12. Idiomas da interface (i18n)
+
+A interface fala **inglês** (padrão) e **português do Brasil** (ishinydex-frontend#178). O Flutter resolve isso com três peças:
+
+- **Arquivos `.arb`** em `lib/l10n/`: um JSON por idioma, com uma chave por texto. O `app_en.arb` é o **modelo** (toda chave nasce nele, com a descrição em `@chave` quando o contexto não é óbvio); o `app_pt.arb` traduz as mesmas chaves.
+  ```json
+  "settingsVersion": "Version {version}",
+  "@settingsVersion": {"placeholders": {"version": {"type": "String"}}}
+  ```
+- **`gen-l10n`**: com `generate: true` no `pubspec.yaml` e o `l10n.yaml`, cada `flutter pub get` (e `run`, `build`, `test`) gera a classe `AppLocalizations` em `lib/l10n/app_localizations*.dart`. Como os `*.g.dart`, o código gerado fica fora do git e da cobertura. Texto com parâmetro vira método: `l10n.settingsVersion('2.11.0')`.
+- **Na tela**: `context.l10n.settingsTitle` (atalho de `core/l10n/l10n.dart`). Ler o `context.l10n` faz o widget depender do idioma: trocar em Ajustes reconstrói a tela sozinho.
+
+Qual idioma vale (`core/l10n/app_language.dart`):
+- A escolha em **Ajustes → Preferências → Idioma** (`appLanguageProvider`): Automático, English ou Português (Brasil). Fica no aparelho (`shared_preferences`), como o último dex aberto: não vai para o sync.
+- **Automático** passa `locale: null` ao `MaterialApp`, e o `resolveLocale` escolhe pelo aparelho: qualquer português vira pt-BR; o resto, inglês.
+- O `main.dart` lê a escolha antes do primeiro quadro (`initialLanguageProvider`), para o app não abrir num idioma e trocar logo depois.
+- O `MaterialApp` também define o `Intl.defaultLocale`: `DateFormat`/`NumberFormat` sem `locale` seguem o idioma da tela. Quando o widget tem `context`, prefira passar `Localizations.localeOf(context)`.
+
+Os **rótulos do catálogo** (tipos, pokédex, métodos e odds) chegam do backend nos dois idiomas (`labels: {en, pt-BR}`) e ficam nos modelos ao lado do `label` em pt-BR, que os catálogos antigos trazem. Na tela: `context.catalogText(choice.label, choice.labels)`.
+
+**Testes**: o "aparelho" dos testes é en-US. Os helpers (`pumpWidgetApp`, `pumpFullApp`) fixam pt-BR, porque os textos dos testes estão em português; para testar em inglês, `locale: english` ou `language: AppLanguage.en`.

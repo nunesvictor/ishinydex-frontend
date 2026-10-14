@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/app.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/l10n/app_language.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
@@ -40,13 +41,16 @@ ProviderContainer createContainer({List<Override> overrides = const []}) {
   return container;
 }
 
-/// Monta um widget isolado com tema, localização pt-BR e Riverpod.
+/// Monta um widget isolado com tema, localização (pt-BR por padrão, como os
+/// textos dos testes; `locale: english` para os testes em inglês) e
+/// Riverpod.
 Future<void> pumpWidgetApp(
   WidgetTester tester,
   Widget child, {
   List<Override> overrides = const [],
   Size size = compactSize,
   TargetPlatform platform = TargetPlatform.android,
+  Locale locale = portuguese,
 
   /// As caçadas em andamento (#164); por padrão, nenhuma, sem latência.
   ShinyHuntRepository? hunts,
@@ -61,9 +65,9 @@ Future<void> pumpWidgetApp(
       ],
       child: MaterialApp(
         theme: ThemeData(platform: platform),
-        locale: const Locale('pt', 'BR'),
-        supportedLocales: const [Locale('pt', 'BR')],
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        locale: locale,
+        supportedLocales: supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: child,
       ),
     ),
@@ -78,6 +82,11 @@ Future<FakeBackend> pumpFullApp(
   LastDexStorage? lastDex,
   Env env = fakeEnv,
   List<Override> overrides = const [],
+
+  /// O idioma escolhido em Ajustes; pt-BR, como os textos dos testes (o
+  /// aparelho dos testes é en-US).
+  AppLanguage language = AppLanguage.pt,
+  LanguageStorage? languageStorage,
 }) async {
   final fake = backend ?? FakeBackend.seeded();
   await setScreenSize(tester, size);
@@ -89,6 +98,10 @@ Future<FakeBackend> pumpFullApp(
         fakeBackendProvider.overrideWithValue(fake),
         lastDexStorageProvider.overrideWithValue(
           lastDex ?? InMemoryLastDexStorage(),
+        ),
+        initialLanguageProvider.overrideWithValue(language),
+        languageStorageProvider.overrideWithValue(
+          languageStorage ?? InMemoryLanguageStorage(language),
         ),
         ...overrides,
       ],

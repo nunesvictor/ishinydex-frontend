@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
@@ -16,6 +18,37 @@ void main() {
       () => Catalog.fromJson(catalogJson(schemaVersion: 2), spriteBase: _base),
       throwsA(isA<FormatException>()),
     );
+  });
+
+  test('rótulos em cada idioma; catálogo antigo, sem labels', () {
+    const grass = {'en': 'Grass', 'pt-BR': 'Planta'};
+    const galar = {'en': 'Galar', 'pt-BR': 'Galar'};
+    const random = {'en': 'Random encounter', 'pt-BR': 'Encontro aleatório'};
+    // Cópia sem os tipos fixos dos literais, para acrescentar os labels.
+    final json = jsonDecode(jsonEncode(catalogJson())) as Map<String, dynamic>;
+    final choices = json['choices'] as Map<String, dynamic>;
+    ((choices['type'] as List).first as Map<String, dynamic>)['labels'] = grass;
+    (json['pokedexes'] as List).cast<Map<String, dynamic>>().firstWhere(
+      (d) => d['name'] == 'galar',
+    )['labels'] = galar;
+    json['shinyMethods'] = [
+      {
+        'id': 'random',
+        'label': 'Encontro aleatório',
+        'labels': random,
+        'units': ['encounters'],
+        'versions': ['sword'],
+      },
+    ];
+    final labeled = Catalog.fromJson(json, spriteBase: _base);
+
+    expect(labeled.options.type.first.labels, grass);
+    expect(labeled.options.type.last.labels, isEmpty);
+    expect(labeled.pokedexesOf(133).first.entries.single.labels, galar);
+    expect(labeled.shinyMethods.single.labels, random);
+    // Catálogo antigo: só o label em pt-BR.
+    expect(catalog.options.type.first.labels, isEmpty);
+    expect(catalog.pokedexesOf(133).first.entries.single.labels, isEmpty);
   });
 
   test('versão, dex padrão, ids e shiny locks', () {

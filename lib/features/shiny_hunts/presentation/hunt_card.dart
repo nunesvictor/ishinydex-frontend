@@ -637,7 +637,9 @@ class HuntOddsPanel extends StatelessWidget {
     final miss = hunt.missChance(rule, hasCharm: hasCharm);
     final percent = ((1 - miss) * 100).round();
     final multiple = hunt.multiple(rule, hasCharm: hasCharm);
-    final number = NumberFormat.decimalPattern('pt_BR');
+    final number = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toString(),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 6,

@@ -1,0 +1,9 @@
+# Traduções da interface (flutter gen-l10n, ishinydex-frontend#178): o
+# app_en.arb é o modelo; o app_pt.arb traduz cada chave. O código gerado
+# (lib/l10n/app_localizations*.dart) sai no `flutter pub get` e fica fora do
+# git, como os *.g.dart.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

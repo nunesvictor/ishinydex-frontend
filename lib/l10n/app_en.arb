@@ -1,0 +1,24 @@
+{
+  "@@locale": "en",
+  "settingsTitle": "Settings",
+  "@settingsTitle": {"description": "Título da aba Ajustes e da navegação."},
+  "settingsMySaves": "My saves",
+  "settingsMySavesSubtitle": "Games you send Pokémon to from HOME",
+  "settingsShinyLocks": "Shiny locks",
+  "settingsShinyLocksSubtitle": "Forms with no shiny, or distribution only",
+  "settingsPreferences": "Preferences",
+  "@settingsPreferences": {"description": "Seção de Ajustes com as preferências deste aparelho."},
+  "settingsAbout": "About iShinyDex",
+  "settingsVersion": "Version {version}",
+  "@settingsVersion": {"placeholders": {"version": {"type": "String", "example": "2.11.0"}}},
+  "language": "Language",
+  "languageAutomatic": "Automatic",
+  "@languageAutomatic": {"description": "Opção de idioma que segue o do aparelho."},
+  "languageAutomaticValue": "Automatic ({language})",
+  "@languageAutomaticValue": {
+    "description": "Subtítulo da opção Idioma quando segue o aparelho; language é o nome do idioma resolvido, na própria língua.",
+    "placeholders": {"language": {"type": "String", "example": "English"}}
+  },
+  "languageAutomaticSubtitle": "Follows the device language ({language})",
+  "@languageAutomaticSubtitle": {"placeholders": {"language": {"type": "String", "example": "English"}}}
+}
