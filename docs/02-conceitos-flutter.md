@@ -640,4 +640,6 @@ Os **rótulos dos modelos** seguem a mesma ideia: enums como `SpecimenOrdering` 
 
 **Plural em português:** na regra do pt, o 0 cai na mesma categoria do 1 (`one`), e o gen-l10n trata o `=1{…}` como `one`. Sem um `=0{…}`, `{count, plural, =1{1 save} other{{count} saves}}` diz "1 save" para zero. Contagem que pode ser zero leva o `=0` no `app_pt.arb`.
 
+**Shell web** (`web/index.html`, `web/manifest*.json`): o que aparece antes do app (o splash, o aviso de demora, a descrição e o manifesto) não passa pelo Flutter. A página vem em inglês, e um script no `<head>` escolhe o idioma como o app: o de Ajustes (lido do `localStorage`, onde o `shared_preferences` guarda `flutter.app_language`) ou, em Automático, o do navegador. Em português, troca o `lang`, a descrição, o manifesto (`manifest.pt-BR.json`) e os textos marcados com `data-pt`.
+
 **Testes**: o "aparelho" dos testes é en-US. Os helpers (`pumpWidgetApp`, `pumpFullApp`) fixam pt-BR, porque os textos dos testes estão em português; para testar em inglês, `locale: english` ou `language: AppLanguage.en`.

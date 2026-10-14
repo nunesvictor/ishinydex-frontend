@@ -5,9 +5,9 @@
     "display": "standalone",
     "background_color": "#FBF8FF",
     "theme_color": "#3F51B5",
-    "description": "Controle do PersonalDex do iShinyDex.",
+    "description": "Keep track of your shiny PersonalDex with iShinyDex.",
     "orientation": "any",
-    "lang": "pt-BR",
+    "lang": "en",
     "prefer_related_applications": false,
     "icons": [
         {

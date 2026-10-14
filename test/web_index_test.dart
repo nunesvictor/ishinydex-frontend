@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -65,8 +66,19 @@ void main() {
 
     expect(html, contains("classList.add('slow');\n    }, 15000);"));
     expect(html, contains('clearTimeout(slowTimer);'));
-    expect(html, contains('Está demorando mais que o normal.'));
-    expect(html, contains('onclick="location.reload()">Recarregar</button>'));
+    // Em inglês no HTML; o script do idioma troca para o data-pt.
+    expect(
+      html,
+      contains(
+        "<span data-pt=\"Está demorando mais que o normal.\">It's taking longer than usual.</span>",
+      ),
+    );
+    expect(
+      html,
+      contains(
+        'onclick="location.reload()" data-pt="Recarregar">Reload</button>',
+      ),
+    );
     // O splash não recebe toques, exceto com o aviso (o botão).
     expect(html, contains('#splash.slow { pointer-events: auto; }'));
     expect(
@@ -125,5 +137,44 @@ void main() {
     expect(html, contains("postMessage('version')"));
     expect(html, contains("new Event('ishinydex-update-ready')"));
     expect(html, contains('registration.update()'));
+  });
+
+  group('idioma do shell (#178)', () {
+    test('inglês por padrão; português pelo Ajustes ou pelo navegador', () {
+      final html = File('web/index.html').readAsStringSync();
+      expect(html, contains('<html lang="en">'));
+      // A mesma chave do PrefsLanguageStorage, com o prefixo do
+      // shared_preferences na web.
+      final storage = File('lib/core/l10n/app_language.dart')
+          .readAsStringSync();
+      expect(storage, contains("_key = 'app_language'"));
+      expect(html, contains("localStorage.getItem('flutter.app_language')"));
+      expect(html, contains("startsWith('pt')"));
+      expect(html, contains("'manifest.pt-BR.json'"));
+      // O script do idioma vem depois do manifesto e da descrição que troca.
+      expect(
+        html.indexOf('window.ishinydexLang = '),
+        greaterThan(html.indexOf('<link rel="manifest"')),
+      );
+    });
+
+    test('os dois manifestos só diferem na descrição e no idioma', () {
+      Map<String, dynamic> read(String name) =>
+          jsonDecode(File('web/$name').readAsStringSync())
+              as Map<String, dynamic>;
+      final en = read('manifest.json');
+      final pt = read('manifest.pt-BR.json');
+      expect(en['lang'], 'en');
+      expect(pt['lang'], 'pt-BR');
+      expect(en['description'], isNot(pt['description']));
+      for (final key in {...en.keys, ...pt.keys}) {
+        if (key == 'lang' || key == 'description') continue;
+        expect(jsonEncode(en[key]), jsonEncode(pt[key]), reason: key);
+      }
+      // Os dois vão para o cache offline.
+      final sw = File('web/sw.js').readAsStringSync();
+      expect(sw, contains("'manifest.json'"));
+      expect(sw, contains("'manifest.pt-BR.json'"));
+    });
   });
 }

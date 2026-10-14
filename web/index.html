@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <!-- Substituído pelo valor de `--base-href` no `flutter build web`. -->
   <base href="$FLUTTER_BASE_HREF">
@@ -7,7 +7,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Controle do PersonalDex do iShinyDex.">
+  <meta name="description" content="Keep track of your shiny PersonalDex with iShinyDex.">
   <!-- Cor da barra de status/do navegador: a do AppBar de cada tema
        (colorScheme.surface do AppTheme; conferida em test/web_index_test.dart).
        O app troca a cor quando o sistema muda de modo (Title em app.dart). -->
@@ -87,6 +87,30 @@
 
   <title>iShinyDex</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Idioma do shell (#178): o que vem antes do app (este HTML, o splash,
+       o manifesto) segue o do app. Primeiro o escolhido em Ajustes (o
+       shared_preferences guarda em localStorage, "flutter.app_language"); em
+       Automático, o do navegador, como o resolveLocale do app: qualquer
+       português vira pt-BR, o resto fica em inglês (o padrão desta página). -->
+  <script>
+    window.ishinydexLang = (() => {
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem('flutter.app_language'));
+      } catch (_) {}
+      if (saved === 'pt' || saved === 'en') return saved;
+      const langs = navigator.languages?.length
+        ? navigator.languages
+        : [navigator.language || ''];
+      return langs.some((l) => l.toLowerCase().startsWith('pt')) ? 'pt' : 'en';
+    })();
+    if (window.ishinydexLang === 'pt') {
+      document.documentElement.lang = 'pt-BR';
+      document.querySelector('meta[name="description"]').content =
+        'Controle do PersonalDex do iShinyDex.';
+      document.querySelector('link[rel="manifest"]').href = 'manifest.pt-BR.json';
+    }
+  </script>
 </head>
 <body>
   <div id="splash" aria-hidden="true">
@@ -94,8 +118,8 @@
     <span>iShinyDex</span>
     <div class="splash-track"><div class="splash-bar"></div></div>
     <div class="splash-slow">
-      <span>Está demorando mais que o normal.</span>
-      <button type="button" onclick="location.reload()">Recarregar</button>
+      <span data-pt="Está demorando mais que o normal.">It's taking longer than usual.</span>
+      <button type="button" onclick="location.reload()" data-pt="Recarregar">Reload</button>
     </div>
   </div>
   <!-- Cache offline (web/sw.js): depois de um uso online, o app abre sem
@@ -149,6 +173,12 @@
   <!-- No primeiro quadro do app, o splash some (fade de 200 ms, se já
        estava visível) e sai da página, e o service worker é registrado. -->
   <script>
+    // Os textos do splash em pt-BR (o HTML vem em inglês).
+    if (window.ishinydexLang === 'pt') {
+      for (const element of document.querySelectorAll('[data-pt]')) {
+        element.textContent = element.dataset.pt;
+      }
+    }
     const slowTimer = setTimeout(() => {
       document.getElementById('splash')?.classList.add('slow');
     }, 15000);
