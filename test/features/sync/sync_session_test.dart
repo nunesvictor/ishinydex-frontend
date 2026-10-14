@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/problem.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
 import 'package:ishinydex/features/sync/data/dropbox_client.dart';
 import 'package:ishinydex/features/sync/data/sync_session.dart';
@@ -84,14 +85,14 @@ void main() {
   });
 
   test('login recusado, state errado ou sem verificador: erro', () async {
-    Future<void> expectAuthError(String query, String message) async {
+    Future<void> expectAuthError(String query, Problem problem) async {
       await expectLater(
         login().finish(Uri.parse('https://x.github.io/app/?$query')),
         throwsA(
           isA<DropboxAuthException>().having(
-            (e) => e.message,
-            'mensagem',
-            contains(message),
+            (e) => e.problem,
+            'problema',
+            problem,
           ),
         ),
       );
@@ -100,13 +101,17 @@ void main() {
     await login().begin();
     await expectAuthError(
       'error=access_denied&error_description=Negado',
-      'Negado',
+      const Problem.dropboxLoginRefused('Negado'),
     );
     await login().begin();
-    await expectAuthError('error=access_denied', 'recusado');
+    await expectAuthError(
+      'error=access_denied',
+      const Problem.dropboxLoginRefused(),
+    );
     await login().begin();
-    await expectAuthError('code=bom&state=outro', 'não foi iniciado');
+    const elsewhere = Problem.dropboxLoginElsewhere();
+    await expectAuthError('code=bom&state=outro', elsewhere);
     // O verificador já foi usado: a mesma volta de novo também falha.
-    await expectAuthError('code=bom&state=x', 'não foi iniciado');
+    await expectAuthError('code=bom&state=x', elsewhere);
   });
 }

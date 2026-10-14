@@ -45,14 +45,14 @@ void main() {
     when(repository.fetchDexes).thenAnswer((_) async {
       calls++;
       // 1ª chamada: redirect de entrada (cai na lista); 2ª: a própria lista.
-      if (calls <= 2) throw const NetworkFailure();
+      if (calls <= 2) throw const NotFoundFailure();
       return const [PersonalDex(id: 1, name: 'Ok', total: 1, registered: 0)];
     });
     await pumpFullApp(
       tester,
       overrides: [personalDexRepositoryProvider.overrideWithValue(repository)],
     );
-    expect(find.text(const NetworkFailure().message), findsOneWidget);
+    expect(find.text('Não encontrado.'), findsOneWidget);
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(find.text('Ok'), findsOneWidget);

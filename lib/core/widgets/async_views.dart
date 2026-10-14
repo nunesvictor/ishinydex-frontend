@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
@@ -8,6 +10,8 @@ class LoadingView extends StatelessWidget {
       const Center(child: CircularProgressIndicator.adaptive());
 }
 
+/// Um erro de carregamento: a [AppFailure] traduzida (outro erro sai como
+/// veio) e, com [onRetry], o botão de tentar de novo.
 class ErrorView extends StatelessWidget {
   const ErrorView({required this.error, this.onRetry, super.key});
 
@@ -29,12 +33,15 @@ class ErrorView extends StatelessWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(height: 12),
-            Text('$error', textAlign: TextAlign.center),
+            Text(switch (error) {
+              final AppFailure failure => context.failureText(failure),
+              _ => '$error',
+            }, textAlign: TextAlign.center),
             if (retry != null) ...[
               const SizedBox(height: 12),
               FilledButton.tonal(
                 onPressed: retry,
-                child: const Text('Tentar novamente'),
+                child: Text(context.l10n.tryAgain),
               ),
             ],
           ],

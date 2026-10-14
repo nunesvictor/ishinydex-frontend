@@ -408,7 +408,7 @@ void main() {
     final repository = MockSpecimenRepository();
     var calls = 0;
     when(() => repository.fetchForm(1)).thenAnswer((_) async {
-      if (calls++ == 0) throw const NetworkFailure();
+      if (calls++ == 0) throw const NotFoundFailure();
       return FormDetail.fromJson(formDetailJson);
     });
     await pumpWidgetApp(

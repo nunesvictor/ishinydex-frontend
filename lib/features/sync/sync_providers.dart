@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/web/browser.dart' as browser;
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
@@ -62,7 +63,7 @@ class SyncState {
   final SyncPhase phase;
   final String? account;
   final DateTime? lastSync;
-  final String? error;
+  final Problem? error;
   final bool connected;
 
   /// Primeira conexão com dados nos dois lados: espera a escolha
@@ -77,7 +78,7 @@ class SyncState {
     SyncPhase? phase,
     String? account,
     DateTime? lastSync,
-    String? error,
+    Problem? error,
     FirstSyncChoice? firstSync,
     int? pulls,
   }) => SyncState(
@@ -146,8 +147,15 @@ class SyncController extends Notifier<SyncState> {
       _browser.replace(redirectUri);
       state = SyncState(
         phase: SyncPhase.error,
-        // Do login, a mensagem já diz o que houve (recusado, outro aparelho).
-        error: error is DropboxAuthException ? error.message : _message(error),
+        // Do login, o problema já diz o que houve (recusado, outro aparelho);
+        // se o Dropbox recusou o código, vale o motivo dele.
+        error: switch (error) {
+          DropboxAuthException(:final problem?) => problem,
+          DropboxAuthException(:final message) => Problem.dropboxLoginRefused(
+            message,
+          ),
+          _ => _problem(error),
+        },
       );
       ref.read(routerProvider).go(Routes.sync);
       return;
@@ -298,16 +306,15 @@ class SyncController extends Notifier<SyncState> {
       phase: error is DropboxOfflineException
           ? SyncPhase.offline
           : SyncPhase.error,
-      error: _message(error),
+      error: _problem(error),
     );
   }
 
-  static String _message(Exception error) => switch (error) {
-    DropboxAuthException() =>
-      'O acesso ao Dropbox expirou ou foi revogado. Conecte de novo.',
-    DropboxOfflineException() => 'Sem conexão com o Dropbox.',
-    FormatException(:final message) => message,
-    _ => 'Não foi possível sincronizar ($error).',
+  static Problem _problem(Exception error) => switch (error) {
+    DropboxAuthException() => const Problem.dropboxAccessExpired(),
+    DropboxOfflineException() => const Problem.dropboxOffline(),
+    DataFailure(:final problem) => problem,
+    _ => Problem.syncFailed('$error'),
   };
 }
 

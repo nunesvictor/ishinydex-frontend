@@ -290,25 +290,25 @@ void main() {
 
   testWidgets('erro de validação aparece no campo', (tester) async {
     when(() => repository.create(any())).thenThrow(
-      ValidationFailure({
-        'nickname': ['Apelido muito longo.'],
+      const ValidationFailure({
+        'nickname': [Problem.blank()],
       }),
     );
     await pumpForm(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Salvar e depositar'));
     await tester.pumpAndSettle();
-    expect(find.text('Apelido muito longo.'), findsNWidgets(2));
+    expect(find.text('Este campo não pode ser em branco.'), findsNWidgets(2));
   });
 
   testWidgets('falha de rede mostra mensagem geral', (tester) async {
-    when(() => repository.create(any())).thenThrow(const NetworkFailure());
+    when(() => repository.create(any())).thenThrow(const NotFoundFailure());
     await pumpForm(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Salvar e depositar'));
     await tester.pump();
     await tester.pumpAndSettle();
-    expect(find.text(const NetworkFailure().message), findsOneWidget);
+    expect(find.text('Não encontrado.'), findsOneWidget);
   });
 
   testWidgets('forma shiny-locked e erro de carregamento com retry', (
@@ -316,12 +316,12 @@ void main() {
   ) async {
     var calls = 0;
     when(() => repository.fetchForm(1)).thenAnswer((_) async {
-      if (calls++ == 0) throw const ServerFailure();
+      if (calls++ == 0) throw const DataFailure(Problem.invalidData());
       return FormDetail.fromJson({...formDetailJson, 'is_shinylocked': true});
     });
     await pumpForm(tester);
     await tester.pumpAndSettle();
-    expect(find.text(const ServerFailure().message), findsOneWidget);
+    expect(find.text('Dados inválidos.'), findsOneWidget);
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(find.text('Atenção: esta forma é shiny-locked.'), findsOneWidget);
@@ -330,14 +330,16 @@ void main() {
   testWidgets('erro nas opções ou treinadores também vira ErrorView', (
     tester,
   ) async {
-    when(repository.fetchOptions).thenThrow(const ServerFailure());
+    when(repository.fetchOptions)
+        .thenThrow(const DataFailure(Problem.invalidData()));
     await pumpForm(tester);
     await tester.pumpAndSettle();
     expect(find.text('Tentar novamente'), findsOneWidget);
   });
 
   testWidgets('erro nos treinadores', (tester) async {
-    when(repository.fetchTrainers).thenThrow(const ServerFailure());
+    when(repository.fetchTrainers)
+        .thenThrow(const DataFailure(Problem.invalidData()));
     await pumpForm(tester);
     await tester.pumpAndSettle();
     expect(find.text('Tentar novamente'), findsOneWidget);
@@ -394,7 +396,7 @@ void main() {
       });
       await pumpForm(tester, specimenId: 1);
       await tester.pumpAndSettle();
-      expect(find.text(const NotFoundFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.text('Bulba'), findsOneWidget);

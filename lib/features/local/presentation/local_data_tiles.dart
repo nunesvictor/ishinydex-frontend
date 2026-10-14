@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/features/local/local_data_providers.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
@@ -57,8 +59,8 @@ class LocalDataTiles extends ConsumerWidget {
     final ({String name, Map<String, dynamic> file})? picked;
     try {
       picked = await actions.pick();
-    } on FormatException catch (error) {
-      if (context.mounted) _notify(context, error.message);
+    } on DataFailure catch (failure) {
+      if (context.mounted) _notify(context, context.failureText(failure));
       return;
     }
     if (picked == null || !context.mounted) return;

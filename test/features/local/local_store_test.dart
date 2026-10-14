@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
 import 'package:ishinydex/features/local/data/local_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -146,14 +147,14 @@ void main() {
     },
   );
 
-  test('outro arquivo ou formato mais novo: FormatException', () async {
+  test('outro arquivo ou formato mais novo: DataFailure', () async {
     storage.data = jsonEncode({'kind': 'outra-coisa'});
-    expect(store.load, throwsA(isA<FormatException>()));
+    expect(store.load, throwsA(isA<DataFailure>()));
     storage.data = jsonEncode({
       'kind': LocalStore.kind,
       'schemaVersion': LocalStore.schemaVersion + 1,
     });
-    expect(store.load, throwsA(isA<FormatException>()));
+    expect(store.load, throwsA(isA<DataFailure>()));
   });
 
   testWidgets('SaveScheduler: uma gravação por rajada, depois do atraso', (

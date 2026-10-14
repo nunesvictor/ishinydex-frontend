@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/local/data/data_file_io.dart';
 import 'package:ishinydex/features/local/data/local_store.dart';
@@ -62,13 +63,13 @@ class LocalData {
     );
   }
 
-  /// Lê e valida um arquivo escolhido ([FormatException] se não servir).
+  /// Lê e valida um arquivo escolhido ([DataFailure] se não servir).
   static Map<String, dynamic> read(Uint8List bytes) {
     final String raw;
     try {
       raw = utf8.decode(bytes);
     } on FormatException {
-      throw const FormatException('Não é um arquivo de dados do iShinyDex.');
+      throw const DataFailure(Problem.notADataFile());
     }
     return LocalStore.parse(raw);
   }
@@ -121,7 +122,7 @@ class LocalDataActions {
     return file.name;
   }
 
-  /// Escolhe e valida um arquivo ([FormatException] se não servir);
+  /// Escolhe e valida um arquivo ([DataFailure] se não servir);
   /// `null` se a pessoa desistir.
   Future<({String name, Map<String, dynamic> file})?> pick() async {
     final picked = await _ref.read(dataFileIoProvider).pick();

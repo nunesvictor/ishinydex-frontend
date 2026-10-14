@@ -1,3 +1,4 @@
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
 // Restrições do HOME ao mover um Pokémon para um save (frontend#175), das
@@ -21,13 +22,13 @@ const _bdsp = {'brilliant-diamond', 'shining-pearl'};
 
 /// Por que o HOME recusa a forma [formName], com a marca de origem [mark],
 /// num save de [saveVersion]; `null` = pode ir.
-String? transferBlock(String formName, String? mark, String? saveVersion) {
+Problem? transferBlock(String formName, String? mark, String? saveVersion) {
   final bdsp = _bdsp.contains(saveVersion);
-  if (unmovableForms.contains(formName)) return 'Essa forma não sai do HOME';
-  if (formName == 'spinda' && bdsp) return 'O Spinda não vai para o BDSP';
+  if (unmovableForms.contains(formName)) return const Problem.formStaysInHome();
+  if (formName == 'spinda' && bdsp) return const Problem.spindaNotInBdsp();
   if (formName == 'nincada') {
-    if (bdsp && mark != 'bdsp') return 'Só o Nincada do BDSP entra no BDSP';
-    if (!bdsp && mark == 'bdsp') return 'O Nincada do BDSP só volta ao BDSP';
+    if (bdsp && mark != 'bdsp') return const Problem.nincadaBdspOnly();
+    if (!bdsp && mark == 'bdsp') return const Problem.nincadaBackToBdsp();
   }
   return null;
 }
@@ -35,7 +36,7 @@ String? transferBlock(String formName, String? mark, String? saveVersion) {
 /// Aviso (o envio continua liberado): lendários, míticos e Ultracriaturas
 /// vindos do GO só entram num save que já obteve aquela forma, e o app não
 /// sabe disso. Meltan e Melmetal são a exceção.
-String? transferWarning(
+Problem? transferWarning(
   String formName,
   String? mark,
   SpeciesCategory category,
@@ -47,11 +48,11 @@ String? transferWarning(
   };
   if (mark != 'go' || !special.contains(category)) return null;
   if (formName == 'meltan' || formName == 'melmetal') return null;
-  return 'Do GO: só entra se o save já obteve essa forma';
+  return const Problem.goNeedsForm();
 }
 
 /// Um espécime que não pode ir, ou que vai com aviso.
-typedef TransferIssue = ({int id, String name, String message});
+typedef TransferIssue = ({int id, String name, Problem problem});
 
 /// O resultado de `FakeBackend.transferCheck`: quem pode ir para o save,
 /// quem fica (e por quê), os avisos e quantos estão fora da pokédex do

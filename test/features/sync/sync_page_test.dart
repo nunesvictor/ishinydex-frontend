@@ -210,6 +210,29 @@ void main() {
     expect(find.text('O login no Dropbox foi recusado.'), findsOneWidget);
   });
 
+  testWidgets('código recusado pelo Dropbox: mostra o motivo dele', (
+    tester,
+  ) async {
+    final url = await DropboxLogin(
+      dio: dropbox.dio(),
+      store: sessions,
+      appKey: 'chave',
+      redirectUri: _page,
+    ).begin();
+    browser.page = Uri.parse(
+      '$_page?code=velho&state=${url.queryParameters['state']}',
+    );
+    await pumpApp(tester);
+    expect(find.text('Conectar ao Dropbox'), findsOneWidget);
+    expect(find.text('refresh token is invalid or revoked'), findsOneWidget);
+  });
+
+  testWidgets('sem internet na volta do login: avisa', (tester) async {
+    dropbox.offline = true;
+    await returnFromLogin(tester);
+    expect(find.text('Sem conexão com o Dropbox.'), findsOneWidget);
+  });
+
   testWidgets('conectado: sincroniza ao abrir e mostra em Ajustes', (
     tester,
   ) async {

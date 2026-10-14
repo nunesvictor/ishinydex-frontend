@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
@@ -30,7 +31,7 @@ Future<void> runHuntAction(
   try {
     await action();
   } on AppFailure catch (failure) {
-    if (context.mounted) _notify(context, failure.message);
+    if (context.mounted) _notify(context, context.failureText(failure));
   }
 }
 

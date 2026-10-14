@@ -62,13 +62,13 @@ void main() {
 
     test('erro da API é repassado', () async {
       final repository = MockPersonalDexRepository();
-      when(repository.fetchDexes).thenThrow(const NetworkFailure());
+      when(repository.fetchDexes).thenThrow(const NotFoundFailure());
       expect(
         resolveHomeDexId(
           storage: InMemoryLastDexStorage(),
           repository: repository,
         ),
-        throwsA(isA<NetworkFailure>()),
+        throwsA(isA<NotFoundFailure>()),
       );
     });
   });

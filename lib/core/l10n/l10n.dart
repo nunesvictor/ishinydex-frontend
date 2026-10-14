@@ -1,6 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:ishinydex/core/l10n/problem_text.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/l10n/app_localizations.dart';
 
+export 'package:ishinydex/core/l10n/problem_text.dart';
 export 'package:ishinydex/l10n/app_localizations.dart';
 
 /// Atalhos de tradução (ishinydex-frontend#178).
@@ -16,4 +19,14 @@ extension L10nContext on BuildContext {
   /// em pt-BR quando o catálogo é antigo (sem `labels`).
   String catalogText(String fallback, Map<String, String> labels) =>
       labels[catalogLanguage] ?? fallback;
+
+  /// O texto de uma falha: `context.failureText(failure)`.
+  String failureText(AppFailure failure) => l10n.problems(failure.problems);
+
+  /// O erro do campo [field] numa [ValidationFailure], ou `null`.
+  String? fieldError(ValidationFailure? failure, String field) =>
+      switch (failure?.errorsFor(field)) {
+        final problems? => l10n.problems(problems),
+        null => null,
+      };
 }

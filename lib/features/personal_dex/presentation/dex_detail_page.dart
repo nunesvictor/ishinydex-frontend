@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
@@ -714,7 +715,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       _selection.value++;
       if (index != start) _pageController?.jumpToPage(index);
     } on AppFailure catch (failure) {
-      _notify(failure.message);
+      _notify(context.failureText(failure));
     }
   }
 
@@ -814,10 +815,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   Future<void> _withdraw(Slot slot) async {
     final specimen = slot.specimen!;
     final actions = ref.read(slotActionsProvider);
+    final l10n = context.l10n;
     try {
       await actions.withdraw(slot);
     } on AppFailure catch (failure) {
-      _notify(failure.message);
+      _notify(l10n.problems(failure.problems));
       return;
     }
     if (!mounted) return;
@@ -832,7 +834,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
               try {
                 await actions.deposit(slot, specimenId: specimen.id);
               } on AppFailure catch (failure) {
-                _notify(failure.message);
+                _notify(l10n.problems(failure.problems));
               }
             },
           ),
@@ -889,12 +891,13 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       confirmLabel: 'Libertar',
       destructive: true,
     );
-    if (!confirmed) return;
+    if (!confirmed || !mounted) return;
+    final l10n = context.l10n;
     try {
       await ref.read(slotActionsProvider).release(slot);
       _notify('Espécime libertado.');
     } on AppFailure catch (failure) {
-      _notify(failure.message);
+      _notify(l10n.problems(failure.problems));
     }
   }
 

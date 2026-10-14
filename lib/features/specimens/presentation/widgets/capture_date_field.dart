@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/l10n/problem.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 
 /// Data de captura digitável (PC), no formato escolhido nos Ajustes, com um
@@ -16,7 +18,7 @@ class CaptureDateField extends StatefulWidget {
   final CaptureDatePattern pattern;
 
   /// Data válida (ou `null` se vazia/inválida) e o erro, se houver.
-  final void Function(DateTime? date, String? error) onChanged;
+  final void Function(DateTime? date, Problem? error) onChanged;
   final VoidCallback onPickFromCalendar;
 
   @override
@@ -25,7 +27,7 @@ class CaptureDateField extends StatefulWidget {
 
 class _CaptureDateFieldState extends State<CaptureDateField> {
   late final _controller = TextEditingController(text: _format(widget.value));
-  String? _error;
+  Problem? _error;
 
   String _format(DateTime? date) =>
       date == null ? '' : widget.pattern.format(date);
@@ -60,7 +62,10 @@ class _CaptureDateFieldState extends State<CaptureDateField> {
     decoration: InputDecoration(
       labelText: 'Data de captura',
       hintText: widget.pattern.hint,
-      errorText: _error,
+      errorText: switch (_error) {
+        final error? => context.l10n.problem(error),
+        null => null,
+      },
       prefixIcon: const Icon(Icons.event),
       suffixIcon: IconButton(
         tooltip: 'Escolher no calendário',

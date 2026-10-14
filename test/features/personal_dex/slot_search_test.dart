@@ -41,12 +41,12 @@ void main() {
       var calls = 0;
       when(() => repository.searchSlots(dexId: 1, search: 'mew'))
           .thenAnswer((_) async {
-            if (calls++ == 0) throw const NetworkFailure();
+            if (calls++ == 0) throw const NotFoundFailure();
             return const [];
           });
       await pump(tester, 'mew');
       await tester.pumpAndSettle();
-      expect(find.text(const NetworkFailure().message), findsOneWidget);
+      expect(find.text('Não encontrado.'), findsOneWidget);
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
       expect(find.text('Nenhuma forma deste dex encontrada.'), findsOneWidget);

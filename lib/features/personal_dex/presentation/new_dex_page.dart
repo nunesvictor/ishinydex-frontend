@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -137,7 +138,7 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
                 controller: _name,
                 decoration: InputDecoration(
                   labelText: 'Nome',
-                  errorText: _validation?.errorFor('name'),
+                  errorText: context.fieldError(_validation, 'name'),
                 ),
               ),
               SwitchListTile.adaptive(
@@ -202,7 +203,7 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
       setState(() {
         _saving = false;
         _validation = failure is ValidationFailure ? failure : null;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }
@@ -249,7 +250,7 @@ class _PreviewCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   error is AppFailure
-                      ? error.message
+                      ? context.failureText(error)
                       : 'Não foi possível simular o dex.',
                 ),
               ),

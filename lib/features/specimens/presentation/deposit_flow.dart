@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
@@ -173,7 +174,7 @@ class _DepositPickerState extends ConsumerState<DepositPicker> {
       ref.invalidate(availableSpecimensProvider(_form.id));
       setState(() {
         _busy = false;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }

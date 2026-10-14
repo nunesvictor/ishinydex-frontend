@@ -3,13 +3,14 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:web/web.dart' as web;
 
 /// Arquivo escolhido: nome e conteúdo.
 typedef PickedFile = ({String name, Uint8List bytes});
 
 /// Abre o seletor de arquivos do sistema; `null` se a pessoa desistir.
-/// Arquivo ilegível → [FormatException].
+/// Arquivo ilegível → [DataFailure].
 ///
 /// O `<input type=file>` fica na página até a escolha chegar: o Safari do
 /// iOS não avisa a escolha (evento `change`) a um input fora da página, e
@@ -37,7 +38,7 @@ Future<PickedFile?> pickFileInPage({required String accept}) {
       final buffer = await file.arrayBuffer().toDart;
       finish((name: file.name, bytes: buffer.toDart.asUint8List()));
     } on Object {
-      finish(null, FormatException('Não foi possível ler ${file.name}.'));
+      finish(null, DataFailure(Problem.unreadableFile(file.name)));
     }
   }
 

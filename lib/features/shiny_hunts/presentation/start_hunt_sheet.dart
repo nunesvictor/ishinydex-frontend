@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -97,7 +98,7 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
     } on AppFailure catch (failure) {
       setState(() {
         _saving = false;
-        _error = failure.message;
+        _error = context.failureText(failure);
       });
     }
   }
