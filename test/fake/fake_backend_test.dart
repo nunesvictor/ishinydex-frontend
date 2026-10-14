@@ -1,7 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
@@ -10,6 +13,9 @@ import '../helpers/helpers.dart';
 Matcher _validation(String field) => throwsA(
   isA<ValidationFailure>().having((f) => f.errorsFor(field), field, isNotNull),
 );
+
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
   late FakeBackend backend;
@@ -876,17 +882,21 @@ void main() {
       }
       final dex = many.addDex(name: 'Todas');
       many.addBox(dexId: dex, name: 'B', formIds: numbers);
-      expect((await many.fetchGenerations(dex)).map((g) => g.label), [
-        'Geração I',
-        'Geração II',
-        'Geração III',
-        'Geração IV',
-        'Geração V',
-        'Geração VI',
-        'Geração VII',
-        'Geração VIII',
-        'Geração IX',
-      ]);
+      expect(
+        (await many.fetchGenerations(dex))
+            .map((g) => _pt.generation(g.generation)),
+        [
+          'Geração I',
+          'Geração II',
+          'Geração III',
+          'Geração IV',
+          'Geração V',
+          'Geração VI',
+          'Geração VII',
+          'Geração VIII',
+          'Geração IX',
+        ],
+      );
     });
 
     test('novo dex: simulação, criação e erros', () async {

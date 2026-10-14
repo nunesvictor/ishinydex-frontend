@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 
 /// Ícone da marca de origem na cor dos ícones ao redor (no chip, a do
@@ -20,7 +21,7 @@ class OriginMarkIcon extends StatelessWidget {
     height: size,
     color: IconTheme.of(context).color,
     colorBlendMode: BlendMode.srcIn,
-    semanticLabel: mark.games,
+    semanticLabel: context.l10n.originMarkGames(mark),
   );
 }
 
@@ -33,7 +34,7 @@ class OriginMarkChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-    message: 'Marca de origem: ${mark.games}',
+    message: 'Marca de origem: ${context.l10n.originMarkGames(mark)}',
     child: Chip(
       avatar: ExcludeSemantics(child: OriginMarkIcon(mark)),
       label: Text(mark.label),

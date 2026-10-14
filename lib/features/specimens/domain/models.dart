@@ -105,40 +105,6 @@ abstract class HuntRecord with _$HuntRecord {
       method == null && count == null && (postUrl == null || postUrl!.isEmpty);
 }
 
-/// Nomes em pt-BR das unidades dos métodos de shiny.
-const huntUnitLabels = {
-  'encounters': 'encontros',
-  'hours': 'horas',
-  'resets': 'resets',
-  'eggs': 'ovos',
-  'chains': 'cadeia',
-  'runs': 'runs',
-  'raids': 'reides',
-  'hordes': 'hordas',
-  'combo': 'combo',
-};
-
-/// `"4.213 resets"`, ou `"38 h 30 min"` em horas (a contagem são minutos).
-String huntCountLabel(int count, String? unit) {
-  if (unit == 'hours') {
-    final (h, m) = (count ~/ 60, count % 60);
-    return m == 0 ? '$h h' : (h == 0 ? '$m min' : '$h h $m min');
-  }
-  final number = NumberFormat.decimalPattern('pt_BR').format(count);
-  return unit == null ? number : '$number ${huntUnitLabels[unit] ?? unit}';
-}
-
-/// Quanto durou a caçada, de [start] até [end]: `"12 dias"`, `"3 meses"`,
-/// `"2 anos"`. No mesmo dia, `"menos de um dia"`.
-String huntDuration(DateTime start, DateTime end) {
-  final days = end.difference(start).inDays;
-  String plural(int n, String one, String many) => '$n ${n == 1 ? one : many}';
-  if (days < 1) return 'menos de um dia';
-  if (days < 30) return plural(days, 'dia', 'dias');
-  if (days < 365) return plural(days ~/ 30, 'mês', 'meses');
-  return plural(days ~/ 365, 'ano', 'anos');
-}
-
 /// Dados para criar (`POST /specimens/`) ou editar
 /// (`PATCH /specimens/{id}/`) um specimen.
 @freezed
@@ -264,17 +230,6 @@ abstract class FormStat with _$FormStat {
 
   factory FormStat.fromJson(Map<String, dynamic> json) =>
       _$FormStatFromJson(json);
-
-  /// Nome do status como nos jogos em português.
-  String get label => switch (stat) {
-    'hp' => 'HP',
-    'attack' => 'Ataque',
-    'defense' => 'Defesa',
-    'special-attack' => 'Atq. Esp.',
-    'special-defense' => 'Def. Esp.',
-    'speed' => 'Velocidade',
-    _ => prettifyName(stat),
-  };
 }
 
 /// Detalhe da forma (`GET /forms/{id}/`): tipos, habilidades, status base e
@@ -365,10 +320,6 @@ abstract class PokedexEntry with _$PokedexEntry {
 
   factory PokedexEntry.fromJson(Map<String, dynamic> json) =>
       _$PokedexEntryFromJson(json);
-
-  /// "Galar nº 383", "Tundra Coroada nº 139 (DLC)", "Aventura Dinamax (DLC)".
-  String get description =>
-      '$label${number == null ? '' : ' nº $number'}${dlc ? ' (DLC)' : ''}';
 }
 
 /// Opção de um select. Pokébolas e tipos trazem também o [spriteUrl].
@@ -497,28 +448,10 @@ abstract class Save with _$Save {
   /// Jogos sem Shiny Charm: o FRLG é da Gen III, anterior ao Charm.
   static const _noCharmVersions = {'firered', 'leafgreen'};
 
-  /// Onde o Charm não vale, para a explicação no save.
-  static const _charmHints = {
-    'sword': 'não vale nos Regis, nos fósseis e nas reides',
-    'shield': 'não vale nos Regis, nos fósseis e nas reides',
-    'brilliant-diamond': 'no BDSP, só vale nos ovos',
-    'shining-pearl': 'no BDSP, só vale nos ovos',
-    'scarlet': 'não vale em estáticos, Pokémon Tera e reides',
-    'violet': 'não vale em estáticos, Pokémon Tera e reides',
-    'legends-za': 'não vale nos fósseis',
-  };
-
   /// O jogo do save tem o Shiny Charm.
   bool get canHaveShinyCharm =>
       homeVersions.contains(trainer.version) &&
       !_noCharmVersions.contains(trainer.version);
-
-  /// Explicação do "Tenho o Shiny Charm".
-  String get shinyCharmHint {
-    final hint = _charmHints[trainer.version];
-    return 'Vale nas caçadas deste save em que o Charm conta'
-        '${hint == null ? '' : ' ($hint)'}.';
-  }
 
   /// Save de um jogo só de ida ([oneWayVersions]).
   bool get isOneWay => oneWayVersions.contains(trainer.version);
@@ -571,14 +504,6 @@ int daysSince(DateTime since, {DateTime? today}) {
   ).difference(DateTime(since.year, since.month, since.day)).inDays;
 }
 
-/// `"hoje"`, `"há 1 dia"`, `"há 203 dias"`.
-String awayFor(DateTime since, {DateTime? today}) =>
-    switch (daysSince(since, today: today)) {
-      <= 0 => 'hoje',
-      1 => 'há 1 dia',
-      final days => 'há $days dias',
-    };
-
 /// Versão de jogo (`GET /versions/`), usada no cadastro de treinador.
 @freezed
 abstract class GameVersion with _$GameVersion {
@@ -615,18 +540,17 @@ enum SpecimenStatus {
 enum SpecimenOrdering {
   /// Onde o espécime fica nas boxes (o próprio slot, se depositado; senão o
   /// 1º slot com a forma dele). É a ordem padrão.
-  box('box', 'Ordem das boxes'),
+  box('box'),
 
   /// Nº da espécie na Pokédex nacional (formas da mesma espécie juntas).
-  national('national', 'Nº da Pokédex nacional'),
-  capturedDesc('-captured_at', 'Capturados recentemente'),
-  capturedAsc('captured_at', 'Capturados há mais tempo'),
-  createdDesc('-created_at', 'Cadastrados recentemente');
+  national('national'),
+  capturedDesc('-captured_at'),
+  capturedAsc('captured_at'),
+  createdDesc('-created_at');
 
-  SpecimenOrdering(this.param, this.label);
+  SpecimenOrdering(this.param);
 
   final String param;
-  final String label;
 }
 
 /// Filtros do inventário.

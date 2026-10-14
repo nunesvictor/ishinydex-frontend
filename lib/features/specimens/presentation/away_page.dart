@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_notice.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
@@ -120,7 +122,7 @@ class _AwayTile extends ConsumerWidget {
       subtitle: Text(
         [
           ?form?.dexNumber,
-          if (since != null) 'Saiu ${awayFor(since)}',
+          if (since != null) 'Saiu ${context.l10n.awayFor(since)}',
         ].join(' · '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,

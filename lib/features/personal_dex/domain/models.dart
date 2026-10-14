@@ -164,26 +164,18 @@ abstract class GenerationProgress with _$GenerationProgress {
 
   const GenerationProgress._();
 
-  /// `"generation-iv"` → `"Geração IV"`.
-  String get label {
-    final gen = generation;
-    if (gen == null) return 'Outras formas';
-    return 'Geração ${gen.replaceFirst('generation-', '').toUpperCase()}';
-  }
-
   int get missing => total - registered;
 }
 
 /// Por que um slot está na lista de caçadas; [param] é o valor da API.
 enum HuntReason {
-  noShiny('no_shiny', 'Sem shiny'),
-  fromGo('from_go', 'Shiny do GO'),
-  pokeball('pokeball', 'Pokébola');
+  noShiny('no_shiny'),
+  fromGo('from_go'),
+  pokeball('pokeball');
 
-  HuntReason(this.param, this.label);
+  HuntReason(this.param);
 
   final String param;
-  final String label;
 
   /// Valor da API → motivo; desconhecido → `null` (ignorado).
   static HuntReason? fromParam(String value) =>
@@ -193,14 +185,11 @@ enum HuntReason {
 /// Situação do slot nas caçadas: vazio (falta registrar) ou com um espécime
 /// que ainda não serve (não shiny, do GO, pokébola errada).
 enum HuntSituation {
-  all('Todos', 'Vazios e registrados'),
-  missing('Faltando', 'Slot vazio: falta registrar', param: false),
-  registered('Registrados', 'Com espécime, mas sem o shiny certo', param: true);
+  all,
+  missing(param: false),
+  registered(param: true);
 
-  HuntSituation(this.label, this.hint, {this.param});
-
-  final String label;
-  final String hint;
+  HuntSituation({this.param});
 
   /// Valor de `registered` na API; `null` não filtra.
   final bool? param;
@@ -208,30 +197,28 @@ enum HuntSituation {
 
 /// Categoria da espécie, nos filtros das caçadas e do inventário.
 enum SpeciesCategory {
-  legendary('legendary', 'Lendário'),
-  mythical('mythical', 'Mítico'),
-  ultraBeast('ultra-beast', 'Ultra Beast'),
-  baby('baby', 'Bebê'),
-  regular('regular', 'Comum');
+  legendary('legendary'),
+  mythical('mythical'),
+  ultraBeast('ultra-beast'),
+  baby('baby'),
+  regular('regular');
 
-  SpeciesCategory(this.param, this.label);
+  SpeciesCategory(this.param);
 
   final String param;
-  final String label;
 }
 
 /// Tipo do shiny lock (o `lock_type` da API; nas caçadas, `shiny_lock`).
 enum ShinyLockType {
   /// Ainda dá para conseguir, por distribuição (evento).
-  distroOnly('distro-only', 'Só por distribuição'),
+  distroOnly('distro-only'),
 
   /// Impossível de obter shiny; só aparece com "incluir impossíveis".
-  unobtainable('unobtainable', 'Shiny impossível');
+  unobtainable('unobtainable');
 
-  ShinyLockType(this.param, this.label);
+  ShinyLockType(this.param);
 
   final String param;
-  final String label;
 
   static ShinyLockType? fromParam(String? value) =>
       values.where((l) => l.param == value).firstOrNull;

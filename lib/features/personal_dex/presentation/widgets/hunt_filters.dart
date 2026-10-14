@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -87,7 +89,7 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
                 children: [
                   for (final category in SpeciesCategory.values)
                     FilterChip(
-                      label: Text(category.label),
+                      label: Text(context.l10n.speciesCategory(category)),
                       selected: _draft.categories.contains(category),
                       onSelected: (on) => _update(
                         _draft.copyWith(
@@ -201,7 +203,9 @@ class ActiveHuntFilterChips extends ConsumerWidget {
     final chips = <(String, HuntQuery)>[
       if (q.categories.isNotEmpty)
         (
-          summarize([for (final c in q.categories) c.label])!,
+          summarize([
+            for (final c in q.categories) context.l10n.speciesCategory(c),
+          ])!,
           q.copyWith(categories: const []),
         ),
       if (q.generations.isNotEmpty)

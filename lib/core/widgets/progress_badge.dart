@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 
 /// Barra de progresso com o texto "registrados/total (xx%)" e, se houver,
@@ -34,7 +35,7 @@ class ProgressBadge extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '$registered/$total (${percentOf(registered, total)}%)'
-          '${awaySuffix(away)}',
+          '${context.l10n.awayCount(away)}',
           style: theme.textTheme.labelMedium,
         ),
       ],

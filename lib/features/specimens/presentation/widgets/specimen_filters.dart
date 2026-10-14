@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
@@ -7,8 +8,10 @@ import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Abre os filtros avançados do inventário: bottom sheet no compacto,
@@ -105,7 +108,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
             children: [
               _PickerTile(
                 title: 'Ordenar por',
-                summary: _draft.ordering.label,
+                summary: context.l10n.ordering(_draft.ordering),
                 onTap: _pickOrdering,
               ),
               _PickerTile(
@@ -167,7 +170,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 child: _chips([
                   for (final category in SpeciesCategory.values)
                     FilterChip(
-                      label: Text(category.label),
+                      label: Text(context.l10n.speciesCategory(category)),
                       selected: _draft.categories.contains(category),
                       onSelected: (on) => _update(
                         _draft.copyWith(
@@ -208,7 +211,10 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                       },
                       label: Text(choice.label),
                       // A sigla no chip; o nome dos jogos no tooltip.
-                      tooltip: OriginMark.fromSlug(choice.value)?.games,
+                      tooltip: switch (OriginMark.fromSlug(choice.value)) {
+                        final mark? => context.l10n.originMarkGames(mark),
+                        null => null,
+                      },
                       selected: _draft.originMarks.contains(choice.value),
                       onSelected: (on) => _update(
                         _draft.copyWith(
@@ -317,7 +323,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                         ? Icons.radio_button_checked
                         : Icons.radio_button_unchecked,
                   ),
-                  Flexible(child: Text(ordering.label)),
+                  Flexible(child: Text(context.l10n.ordering(ordering))),
                 ],
               ),
             ),
@@ -626,7 +632,10 @@ class ActiveFilterChips extends ConsumerWidget {
     final q = query;
     final chips = <(String, SpecimenQuery)>[
       if (q.ordering != SpecimenOrdering.box)
-        (q.ordering.label, q.copyWith(ordering: SpecimenOrdering.box)),
+        (
+          context.l10n.ordering(q.ordering),
+          q.copyWith(ordering: SpecimenOrdering.box),
+        ),
       if (q.hasPokeballFilter)
         (
           _pokeballSummary(q, options)!,
@@ -649,7 +658,9 @@ class ActiveFilterChips extends ConsumerWidget {
         ),
       if (q.categories.isNotEmpty)
         (
-          summarize([for (final c in q.categories) c.label])!,
+          summarize([
+            for (final c in q.categories) context.l10n.speciesCategory(c),
+          ])!,
           q.copyWith(categories: const []),
         ),
       if (q.originMarks.isNotEmpty)

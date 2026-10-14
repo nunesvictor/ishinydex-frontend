@@ -247,9 +247,10 @@ void main() {
     });
 
     test('oddsLabel', () {
-      expect(oddsLabel(1 / 1365.67), '1/1366');
-      expect(oddsLabel(1 / 5.26), '1/5,3');
-      expect(oddsLabel(0), '—');
+      expect(oddsLabel(1 / 1365.67, 'pt'), '1/1366');
+      expect(oddsLabel(1 / 5.26, 'pt'), '1/5,3');
+      expect(oddsLabel(1 / 5.26, 'en'), '1/5.3');
+      expect(oddsLabel(0, 'pt'), '—');
     });
   });
 

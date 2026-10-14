@@ -636,4 +636,6 @@ throw ValidationFailure({'save': [Problem.gameCutOff(game)]});
 ```
 A tela traduz com `context.l10n.problem(p)` (ou `context.failureText(failure)` e `context.fieldError(validation, 'campo')`). A tradução (`core/l10n/problem_text.dart`) é um `switch` sobre a classe selada **sem `_`**: o compilador sabe todas as variantes, então um `Problem` novo sem texto não compila. Nos testes do domínio, compare os problemas (`[const Problem.blank()]`): o freezed gera o `==`.
 
+Os **rótulos dos modelos** seguem a mesma ideia: enums como `SpecimenOrdering` e `SpeciesCategory` guardam só o valor da API, e o texto vem de extensões sobre o `AppLocalizations`, uma por feature (`specimen_labels.dart`, `dex_labels.dart`, `core/l10n/core_labels.dart`): `context.l10n.ordering(o)`, `context.l10n.huntDuration(início, fim)`. Números saem no formato do idioma (`NumberFormat` com o `localeName`): `4.213` em pt, `4,213` em en.
+
 **Testes**: o "aparelho" dos testes é en-US. Os helpers (`pumpWidgetApp`, `pumpFullApp`) fixam pt-BR, porque os textos dos testes estão em português; para testar em inglês, `locale: english` ou `language: AppLanguage.en`.

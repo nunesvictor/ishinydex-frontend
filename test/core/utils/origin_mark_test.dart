@@ -36,13 +36,11 @@ void main() {
 
   test('cada marca tem nome e ícone próprios', () {
     expect(OriginMark.go.label, 'GO');
-    expect(OriginMark.go.games, 'Pokémon GO');
     expect(OriginMark.alola.label, 'SM/USUM');
     expect(OriginMark.kalos.label, 'XY/ORAS');
     expect(OriginMark.bdsp.label, 'BDSP');
     expect(OriginMark.galar.label, 'SwSh');
     expect(OriginMark.gba.label, 'GBA');
-    expect(OriginMark.gba.games, 'FireRed e LeafGreen (Switch)');
     expect(OriginMark.gba.asset, 'assets/origin_marks/gba.png');
     expect(OriginMark.go.asset, 'assets/origin_marks/go.png');
     expect(OriginMark.gameBoy.asset, 'assets/origin_marks/game_boy.png');

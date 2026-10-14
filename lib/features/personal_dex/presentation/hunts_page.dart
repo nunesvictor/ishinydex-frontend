@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
@@ -14,6 +15,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
@@ -242,7 +244,7 @@ class _Filters extends ConsumerWidget {
         icons: [?_situationIcon(query.situation)],
         tooltip: query.situation == HuntSituation.all
             ? null
-            : 'Situação: ${query.situation.label}',
+            : 'Situação: ${context.l10n.huntSituation(query.situation)}',
         selected: query.situation != HuntSituation.all,
         menuChildren: [
           const MenuHeader('Situação do slot'),
@@ -252,8 +254,8 @@ class _Filters extends ConsumerWidget {
               groupValue: query.situation,
               onChanged: (s) => onChanged(query.copyWith(situation: s!)),
               child: MenuOptionText(
-                situation.label,
-                situation.hint,
+                context.l10n.huntSituation(situation),
+                context.l10n.huntSituationHint(situation),
                 leading: switch (_situationIcon(situation)) {
                   final Icon icon => Icon(
                     icon.icon,
@@ -270,7 +272,7 @@ class _Filters extends ConsumerWidget {
         label: 'Motivos',
         icons: [for (final r in query.reasons) _reasonIcon(r)],
         tooltip:
-            'Motivos: ${joinLabels([for (final r in query.reasons) r.label.replaceRange(0, 1, r.label[0].toLowerCase())])}',
+            'Motivos: ${joinLabels([for (final r in query.reasons) context.l10n.huntReason(r).replaceRange(0, 1, context.l10n.huntReason(r)[0].toLowerCase())])}',
         // Sempre há pelo menos um motivo: o chip está sempre "ativo".
         selected: true,
         menuChildren: [
@@ -280,7 +282,7 @@ class _Filters extends ConsumerWidget {
             closeOnActivate: false,
             onChanged: _check(_toggler(HuntReason.noShiny)),
             child: MenuOptionText(
-              HuntReason.noShiny.label,
+              context.l10n.huntReason(HuntReason.noShiny),
               'Slot vazio ou com espécime não shiny',
               leading: const NoShinyIcon(size: 18),
             ),
@@ -290,7 +292,7 @@ class _Filters extends ConsumerWidget {
             closeOnActivate: false,
             onChanged: _check(_toggler(HuntReason.fromGo)),
             child: MenuOptionText(
-              HuntReason.fromGo.label,
+              context.l10n.huntReason(HuntReason.fromGo),
               'Shiny que veio do Pokémon GO',
               leading: const GoIcon(size: 18, semanticLabel: null),
             ),
@@ -627,7 +629,7 @@ class HuntTile extends ConsumerWidget {
           ),
           if (lock != null)
             Tooltip(
-              message: lock.label,
+              message: context.l10n.shinyLockType(lock),
               child: const Icon(Icons.lock_outline, size: 16),
             ),
         ],

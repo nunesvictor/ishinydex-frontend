@@ -1,7 +1,13 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 
 import '../../fixtures/api_fixtures.dart';
+
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
   test('Slot registrado', () {
@@ -88,9 +94,9 @@ void main() {
       registered: 7,
       firstBox: box,
     );
-    expect(gen.label, 'Geração IV');
+    expect(_pt.generation(gen.generation), 'Geração IV');
     expect(gen.missing, 3);
-    expect(gen.copyWith(generation: null).label, 'Outras formas');
+    expect(_pt.generation(null), 'Outras formas');
   });
 
   group('caçadas', () {
@@ -167,8 +173,8 @@ void main() {
       );
       expect(ShinyLockType.fromParam(null), isNull);
       expect(SpeciesCategory.ultraBeast.param, 'ultra-beast');
-      expect(SpeciesCategory.regular.label, 'Comum');
-      expect(ShinyLockType.unobtainable.label, 'Shiny impossível');
+      expect(_pt.speciesCategory(SpeciesCategory.regular), 'Comum');
+      expect(_pt.shinyLockType(ShinyLockType.unobtainable), 'Shiny impossível');
     });
   });
 

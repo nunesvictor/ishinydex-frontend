@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -9,6 +10,7 @@ import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
 import 'package:ishinydex/features/specimens/presentation/away_page.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/saves_page.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -53,15 +55,18 @@ const _save = Save(
   trainer: Trainer(id: 1, name: 'Ash', trainerId: '123456', version: 'scarlet'),
 );
 
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
+
 void main() {
   test('Save: jogo, título e há quanto tempo', () {
     expect(_save.game, 'Scarlet');
     expect(_save.title, 'Scarlet · Switch');
     expect(_save.copyWith(label: '').title, 'Scarlet · Ash (123456)');
     final today = DateTime(2026, 10, 1, 15);
-    expect(awayFor(DateTime(2026, 10), today: today), 'hoje');
-    expect(awayFor(DateTime(2026, 9, 30), today: today), 'há 1 dia');
-    expect(awayFor(DateTime(2026, 3, 12), today: today), 'há 203 dias');
+    expect(_pt.awayFor(DateTime(2026, 10), today: today), 'hoje');
+    expect(_pt.awayFor(DateTime(2026, 9, 30), today: today), 'há 1 dia');
+    expect(_pt.awayFor(DateTime(2026, 3, 12), today: today), 'há 203 dias');
     expect(daysSince(DateTime(2026, 9, 30)), greaterThan(0));
     expect(locationLabel('99', const [_save]), 'Em save #99');
     expect(locationLabel('1', const [_save]), 'Em Scarlet · Switch');

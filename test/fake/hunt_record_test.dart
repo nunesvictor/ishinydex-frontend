@@ -1,9 +1,12 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../fixtures/catalog_fixture.dart';
@@ -27,6 +30,9 @@ Catalog _catalog({bool withMethods = true}) => Catalog.fromJson({
       },
     ],
 }, spriteBase: Env.defaultSpritesBaseUrl);
+
+/// Os textos em pt-BR, sem montar uma tela.
+final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
   final day = DateTime(2026, 9, 14);
@@ -129,19 +135,19 @@ void main() {
   });
 
   test('textos: contagem, horas e duração', () {
-    expect(huntCountLabel(4213, 'resets'), '4.213 resets');
-    expect(huntCountLabel(12, null), '12');
-    expect(huntCountLabel(3, 'laps'), '3 laps');
-    expect(huntCountLabel(2310, 'hours'), '38 h 30 min');
-    expect(huntCountLabel(120, 'hours'), '2 h');
-    expect(huntCountLabel(45, 'hours'), '45 min');
-    expect(huntDuration(day, day), 'menos de um dia');
-    expect(huntDuration(day, DateTime(2026, 9, 15)), '1 dia');
-    expect(huntDuration(day, DateTime(2026, 9, 26)), '12 dias');
-    expect(huntDuration(DateTime(2026, 6, 12), day), '3 meses');
-    expect(huntDuration(DateTime(2026, 8, 10), day), '1 mês');
-    expect(huntDuration(DateTime(2024, 6, 12), day), '2 anos');
-    expect(huntDuration(DateTime(2025, 6, 12), day), '1 ano');
+    expect(_pt.huntCount(4213, 'resets'), '4.213 resets');
+    expect(_pt.huntCount(12, null), '12');
+    expect(_pt.huntCount(3, 'laps'), '3 laps');
+    expect(_pt.huntCount(2310, 'hours'), '38 h 30 min');
+    expect(_pt.huntCount(120, 'hours'), '2 h');
+    expect(_pt.huntCount(45, 'hours'), '45 min');
+    expect(_pt.huntDuration(day, day), 'menos de um dia');
+    expect(_pt.huntDuration(day, DateTime(2026, 9, 15)), '1 dia');
+    expect(_pt.huntDuration(day, DateTime(2026, 9, 26)), '12 dias');
+    expect(_pt.huntDuration(DateTime(2026, 6, 12), day), '3 meses');
+    expect(_pt.huntDuration(DateTime(2026, 8, 10), day), '1 mês');
+    expect(_pt.huntDuration(DateTime(2024, 6, 12), day), '2 anos');
+    expect(_pt.huntDuration(DateTime(2025, 6, 12), day), '1 ano');
     expect(const HuntRecord(postUrl: '').isBlank, isTrue);
     expect(const HuntRecord(postUrl: 'x').isBlank, isFalse);
     expect(HuntRecord.fromJson(hunt.toJson()), hunt);

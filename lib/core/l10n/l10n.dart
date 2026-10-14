@@ -3,6 +3,7 @@ import 'package:ishinydex/core/l10n/problem_text.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/l10n/app_localizations.dart';
 
+export 'package:ishinydex/core/l10n/core_labels.dart';
 export 'package:ishinydex/core/l10n/problem_text.dart';
 export 'package:ishinydex/l10n/app_localizations.dart';
 

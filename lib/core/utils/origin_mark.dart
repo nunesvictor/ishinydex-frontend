@@ -6,17 +6,41 @@
 /// Os ícones são os do HOME (Bulbagarden Archives): glifos brancos com fundo
 /// transparente, pintados com a cor do tema (ver `OriginMarkIcon`).
 enum OriginMark {
-  gameBoy('game-boy', 'GB', 'Game Boy (Virtual Console)', 'game_boy'),
-  gba('gba', 'GBA', 'FireRed e LeafGreen (Switch)', 'gba'),
-  kalos('kalos', 'XY/ORAS', 'X e Y / Omega Ruby e Alpha Sapphire', 'kalos'),
-  alola('alola', 'SM/USUM', 'Sun e Moon / Ultra Sun e Ultra Moon', 'alola'),
-  letsGo('lets-go', 'LGPE', "Let's Go, Pikachu! e Let's Go, Eevee!", 'lets_go'),
-  galar('galar', 'SwSh', 'Sword e Shield', 'galar'),
-  bdsp('bdsp', 'BDSP', 'Brilliant Diamond e Shining Pearl', 'bdsp'),
-  hisui('hisui', 'PLA', 'Legends: Arceus', 'hisui'),
-  paldea('paldea', 'SV', 'Scarlet e Violet', 'paldea'),
-  lumiose('lumiose', 'PLZA', 'Legends: Z-A', 'lumiose'),
-  go('go', 'GO', 'Pokémon GO', 'go');
+  gameBoy('game-boy', 'GB', [
+    ['Game Boy (Virtual Console)'],
+  ], 'game_boy'),
+  gba('gba', 'GBA', [
+    ['FireRed', 'LeafGreen (Switch)'],
+  ], 'gba'),
+  kalos('kalos', 'XY/ORAS', [
+    ['X', 'Y'],
+    ['Omega Ruby', 'Alpha Sapphire'],
+  ], 'kalos'),
+  alola('alola', 'SM/USUM', [
+    ['Sun', 'Moon'],
+    ['Ultra Sun', 'Ultra Moon'],
+  ], 'alola'),
+  letsGo('lets-go', 'LGPE', [
+    ["Let's Go, Pikachu!", "Let's Go, Eevee!"],
+  ], 'lets_go'),
+  galar('galar', 'SwSh', [
+    ['Sword', 'Shield'],
+  ], 'galar'),
+  bdsp('bdsp', 'BDSP', [
+    ['Brilliant Diamond', 'Shining Pearl'],
+  ], 'bdsp'),
+  hisui('hisui', 'PLA', [
+    ['Legends: Arceus'],
+  ], 'hisui'),
+  paldea('paldea', 'SV', [
+    ['Scarlet', 'Violet'],
+  ], 'paldea'),
+  lumiose('lumiose', 'PLZA', [
+    ['Legends: Z-A'],
+  ], 'lumiose'),
+  go('go', 'GO', [
+    ['Pokémon GO'],
+  ], 'go');
 
   OriginMark(this.slug, this.label, this.games, this._file);
 
@@ -26,8 +50,10 @@ enum OriginMark {
   /// Sigla dos jogos, como os jogadores conhecem (`SV`, `SM/USUM`...).
   final String label;
 
-  /// Nome completo dos jogos, para o tooltip e o leitor de tela.
-  final String games;
+  /// Os jogos, em pares (um jogo e a sua outra versão); a tela junta com
+  /// "e"/"and" (`AppLocalizations.originMarkGames`), para o tooltip e o
+  /// leitor de tela.
+  final List<List<String>> games;
   final String _file;
 
   String get asset => 'assets/origin_marks/$_file.png';
