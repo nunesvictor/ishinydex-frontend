@@ -43,6 +43,7 @@ void main() {
     TargetPlatform platform = TargetPlatform.android,
     List<Override> overrides = const [],
     ShinyHuntRepository? hunts,
+    Locale locale = portuguese,
   }) async {
     final results = <Specimen?>[];
     await pumpWidgetApp(
@@ -65,6 +66,7 @@ void main() {
       ),
       size: size,
       platform: platform,
+      locale: locale,
       hunts: hunts,
       overrides: [
         specimenRepositoryProvider.overrideWithValue(repository),
@@ -117,6 +119,20 @@ void main() {
 
     await choose(tester, 'ot', 'Ash (123456) · Scarlet');
     expect(warning, findsNothing);
+  });
+
+  testWidgets('em inglês: campos, opções e o registro da caçada', (
+    tester,
+  ) async {
+    await pumpForm(tester, locale: english);
+    await tester.pumpAndSettle();
+    expect(find.text('New Bulbasaur'), findsOneWidget);
+    expect(find.text('Nickname'), findsOneWidget);
+    expect(find.text('Original trainer (OT)'), findsOneWidget);
+    expect(find.text('Came from Pokémon GO'), findsOneWidget);
+    expect(find.text('Hunt record'), findsOneWidget);
+    expect(find.text('Optional: method, count, start and post'), findsOne);
+    expect(find.text('Save and deposit'), findsOneWidget);
   });
 
   testWidgets('preenche tudo e salva', (tester) async {

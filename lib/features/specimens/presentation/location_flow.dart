@@ -6,6 +6,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/action_sheet.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -53,12 +54,14 @@ class LocationTile extends StatelessWidget {
       key: const ValueKey('location-tile'),
       contentPadding: EdgeInsets.zero,
       leading: SaveIcon(save, size: 28),
-      title: Text('Em ${save.title}'),
+      title: Text(context.l10n.awayIn(save.title)),
       subtitle: date == null
-          ? const Text('Fora do HOME')
+          ? Text(context.l10n.awayFromHome)
           : Text(
-              'Desde ${MaterialLocalizations.of(context).formatCompactDate(date)}'
-              ' · ${context.l10n.awayFor(date)}',
+              context.l10n.sinceWhen(
+                MaterialLocalizations.of(context).formatCompactDate(date),
+                context.l10n.awayFor(date),
+              ),
             ),
     );
   }
@@ -102,21 +105,18 @@ Future<({Save save, TransferCheck check})?> pickSave(
       builder: (context) => AlertDialog(
         title: Text(
           oneWay.isEmpty
-              ? 'Nenhum save cadastrado'
-              : 'Nenhum save que recebe do HOME',
+              ? context.l10n.noSavesYet
+              : context.l10n.noReceivingSave,
         ),
-        content: const Text(
-          'Cadastre seus saves (os jogos para onde você envia Pokémon) em '
-          'Ajustes → Meus saves.',
-        ),
+        content: Text(context.l10n.addSavesHint),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Agora não'),
+            child: Text(context.l10n.notNow),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Abrir Meus saves'),
+            child: Text(context.l10n.openMySaves),
           ),
         ],
       ),
@@ -134,7 +134,7 @@ Future<({Save save, TransferCheck check})?> pickSave(
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
             child: Text(
-              'Enviar para qual save?',
+              context.l10n.sendToWhichSave,
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
@@ -150,9 +150,7 @@ Future<({Save save, TransferCheck check})?> pickSave(
 Widget _oneWayNote(BuildContext context, List<String> games) {
   final theme = Theme.of(context);
   final names = {...games}.toList();
-  final list = names.length == 1
-      ? names.single
-      : '${names.sublist(0, names.length - 1).join(', ')} e ${names.last}';
+  final list = joinLabels(context.l10n, names);
   return Padding(
     padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
     child: Row(
@@ -166,9 +164,7 @@ Widget _oneWayNote(BuildContext context, List<String> games) {
         ),
         Expanded(
           child: Text(
-            '$list não ${names.length == 1 ? 'aparece' : 'aparecem'}: '
-            '${names.length == 1 ? 'é um save' : 'são saves'} só de ida, de '
-            'onde o Pokémon só vai para o HOME.',
+            context.l10n.oneWayNotListed(names.length, list),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -224,7 +220,6 @@ String? _saveWarning(
   int total,
   TransferCheck check,
 ) {
-  final outsideText = 'fora da pokédex de ${save.game}';
   if (total == 1) {
     if (check.blocked.isNotEmpty) {
       return l10n.problem(check.blocked.first.problem);
@@ -232,17 +227,17 @@ String? _saveWarning(
     if (check.warnings.isNotEmpty) {
       return l10n.problem(check.warnings.first.problem);
     }
-    return check.outside > 0 ? 'Fora da pokédex de ${save.game}' : null;
+    return check.outside > 0 ? l10n.outsideGamePokedex(save.game) : null;
   }
   if (!check.allowed) {
     final reasons = {for (final b in check.blocked) l10n.problem(b.problem)};
-    return reasons.length == 1 ? reasons.first : 'Nenhum deles pode ir';
+    return reasons.length == 1 ? reasons.first : l10n.noneCanGo;
   }
   final parts = [
-    if (check.blocked.length == 1) '1 não pode ir',
-    if (check.blocked.length > 1) '${check.blocked.length} não podem ir',
-    if (check.warnings.isNotEmpty) '${check.warnings.length} com aviso',
-    if (check.outside > 0) '${check.outside} $outsideText',
+    if (check.blocked.isNotEmpty) l10n.cannotGoCount(check.blocked.length),
+    if (check.warnings.isNotEmpty) l10n.withWarningCount(check.warnings.length),
+    if (check.outside > 0)
+      l10n.outsideGamePokedexCount(check.outside, save.game),
   ];
   return parts.isEmpty ? null : parts.join(' · ');
 }
@@ -264,17 +259,20 @@ Future<bool> _confirmPartial(
   final ok = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text('Enviar $going de $total para ${save.title}?'),
+      title: Text(context.l10n.sendSomeQuestion(going, total, save.title)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ficam no HOME', style: theme.textTheme.titleSmall),
+            Text(context.l10n.stayInHome, style: theme.textTheme.titleSmall),
             ...check.blocked.map(issue),
             if (check.warnings.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('Vão com aviso', style: theme.textTheme.titleSmall),
+              Text(
+                context.l10n.goWithWarning,
+                style: theme.textTheme.titleSmall,
+              ),
               ...check.warnings.map(issue),
             ],
           ],
@@ -283,11 +281,11 @@ Future<bool> _confirmPartial(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(going == 1 ? 'Enviar 1' : 'Enviar os $going'),
+          child: Text(context.l10n.sendCount(going)),
         ),
       ],
     ),
@@ -316,12 +314,7 @@ Future<bool> sendToGame(
         .transfer(check.movable, saveId: save.id);
     ref.read(slotActionsProvider).specimensChanged();
     if (context.mounted) {
-      _notify(
-        context,
-        moved == 1
-            ? '1 espécime enviado para ${save.title}.'
-            : '$moved espécimes enviados para ${save.title}.',
-      );
+      _notify(context, context.l10n.specimensSent(moved, save.title));
     }
     return true;
   } on AppFailure catch (failure) {
@@ -343,12 +336,7 @@ Future<bool> bringBackMany(
         .transfer(ids, saveId: null);
     ref.read(slotActionsProvider).specimensChanged();
     if (context.mounted) {
-      _notify(
-        context,
-        moved == 1
-            ? '1 espécime de volta ao HOME.'
-            : '$moved espécimes de volta ao HOME.',
-      );
+      _notify(context, context.l10n.specimensBack(moved));
     }
     return true;
   } on AppFailure catch (failure) {
@@ -371,23 +359,20 @@ Future<void> bringBack(
   final answer = await showDialog<_Return>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text('$name voltou para o HOME'),
-      content: const Text(
-        'Ele voltou igual ou evoluiu no jogo? Se evoluiu, ele sai do slot '
-        'atual, que volta a faltar, e fica disponível no inventário.',
-      ),
+      title: Text(context.l10n.backToHomeTitle(name)),
+      content: Text(context.l10n.backToHomeQuestion),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: Text(context.l10n.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(_Return.evolved),
-          child: const Text('Evoluiu…'),
+          child: Text(context.l10n.evolvedAction),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_Return.same),
-          child: const Text('Voltou igual'),
+          child: Text(context.l10n.cameBackSame),
         ),
       ],
     ),
@@ -406,11 +391,7 @@ Future<void> bringBack(
     await repository.transfer([specimenId], saveId: null);
     ref.read(slotActionsProvider).specimensChanged();
     if (context.mounted) {
-      _notify(
-        context,
-        'Evoluiu para ${form.displayName} e voltou ao HOME. O slot antigo '
-        'voltou a faltar.',
-      );
+      _notify(context, context.l10n.evolvedAndBack(form.displayName));
     }
   } on AppFailure catch (failure) {
     ref.read(slotActionsProvider).specimensChanged();
@@ -439,10 +420,12 @@ class ChampionsTile extends StatelessWidget {
     key: const ValueKey('champions-tile'),
     contentPadding: EdgeInsets.zero,
     leading: const ChampionsIcon(size: 28),
-    title: const Text('No HOME, visitando o Champions'),
+    title: Text(context.l10n.inHomeVisitingChampions),
     subtitle: Text(
-      'Desde ${MaterialLocalizations.of(context).formatCompactDate(since)}'
-      ' · ${context.l10n.awayFor(since)}',
+      context.l10n.sinceWhen(
+        MaterialLocalizations.of(context).formatCompactDate(since),
+        context.l10n.awayFor(since),
+      ),
     ),
   );
 }
@@ -468,8 +451,8 @@ List<SheetAction> locationActions(
     return [
       SheetAction(
         icon: Icons.flight_land,
-        label: 'Trazer de volta ao HOME',
-        subtitle: stuck ? '${location!.game} não envia mais para o HOME' : null,
+        label: context.l10n.bringBackToHome,
+        subtitle: stuck ? context.l10n.gameNoLongerSends(location!.game) : null,
         enabled: !stuck,
         onSelected: () => bringBack(context, ref, specimenId: id, name: name),
       ),
@@ -480,14 +463,14 @@ List<SheetAction> locationActions(
       SheetAction(
         icon: Icons.emoji_events,
         leading: const ChampionsIcon(),
-        label: 'Voltou do Champions',
-        subtitle: 'Libera o envio para saves',
+        label: context.l10n.backFromChampions,
+        subtitle: context.l10n.backFromChampionsHint,
         onSelected: () => _champions(context, ref, id, visiting: false),
       ),
     SheetAction(
       icon: Icons.flight_takeoff,
-      label: 'Enviar para jogo…',
-      subtitle: visiting ? 'Está visitando o Champions' : null,
+      label: context.l10n.sendToGame,
+      subtitle: visiting ? context.l10n.problemVisitingChampions : null,
       enabled: !visiting,
       onSelected: () => sendToGame(context, ref, [id]),
     ),
@@ -495,23 +478,22 @@ List<SheetAction> locationActions(
       SheetAction(
         icon: Icons.emoji_events,
         leading: const ChampionsIcon(),
-        label: 'Visitar o Champions',
-        subtitle: 'Continua no HOME; enquanto visita, não vai para saves',
+        label: context.l10n.visitChampions,
+        subtitle: context.l10n.visitChampionsHint,
         onSelected: () => _champions(context, ref, id, visiting: true),
       ),
   ];
 }
 
 /// Libertar, desabilitado enquanto visita o Champions.
-SheetAction releaseAction({
+SheetAction releaseAction(
+  AppLocalizations l10n, {
   required bool visiting,
   required VoidCallback onSelected,
 }) => SheetAction(
   icon: Icons.warning_amber_rounded,
-  label: 'Libertar',
-  subtitle: visiting
-      ? 'Não dá enquanto visita o Champions'
-      : 'Apaga o cadastro (pede confirmação)',
+  label: l10n.releaseAction,
+  subtitle: visiting ? l10n.releaseWhileVisiting : l10n.releaseHint,
   destructive: true,
   enabled: !visiting,
   onSelected: onSelected,
@@ -531,7 +513,9 @@ Future<void> _champions(
     if (context.mounted) {
       _notify(
         context,
-        visiting ? 'Visitando o Champions.' : 'Voltou do Champions.',
+        visiting
+            ? context.l10n.nowVisitingChampions
+            : context.l10n.nowBackFromChampions,
       );
     }
   } on AppFailure catch (failure) {

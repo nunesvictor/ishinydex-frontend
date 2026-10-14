@@ -22,6 +22,7 @@ Future<List<bool>> pumpFlow(
   bool preferShiny = true,
   Size size = expandedSize,
   SpecimenRepositoryOverride? specimens,
+  Locale locale = portuguese,
 }) async {
   final results = <bool>[];
   await pumpWidgetApp(
@@ -41,6 +42,7 @@ Future<List<bool>> pumpFlow(
       ),
     ),
     size: size,
+    locale: locale,
     overrides: [
       envProvider.overrideWithValue(fakeEnv),
       fakeBackendProvider.overrideWithValue(backend),
@@ -63,6 +65,18 @@ void main() {
   Future<Slot> slotAt(int index, {int box = 1}) async =>
       (await backend.fetchSlots(dexId: 1, boxId: box))[index];
 
+  testWidgets('em inglês: lista vazia e cadastrar novo', (tester) async {
+    await pumpFlow(
+      tester,
+      backend: backend,
+      slot: await slotAt(4),
+      locale: english,
+    );
+    expect(find.text('No available specimen of this form.'), findsOneWidget);
+    expect(find.text('Add a new specimen'), findsOneWidget);
+    expect(find.textContaining('Deposit '), findsOneWidget);
+  });
+
   testWidgets('lista vazia e fechar sem depositar', (tester) async {
     // Forma 5 (slot 5) está registrada e não há outro specimen dela.
     final results = await pumpFlow(
@@ -71,7 +85,7 @@ void main() {
       slot: await slotAt(4),
     );
     expect(
-      find.text('Nenhum specimen disponível desta forma.'),
+      find.text('Nenhum espécime disponível desta forma.'),
       findsOneWidget,
     );
     await tester.tapAt(const Offset(5, 5));
@@ -153,7 +167,7 @@ void main() {
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Nenhum specimen disponível desta forma.'),
+      find.text('Nenhum espécime disponível desta forma.'),
       findsOneWidget,
     );
   });
@@ -164,7 +178,7 @@ void main() {
       backend: backend,
       slot: await slotAt(2),
     );
-    await tester.tap(find.text('Cadastrar novo specimen'));
+    await tester.tap(find.text('Cadastrar novo espécime'));
     await tester.pumpAndSettle();
     expect(find.text('Novo Venusaur'), findsOneWidget);
     // Voltar sem salvar não deposita.
@@ -172,7 +186,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(results, isEmpty);
 
-    await tester.tap(find.text('Cadastrar novo specimen'));
+    await tester.tap(find.text('Cadastrar novo espécime'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Salvar e depositar'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
@@ -23,23 +24,24 @@ class HuntRecordCard extends ConsumerWidget {
         .firstOrNull;
     final (start, end) = (hunt.startedAt, capturedAt);
     final headline = [
-      ?method?.label,
+      if (method != null) context.catalogText(method.label, method.labels),
       if (hunt.count case final count?)
         context.l10n.huntCount(count, hunt.unit),
-      if (hunt.bestChain case final best?) 'maior cadeia $best',
+      if (hunt.bestChain case final best?) context.l10n.longestChain(best),
       if ((start, end) case (final s?, final e?))
         context.l10n.huntDuration(s, e),
     ].join(' · ');
     // As odds guardadas no fim da caçada (#221).
+    final decimal = NumberFormat('0.0', context.l10n.localeName);
     final odds = [
       if (hunt.odds case final x?)
-        'Odds no fim: 1/${x < 10 ? x.toStringAsFixed(1).replaceAll('.', ',') : x.round()}',
+        context.l10n.oddsAtEnd(x < 10 ? decimal.format(x) : '${x.round()}'),
       if (hunt.multiple case final m?)
-        'achado em ${m.toStringAsFixed(1).replaceAll('.', ',')}× as odds',
+        context.l10n.foundAtOdds(decimal.format(m)),
     ].join(' · ');
     final dates = [
-      if (start != null) 'Início ${format(start)}',
-      if (end != null) 'Captura ${format(end)}',
+      if (start != null) context.l10n.huntStartDate(format(start)),
+      if (end != null) context.l10n.huntCaptureDate(format(end)),
     ].join(' · ');
     final post = hunt.postUrl;
     return Card.outlined(
@@ -56,7 +58,10 @@ class HuntRecordCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 2,
                 children: [
-                  Text('Registro da caçada', style: theme.textTheme.labelLarge),
+                  Text(
+                    context.l10n.huntRecord,
+                    style: theme.textTheme.labelLarge,
+                  ),
                   if (headline.isNotEmpty)
                     Text(headline, style: theme.textTheme.bodyLarge),
                   if (odds.isNotEmpty)
@@ -70,7 +75,7 @@ class HuntRecordCard extends ConsumerWidget {
               TextButton.icon(
                 onPressed: () => ref.read(openLinkProvider)(post),
                 icon: const Icon(Icons.open_in_new),
-                label: const Text('Ver post'),
+                label: Text(context.l10n.seePost),
               ),
           ],
         ),

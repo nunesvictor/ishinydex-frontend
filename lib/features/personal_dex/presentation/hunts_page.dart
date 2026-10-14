@@ -638,7 +638,10 @@ class HuntTile extends ConsumerWidget {
             child: SpecimenHeadline(
               name: specimen?.displayName ?? form?.displayName ?? '',
               pokeballSpriteUrl: specimen?.pokeballSpriteUrl,
-              pokeballLabel: choiceLabel(options.pokeball, specimen?.pokeball),
+              pokeballLabel: context.l10n.choiceOf(
+                options.pokeball,
+                specimen?.pokeball,
+              ),
               gender: specimen?.gender,
               isShiny: specimen?.isShiny ?? false,
               isAlpha: specimen?.isAlpha ?? false,

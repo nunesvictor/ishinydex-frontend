@@ -60,7 +60,7 @@ class _CaptureDateFieldState extends State<CaptureDateField> {
     controller: _controller,
     keyboardType: TextInputType.datetime,
     decoration: InputDecoration(
-      labelText: 'Data de captura',
+      labelText: context.l10n.captureDate,
       hintText: widget.pattern.hint,
       errorText: switch (_error) {
         final error? => context.l10n.problem(error),
@@ -68,7 +68,7 @@ class _CaptureDateFieldState extends State<CaptureDateField> {
       },
       prefixIcon: const Icon(Icons.event),
       suffixIcon: IconButton(
-        tooltip: 'Escolher no calendário',
+        tooltip: context.l10n.pickInCalendar,
         onPressed: widget.onPickFromCalendar,
         icon: const Icon(Icons.calendar_month),
       ),

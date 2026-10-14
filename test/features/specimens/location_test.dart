@@ -162,6 +162,24 @@ void main() {
     expect((await backend.fetchSlot(62)).isMissing, true);
   });
 
+  testWidgets('LocationTile em inglês, sem e com a data', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const Scaffold(body: LocationTile(save: _save)),
+      locale: english,
+    );
+    expect(find.text('In Scarlet · Switch'), findsOneWidget);
+    expect(find.text('Away from HOME'), findsOneWidget);
+    await pumpWidgetApp(
+      tester,
+      Scaffold(
+        body: LocationTile(save: _save, since: DateTime(2026, 10)),
+      ),
+      locale: english,
+    );
+    expect(find.textContaining('Since '), findsOneWidget);
+  });
+
   testWidgets('em inglês: Meus saves e Fora do HOME', (tester) async {
     await pumpFullApp(tester, language: AppLanguage.en);
     await _go(tester, Routes.saves);

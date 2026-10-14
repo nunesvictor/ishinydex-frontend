@@ -54,7 +54,9 @@ class SpecimenFormPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          id == null ? 'Novo ${form.displayName}' : 'Editar espécime',
+          id == null
+              ? context.l10n.newFormSpecimen(form.displayName)
+              : context.l10n.editSpecimen,
         ),
       ),
       body: switch ((detail, options, trainers, specimen)) {
@@ -200,7 +202,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             if (form.isShinylocked)
               Text(
-                'Atenção: esta forma é shiny-locked.',
+                context.l10n.shinyLockedWarning,
                 style: TextStyle(color: theme.colorScheme.error),
                 textAlign: TextAlign.center,
               ),
@@ -215,48 +217,49 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             TextField(
               controller: _nickname,
               decoration: InputDecoration(
-                labelText: 'Apelido',
+                labelText: context.l10n.fieldNickname,
                 errorText: context.fieldError(_validation, 'nickname'),
               ),
             ),
             const SizedBox(height: 12),
             _dropdown(
-              label: 'Habilidade',
+              label: context.l10n.fieldAbility,
               field: 'ability',
               value: _draft.ability,
               choices: [
                 for (final a in form.abilities)
                   Choice(
                     value: a.ability,
-                    label:
-                        '${prettifyName(a.ability)}${a.isHidden ? ' (oculta)' : ''}',
+                    label: a.isHidden
+                        ? context.l10n.hiddenAbility(prettifyName(a.ability))
+                        : prettifyName(a.ability),
                   ),
               ],
               onChanged: (v) => _draft = _draft.copyWith(ability: v),
             ),
             _dropdown(
-              label: 'Gênero',
+              label: context.l10n.factGender,
               field: 'gender',
               value: _draft.gender,
               choices: options.gender,
               onChanged: (v) => _draft = _draft.copyWith(gender: v),
             ),
             _dropdown(
-              label: 'Natureza',
+              label: context.l10n.fieldNature,
               field: 'nature',
               value: _draft.nature,
               choices: options.nature,
               onChanged: (v) => _draft = _draft.copyWith(nature: v),
             ),
             _dropdown(
-              label: 'Idioma',
+              label: context.l10n.language,
               field: 'language',
               value: _draft.language,
               choices: options.language,
               onChanged: (v) => _draft = _draft.copyWith(language: v),
             ),
             _dropdown(
-              label: 'Pokébola',
+              label: context.l10n.filterPokeball,
               field: 'pokeball',
               value: _draft.pokeball,
               choices: options.pokeball,
@@ -268,7 +271,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               children: [
                 Expanded(
                   child: _dropdown(
-                    label: 'Treinador original (OT)',
+                    label: context.l10n.originalTrainerOt,
                     field: 'ot',
                     value: _draft.ot?.toString(),
                     choices: [
@@ -283,7 +286,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: IconButton.filledTonal(
-                    tooltip: 'Novo treinador',
+                    tooltip: context.l10n.newTrainer,
                     onPressed: _newTrainer,
                     icon: const Icon(Icons.person_add_alt_1),
                   ),
@@ -295,7 +298,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               secondary: const ShinyIcon(size: 24, semanticLabel: null),
-              title: const Text('Shiny'),
+              title: Text(context.l10n.markShiny),
               value: _draft.isShiny,
               onChanged: (v) =>
                   setState(() => _draft = _draft.copyWith(isShiny: v)),
@@ -305,7 +308,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               secondary: const AlphaIcon(size: 24, semanticLabel: null),
-              title: const Text('Alfa'),
+              title: Text(context.l10n.markAlpha),
               value: _draft.isAlpha,
               onChanged: (v) =>
                   setState(() => _draft = _draft.copyWith(isAlpha: v)),
@@ -313,7 +316,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               secondary: const GoIcon(size: 24, semanticLabel: null),
-              title: const Text('Veio do Pokémon GO'),
+              title: Text(context.l10n.fromPokemonGo),
               value: _draft.isFromGo,
               onChanged: (v) =>
                   setState(() => _draft = _draft.copyWith(isFromGo: v)),
@@ -323,7 +326,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               minLines: 2,
               maxLines: 5,
               decoration: InputDecoration(
-                labelText: 'Observação',
+                labelText: context.l10n.fieldObservation,
                 errorText: context.fieldError(_validation, 'observation'),
               ),
             ),
@@ -337,8 +340,8 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                     )
                   : Text(
                       widget.initial == null && widget.depositAfterSave
-                          ? 'Salvar e depositar'
-                          : 'Salvar',
+                          ? context.l10n.saveAndDeposit
+                          : context.l10n.save,
                     ),
             ),
           ],
@@ -395,23 +398,20 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Você tem uma caçada de ${prettifyName(widget.form.name)} em '
-              'andamento. É o fim dela?',
-            ),
+            Text(context.l10n.huntEndQuestion(prettifyName(widget.form.name))),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
                   onPressed: () => setState(() => _huntDismissed = true),
-                  child: const Text('Não'),
+                  child: Text(context.l10n.no),
                 ),
                 TextButton(
                   onPressed: () => setState(() {
                     _finishing = hunt.id;
                     _draft = _fromHunt(_draft, hunt);
                   }),
-                  child: const Text('Sim'),
+                  child: Text(context.l10n.yes),
                 ),
               ],
             ),
@@ -450,9 +450,10 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               ),
               Expanded(
                 child: Text(
-                  '${prettifyName(widget.form.name)} não está na pokédex de '
-                  '${versionLabel(version)}. Confira o OT, ou ignore se ele '
-                  'veio de evento. Dá para salvar assim mesmo.',
+                  context.l10n.notInGamePokedex(
+                    prettifyName(widget.form.name),
+                    versionLabel(version),
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onTertiaryContainer,
                   ),
@@ -508,8 +509,10 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.event),
-      title: const Text('Data de captura'),
-      subtitle: Text(date == null ? 'Não informada' : pattern.format(date)),
+      title: Text(context.l10n.captureDate),
+      subtitle: Text(
+        date == null ? context.l10n.notInformedFeminine : pattern.format(date),
+      ),
       onTap: _pickDate,
     );
   }
@@ -541,7 +544,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
 
   Future<void> _submit() async {
     if (_dateError != null) {
-      setState(() => _error = 'Corrija a data de captura antes de salvar.');
+      setState(() => _error = context.l10n.fixCaptureDate);
       return;
     }
     setState(() {

@@ -131,10 +131,11 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
   String get _summary {
     final hunt = widget.value;
     if (hunt == null || hunt.isBlank) {
-      return 'Opcional: método, contagem, início e post';
+      return context.l10n.huntRecordOptional;
     }
     return [
-      ?_method(hunt.method)?.label,
+      if (_method(hunt.method) case final m?)
+        context.catalogText(m.label, m.labels),
       if (hunt.count case final count?)
         context.l10n.huntCount(count, hunt.unit),
     ].join(' · ');
@@ -152,7 +153,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
         (hunt.method != null &&
                 widget.methods.isNotEmpty &&
                 !widget.methods.any((m) => m.id == hunt.method)
-            ? 'Não existe em ${widget.game ?? 'o jogo do OT'}'
+            ? context.l10n.methodNotIn(widget.game ?? context.l10n.theOtGame)
             : null);
     return Card.outlined(
       margin: const EdgeInsets.only(bottom: 12),
@@ -162,7 +163,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
         initiallyExpanded: !(widget.value?.isBlank ?? true),
         onExpansionChanged: _expanded,
         leading: Icon(Icons.track_changes, color: theme.colorScheme.primary),
-        title: const Text('Registro da caçada'),
+        title: Text(context.l10n.huntRecord),
         subtitle: Text(_summary),
         shape: const Border(),
         // Respiro no topo: o rótulo do primeiro campo flutua acima da borda.
@@ -173,11 +174,14 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
               padding: const EdgeInsets.only(bottom: 12),
               child: ChoiceSelect(
                 key: const ValueKey('field-hunt-method'),
-                label: 'Método',
+                label: context.l10n.fieldMethod,
                 value: hunt.method,
                 choices: [
                   for (final m in {...widget.methods, ?_method(hunt.method)})
-                    Choice(value: m.id, label: m.label),
+                    Choice(
+                      value: m.id,
+                      label: context.catalogText(m.label, m.labels),
+                    ),
                 ],
                 errorText: methodError,
                 onChanged: _pickMethod,
@@ -195,7 +199,9 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
                     controller: _hours,
                     keyboardType: TextInputType.number,
                     inputFormatters: digits,
-                    decoration: const InputDecoration(labelText: 'Horas'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.hoursLabel,
+                    ),
                     onChanged: (_) => _countChanged(),
                   ),
                 ),
@@ -209,7 +215,9 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
                       ...digits,
                       LengthLimitingTextInputFormatter(2),
                     ],
-                    decoration: const InputDecoration(labelText: 'Min'),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.minutesLabel,
+                    ),
                     onChanged: (_) => _countChanged(),
                   ),
                 ),
@@ -222,7 +230,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
                     keyboardType: TextInputType.number,
                     inputFormatters: digits,
                     decoration: InputDecoration(
-                      labelText: 'Contagem',
+                      labelText: context.l10n.huntCountTitle,
                       errorText: widget.errorFor?.call('huntCount'),
                     ),
                     onChanged: (_) => _countChanged(),
@@ -258,7 +266,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Métodos de ${widget.game}, o jogo do OT',
+                context.l10n.methodsOf(widget.game!),
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -266,14 +274,15 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
             key: const ValueKey('field-hunt-start'),
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.event),
-            title: const Text('Início da caçada'),
+            title: Text(context.l10n.huntStartTitle),
             subtitle: Text(
               widget.errorFor?.call('huntStartedAt') ??
                   switch ((start, end)) {
-                    (null, _) => 'Não informado',
-                    (final s?, final e?) =>
-                      '${MaterialLocalizations.of(context).formatCompactDate(s)}'
-                          ' · ${context.l10n.huntDuration(s, e)} até a captura',
+                    (null, _) => context.l10n.notInformed,
+                    (final s?, final e?) => context.l10n.untilCapture(
+                      MaterialLocalizations.of(context).formatCompactDate(s),
+                      context.l10n.huntDuration(s, e),
+                    ),
                     (final s?, null) => MaterialLocalizations.of(
                       context,
                     ).formatCompactDate(s),
@@ -282,7 +291,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
             trailing: start == null
                 ? null
                 : IconButton(
-                    tooltip: 'Limpar o início',
+                    tooltip: context.l10n.huntClearStart,
                     onPressed: () => _set(hunt.copyWith(startedAt: null)),
                     icon: const Icon(Icons.close),
                   ),
@@ -293,8 +302,8 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
             controller: _url,
             keyboardType: TextInputType.url,
             decoration: InputDecoration(
-              labelText: 'Link do post',
-              helperText: 'Opcional · ex.: o post no r/ShinyPokemon',
+              labelText: context.l10n.postLink,
+              helperText: context.l10n.postLinkHelper,
               prefixIcon: const Icon(Icons.link),
               errorText: widget.errorFor?.call('huntPostUrl'),
             ),

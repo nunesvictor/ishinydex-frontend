@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 
 /// Select de [Choice]s sobre o `DropdownMenu` do Material 3.
 ///
@@ -36,6 +38,8 @@ class ChoiceSelect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final desktop = isDesktopPlatform(Theme.of(context).platform);
+    // As opções do catálogo no idioma da tela.
+    final choices = context.l10n.choicesIn(this.choices);
     final withSprites = choices.any((c) => c.spriteUrl != null);
     final selected = choices.where((c) => c.value == value).firstOrNull;
     return DropdownMenu<String>(

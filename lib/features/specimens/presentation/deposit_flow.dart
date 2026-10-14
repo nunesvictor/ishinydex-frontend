@@ -79,7 +79,7 @@ class _DepositPickerState extends ConsumerState<DepositPicker> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            'Depositar ${_form.displayName}',
+            context.l10n.depositForm(_form.displayName),
             style: theme.textTheme.titleLarge,
           ),
         ),
@@ -96,9 +96,7 @@ class _DepositPickerState extends ConsumerState<DepositPicker> {
           child: available.when(
             data: (items) {
               if (items.isEmpty) {
-                return const EmptyView(
-                  message: 'Nenhum specimen disponível desta forma.',
-                );
+                return EmptyView(message: context.l10n.noSpecimenToDeposit);
               }
               final sorted = sortForDeposit(
                 items,
@@ -126,7 +124,7 @@ class _DepositPickerState extends ConsumerState<DepositPicker> {
           child: FilledButton.tonalIcon(
             onPressed: _busy ? null : _createAndDeposit,
             icon: const Icon(Icons.add),
-            label: const Text('Cadastrar novo specimen'),
+            label: Text(context.l10n.addNewSpecimen),
           ),
         ),
       ],
@@ -137,11 +135,11 @@ class _DepositPickerState extends ConsumerState<DepositPicker> {
     if (specimen.isShiny != widget.preferShiny) {
       final confirmed = await showConfirmDialog(
         context,
-        title: 'Confirmar depósito',
+        title: context.l10n.confirmDeposit,
         message: widget.preferShiny
-            ? 'Este specimen não é shiny, mas o dex é shiny. Depositar mesmo assim?'
-            : 'Este specimen é shiny, mas o dex não é shiny. Depositar mesmo assim?',
-        confirmLabel: 'Depositar',
+            ? context.l10n.depositNotShinyInShinyDex
+            : context.l10n.depositShinyInNormalDex,
+        confirmLabel: context.l10n.depositAction,
       );
       if (!confirmed) return;
     }
@@ -194,8 +192,8 @@ class _SpecimenTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = [
-      if (specimen.isShiny) 'Shiny',
-      if (specimen.isAlpha) 'Alfa',
+      if (specimen.isShiny) context.l10n.markShiny,
+      if (specimen.isAlpha) context.l10n.markAlpha,
       if (specimen.pokeball != null) prettifyName(specimen.pokeball!),
       if (specimen.capturedAt != null)
         MaterialLocalizations.of(context)
@@ -214,7 +212,7 @@ class _SpecimenTile extends StatelessWidget {
                   for (final (i, part) in details.indexed) ...[
                     if (i > 0) const TextSpan(text: ' · '),
                     // O ícone de alfa vai antes da palavra, no meio da linha.
-                    if (part == 'Alfa' && specimen.isAlpha)
+                    if (part == context.l10n.markAlpha && specimen.isAlpha)
                       const WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
                         child: Padding(

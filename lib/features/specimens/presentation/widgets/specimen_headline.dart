@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -45,8 +46,8 @@ class SpecimenHeadline extends StatelessWidget {
     Widget emoji(String text, String label) =>
         Text(text, style: style, semanticsLabel: label);
     final badges = [
-      if (gender == 'male') emoji(maleEmoji, 'Macho'),
-      if (gender == 'female') emoji(femaleEmoji, 'Fêmea'),
+      if (gender == 'male') emoji(maleEmoji, context.l10n.genderMale),
+      if (gender == 'female') emoji(femaleEmoji, context.l10n.genderFemale),
       if (isShiny) ShinyIcon(size: ballSize),
       if (isAlpha) AlphaIcon(size: ballSize),
       if (isFromGo) GoIcon(size: ballSize),
