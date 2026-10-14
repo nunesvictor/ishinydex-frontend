@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
@@ -69,13 +70,16 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
           child: Row(
             children: [
               Expanded(
-                child: Text('Filtros', style: theme.textTheme.titleLarge),
+                child: Text(
+                  context.l10n.filtersTitle,
+                  style: theme.textTheme.titleLarge,
+                ),
               ),
               TextButton(
                 onPressed: _draft.scopeCount == 0
                     ? null
                     : () => _update(_draft.clearScope()),
-                child: const Text('Limpar'),
+                child: Text(context.l10n.clearAction),
               ),
             ],
           ),
@@ -85,7 +89,7 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
               _Section(
-                title: 'Categoria',
+                title: context.l10n.filterCategory,
                 children: [
                   for (final category in SpeciesCategory.values)
                     FilterChip(
@@ -100,12 +104,15 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
                 ],
               ),
               _Section(
-                title: 'Geração',
+                title: context.l10n.filterGeneration,
                 children: [
                   for (final generation in options.generation)
                     FilterChip(
                       label: Text(generationNumber(generation.value)),
-                      tooltip: generation.label,
+                      tooltip: context.catalogText(
+                        generation.label,
+                        generation.labels,
+                      ),
                       selected: _draft.generations.contains(generation.value),
                       onSelected: (on) => _update(
                         _draft.copyWith(
@@ -120,14 +127,14 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
                 ],
               ),
               _Section(
-                title: 'Tipo (qualquer um)',
+                title: context.l10n.filterTypeAny,
                 children: [
                   for (final type in options.type)
                     FilterChip(
                       avatar: type.spriteUrl == null
                           ? null
                           : PokemonSprite(url: type.spriteUrl, size: 18),
-                      label: Text(type.label),
+                      label: Text(context.catalogText(type.label, type.labels)),
                       selected: _draft.types.contains(type.value),
                       onSelected: (on) => _update(
                         _draft.copyWith(
@@ -139,10 +146,8 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
               ),
               SwitchListTile.adaptive(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                title: const Text('Incluir shiny impossível'),
-                subtitle: const Text(
-                  'Shiny lock sem distribuição e jogos em que a forma é travada',
-                ),
+                title: Text(context.l10n.includeUnobtainable),
+                subtitle: Text(context.l10n.includeUnobtainableHint),
                 value: _draft.includeLocked,
                 onChanged: (v) => _update(_draft.copyWith(includeLocked: v)),
               ),
@@ -154,7 +159,7 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
           child: FilledButton(
             onPressed: () => Navigator.of(context).pop(_draft),
-            child: const Text('Mostrar resultados'),
+            child: Text(context.l10n.showResults),
           ),
         ),
       ],
@@ -210,16 +215,18 @@ class ActiveHuntFilterChips extends ConsumerWidget {
         ),
       if (q.generations.isNotEmpty)
         (
-          'Geração ${q.generations.map(generationNumber).join(', ')}',
+          context.l10n.generationNumber(
+            q.generations.map(generationNumber).join(', '),
+          ),
           q.copyWith(generations: const []),
         ),
       if (q.types.isNotEmpty)
         (
-          labelsOf(q.types, options.type).join(' ou '),
+          joinAlternatives(context.l10n, labelsOf(q.types, options.type)),
           q.copyWith(types: const []),
         ),
       if (q.includeLocked)
-        ('Com shiny impossível', q.copyWith(includeLocked: false)),
+        (context.l10n.withUnobtainable, q.copyWith(includeLocked: false)),
     ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -231,7 +238,7 @@ class ActiveHuntFilterChips extends ConsumerWidget {
             InputChip(
               label: Text(label),
               visualDensity: VisualDensity.compact,
-              deleteButtonTooltipMessage: 'Remover filtro',
+              deleteButtonTooltipMessage: context.l10n.removeFilter,
               onDeleted: () => onChanged(cleared),
             ),
         ],

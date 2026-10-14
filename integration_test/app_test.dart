@@ -44,6 +44,6 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Depositar'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Specimen depositado.'), findsOneWidget);
+    expect(find.text('Espécime depositado.'), findsOneWidget);
   });
 }

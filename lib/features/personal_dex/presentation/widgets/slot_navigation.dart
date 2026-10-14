@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
 /// Os slots por onde o painel navega, na ordem da grade (linha a linha).
@@ -68,7 +69,7 @@ class SlotNavigationBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          tooltip: 'Slot anterior',
+          tooltip: context.l10n.previousSlot,
           visualDensity: VisualDensity.compact,
           onPressed: navigation.onPrevious,
           icon: const Icon(Icons.chevron_left),
@@ -81,7 +82,7 @@ class SlotNavigationBar extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Próximo slot',
+          tooltip: context.l10n.nextSlot,
           visualDensity: VisualDensity.compact,
           onPressed: navigation.onNext,
           icon: const Icon(Icons.chevron_right),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -12,7 +13,6 @@ const searchAnimationDuration = Duration(milliseconds: 300);
 const Curve searchAnimationCurve = Curves.easeOutCubic;
 
 /// Dica do campo enquanto se digita.
-const _searchHint = 'Nome ou número';
 
 /// Busca do dex: em repouso, uma pílula "Buscar" logo abaixo da grade;
 /// ativa (com foco ou texto), a barra de busca do topo.
@@ -95,7 +95,9 @@ class SlotSearchPill extends StatelessWidget {
             decoration: InputDecoration(
               border: InputBorder.none,
               isDense: true,
-              hintText: active ? _searchHint : 'Buscar',
+              hintText: active
+                  ? context.l10n.searchNameOrNumber
+                  : context.l10n.searchAction,
               prefixIcon: const Icon(Icons.search),
               prefixIconConstraints: const BoxConstraints(
                 minWidth: 44,
@@ -121,7 +123,7 @@ class _ClearButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IconButton(
-    tooltip: 'Limpar busca',
+    tooltip: context.l10n.clearSearch,
     onPressed: onPressed,
     icon: const Icon(Icons.clear),
   );
@@ -159,14 +161,12 @@ class SlotSearchResults extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!slotSearchReady(search)) {
-      return const EmptyView(
-        message: 'Digite o nome (2 letras ou mais) ou o número.',
-      );
+      return EmptyView(message: context.l10n.searchTypeMore);
     }
     final key = (dexId: dexId, search: search);
     return switch (ref.watch(slotSearchProvider(key))) {
-      AsyncData(value: final slots) when slots.isEmpty => const EmptyView(
-        message: 'Nenhuma forma deste dex encontrada.',
+      AsyncData(value: final slots) when slots.isEmpty => EmptyView(
+        message: context.l10n.searchNoForm,
       ),
       AsyncData(value: final slots) => _results(context, slots),
       AsyncError(:final error) => ErrorView(
@@ -240,15 +240,15 @@ class _SlotResult extends StatelessWidget {
         leading: PokemonSprite(url: slot.spriteUrl, size: 40),
         title: Text(form.displayName),
         subtitle: Text(
-          '${form.dexNumber} · ${slot.box.name} · '
-          'linha ${slot.row + 1}, coluna ${slot.col + 1} · '
-          '${slot.isRegistered ? 'registrado' : 'faltante'}',
+          '${form.dexNumber} · '
+          '${context.l10n.slotPosition(slot.box.name, slot.row + 1, slot.col + 1)} · '
+          '${slot.isRegistered ? context.l10n.slotRegisteredLower : context.l10n.slotMissingLower}',
         ),
         trailing: !highlighted
             ? null
             : desktop
             ? const _Key('Enter')
-            : _Tag(text: 'Buscar abre', scheme: scheme),
+            : _Tag(text: context.l10n.searchOpens, scheme: scheme),
         onTap: onTap,
       ),
     );
@@ -323,9 +323,9 @@ class _KeyHints extends StatelessWidget {
       spacing: 16,
       runSpacing: 4,
       children: [
-        hint(['↑', '↓'], 'escolher'),
-        hint(['Enter'], 'abrir'),
-        hint(['Esc'], 'cancelar'),
+        hint(['↑', '↓'], context.l10n.keyChoose),
+        hint(['Enter'], context.l10n.keyOpen),
+        hint(['Esc'], context.l10n.keyCancel),
       ],
     );
   }

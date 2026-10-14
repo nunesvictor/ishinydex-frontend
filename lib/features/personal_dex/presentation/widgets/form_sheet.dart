@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/pokemon_types.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -63,7 +64,7 @@ class _FormSheetState extends ConsumerState<FormSheet> {
             [
               form.dexNumber,
               ...types.map((t) => typeLabel(t.type)),
-              'só leitura',
+              context.l10n.readOnly,
             ].join(' · '),
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
@@ -73,7 +74,7 @@ class _FormSheetState extends ConsumerState<FormSheet> {
           // (quem navega pela linha continua na Espécie).
           FormInfoTabs(
             formId: form.id,
-            summaryLabel: 'Forma',
+            summaryLabel: context.l10n.summaryForm,
             onOpenForm: (other) => setState(() => _form = other),
           ),
         ],

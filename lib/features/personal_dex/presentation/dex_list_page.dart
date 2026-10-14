@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
@@ -18,21 +19,17 @@ class DexListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dexes = ref.watch(dexListProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('PersonalDex')),
+      appBar: AppBar(title: Text(context.l10n.navPersonalDex)),
       floatingActionButton: FloatingActionButton.extended(
         // As abas ficam vivas juntas: cada botão precisa da sua hero tag.
         heroTag: 'new-dex',
         onPressed: () => _createDex(context),
         icon: const Icon(Icons.add),
-        label: const Text('Novo PersonalDex'),
+        label: Text(context.l10n.dexNew),
       ),
       body: dexes.when(
         data: (items) => items.isEmpty
-            ? const EmptyView(
-                message:
-                    'Nenhum PersonalDex cadastrado. Crie o primeiro em '
-                    '"Novo PersonalDex".',
-              )
+            ? EmptyView(message: context.l10n.dexListEmpty)
             : RefreshIndicator.adaptive(
                 // Puxar a lista também sincroniza (com o Dropbox conectado).
                 onRefresh: () async {
@@ -95,9 +92,9 @@ class _DexCard extends StatelessWidget {
               Row(
                 children: [
                   if (dex.isShinyDex)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 8),
-                      child: ShinyIcon(semanticLabel: 'Dex shiny'),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ShinyIcon(semanticLabel: context.l10n.shinyDex),
                     ),
                   Expanded(
                     child: Text(
@@ -109,7 +106,9 @@ class _DexCard extends StatelessWidget {
                 ],
               ),
               Text(
-                dex.missing == 0 ? 'Completo!' : 'Faltam ${dex.missing}',
+                dex.missing == 0
+                    ? context.l10n.dexComplete
+                    : context.l10n.dexMissingCount(dex.missing),
                 style: theme.textTheme.bodySmall,
               ),
               ProgressBadge(

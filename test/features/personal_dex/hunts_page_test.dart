@@ -89,6 +89,22 @@ void main() {
   for (final size in [compactSize, expandedSize]) {
     final px = '${size.width.toInt()}px';
 
+    testWidgets('em inglês: abas, contagem e filtros ($px)', (tester) async {
+      await pumpFullApp(tester, size: size, language: AppLanguage.en);
+      await _go(tester, Routes.dex(1));
+      await tester.tap(find.byTooltip('Hunts'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hunts'), findsWidgets);
+      expect(find.text('19 to hunt'), findsOneWidget);
+      expect(find.text('#0003 · HOME 1 · R1 C3 · Missing'), findsOneWidget);
+      expect(find.text('Active (0)'), findsOneWidget);
+      expect(find.text('Situation'), findsOneWidget);
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Include unobtainable shiny'), findsOneWidget);
+      expect(find.text('Show results'), findsOneWidget);
+    });
+
     testWidgets('lista o que falta e leva ao slot ($px)', (tester) async {
       await pumpFullApp(tester, size: size);
       await _openHunts(tester);
@@ -293,16 +309,20 @@ void main() {
     setUpAll(() => registerFallbackValue(const HuntQuery()));
     setUp(() => repository = MockPersonalDexRepository());
 
-    Hunt hunt(int id, {List<HuntReason>? reasons, bool free = false}) =>
-        Hunt.parse({
-          ...missingSlotJson,
-          if (free) 'form': null,
-          'id': id,
-          'reasons': [
-            for (final r in reasons ?? const [HuntReason.noShiny]) r.param,
-          ],
-          'shiny_lock': null,
-        });
+    Hunt hunt(
+      int id, {
+      List<HuntReason>? reasons,
+      bool free = false,
+      bool registered = false,
+    }) => Hunt.parse({
+      ...registered ? registeredSlotJson : missingSlotJson,
+      if (free) 'form': null,
+      'id': id,
+      'reasons': [
+        for (final r in reasons ?? const [HuntReason.noShiny]) r.param,
+      ],
+      'shiny_lock': null,
+    });
 
     void answer(int page, Future<Paginated<Hunt>> Function() result) => when(
       () => repository.fetchHunts(
@@ -534,6 +554,7 @@ void main() {
                 i + 1,
                 reasons: i == 0 ? const [HuntReason.pokeball] : null,
                 free: i == 1,
+                registered: i == 2,
               ),
           ],
         ),
@@ -550,6 +571,8 @@ void main() {
       await tester.pumpAndSettle();
       // Motivo pokébola sem espécime e slot sem forma.
       expect(find.textContaining('Outra pokébola'), findsWidgets);
+      // Com espécime, o "sem shiny" diz que ele não é shiny.
+      expect(find.textContaining('Não shiny'), findsOneWidget);
 
       await tester.drag(find.byType(ListView), const Offset(0, -3000));
       await tester.pump();

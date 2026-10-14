@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -76,13 +78,13 @@ class SpeciesInfo extends ConsumerWidget {
       );
     }
 
-    final facts = _facts();
+    final facts = _facts(context.l10n);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 12,
       children: [
         if (form.evolutionChain.isNotEmpty) ...[
-          Text('Linha evolutiva', style: theme.textTheme.titleSmall),
+          Text(context.l10n.evolutionLine, style: theme.textTheme.titleSmall),
           Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
@@ -122,7 +124,10 @@ class SpeciesInfo extends ConsumerWidget {
           ),
         ],
         if (form.otherForms.isNotEmpty) ...[
-          Text('Outras formas', style: theme.textTheme.titleSmall),
+          Text(
+            context.l10n.speciesOtherForms,
+            style: theme.textTheme.titleSmall,
+          ),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -143,7 +148,7 @@ class SpeciesInfo extends ConsumerWidget {
           ),
         ],
         if (form.pokedexes.isNotEmpty) ...[
-          Text('Na pokédex de', style: theme.textTheme.titleSmall),
+          Text(context.l10n.inPokedexOf, style: theme.textTheme.titleSmall),
           _Pokedexes(form.pokedexes),
         ],
         if (facts.isNotEmpty)
@@ -190,14 +195,20 @@ class SpeciesInfo extends ConsumerWidget {
     );
   }
 
-  List<(String, String)> _facts() => [
-    if (form.genderRate case final rate?) ('Gênero', genderRatio(rate)),
-    if (form.captureRate case final rate?) ('Captura', '$rate'),
-    if (form.hatchCounter case final cycles?) ('Ciclos de ovo', '$cycles'),
+  List<(String, String)> _facts(AppLocalizations l10n) => [
+    if (form.genderRate case final rate?)
+      (l10n.factGender, genderRatio(l10n, rate)),
+    if (form.captureRate case final rate?) (l10n.factCatchRate, '$rate'),
+    if (form.hatchCounter case final cycles?) (l10n.factEggCycles, '$cycles'),
     if (form.debutVersions.isNotEmpty)
-      ('Estreia', form.debutVersions.map(prettifyName).join(' e ')),
-    if (form.height case final height?) ('Altura', '${decimal(height / 10)} m'),
-    if (form.weight case final weight?) ('Peso', '${decimal(weight / 10)} kg'),
+      (
+        l10n.factDebut,
+        joinLabels(l10n, [...form.debutVersions.map(prettifyName)]),
+      ),
+    if (form.height case final height?)
+      (l10n.factHeight, '${decimal(l10n, height / 10)} m'),
+    if (form.weight case final weight?)
+      (l10n.factWeight, '${decimal(l10n, weight / 10)} kg'),
   ];
 }
 
@@ -284,7 +295,9 @@ class _Pokedexes extends ConsumerWidget {
                                     vertical: 1,
                                   ),
                                   child: Text(
-                                    'exclusivo ${versionLabel(version)}',
+                                    context.l10n.exclusiveTo(
+                                      versionLabel(version),
+                                    ),
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),
@@ -306,8 +319,10 @@ class _Pokedexes extends ConsumerWidget {
                                 vertical: 1,
                               ),
                               child: Text(
-                                '${versions.length > 1 ? 'Seus' : 'Seu'}: '
-                                '${versions.map(versionLabel).join(', ')}',
+                                context.l10n.yourGames(
+                                  versions.length,
+                                  versions.map(versionLabel).join(', '),
+                                ),
                                 style: theme.textTheme.labelSmall,
                               ),
                             ),
@@ -330,11 +345,7 @@ class _Pokedexes extends ConsumerWidget {
               ),
             ),
           ),
-        Text(
-          'Estar na pokédex não garante que dá para capturar: pode ser só '
-          'por evolução, troca ou evento.',
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(context.l10n.pokedexNoGuarantee, style: theme.textTheme.bodySmall),
       ],
     );
   }
@@ -342,14 +353,16 @@ class _Pokedexes extends ConsumerWidget {
 
 /// Proporção de gênero a partir do `gender_rate` (oitavos de fêmea; -1 =
 /// sem gênero): "♂ 87,5% · ♀ 12,5%", "Só macho", "Só fêmea".
-String genderRatio(int rate) => switch (rate) {
-  < 0 => 'Sem gênero',
-  0 => 'Só macho',
-  >= 8 => 'Só fêmea',
-  _ => '♂ ${decimal((8 - rate) * 12.5)}% · ♀ ${decimal(rate * 12.5)}%',
+String genderRatio(AppLocalizations l10n, int rate) => switch (rate) {
+  < 0 => l10n.genderless,
+  0 => l10n.maleOnly,
+  >= 8 => l10n.femaleOnly,
+  _ =>
+    '♂ ${decimal(l10n, (8 - rate) * 12.5)}% · '
+        '♀ ${decimal(l10n, rate * 12.5)}%',
 };
 
-/// Número com vírgula e sem ",0": 1.7 → "1,7"; 50.0 → "50".
-String decimal(num value) => value == value.roundToDouble()
-    ? '${value.round()}'
-    : '$value'.replaceAll('.', ',');
+/// Número no formato do idioma, sem ",0": 1.7 → "1,7" (en: "1.7");
+/// 50.0 → "50".
+String decimal(AppLocalizations l10n, num value) =>
+    NumberFormat('0.###', l10n.localeName).format(value);

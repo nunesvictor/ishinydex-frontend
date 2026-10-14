@@ -398,13 +398,16 @@ void main() {
     });
 
     test('genderRatio e decimal', () {
-      expect(genderRatio(-1), 'Sem gênero');
-      expect(genderRatio(0), 'Só macho');
-      expect(genderRatio(8), 'Só fêmea');
-      expect(genderRatio(1), '♂ 87,5% · ♀ 12,5%');
-      expect(genderRatio(4), '♂ 50% · ♀ 50%');
-      expect(decimal(1.7), '1,7');
-      expect(decimal(50.0), '50');
+      expect(genderRatio(ptText, -1), 'Sem gênero');
+      expect(genderRatio(ptText, 0), 'Só macho');
+      expect(genderRatio(ptText, 8), 'Só fêmea');
+      expect(genderRatio(ptText, 1), '♂ 87,5% · ♀ 12,5%');
+      expect(genderRatio(ptText, 4), '♂ 50% · ♀ 50%');
+      expect(decimal(ptText, 1.7), '1,7');
+      expect(decimal(ptText, 50.0), '50');
+      expect(decimal(enText, 1.7), '1.7');
+      expect(genderRatio(enText, 1), '♂ 87.5% · ♀ 12.5%');
+      expect(genderRatio(enText, -1), 'Genderless');
     });
   });
 

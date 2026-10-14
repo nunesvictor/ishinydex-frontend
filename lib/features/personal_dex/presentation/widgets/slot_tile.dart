@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -125,7 +126,7 @@ class SlotTile extends StatelessWidget {
                       right: inset,
                       top: inset,
                       child: Tooltip(
-                        message: 'Caçada em andamento',
+                        message: context.l10n.huntInProgress,
                         child: HuntBadge(size: size * 0.24),
                       ),
                     ),
@@ -134,7 +135,7 @@ class SlotTile extends StatelessWidget {
                       right: inset,
                       top: inset,
                       child: Tooltip(
-                        message: 'Em ${away.title}',
+                        message: context.l10n.awayIn(away.title),
                         child: SaveIcon(away, size: size * 0.22),
                       ),
                     ),
@@ -146,7 +147,7 @@ class SlotTile extends StatelessWidget {
                       right: inset,
                       top: inset,
                       child: Tooltip(
-                        message: 'Visitando o Champions',
+                        message: context.l10n.visitingChampionsLabel,
                         child: Image.asset(
                           'assets/origin_marks/champions.png',
                           key: const ValueKey('champions-mark'),

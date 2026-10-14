@@ -348,7 +348,7 @@ void main() {
       // Saur não é shiny: pede confirmação.
       await tester.tap(find.widgetWithText(TextButton, 'Depositar'));
       await tester.pumpAndSettle();
-      expect(find.text('Specimen depositado.'), findsOneWidget);
+      expect(find.text('Espécime depositado.'), findsOneWidget);
       expect(find.text('Registrado'), findsOneWidget);
     });
 
@@ -900,7 +900,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TextButton, 'Depositar'));
       await tester.pumpAndSettle();
-      expect(find.text('Specimen depositado.'), findsOneWidget);
+      expect(find.text('Espécime depositado.'), findsOneWidget);
       // Espera o snackbar sumir.
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();

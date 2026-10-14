@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
@@ -25,7 +26,7 @@ class DetailBody extends StatelessWidget {
     this.subtitle,
     this.caption,
     this.position,
-    this.summaryLabel = 'Espécime',
+    this.summaryLabel,
     this.highlightAbility,
     this.chips = const [],
     this.fields = const [],
@@ -52,7 +53,7 @@ class DetailBody extends StatelessWidget {
 
   /// Chave das abas: trocar de slot ou de espécime volta para o resumo.
   final Key tabsKey;
-  final String summaryLabel;
+  final String? summaryLabel;
 
   /// Habilidade do espécime, destacada na lista da forma.
   final String? highlightAbility;
@@ -167,7 +168,6 @@ class FieldGrid extends StatelessWidget {
   final List<(String, String)> fields;
 
   /// O campo de texto livre, em largura total.
-  static const wideField = 'Observação';
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +194,7 @@ class FieldGrid extends StatelessWidget {
           runSpacing: 10,
           children: [
             for (final (name, value) in fields)
-              if (name == wideField)
+              if (name == context.l10n.fieldObservation)
                 SizedBox(
                   width: constraints.maxWidth,
                   child: cell(name, _MoreText(value)),
@@ -256,7 +256,9 @@ class _MoreTextState extends State<_MoreText> {
                   visualDensity: VisualDensity.compact,
                 ),
                 onPressed: () => setState(() => _open = !_open),
-                child: Text(_open ? 'ver menos' : 'ver mais'),
+                child: Text(
+                  _open ? context.l10n.seeLess : context.l10n.seeMore,
+                ),
               ),
           ],
         );

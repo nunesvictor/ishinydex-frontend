@@ -21,6 +21,20 @@ Future<void> scrollToEnd(WidgetTester tester) async {
 
 void main() {
   group('pelo app inteiro', () {
+    testWidgets('em inglês: o formulário e a prévia', (tester) async {
+      await pumpFullApp(tester, language: AppLanguage.en);
+      await tester.tap(find.text('New PersonalDex'));
+      await tester.pumpAndSettle();
+      expect(find.text('Dex type'), findsOneWidget);
+      expect(find.text('Standard'), findsOneWidget);
+      await tester.tap(find.text("What's in the standard set?"));
+      await tester.pumpAndSettle();
+      expect(find.text(standardSetRules(enText).last), findsOneWidget);
+      await scrollToEnd(tester);
+      expect(find.textContaining('forms in'), findsOneWidget);
+      expect(find.text('Create PersonalDex'), findsOneWidget);
+    });
+
     for (final size in [compactSize, expandedSize]) {
       testWidgets('cria o dex padrão e abre ele (${size.width.toInt()}px)', (
         tester,
@@ -90,7 +104,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('O que entra no conjunto padrão?'));
       await tester.pumpAndSettle();
-      expect(find.text(standardSetRules.last), findsOneWidget);
+      expect(find.text(standardSetRules(ptText).last), findsOneWidget);
 
       await tester.tap(find.text('Personalizado'));
       await tester.pumpAndSettle();

@@ -43,7 +43,7 @@ class GenerationProgressView extends ConsumerWidget {
             const CloseButton(),
             Expanded(
               child: Text(
-                'Progresso por geração',
+                context.l10n.progressByGeneration,
                 style: Theme.of(context).textTheme.titleLarge,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -53,8 +53,8 @@ class GenerationProgressView extends ConsumerWidget {
       ),
       Expanded(
         child: switch (ref.watch(generationsProvider(dexId))) {
-          AsyncData(value: final gens) when gens.isEmpty => const EmptyView(
-            message: 'Este dex ainda não tem formas nas boxes.',
+          AsyncData(value: final gens) when gens.isEmpty => EmptyView(
+            message: context.l10n.dexNoForms,
           ),
           AsyncData(value: final gens) => ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -70,7 +70,9 @@ class GenerationProgressView extends ConsumerWidget {
                       child: Text(context.l10n.generation(gen.generation)),
                     ),
                     Text(
-                      gen.missing == 0 ? 'Completa!' : 'Faltam ${gen.missing}',
+                      gen.missing == 0
+                          ? context.l10n.generationComplete
+                          : context.l10n.dexMissingCount(gen.missing),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -84,7 +86,7 @@ class GenerationProgressView extends ConsumerWidget {
                   ),
                 ),
                 trailing: Tooltip(
-                  message: 'Ir para ${gen.firstBox.name}',
+                  message: context.l10n.goToBox(gen.firstBox.name),
                   child: const Icon(Icons.chevron_right),
                 ),
                 onTap: () => Navigator.of(context).pop(gen.firstBox.id),

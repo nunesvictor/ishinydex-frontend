@@ -86,3 +86,14 @@ String joinLabels(AppLocalizations l10n, List<String> labels) =>
         labels.last,
       ),
     };
+
+/// "A ou B", "A, B ou C" ("A, B or C"): alternativas, nos filtros.
+String joinAlternatives(AppLocalizations l10n, List<String> labels) =>
+    switch (labels) {
+      [] => '',
+      [final one] => one,
+      _ => l10n.listOr(
+        labels.sublist(0, labels.length - 1).join(', '),
+        labels.last,
+      ),
+    };
