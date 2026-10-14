@@ -28,7 +28,14 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(APP_CACHE)
-      .then((cache) => cache.addAll(['./', 'flutter_bootstrap.js', 'manifest.json']))
+      .then((cache) =>
+        cache.addAll([
+          './',
+          'flutter_bootstrap.js',
+          'manifest.json',
+          'manifest.pt-BR.json',
+        ]),
+      )
       .catch(() => undefined),
   );
 });
