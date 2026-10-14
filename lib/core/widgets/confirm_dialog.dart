@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 
 /// Diálogo de confirmação adaptativo (Cupertino no iOS/macOS).
 ///
@@ -9,7 +10,7 @@ Future<bool> showConfirmDialog(
   BuildContext context, {
   required String title,
   required String message,
-  String confirmLabel = 'Confirmar',
+  String? confirmLabel,
   bool destructive = false,
   IconData? icon,
 }) async {
@@ -28,13 +29,13 @@ Future<bool> showConfirmDialog(
         adaptiveAction(
           context: context,
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
+          child: Text(context.l10n.cancel),
         ),
         adaptiveAction(
           context: context,
           onPressed: () => Navigator.of(context).pop(true),
           isDestructive: destructive,
-          child: Text(confirmLabel),
+          child: Text(confirmLabel ?? context.l10n.confirm),
         ),
       ],
     ),

@@ -2,11 +2,19 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
 Future<void> _pump(WidgetTester tester, Widget icon) async {
-  await tester.pumpWidget(MaterialApp(home: Center(child: icon)));
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('pt'),
+      home: Center(child: icon),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 

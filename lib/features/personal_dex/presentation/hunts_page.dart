@@ -272,7 +272,7 @@ class _Filters extends ConsumerWidget {
         label: 'Motivos',
         icons: [for (final r in query.reasons) _reasonIcon(r)],
         tooltip:
-            'Motivos: ${joinLabels([for (final r in query.reasons) context.l10n.huntReason(r).replaceRange(0, 1, context.l10n.huntReason(r)[0].toLowerCase())])}',
+            'Motivos: ${joinLabels(context.l10n, [for (final r in query.reasons) context.l10n.huntReason(r).replaceRange(0, 1, context.l10n.huntReason(r)[0].toLowerCase())])}',
         // Sempre há pelo menos um motivo: o chip está sempre "ativo".
         selected: true,
         menuChildren: [
@@ -382,7 +382,9 @@ class _GameChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final games = query.versions;
-    final names = joinLabels([for (final g in games) versionLabel(g)]);
+    final names = joinLabels(context.l10n, [
+      for (final g in games) versionLabel(g),
+    ]);
     return FilterChip(
       tooltip: games.isEmpty ? null : 'Jogo: $names',
       label: Row(

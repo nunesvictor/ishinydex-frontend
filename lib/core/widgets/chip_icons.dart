@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 
 /// A face de um chip de filtro com valores marcados (#219): só os ícones,
 /// sobrepostos, até [max], e "+N". O nome completo fica no tooltip do chip
@@ -74,9 +75,14 @@ class ChipIcons extends StatelessWidget {
   }
 }
 
-/// "shiny e alfa", "A, B e C": a lista para o tooltip e o leitor de tela.
-String joinLabels(List<String> labels) => switch (labels) {
-  [] => '',
-  [final one] => one,
-  _ => '${labels.sublist(0, labels.length - 1).join(', ')} e ${labels.last}',
-};
+/// "shiny e alfa", "A, B e C" ("A, B and C"): a lista para o tooltip e o
+/// leitor de tela.
+String joinLabels(AppLocalizations l10n, List<String> labels) =>
+    switch (labels) {
+      [] => '',
+      [final one] => one,
+      _ => l10n.listAnd(
+        labels.sublist(0, labels.length - 1).join(', '),
+        labels.last,
+      ),
+    };

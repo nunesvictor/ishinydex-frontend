@@ -11,29 +11,30 @@ import 'package:ishinydex/features/local/local_data_providers.dart';
 import 'package:ishinydex/features/sync/domain/sync_engine.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
 
-/// "há 2 min", "hoje às 09:12", "03/10 às 21:40".
-String describeLastSync(DateTime last, DateTime now) {
+/// "há 2 min", "hoje às 09:12", "03/10 às 21:40" (no formato do idioma).
+String describeLastSync(AppLocalizations l10n, DateTime last, DateTime now) {
   final ago = now.difference(last);
-  if (ago.inMinutes < 1) return 'agora há pouco';
-  if (ago.inMinutes < 60) return 'há ${ago.inMinutes} min';
-  final time = DateFormat('HH:mm').format(last);
+  if (ago.inMinutes < 1) return l10n.syncJustNow;
+  if (ago.inMinutes < 60) return l10n.syncMinutesAgo(ago.inMinutes);
+  final time = DateFormat.Hm(l10n.localeName).format(last);
   final sameDay =
       last.year == now.year && last.month == now.month && last.day == now.day;
-  if (sameDay) return 'hoje às $time';
-  return '${DateFormat('dd/MM').format(last)} às $time';
+  if (sameDay) return l10n.syncTodayAt(time);
+  return l10n.syncDateAt(DateFormat.Md(l10n.localeName).format(last), time);
 }
 
 /// Uma linha sobre o estado, para Ajustes e para a tela de Sincronização.
-String describeSync(SyncState state, {DateTime? now}) {
-  if (!state.connected) return 'Desligada · os dados ficam só neste aparelho';
+String describeSync(AppLocalizations l10n, SyncState state, {DateTime? now}) {
+  if (!state.connected) return l10n.syncOff;
   return switch (state.phase) {
-    SyncPhase.syncing => 'Sincronizando…',
-    SyncPhase.offline => 'Sem conexão · sincroniza quando voltar',
-    SyncPhase.error => 'Não foi possível sincronizar',
+    SyncPhase.syncing => l10n.syncSyncing,
+    SyncPhase.offline => l10n.syncOffline,
+    SyncPhase.error => l10n.syncFailed,
     _ => switch (state.lastSync) {
-      final last? =>
-        'Sincronizado ${describeLastSync(last, now ?? DateTime.now())}',
-      null => 'Conectada',
+      final last? => l10n.syncDone(
+        describeLastSync(l10n, last, now ?? DateTime.now()),
+      ),
+      null => l10n.syncConnected,
     },
   };
 }
@@ -64,7 +65,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(syncControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sincronização')),
+      appBar: AppBar(title: Text(context.l10n.syncTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -130,14 +131,11 @@ class _Disconnected extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Card(
+        Card(
           margin: EdgeInsets.zero,
           child: ListTile(
-            leading: Icon(Icons.smartphone_outlined),
-            title: Text(
-              'Seus dados estão só neste aparelho. Faça backups em '
-              '"Exportar dados", ou ligue a sincronização.',
-            ),
+            leading: const Icon(Icons.smartphone_outlined),
+            title: Text(context.l10n.syncLocalOnly),
           ),
         ),
         const SizedBox(height: 16),
@@ -154,19 +152,19 @@ class _Disconnected extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Sincronizar com o Dropbox',
+                        context.l10n.syncWithDropbox,
                         style: theme.textTheme.titleMedium,
                       ),
                     ),
-                    const Chip(label: Text('opcional')),
+                    Chip(label: Text(context.l10n.optional)),
                   ],
                 ),
                 const SizedBox(height: 8),
-                for (final line in const [
-                  'Os mesmos dados no PC, no iPhone e no iPad.',
-                  'Backup automático, na sua conta do Dropbox.',
-                  'O app só acessa a pasta dele, em Apps; sem intermediários.',
-                  'Funciona sem internet: sincroniza quando a conexão voltar.',
+                for (final line in [
+                  context.l10n.syncBenefitDevices,
+                  context.l10n.syncBenefitBackup,
+                  context.l10n.syncBenefitFolder,
+                  context.l10n.syncBenefitOffline,
                 ])
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
@@ -176,18 +174,14 @@ class _Disconnected extends ConsumerWidget {
                 FilledButton(
                   onPressed: () =>
                       ref.read(syncControllerProvider.notifier).connect(),
-                  child: const Text('Conectar ao Dropbox'),
+                  child: Text(context.l10n.connectDropbox),
                 ),
               ],
             ),
           ),
         ),
         const SizedBox(height: 12),
-        Text(
-          'Dá para desligar quando quiser: os dados continuam neste aparelho '
-          'e no Dropbox.',
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(context.l10n.syncTurnOffAnytime, style: theme.textTheme.bodySmall),
       ],
     );
   }
@@ -220,7 +214,7 @@ class _Connected extends ConsumerWidget {
                       child: Text(
                         state.account == null
                             ? 'Dropbox'
-                            : 'Dropbox de ${state.account}',
+                            : context.l10n.dropboxOf(state.account!),
                         style: theme.textTheme.titleMedium,
                       ),
                     ),
@@ -231,22 +225,17 @@ class _Connected extends ConsumerWidget {
                   children: [
                     SyncStatusIcon(phase: state.phase),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(describeSync(state))),
+                    Expanded(child: Text(describeSync(context.l10n, state))),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Sincroniza ao abrir o app, alguns segundos depois de cada '
-                  'mudança e quando você puxa a lista de dexes para '
-                  'atualizar.',
-                  style: theme.textTheme.bodySmall,
-                ),
+                Text(context.l10n.syncWhen, style: theme.textTheme.bodySmall),
                 const SizedBox(height: 12),
                 FilledButton.tonal(
                   onPressed: state.phase == SyncPhase.syncing
                       ? null
                       : controller.sync,
-                  child: const Text('Sincronizar agora'),
+                  child: Text(context.l10n.syncNow),
                 ),
               ],
             ),
@@ -254,13 +243,13 @@ class _Connected extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'No Dropbox',
+          context.l10n.inDropbox,
           style: theme.textTheme.titleSmall?.copyWith(
             color: theme.colorScheme.primary,
           ),
         ),
         const SizedBox(height: 4),
-        const Text('Arquivo ishinydex.json, na pasta do app (dentro de Apps).'),
+        Text(context.l10n.dropboxFile),
         const SizedBox(height: 16),
         Align(
           alignment: AlignmentDirectional.centerStart,
@@ -272,24 +261,18 @@ class _Connected extends ConsumerWidget {
             onPressed: () async {
               final confirmed = await showConfirmDialog(
                 context,
-                title: 'Desconectar do Dropbox?',
-                message:
-                    'Os dados continuam neste aparelho e no Dropbox; só a '
-                    'sincronização para.',
-                confirmLabel: 'Desconectar',
+                title: context.l10n.disconnectDropboxQuestion,
+                message: context.l10n.disconnectDropboxMessage,
+                confirmLabel: context.l10n.disconnect,
                 destructive: true,
               );
               if (confirmed) await controller.disconnect();
             },
-            child: const Text('Desconectar'),
+            child: Text(context.l10n.disconnect),
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          'Desconectar só desliga a sincronização: os dados continuam neste '
-          'aparelho e no Dropbox.',
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(context.l10n.disconnectNote, style: theme.textTheme.bodySmall),
       ],
     );
   }
@@ -353,9 +336,9 @@ class _SyncActivityBarState extends ConsumerState<SyncActivityBar> {
       }
     });
     if (!_visible) return const SizedBox.shrink();
-    return const LinearProgressIndicator(
+    return LinearProgressIndicator(
       minHeight: 3,
-      semanticsLabel: 'Sincronizando',
+      semanticsLabel: context.l10n.syncingSemantics,
     );
   }
 }
@@ -374,11 +357,14 @@ class SyncBadge extends ConsumerWidget {
     return switch (phase) {
       SyncPhase.offline => Badge(
         backgroundColor: Theme.of(context).colorScheme.outline,
-        child: Semantics(label: 'Sincronização sem conexão', child: child),
+        child: Semantics(
+          label: context.l10n.syncOfflineSemantics,
+          child: child,
+        ),
       ),
       SyncPhase.error => Badge(
         label: const Text('!'),
-        child: Semantics(label: 'Sincronização com erro', child: child),
+        child: Semantics(label: context.l10n.syncErrorSemantics, child: child),
       ),
       _ => child,
     };
@@ -399,8 +385,8 @@ class SyncTile extends ConsumerWidget {
           ? SyncStatusIcon(phase: state.phase)
           : const Icon(Icons.cloud_outlined),
       tileColor: error ? Theme.of(context).colorScheme.errorContainer : null,
-      title: const Text('Sincronização'),
-      subtitle: Text(describeSync(state)),
+      title: Text(context.l10n.syncTitle),
+      subtitle: Text(describeSync(context.l10n, state)),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => context.go(Routes.sync),
     );
@@ -424,16 +410,13 @@ class _FirstSyncDialogState extends State<FirstSyncDialog> {
 
   @override
   Widget build(BuildContext context) {
-    String side(DataFileSummary s) {
-      String plural(int n, String one, String many) =>
-          '$n ${n == 1 ? one : many}';
-      return '${plural(s.dexes, 'dex', 'dexes')} · '
-          '${plural(s.specimens, 'espécime', 'espécimes')}\n'
-          '${DateFormat('dd/MM/yyyy HH:mm').format(s.savedAt)}';
-    }
+    final l10n = context.l10n;
+    String side(DataFileSummary s) =>
+        '${l10n.countDexes(s.dexes)} · ${l10n.countSpecimens(s.specimens)}\n'
+        '${DateFormat.yMd(l10n.localeName).add_Hm().format(s.savedAt)}';
 
     return AlertDialog(
-      title: const Text('Já há dados no Dropbox'),
+      title: Text(l10n.firstSyncTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -444,14 +427,14 @@ class _FirstSyncDialogState extends State<FirstSyncDialog> {
               children: [
                 Expanded(
                   child: _Side(
-                    title: 'No Dropbox',
+                    title: l10n.inDropbox,
                     text: side(widget.choice.remote),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _Side(
-                    title: 'Neste aparelho',
+                    title: l10n.onThisDevice,
                     text: side(widget.choice.local),
                   ),
                 ),
@@ -461,28 +444,25 @@ class _FirstSyncDialogState extends State<FirstSyncDialog> {
             RadioGroup<FirstSync>(
               groupValue: _mode,
               onChanged: (mode) => setState(() => _mode = mode!),
-              child: const Column(
+              child: Column(
                 children: [
                   RadioListTile(
                     value: FirstSync.merge,
                     contentPadding: EdgeInsets.zero,
-                    title: Text('Juntar os dois (recomendado)'),
-                    subtitle: Text(
-                      'Nada se perde. Se o mesmo registro mudou nos dois, '
-                      'vale a mudança mais recente.',
-                    ),
+                    title: Text(l10n.firstSyncMerge),
+                    subtitle: Text(l10n.firstSyncMergeSubtitle),
                   ),
                   RadioListTile(
                     value: FirstSync.useRemote,
                     contentPadding: EdgeInsets.zero,
-                    title: Text('Usar só os do Dropbox'),
-                    subtitle: Text('Os dados deste aparelho são substituídos.'),
+                    title: Text(l10n.firstSyncUseRemote),
+                    subtitle: Text(l10n.firstSyncUseRemoteSubtitle),
                   ),
                   RadioListTile(
                     value: FirstSync.useLocal,
                     contentPadding: EdgeInsets.zero,
-                    title: Text('Usar só os deste aparelho'),
-                    subtitle: Text('O que está no Dropbox é substituído.'),
+                    title: Text(l10n.firstSyncUseLocal),
+                    subtitle: Text(l10n.firstSyncUseLocalSubtitle),
                   ),
                 ],
               ),
@@ -493,11 +473,11 @@ class _FirstSyncDialogState extends State<FirstSyncDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(l10n.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _mode),
-          child: const Text('Continuar'),
+          child: Text(l10n.continueAction),
         ),
       ],
     );

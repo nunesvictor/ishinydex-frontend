@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
 
 /// Liga o sync à vida do app: ao abrir (que também conclui um login que
@@ -19,8 +20,6 @@ class SyncLifecycle extends ConsumerStatefulWidget {
 }
 
 class _SyncLifecycleState extends ConsumerState<SyncLifecycle> {
-  static const pulledMessage = 'Atualizado com as mudanças de outro aparelho.';
-
   late final AppLifecycleListener _listener;
 
   @override
@@ -37,9 +36,9 @@ class _SyncLifecycleState extends ConsumerState<SyncLifecycle> {
     ) {
       if (after > (before ?? 0)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(pulledMessage),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text(context.l10n.syncPulled),
+            duration: const Duration(seconds: 3),
           ),
         );
       }

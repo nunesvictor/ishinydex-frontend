@@ -21,9 +21,10 @@ void main() {
   });
 
   test('joinLabels', () {
-    expect(joinLabels([]), '');
-    expect(joinLabels(['shiny']), 'shiny');
-    expect(joinLabels(['A', 'B', 'C']), 'A, B e C');
+    expect(joinLabels(ptText, []), '');
+    expect(joinLabels(ptText, ['shiny']), 'shiny');
+    expect(joinLabels(ptText, ['A', 'B', 'C']), 'A, B e C');
+    expect(joinLabels(enText, ['A', 'B', 'C']), 'A, B and C');
   });
 
   testWidgets('MenuChip: o nome sem valores; só ícones com valores', (

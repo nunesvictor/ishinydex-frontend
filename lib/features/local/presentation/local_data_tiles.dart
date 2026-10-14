@@ -25,7 +25,7 @@ class LocalDataTiles extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
           child: Text(
-            'Seus dados',
+            context.l10n.yourData,
             style: theme.textTheme.titleSmall?.copyWith(
               color: theme.colorScheme.primary,
             ),
@@ -34,14 +34,14 @@ class LocalDataTiles extends ConsumerWidget {
         if (ref.watch(envProvider).syncAvailable) const SyncTile(),
         ListTile(
           leading: const Icon(Icons.download_outlined),
-          title: const Text('Exportar dados'),
-          subtitle: const Text('Baixa um arquivo .json com tudo (backup)'),
+          title: Text(context.l10n.exportData),
+          subtitle: Text(context.l10n.exportDataSubtitle),
           onTap: () => _export(context, ref),
         ),
         ListTile(
           leading: const Icon(Icons.upload_outlined),
-          title: const Text('Importar dados'),
-          subtitle: const Text('Restaura de um arquivo exportado'),
+          title: Text(context.l10n.importData),
+          subtitle: Text(context.l10n.importDataSubtitle),
           onTap: () => _import(context, ref),
         ),
       ],
@@ -51,7 +51,7 @@ class LocalDataTiles extends ConsumerWidget {
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     final name = await ref.read(localDataActionsProvider).export();
     if (!context.mounted) return;
-    _notify(context, 'Exportado: $name');
+    _notify(context, context.l10n.exported(name));
   }
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {
@@ -75,7 +75,7 @@ class LocalDataTiles extends ConsumerWidget {
     if (merge == null) return;
     await actions.import(picked.file, merge: merge);
     if (!context.mounted) return;
-    _notify(context, 'Dados importados.');
+    _notify(context, context.l10n.dataImported);
     context.go(Routes.dexes);
   }
 
@@ -112,11 +112,10 @@ class _ImportDialogState extends State<ImportDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final s = widget.summary;
-    final when = DateFormat('dd/MM/yyyy HH:mm').format(s.savedAt);
-    String plural(int n, String one, String many) =>
-        '$n ${n == 1 ? one : many}';
+    final l10n = context.l10n;
+    final when = DateFormat.yMd(l10n.localeName).add_Hm().format(s.savedAt);
     return AlertDialog(
-      title: const Text('Importar dados?'),
+      title: Text(l10n.importDataQuestion),
       // Rola em telas baixas (celular deitado).
       content: SingleChildScrollView(
         child: Column(
@@ -128,10 +127,10 @@ class _ImportDialogState extends State<ImportDialog> {
               child: ListTile(
                 title: Text(widget.name),
                 subtitle: Text(
-                  '${plural(s.dexes, 'dex', 'dexes')} · '
-                  '${plural(s.specimens, 'espécime', 'espécimes')} · '
-                  '${plural(s.saves, 'save', 'saves')}\n'
-                  'Exportado em $when',
+                  '${l10n.countDexes(s.dexes)} · '
+                  '${l10n.countSpecimens(s.specimens)} · '
+                  '${l10n.countSaves(s.saves)}\n'
+                  '${l10n.exportedOn(when)}',
                 ),
               ),
             ),
@@ -139,23 +138,19 @@ class _ImportDialogState extends State<ImportDialog> {
             RadioGroup<bool>(
               groupValue: _merge,
               onChanged: (value) => setState(() => _merge = value!),
-              child: const Column(
+              child: Column(
                 children: [
                   RadioListTile(
                     value: false,
                     contentPadding: EdgeInsets.zero,
-                    title: Text('Substituir os dados deste aparelho'),
-                    subtitle: Text(
-                      'O aparelho fica exatamente como o arquivo.',
-                    ),
+                    title: Text(l10n.importReplace),
+                    subtitle: Text(l10n.importReplaceSubtitle),
                   ),
                   RadioListTile(
                     value: true,
                     contentPadding: EdgeInsets.zero,
-                    title: Text('Juntar com os dados deste aparelho'),
-                    subtitle: Text(
-                      'Registro a registro, vale a mudança mais recente.',
-                    ),
+                    title: Text(l10n.importMerge),
+                    subtitle: Text(l10n.importMergeSubtitle),
                   ),
                 ],
               ),
@@ -164,25 +159,22 @@ class _ImportDialogState extends State<ImportDialog> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  'Com o Dropbox ligado, o resultado também vai para lá.',
+                  l10n.importSyncNote,
                   style: theme.textTheme.bodySmall,
                 ),
               ),
-            Text(
-              'Dica: exporte antes, para ter como voltar.',
-              style: theme.textTheme.bodySmall,
-            ),
+            Text(l10n.importTip, style: theme.textTheme.bodySmall),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(l10n.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _merge),
-          child: const Text('Importar'),
+          child: Text(l10n.importAction),
         ),
       ],
     );

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/data/catalog_loader.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
@@ -88,5 +89,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AboutPage), findsOneWidget);
     expect(find.textContaining('Esta é uma demonstração'), findsOneWidget);
+  });
+
+  testWidgets('em inglês', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const AboutPage(),
+      overrides: [
+        envProvider.overrideWithValue(
+          const Env(appVersion: 'v2.11.0', localData: true),
+        ),
+      ],
+      locale: english,
+    );
+    expect(find.text('About iShinyDex'), findsOneWidget);
+    expect(find.text('Version v2.11.0'), findsOneWidget);
+    expect(find.text('Privacy'), findsOneWidget);
+    expect(find.text('Legal notice'), findsOneWidget);
+    expect(find.textContaining('stays on this device'), findsOneWidget);
   });
 }

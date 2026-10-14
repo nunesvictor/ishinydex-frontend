@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 
 /// Ícone do jogo no Pokémon HOME para uma versão (`scarlet`, `legends-za`...),
@@ -22,7 +23,7 @@ class GameIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = versionLabel(version);
-    final description = muted ? '$label (sem save seu)' : label;
+    final description = muted ? context.l10n.gameWithoutSave(label) : label;
     Widget icon = Image.asset(
       'assets/game_icons/$version.png',
       width: size,

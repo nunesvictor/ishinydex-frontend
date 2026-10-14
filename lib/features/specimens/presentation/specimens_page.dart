@@ -516,7 +516,7 @@ class _Filters extends StatelessWidget {
           if (query.alphaOnly) const AlphaIcon(size: 18, semanticLabel: null),
         ],
         tooltip: query.shinyOnly || query.alphaOnly
-            ? 'Raridade: ${joinLabels([if (query.shinyOnly) 'shiny', if (query.alphaOnly) 'alfa'])}'
+            ? 'Raridade: ${joinLabels(context.l10n, [if (query.shinyOnly) 'shiny', if (query.alphaOnly) 'alfa'])}'
             : null,
         selected: query.shinyOnly || query.alphaOnly,
         menuChildren: [
@@ -744,7 +744,7 @@ class _GameChip extends ConsumerWidget {
       '${countOf(q) ?? ''}',
       style: Theme.of(context).textTheme.bodySmall,
     );
-    final names = joinLabels([
+    final names = joinLabels(context.l10n, [
       ...{for (final g in games) versionLabel(g)},
     ]);
     return FilterChip(

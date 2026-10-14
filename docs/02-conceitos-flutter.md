@@ -638,4 +638,6 @@ A tela traduz com `context.l10n.problem(p)` (ou `context.failureText(failure)` e
 
 Os **rótulos dos modelos** seguem a mesma ideia: enums como `SpecimenOrdering` e `SpeciesCategory` guardam só o valor da API, e o texto vem de extensões sobre o `AppLocalizations`, uma por feature (`specimen_labels.dart`, `dex_labels.dart`, `core/l10n/core_labels.dart`): `context.l10n.ordering(o)`, `context.l10n.huntDuration(início, fim)`. Números saem no formato do idioma (`NumberFormat` com o `localeName`): `4.213` em pt, `4,213` em en.
 
+**Plural em português:** na regra do pt, o 0 cai na mesma categoria do 1 (`one`), e o gen-l10n trata o `=1{…}` como `one`. Sem um `=0{…}`, `{count, plural, =1{1 save} other{{count} saves}}` diz "1 save" para zero. Contagem que pode ser zero leva o `=0` no `app_pt.arb`.
+
 **Testes**: o "aparelho" dos testes é en-US. Os helpers (`pumpWidgetApp`, `pumpFullApp`) fixam pt-BR, porque os textos dos testes estão em português; para testar em inglês, `locale: english` ou `language: AppLanguage.en`.

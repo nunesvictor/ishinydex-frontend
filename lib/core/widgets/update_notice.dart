@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/web/browser.dart' as browser;
 
 /// Versões novas do app com ele aberto (#228): avisa quando a nova está
@@ -37,8 +38,6 @@ class UpdateNotice extends ConsumerStatefulWidget {
 }
 
 class _UpdateNoticeState extends ConsumerState<UpdateNotice> {
-  static const message = 'Nova versão do iShinyDex disponível.';
-
   @override
   void initState() {
     super.initState();
@@ -47,12 +46,12 @@ class _UpdateNoticeState extends ConsumerState<UpdateNotice> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(message),
+          content: Text(context.l10n.updateAvailable),
           // Até a pessoa decidir: a versão nova só roda ao recarregar.
           duration: const Duration(days: 1),
           showCloseIcon: true,
           action: SnackBarAction(
-            label: 'Recarregar',
+            label: context.l10n.reload,
             onPressed: updates.reload,
           ),
         ),

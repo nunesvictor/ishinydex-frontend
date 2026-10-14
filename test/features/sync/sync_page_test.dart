@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
@@ -64,12 +65,14 @@ void main() {
     WidgetTester tester, {
     Env env = _syncEnv,
     Size size = compactSize,
+    AppLanguage language = AppLanguage.pt,
   }) async {
     await pumpFullApp(
       tester,
       backend: backend,
       size: size,
       env: env,
+      language: language,
       overrides: [
         localDataProvider.overrideWithValue(data),
         syncSessionStoreProvider.overrideWithValue(sessions),
@@ -198,6 +201,40 @@ void main() {
       find.text('Não foi possível sincronizar (500 fora do ar).'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('em inglês: Ajustes e a tela de Sincronização', (tester) async {
+    await pumpApp(tester, language: AppLanguage.en);
+    expect(find.text('Specimens'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Your data'), findsOneWidget);
+    expect(
+      find.text('Off · your data stays on this device only'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Sync'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sync with Dropbox'), findsOneWidget);
+    expect(find.text('Connect to Dropbox'), findsOneWidget);
+    expect(find.text('optional'), findsOneWidget);
+  });
+
+  testWidgets('primeira conexão em inglês', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      FirstSyncDialog(
+        choice: (
+          remote: (dexes: 1, specimens: 0, saves: 0, savedAt: DateTime(2026)),
+          local: (dexes: 2, specimens: 1, saves: 1, savedAt: DateTime(2026)),
+        ),
+      ),
+      locale: english,
+    );
+    expect(find.text("There's already data in Dropbox"), findsOneWidget);
+    expect(find.text('Merge both (recommended)'), findsOneWidget);
+    expect(find.textContaining('0 specimens'), findsOneWidget);
+    expect(find.textContaining('1 specimen\n'), findsOneWidget);
   });
 
   testWidgets('login recusado: volta para Sincronização com o motivo', (
@@ -424,33 +461,49 @@ void main() {
 
   test('describeLastSync e describeSync', () {
     final now = DateTime(2026, 10, 6, 12);
-    expect(describeLastSync(now, now), 'agora há pouco');
+    expect(describeLastSync(ptText, now, now), 'agora há pouco');
     expect(
-      describeLastSync(now.subtract(const Duration(minutes: 5)), now),
+      describeLastSync(ptText, now.subtract(const Duration(minutes: 5)), now),
       'há 5 min',
     );
     expect(
-      describeLastSync(DateTime(2026, 10, 6, 9, 12), now),
+      describeLastSync(ptText, DateTime(2026, 10, 6, 9, 12), now),
       'hoje às 09:12',
     );
     expect(
-      describeLastSync(DateTime(2026, 10, 3, 21, 40), now),
+      describeLastSync(ptText, DateTime(2026, 10, 3, 21, 40), now),
       '03/10 às 21:40',
     );
     expect(
-      describeSync(const SyncState(connected: true, phase: SyncPhase.idle)),
+      describeSync(
+        ptText,
+        const SyncState(connected: true, phase: SyncPhase.idle),
+      ),
       'Conectada',
     );
     expect(
       describeSync(
+        ptText,
         SyncState(connected: true, phase: SyncPhase.idle, lastSync: now),
         now: now,
       ),
       'Sincronizado agora há pouco',
     );
     expect(
-      describeSync(const SyncState(connected: true, phase: SyncPhase.syncing)),
+      describeSync(
+        ptText,
+        const SyncState(connected: true, phase: SyncPhase.syncing),
+      ),
       'Sincronizando…',
+    );
+    // Em inglês, o formato de data e hora do idioma.
+    expect(
+      describeLastSync(enText, DateTime(2026, 10, 3, 21, 40), now),
+      '10/3 at 21:40',
+    );
+    expect(
+      describeLastSync(enText, now.subtract(const Duration(minutes: 5)), now),
+      '5 min ago',
     );
   });
 
