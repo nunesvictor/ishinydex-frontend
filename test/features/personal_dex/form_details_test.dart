@@ -16,13 +16,17 @@ void main() {
 
   setUp(() => repository = MockSpecimenRepository());
 
-  Future<void> pump(WidgetTester tester, {Size size = compactSize}) =>
-      pumpWidgetApp(
-        tester,
-        const Scaffold(body: FormDetails(formId: 1)),
-        size: size,
-        overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
-      );
+  Future<void> pump(
+    WidgetTester tester, {
+    Size size = compactSize,
+    Locale locale = portuguese,
+  }) => pumpWidgetApp(
+    tester,
+    const Scaffold(body: FormDetails(formId: 1)),
+    size: size,
+    locale: locale,
+    overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
+  );
 
   for (final size in [compactSize, expandedSize]) {
     testWidgets('tipos em ordem, habilidades e selos '
@@ -62,6 +66,15 @@ void main() {
       );
     });
   }
+
+  testWidgets('em inglês: a habilidade oculta diz "hidden"', (tester) async {
+    when(() => repository.fetchForm(1))
+        .thenAnswer((_) async => FormDetail.fromJson(formDetailJson));
+    await pump(tester, locale: english);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('(hidden)'), findsOneWidget);
+    expect(find.textContaining('(oculta)'), findsNothing);
+  });
 
   testWidgets('sem selos nem habilidades', (tester) async {
     when(() => repository.fetchForm(1)).thenAnswer(
