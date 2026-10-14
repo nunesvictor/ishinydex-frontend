@@ -19,6 +19,7 @@ Future<List<SpecimenChanges?>> pumpSheet(
   WidgetTester tester, {
   int count = 3,
   Size size = compactSize,
+  Locale locale = portuguese,
 }) async {
   final results = <SpecimenChanges?>[];
   await pumpWidgetApp(
@@ -33,6 +34,7 @@ Future<List<SpecimenChanges?>> pumpSheet(
       ),
     ),
     size: size,
+    locale: locale,
     overrides: _fakeOverrides,
   );
   await tester.tap(find.text('abrir'));
@@ -74,12 +76,12 @@ void main() {
       expect(find.text('Dream Ball'), findsOneWidget);
 
       await tapInSheet(tester, find.text('Treinador original (OT)'));
-      await tester.tap(find.text(removeLabel));
+      await tester.tap(find.text(ptText.removeAction));
       await tester.pumpAndSettle();
 
       await tapInSheet(tester, find.text('Natureza'));
       // Campos obrigatórios não têm "Remover".
-      expect(find.text(removeLabel), findsNothing);
+      expect(find.text(ptText.removeAction), findsNothing);
       await tester.tap(find.text('Timid'));
       await tester.pumpAndSettle();
 
@@ -101,7 +103,7 @@ void main() {
       await tapInSheet(tester, flag('Shiny', 'Não'));
       await tapInSheet(tester, flag('Alfa', 'Sim'));
       await tapInSheet(tester, flag('GO', 'Sim'));
-      await tapInSheet(tester, flag('GO', keepLabel));
+      await tapInSheet(tester, flag('GO', ptText.keepAction));
 
       expect(find.text('Revisar 8 alterações'), findsOneWidget);
       await tester.tap(find.text('Revisar 8 alterações'));
@@ -135,23 +137,23 @@ void main() {
       expect(find.text('Ash (123456) · Scarlet'), findsOneWidget);
       // Voltar a "Manter".
       await tapInSheet(tester, find.text('Treinador original (OT)'));
-      await tester.tap(find.text(keepLabel).last);
+      await tester.tap(find.text(ptText.keepAction).last);
       await tester.pumpAndSettle();
 
       await tapInSheet(tester, find.text('Data de captura'));
       await tester.tap(
         find.descendant(
           of: find.byType(SimpleDialog),
-          matching: find.text(removeLabel),
+          matching: find.text(ptText.removeAction),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text(removeLabel), findsOneWidget);
+      expect(find.text(ptText.removeAction), findsOneWidget);
       await tapInSheet(tester, find.text('Data de captura'));
       await tester.tap(
         find.descendant(
           of: find.byType(SimpleDialog),
-          matching: find.text(keepLabel),
+          matching: find.text(ptText.keepAction),
         ),
       );
       await tester.pumpAndSettle();
@@ -174,7 +176,10 @@ void main() {
       expect(find.text('Nada alterado'), findsOneWidget);
 
       await tapInSheet(tester, find.widgetWithText(ChoiceChip, 'Macho'));
-      await tapInSheet(tester, find.widgetWithText(ChoiceChip, keepLabel));
+      await tapInSheet(
+        tester,
+        find.widgetWithText(ChoiceChip, ptText.keepAction),
+      );
       await tapInSheet(tester, find.widgetWithText(ChoiceChip, 'Macho'));
       expect(find.text('Revisar 1 alteração'), findsOneWidget);
       await tester.tap(find.text('Limpar'));
@@ -230,7 +235,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, 'Buscar'), 'poke');
     await tester.pump();
     // Buscando, "Manter" some e só sobram as opções que batem.
-    expect(find.text(keepLabel), findsNothing);
+    expect(find.text(ptText.keepAction), findsNothing);
     expect(find.byType(ListTile), findsOneWidget);
     await tester.tap(find.text('Poké Ball'));
     await tester.pumpAndSettle();
@@ -284,6 +289,17 @@ void main() {
     });
   });
 
+  testWidgets('em inglês: a folha e o resumo', (tester) async {
+    await pumpSheet(tester, count: 2, locale: english);
+    expect(find.text('Edit 2 specimens'), findsOneWidget);
+    expect(find.text('Original trainer (OT)'), findsOneWidget);
+    expect(find.text('Keep'), findsWidgets);
+    expect(find.text('Yes'), findsWidgets);
+    expect(find.text('Nothing changed'), findsOneWidget);
+    await tapInSheet(tester, find.text('Yes').first);
+    expect(find.text('Review 1 change'), findsOneWidget);
+  });
+
   testWidgets('BulkLabels: resumo de todos os campos', (tester) async {
     late List<String> summary;
     await pumpWidgetApp(
@@ -320,7 +336,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(summary, [
-      'Pokébola → $removeLabel',
+      'Pokébola → ${ptText.removeAction}',
       'OT → Ash (123456)',
       'Natureza → Timid',
       'Idioma → Xx Yy',
@@ -330,9 +346,9 @@ void main() {
       'Alfa → Não',
       'GO → Sim',
       '#99',
-      keepLabel,
-      keepLabel,
-      keepLabel,
+      ptText.keepAction,
+      ptText.keepAction,
+      ptText.keepAction,
     ]);
   });
 }

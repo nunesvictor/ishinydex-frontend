@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 
 /// A etiqueta do corte do HOME (#222), a mesma no save, no espécime, na
@@ -18,9 +19,10 @@ class HomeTag extends StatelessWidget {
     final until = cutoff.until.toLocal();
     final passed = cutoff.passed;
     final message = passed
-        ? 'Não chega mais ao HOME'
-        : 'Chega ao HOME até '
-              '${MaterialLocalizations.of(context).formatCompactDate(until)}';
+        ? context.l10n.noLongerReachesHome
+        : context.l10n.reachesHomeUntil(
+            MaterialLocalizations.of(context).formatCompactDate(until),
+          );
     final day = DateFormat.Md(Localizations.localeOf(context).toString())
         .format(until);
     final (background, foreground) = passed

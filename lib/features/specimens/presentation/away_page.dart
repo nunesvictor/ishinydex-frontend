@@ -36,14 +36,15 @@ class AwayPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-    appBar: AppBar(title: const Text('Fora do HOME')),
+    appBar: AppBar(title: Text(context.l10n.awayFromHome)),
     body: Center(
       // No PC, uma lista de 1.400 px de largura só espalharia o texto.
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
         child: switch (ref.watch(awaySpecimensProvider)) {
-          AsyncData(value: final specimens) when specimens.isEmpty =>
-            const EmptyView(message: 'Todos os seus Pokémon estão no HOME.'),
+          AsyncData(value: final specimens) when specimens.isEmpty => EmptyView(
+            message: context.l10n.awayEmpty,
+          ),
           AsyncData(value: final specimens) => RefreshIndicator.adaptive(
             onRefresh: () => ref.refresh(awaySpecimensProvider.future),
             child: ListView(
@@ -66,11 +67,7 @@ class AwayPage extends ConsumerWidget {
                           HomeTag(cutoff),
                       ],
                     ),
-                    subtitle: Text(
-                      items.length == 1
-                          ? '1 Pokémon'
-                          : '${items.length} Pokémon',
-                    ),
+                    subtitle: Text(context.l10n.countPokemon(items.length)),
                   ),
                   for (final specimen in items) _AwayTile(specimen: specimen),
                   const Divider(),
@@ -122,15 +119,15 @@ class _AwayTile extends ConsumerWidget {
       subtitle: Text(
         [
           ?form?.dexNumber,
-          if (since != null) 'Saiu ${context.l10n.awayFor(since)}',
+          if (since != null) context.l10n.leftWhen(context.l10n.awayFor(since)),
         ].join(' · '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: IconButton(
         tooltip: stuck
-            ? '${specimen.location!.game} não envia mais para o HOME'
-            : 'Trazer de volta ao HOME',
+            ? context.l10n.gameNoLongerSends(specimen.location!.game)
+            : context.l10n.bringBackToHome,
         icon: const Icon(Icons.flight_land),
         onPressed: stuck
             ? null

@@ -28,18 +28,16 @@ class SavesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-    appBar: AppBar(title: const Text('Meus saves')),
+    appBar: AppBar(title: Text(context.l10n.settingsMySaves)),
     floatingActionButton: FloatingActionButton.extended(
       heroTag: 'new-save',
       onPressed: () => _add(context, ref),
       icon: const Icon(Icons.add),
-      label: const Text('Adicionar save'),
+      label: Text(context.l10n.addSave),
     ),
     body: switch (ref.watch(savesProvider)) {
-      AsyncData(value: final saves) when saves.isEmpty => const EmptyView(
-        message:
-            'Nenhum save cadastrado. Um save é um jogo para onde você envia '
-            'Pokémon do HOME (Scarlet, Legends: Z-A...).',
+      AsyncData(value: final saves) when saves.isEmpty => EmptyView(
+        message: context.l10n.savesEmpty,
       ),
       AsyncData(value: final saves) => _SaveList(saves),
       AsyncError(:final error) => ErrorView(
@@ -92,16 +90,15 @@ class _SaveList extends ConsumerWidget {
       children: [
         const HomeCutoffNotice(),
         if ((oneWay.isNotEmpty || noPath.isNotEmpty) && receivers.isNotEmpty)
-          header('Recebem do HOME'),
+          header(context.l10n.receiveFromHome),
         for (final save in receivers) _tile(context, ref, save),
         if (oneWay.isNotEmpty) ...[
           if (receivers.isNotEmpty) const Divider(indent: 16, endIndent: 16),
-          header('Só enviam para o HOME'),
+          header(context.l10n.onlySendToHome),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(
-              'Servem para caçar e para o OT. Não aparecem como destino: o '
-              'Pokémon que sai deles não volta.',
+              context.l10n.oneWayNote,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -112,12 +109,11 @@ class _SaveList extends ConsumerWidget {
         if (noPath.isNotEmpty) ...[
           if (receivers.isNotEmpty || oneWay.isNotEmpty)
             const Divider(indent: 16, endIndent: 16),
-          header('Sem caminho para o HOME'),
+          header(context.l10n.noPathToHome),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(
-              'Continuam saves como os outros: caçadas, odds, OT e '
-              'espécimes. Só não enviam mais para o HOME.',
+              context.l10n.noPathNote,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -145,7 +141,7 @@ class _SaveList extends ConsumerWidget {
                   spacing: 6,
                   children: [
                     if (!(cutoff?.passed ?? false))
-                      const Flexible(child: Text('Só envia para o HOME')),
+                      Flexible(child: Text(context.l10n.onlySendsToHome)),
                     if (cutoff != null) HomeTag(cutoff),
                   ],
                 ),
@@ -153,14 +149,20 @@ class _SaveList extends ConsumerWidget {
             ),
       isThreeLine: save.isOneWay,
       trailing: PopupMenuButton<_SaveAction>(
-        tooltip: 'Ações do save',
+        tooltip: context.l10n.saveActions,
         onSelected: (action) => switch (action) {
           _SaveAction.edit => _edit(context, ref, save),
           _SaveAction.delete => _delete(context, ref, save),
         },
-        itemBuilder: (context) => const [
-          PopupMenuItem(value: _SaveAction.edit, child: Text('Editar')),
-          PopupMenuItem(value: _SaveAction.delete, child: Text('Remover')),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: _SaveAction.edit,
+            child: Text(context.l10n.edit),
+          ),
+          PopupMenuItem(
+            value: _SaveAction.delete,
+            child: Text(context.l10n.removeAction),
+          ),
         ],
       ),
     );
@@ -203,7 +205,7 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
             child: Text(
-              'Qual treinador é o seu save?',
+              context.l10n.whichTrainer,
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
@@ -214,12 +216,10 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
               onTap: () => Navigator.of(context).pop((trainer: trainer)),
             ),
           if (eligible.isEmpty)
-            const ListTile(
-              title: Text('Nenhum treinador de jogo ligado ao HOME.'),
-            ),
+            ListTile(title: Text(context.l10n.noHomeTrainer)),
           ListTile(
             leading: const Icon(Icons.person_add_alt),
-            title: const Text('Novo treinador…'),
+            title: Text(context.l10n.newTrainerEllipsis),
             onTap: () => Navigator.of(context).pop((trainer: null)),
           ),
         ],
@@ -236,7 +236,7 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
   try {
     final save = await repository.createSave(trainerId: trainer.id);
     ref.invalidate(savesProvider);
-    if (context.mounted) _notify(context, '${save.title} adicionado.');
+    if (context.mounted) _notify(context, context.l10n.saveAdded(save.title));
   } on AppFailure catch (failure) {
     if (context.mounted) _notify(context, context.failureText(failure));
   }
@@ -267,11 +267,9 @@ Future<void> _edit(BuildContext context, WidgetRef ref, Save save) async {
 Future<void> _delete(BuildContext context, WidgetRef ref, Save save) async {
   final confirmed = await showConfirmDialog(
     context,
-    title: 'Remover ${save.title}?',
-    message:
-        'O treinador continua cadastrado; só deixa de ser um save. Um save '
-        'com espécimes não pode ser removido.',
-    confirmLabel: 'Remover',
+    title: context.l10n.removeNamedQuestion(save.title),
+    message: context.l10n.removeSaveMessage,
+    confirmLabel: context.l10n.removeAction,
     destructive: true,
   );
   if (!confirmed || !context.mounted) return;
@@ -317,16 +315,16 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
       ListTile(
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.person_outline),
-        title: const Text('Treinador original'),
+        title: Text(context.l10n.originalTrainer),
         subtitle: Text(save.trainer.label),
       ),
       TextField(
         controller: _controller,
         autofocus: true,
-        decoration: const InputDecoration(
-          labelText: 'Apelido do save (opcional)',
-          hintText: 'Ex.: Switch Lite',
-          helperText: 'Para diferenciar dois saves do mesmo jogo.',
+        decoration: InputDecoration(
+          labelText: context.l10n.saveNickname,
+          hintText: context.l10n.saveNicknameHint,
+          helperText: context.l10n.saveNicknameHelper,
         ),
         onSubmitted: (_) => _submit(),
       ),
@@ -334,7 +332,7 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           secondary: const Icon(Icons.auto_awesome),
-          title: const Text('Tenho o Shiny Charm'),
+          title: Text(context.l10n.haveShinyCharm),
           subtitle: Text(context.l10n.shinyCharmHint(save)),
           value: _charm,
           onChanged: (value) => setState(() => _charm = value),
@@ -345,13 +343,13 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
         child: Scaffold(
           appBar: AppBar(
             leading: IconButton(
-              tooltip: 'Cancelar',
+              tooltip: context.l10n.cancel,
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            title: const Text('Editar save'),
+            title: Text(context.l10n.editSave),
             actions: [
-              TextButton(onPressed: _submit, child: const Text('Salvar')),
+              TextButton(onPressed: _submit, child: Text(context.l10n.save)),
             ],
           ),
           body: ListView(
@@ -368,7 +366,7 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
       );
     }
     return AlertDialog(
-      title: const Text('Editar save'),
+      title: Text(context.l10n.editSave),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -380,9 +378,9 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Salvar')),
+        FilledButton(onPressed: _submit, child: Text(context.l10n.save)),
       ],
     );
   }

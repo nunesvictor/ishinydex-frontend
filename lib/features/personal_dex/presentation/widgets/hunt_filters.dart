@@ -222,7 +222,10 @@ class ActiveHuntFilterChips extends ConsumerWidget {
         ),
       if (q.types.isNotEmpty)
         (
-          joinAlternatives(context.l10n, labelsOf(q.types, options.type)),
+          joinAlternatives(
+            context.l10n,
+            labelsOf(context.l10n, q.types, options.type),
+          ),
           q.copyWith(types: const []),
         ),
       if (q.includeLocked)

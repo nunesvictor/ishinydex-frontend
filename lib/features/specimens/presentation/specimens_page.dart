@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
@@ -154,7 +153,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       appBar: _selecting
           ? AppBar(
               leading: IconButton(
-                tooltip: 'Cancelar seleção',
+                tooltip: context.l10n.cancelSelection,
                 onPressed: () => _setChecked({}),
                 icon: const Icon(Icons.close),
               ),
@@ -165,43 +164,43 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
               ),
               actions: [
                 IconButton(
-                  tooltip: 'Selecionar todos os resultados',
+                  tooltip: context.l10n.selectAllResults,
                   onPressed: _selectAll,
                   icon: const Icon(Icons.select_all),
                 ),
                 IconButton(
-                  tooltip: 'Editar em lote',
+                  tooltip: context.l10n.bulkEdit,
                   onPressed: _bulkEdit,
                   icon: const Icon(Icons.edit_note),
                 ),
                 // Menos usadas: no menu, para caber no celular.
                 PopupMenuButton<_BulkAction>(
-                  tooltip: 'Ações da seleção',
+                  tooltip: context.l10n.selectionActions,
                   onSelected: (action) => switch (action) {
                     _BulkAction.send => _bulkMove(toHome: false),
                     _BulkAction.bringBack => _bulkMove(toHome: true),
                     _BulkAction.release => _bulkRelease(),
                   },
-                  itemBuilder: (context) => const [
+                  itemBuilder: (context) => [
                     PopupMenuItem(
                       value: _BulkAction.send,
                       child: ListTile(
-                        leading: Icon(Icons.flight_takeoff),
-                        title: Text('Enviar para jogo…'),
+                        leading: const Icon(Icons.flight_takeoff),
+                        title: Text(context.l10n.sendToGame),
                       ),
                     ),
                     PopupMenuItem(
                       value: _BulkAction.bringBack,
                       child: ListTile(
-                        leading: Icon(Icons.flight_land),
-                        title: Text('Trazer de volta ao HOME'),
+                        leading: const Icon(Icons.flight_land),
+                        title: Text(context.l10n.bringBackToHome),
                       ),
                     ),
                     PopupMenuItem(
                       value: _BulkAction.release,
                       child: ListTile(
-                        leading: Icon(Icons.delete_sweep_outlined),
-                        title: Text('Libertar em lote'),
+                        leading: const Icon(Icons.delete_sweep_outlined),
+                        title: Text(context.l10n.bulkRelease),
                       ),
                     ),
                   ],
@@ -209,10 +208,10 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
               ],
             )
           : AppBar(
-              title: const Text('Espécimes'),
+              title: Text(context.l10n.navSpecimens),
               actions: [
                 IconButton(
-                  tooltip: 'Fora do HOME',
+                  tooltip: context.l10n.awayFromHome,
                   onPressed: () => context.go(Routes.away),
                   icon: const Icon(Icons.flight_takeoff),
                 ),
@@ -231,7 +230,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
               heroTag: 'new-specimen',
               onPressed: _create,
               icon: const Icon(Icons.add),
-              label: const Text('Novo espécime'),
+              label: Text(context.l10n.newSpecimen),
             ),
       body: size.isCompact
           ? list
@@ -241,9 +240,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
                 const VerticalDivider(width: 1),
                 Expanded(
                   child: selected == null
-                      ? const Center(
-                          child: Text('Selecione um espécime na lista.'),
-                        )
+                      ? Center(child: Text(context.l10n.selectSpecimen))
                       : SpecimenDetailView(
                           key: ValueKey(selected),
                           specimenId: selected,
@@ -294,9 +291,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       ref.read(slotActionsProvider).specimensChanged();
       if (!mounted) return;
       _setChecked({});
-      _showMessage(
-        '$updated ${updated == 1 ? 'espécime atualizado' : 'espécimes atualizados'}.',
-      );
+      _showMessage(context.l10n.specimensUpdated(updated));
     } on GenderConflictFailure catch (failure) {
       if (mounted) await _showGenderConflicts(failure);
     } on AppFailure catch (failure) {
@@ -329,19 +324,16 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       final confirmed = await showConfirmDialog(
         context,
         icon: Icons.warning_amber_rounded,
-        title: one ? 'Libertar 1 espécime?' : 'Libertar $count espécimes?',
+        title: context.l10n.releaseSpecimensQuestion(count),
         message: [
           if (one)
-            'O cadastro será apagado.'
+            context.l10n.releaseRecordOne
           else
-            'Os cadastros serão apagados.',
-          if (deposited == 1)
-            '1 está depositado e o slot ficará faltante.'
-          else if (deposited > 1)
-            '$deposited estão depositados e os slots ficarão faltantes.',
-          'Esta ação não pode ser desfeita.',
+            context.l10n.releaseRecordMany,
+          if (deposited > 0) context.l10n.releaseDeposited(deposited),
+          context.l10n.cannotUndo,
         ].join(' '),
-        confirmLabel: 'Libertar',
+        confirmLabel: context.l10n.releaseAction,
         destructive: true,
       );
       if (!confirmed || !mounted) return;
@@ -351,9 +343,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       _setChecked({});
       // O detalhe aberto ao lado pode ser de um libertado.
       if (ids.contains(_selectedId)) setState(() => _selectedId = null);
-      _showMessage(
-        '$released ${released == 1 ? 'espécime libertado' : 'espécimes libertados'}.',
-      );
+      _showMessage(context.l10n.specimensReleased(released));
     } on AppFailure catch (failure) {
       if (mounted) _showMessage(context.failureText(failure));
     }
@@ -364,7 +354,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     final uncheck = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Gênero impossível'),
+        title: Text(context.l10n.impossibleGenderTitle),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -372,7 +362,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
             spacing: 4,
             children: [
               Text(
-                '${context.failureText(failure)} Nenhum espécime foi alterado.',
+                '${context.failureText(failure)} ${context.l10n.nothingChangedSentence}',
               ),
               const SizedBox(height: 4),
               for (final c in failure.conflicts)
@@ -383,11 +373,11 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Fechar'),
+            child: Text(context.l10n.close),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Desmarcar estes'),
+            child: Text(context.l10n.uncheckThese),
           ),
         ],
       ),
@@ -414,7 +404,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
     setState(() => _selectedId = created.id);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Espécime cadastrado.')));
+      ..showSnackBar(SnackBar(content: Text(context.l10n.specimenCreated)));
   }
 }
 
@@ -430,10 +420,14 @@ Widget? _statusIcon(SpecimenStatus status) => switch (status) {
   ),
 };
 
-const Map<SpecimenStatus, (String, String)> _statusLabels = {
-  SpecimenStatus.all: ('Todos', 'Com ou sem slot'),
-  SpecimenStatus.available: ('Disponíveis', 'Fora de qualquer slot'),
-  SpecimenStatus.deposited: ('Registrados', 'Depositados num slot de dex'),
+/// O nome e a explicação de cada situação, no menu Situação.
+(String, String) _statusLabel(
+  AppLocalizations l10n,
+  SpecimenStatus status,
+) => switch (status) {
+  SpecimenStatus.all => (l10n.allLabel, l10n.statusAllHint),
+  SpecimenStatus.available => (l10n.statusAvailable, l10n.statusAvailableHint),
+  SpecimenStatus.deposited => (l10n.statusDeposited, l10n.statusDepositedHint),
 };
 
 /// Barra de filtros pensada para o celular: busca + botão Filtros numa
@@ -473,54 +467,64 @@ class _Filters extends StatelessWidget {
       if (selectedCount > 0)
         FilterChip(
           avatar: const Icon(Icons.checklist),
-          label: Text('Só selecionados ($selectedCount)'),
+          label: Text(context.l10n.onlySelected(selectedCount)),
           selected: onlySelected,
           onSelected: onOnlySelectedChanged,
         ),
       MenuChip(
-        label: 'Situação',
+        label: context.l10n.filterSituation,
         icons: [?_statusIcon(query.status)],
         tooltip: query.status == SpecimenStatus.all
             ? null
-            : 'Situação: ${_statusLabels[query.status]!.$1}',
+            : context.l10n.filterSituationValue(
+                _statusLabel(context.l10n, query.status).$1,
+              ),
         selected: query.status != SpecimenStatus.all,
         menuChildren: [
-          const MenuHeader('Situação no dex'),
-          for (final MapEntry(key: status, value: (label, hint))
-              in _statusLabels.entries)
-            RadioMenuButton<SpecimenStatus>(
-              value: status,
-              groupValue: query.status,
-              onChanged: (s) => onChanged(query.copyWith(status: s!)),
-              child: MenuOptionText(
-                label,
-                hint,
-                leading: switch (_statusIcon(status)) {
-                  final Icon icon => Icon(
-                    icon.icon,
-                    color: icon.color,
-                    size: 18,
-                  ),
-                  _ => null,
-                },
+          MenuHeader(context.l10n.dexSituation),
+          for (final status in SpecimenStatus.values)
+            if (_statusLabel(context.l10n, status) case (
+              final label,
+              final hint,
+            ))
+              RadioMenuButton<SpecimenStatus>(
+                value: status,
+                groupValue: query.status,
+                onChanged: (s) => onChanged(query.copyWith(status: s!)),
+                child: MenuOptionText(
+                  label,
+                  hint,
+                  leading: switch (_statusIcon(status)) {
+                    final Icon icon => Icon(
+                      icon.icon,
+                      color: icon.color,
+                      size: 18,
+                    ),
+                    _ => null,
+                  },
+                ),
               ),
-            ),
         ],
       ),
       // Raridade (#217): shiny e alfa num chip com menu, como Situação e
       // Jogo, em vez de dois chips só de ícone.
       MenuChip(
-        label: 'Raridade',
+        label: context.l10n.rarity,
         icons: [
           if (query.shinyOnly) const ShinyIcon(size: 18, semanticLabel: null),
           if (query.alphaOnly) const AlphaIcon(size: 18, semanticLabel: null),
         ],
         tooltip: query.shinyOnly || query.alphaOnly
-            ? 'Raridade: ${joinLabels(context.l10n, [if (query.shinyOnly) 'shiny', if (query.alphaOnly) 'alfa'])}'
+            ? context.l10n.rarityValue(
+                joinLabels(context.l10n, [
+                  if (query.shinyOnly) context.l10n.rarityShinyLower,
+                  if (query.alphaOnly) context.l10n.rarityAlphaLower,
+                ]),
+              )
             : null,
         selected: query.shinyOnly || query.alphaOnly,
         menuChildren: [
-          const MenuHeader('Raridade'),
+          MenuHeader(context.l10n.rarity),
           CheckboxMenuButton(
             value: !query.shinyOnly && !query.alphaOnly,
             closeOnActivate: false,
@@ -530,29 +534,29 @@ class _Filters extends StatelessWidget {
                     query.copyWith(shinyOnly: false, alphaOnly: false),
                   )
                 : null,
-            child: const MenuOptionText(
-              'Qualquer raridade',
-              'Sem filtrar shiny nem alfa',
+            child: MenuOptionText(
+              context.l10n.rarityAny,
+              context.l10n.rarityAnyHint,
             ),
           ),
           CheckboxMenuButton(
             value: query.shinyOnly,
             closeOnActivate: false,
             onChanged: (on) => onChanged(query.copyWith(shinyOnly: on!)),
-            child: const MenuOptionText(
-              'Shiny',
-              'Só os shiny',
-              leading: ShinyIcon(size: 18, semanticLabel: null),
+            child: MenuOptionText(
+              context.l10n.markShiny,
+              context.l10n.rarityShinyHint,
+              leading: const ShinyIcon(size: 18, semanticLabel: null),
             ),
           ),
           CheckboxMenuButton(
             value: query.alphaOnly,
             closeOnActivate: false,
             onChanged: (on) => onChanged(query.copyWith(alphaOnly: on!)),
-            child: const MenuOptionText(
-              'Alfa',
-              'Só os alfa',
-              leading: AlphaIcon(size: 18, semanticLabel: null),
+            child: MenuOptionText(
+              context.l10n.markAlpha,
+              context.l10n.rarityAlphaHint,
+              leading: const AlphaIcon(size: 18, semanticLabel: null),
             ),
           ),
           // As caixas não fecham o menu a cada toque; fechar é o próprio
@@ -561,7 +565,7 @@ class _Filters extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: MenuItemButton(
               onPressed: () {},
-              child: const Text('Pronto'),
+              child: Text(context.l10n.doneAction),
             ),
           ),
         ],
@@ -579,14 +583,14 @@ class _Filters extends StatelessWidget {
               Expanded(
                 child: SearchField(
                   controller: searchController,
-                  hintText: 'Apelido, forma ou nº da dex',
+                  hintText: context.l10n.specimenSearchHint,
                   onChanged: onSearchChanged,
                   onSubmitted: onSearchSubmitted,
                   onCleared: onSearchCleared,
                 ),
               ),
               IconButton(
-                tooltip: 'Filtros',
+                tooltip: context.l10n.filtersTitle,
                 onPressed: () async {
                   final applied = await showSpecimenFilters(context, query);
                   if (applied != null) onChanged(applied);
@@ -641,10 +645,10 @@ class _SelectionTitle extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$n ${n == 1 ? 'selecionado' : 'selecionados'}'),
+        Text(context.l10n.selectedCount(n)),
         if (outside > 0)
           Text(
-            '$outside fora da lista',
+            context.l10n.outsideList(outside),
             style: Theme.of(context).textTheme.bodySmall,
           ),
       ],
@@ -676,8 +680,8 @@ class SpecimenList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final firstPage = specimenPageProvider((query: query, page: 1));
     return switch (ref.watch(firstPage)) {
-      AsyncData(value: final page) when page.count == 0 => const EmptyView(
-        message: 'Nenhum espécime encontrado.',
+      AsyncData(value: final page) when page.count == 0 => EmptyView(
+        message: context.l10n.noSpecimensFound,
       ),
       AsyncData(value: final page) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -748,16 +752,16 @@ class _GameChip extends ConsumerWidget {
       ...{for (final g in games) versionLabel(g)},
     ]);
     return FilterChip(
-      tooltip: games.isEmpty ? null : 'Jogo: $names',
+      tooltip: games.isEmpty ? null : context.l10n.filterGameValue(names),
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (games.isEmpty)
-            const Text('Jogo')
+            Text(context.l10n.fieldGame)
           else
             ChipIcons([
               for (final g in {...games}) GameIcon(g, size: 18),
-            ], semanticLabel: 'Jogo: $names'),
+            ], semanticLabel: context.l10n.filterGameValue(names)),
           const Icon(Icons.arrow_drop_down, size: 18),
         ],
       ),
@@ -768,15 +772,15 @@ class _GameChip extends ConsumerWidget {
           context,
           sections: [
             GamePickerSection(
-              title: 'Capturados em',
-              hint: 'jogo do treinador original',
+              title: context.l10n.caughtIn,
+              hint: context.l10n.caughtInHint,
               versions: otGames,
               selected: query.otVersions,
               count: (v) => count(query.copyWith(otVersions: [v])),
             ),
             GamePickerSection(
-              title: 'Podem ir para',
-              hint: 'na pokédex e sem bloqueio do HOME',
+              title: context.l10n.canGoTo,
+              hint: context.l10n.canGoToHint,
               versions: fitGames,
               selected: query.fitVersions,
               count: (v) => count(query.copyWith(fitVersions: [v])),
@@ -796,8 +800,8 @@ class _GameChip extends ConsumerWidget {
                 .value
                 ?.count;
             return n == null
-                ? 'Mostrar resultados'
-                : 'Mostrar $n ${n == 1 ? 'espécime' : 'espécimes'}';
+                ? context.l10n.showResults
+                : context.l10n.showSpecimens(n);
           },
         );
         if (picked != null) {
@@ -812,19 +816,17 @@ class _GameChip extends ConsumerWidget {
 
 /// O filtro do chip Jogo em palavras (#201): "capturados em Sword ou
 /// Scarlet e podem ir para Legends: Z-A"; `null` sem ele.
-String? gameFilterLabel(SpecimenQuery query) {
-  String or(List<String> versions) {
-    final names = [for (final v in versions) versionLabel(v)];
-    return names.length == 1
-        ? names.single
-        : '${names.sublist(0, names.length - 1).join(', ')} ou ${names.last}';
-  }
+String? gameFilterLabel(AppLocalizations l10n, SpecimenQuery query) {
+  String or(List<String> versions) =>
+      joinAlternatives(l10n, [for (final v in versions) versionLabel(v)]);
 
   final parts = [
-    if (query.otVersions.isNotEmpty) 'capturados em ${or(query.otVersions)}',
-    if (query.fitVersions.isNotEmpty) 'podem ir para ${or(query.fitVersions)}',
+    if (query.otVersions.isNotEmpty)
+      l10n.gameFilterCaughtIn(or(query.otVersions)),
+    if (query.fitVersions.isNotEmpty)
+      l10n.gameFilterCanGoTo(or(query.fitVersions)),
   ];
-  return parts.isEmpty ? null : parts.join(' e ');
+  return parts.isEmpty ? null : joinLabels(l10n, parts);
 }
 
 /// Contador acima da lista: "1.159 espécimes" sem filtro, ou
@@ -839,10 +841,6 @@ class ResultCount extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final number = NumberFormat.decimalPattern(
-      Localizations.localeOf(context).toString(),
-    );
-    String noun(int n) => n == 1 ? 'espécime' : 'espécimes';
     // Com filtro, o total geral aparece assim que carregar; até lá, só o
     // número filtrado.
     final total = query.hasFilters
@@ -851,12 +849,12 @@ class ResultCount extends ConsumerWidget {
               .value
               ?.count
         : null;
-    final games = gameFilterLabel(query);
+    final games = gameFilterLabel(context.l10n, query);
     final text = [
       if (total == null)
-        '${number.format(count)} ${noun(count)}'
+        context.l10n.resultCount(count)
       else
-        '${number.format(count)} de ${number.format(total)} ${noun(total)}',
+        context.l10n.resultCountOf(count, total),
       ?games,
     ].join(' · ');
     return Padding(
@@ -903,10 +901,10 @@ class _SpecimenItem extends ConsumerWidget {
       // O erro aparece uma vez, no primeiro item da página.
       AsyncError() when offset == 0 => ListTile(
         leading: const Icon(Icons.error_outline),
-        title: const Text('Não foi possível carregar mais espécimes.'),
+        title: Text(context.l10n.loadMoreSpecimensError),
         trailing: TextButton(
           onPressed: () => ref.invalidate(specimenPageProvider(key)),
-          child: const Text('Tentar novamente'),
+          child: Text(context.l10n.tryAgain),
         ),
       ),
       AsyncError() => const SizedBox.shrink(),
@@ -961,9 +959,9 @@ class SpecimenListTile extends StatelessWidget {
           : Text('${form.displayName} · ${form.dexNumber}'),
       trailing: switch (checked) {
         final bool value => Checkbox(value: value, onChanged: (_) => onTap()),
-        null when specimen.isDeposited => const Tooltip(
-          message: 'Depositado',
-          child: Icon(Icons.inventory_2_outlined),
+        null when specimen.isDeposited => Tooltip(
+          message: context.l10n.depositedLabel,
+          child: const Icon(Icons.inventory_2_outlined),
         ),
         null => null,
       },

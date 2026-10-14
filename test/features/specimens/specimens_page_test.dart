@@ -97,6 +97,31 @@ Future<void> saveForm(WidgetTester tester, String label) async {
 
 void main() {
   group('expandido', () {
+    testWidgets('em inglês: contador, raridade e filtros', (tester) async {
+      final backend = await pumpFullApp(tester, language: AppLanguage.en);
+      final specimens = await allSpecimens(backend);
+      await tester.tap(find.text('Specimens').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Select a specimen in the list.'), findsOneWidget);
+      final total = specimens.length;
+      expect(find.text('$total specimens'), findsOneWidget);
+      await tester.tap(find.widgetWithText(MenuChip, 'Rarity'));
+      await tester.pumpAndSettle();
+      expect(find.text('Any rarity'), findsOneWidget);
+      await tester.tap(find.text('Only shiny ones'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      final shiny = specimens.where((s) => s.isShiny).length;
+      expect(find.text('$shiny of $total specimens'), findsOneWidget);
+      expect(find.byTooltip('Rarity: shiny'), findsOneWidget);
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Sort by'), findsOneWidget);
+      expect(find.text('Original trainer (OT)'), findsOneWidget);
+      expect(find.text('Show results'), findsOneWidget);
+    });
+
     testWidgets('lista, filtros e busca', (tester) async {
       final backend = await pumpFullApp(tester);
       final specimens = await allSpecimens(backend);
