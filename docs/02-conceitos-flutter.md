@@ -550,8 +550,13 @@ px:
 - ao soltar, `animateTo` termina a saída na velocidade do dedo, ou
   `animateWith(SpringSimulation(...))` volta com uma mola, que parte da
   velocidade do gesto;
-- o slot novo chega com outra `key`; o `didUpdateWidget` percebe e o faz
-  entrar pelo lado oposto.
+- durante o gesto, o vizinho (o slot ao lado, ou a prévia da box vizinha,
+  #267) é desenhado num `Stack`, colado no atual: o mesmo valor do
+  controller move os dois. O slot atual tem uma `key` fixa, para não ser
+  recriado quando a prévia entra antes dele na lista;
+- o slot novo chega com outra `key`; o `didUpdateWidget` percebe. Depois de
+  um gesto, a prévia já estava no centro, então ele só toma o lugar dela;
+  pelas setas, ele entra pelo lado do passo.
 
 O `SingleTickerProviderStateMixin` dá ao controller o relógio da tela (o
 `vsync`), que para quando a tela não está visível.

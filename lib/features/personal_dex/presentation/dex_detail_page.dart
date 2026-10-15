@@ -668,11 +668,28 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     );
     final position = list.indexWhere((s) => s.id == _selectedSlotId);
     if (position < 0) return null;
-    final slot = list[position];
+    String label(int at) {
+      final slot = list[at];
+      return '${context.l10n.slotShort(box.name, slot.row + 1, slot.col + 1)} '
+          '· ${context.l10n.positionOf(at + 1, list.length)}';
+    }
+
+    // O vizinho do gesto (#267): o slot ao lado, na mesma box, ou a box
+    // vizinha com algo para mostrar (a mesma regra do `_step`).
+    SlotPreview? preview(int delta) {
+      final at = position + delta;
+      if (at >= 0 && at < list.length) return NeighborSlot(list[at], label(at));
+      for (var i = index + delta; i >= 0 && i < boxes.length; i += delta) {
+        final other = boxes[i];
+        // Com o filtro de faltantes, os registrados não contam.
+        final shown = other.total - (_onlyMissing ? other.registered : 0);
+        if (shown > 0) return NeighborBox(other.name);
+      }
+      return null;
+    }
+
     return SlotNavigation(
-      label:
-          '${context.l10n.slotShort(box.name, slot.row + 1, slot.col + 1)} · '
-          '${context.l10n.positionOf(position + 1, list.length)}',
+      label: label(position),
       onPrevious: position == 0 && index == 0
           ? null
           : () => unawaited(_step(-1)),
@@ -681,6 +698,8 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
           : () => unawaited(_step(1)),
       notice: _boxNotice,
       direction: _direction,
+      previousPreview: preview(-1),
+      nextPreview: preview(1),
     );
   }
 
