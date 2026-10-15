@@ -154,13 +154,7 @@ seguem o mesmo padrão, para as ações não empilharem botões:
     Defesa, Velocidade, Def. Esp. e Atq. Esp.), com escala fixa até 200, o
     total e o EV. A natureza do espécime pinta os stats que muda e aparece
     ao lado do hexágono; sem status, ela continua à vista.
-  - **Espécie**: no topo, **Tipos em batalha** (`TypeMatchupsCard`, #230),
-    as fraquezas pelos tipos da forma (4×, 2×, ½×, ¼×, 0×) e contra o que o
-    STAB acerta 2×, pela tabela da geração 6
-    ([`type_chart.dart`](../lib/core/utils/type_chart.dart), constantes do
-    frontend). Fica aqui, e não no Resumo, para o detalhe do espécime caber
-    sem rolar no iPhone. Os tipos aparecem em todo lugar com o mesmo
-    `TypeChip` (ícone do HOME e nome). Depois, `SpeciesInfo`: linha evolutiva e outras formas (Mega,
+  - **Espécie**: no topo, `SpeciesInfo`: linha evolutiva e outras formas (Mega,
     Gigantamax, regionais) com sprite, e uma grade com gênero, taxa de
     captura, ciclos de ovo, estreia, altura e peso. No dex, tocar numa forma
     leva ao slot dela (`formSlotsProvider` →
@@ -170,6 +164,13 @@ seguem o mesmo padrão, para as ações não empilharem botões:
     [form_sheet.dart](../lib/features/personal_dex/presentation/widgets/form_sheet.dart)),
     um bottom sheet só de leitura com as mesmas abas; tocar em outra forma
     troca a ficha, sem empilhar sheets, e a aba aberta continua.
+    Por último, **Tipos em batalha** (`TypeMatchupsCard`, #230, abaixo de
+    tudo desde a #270): as fraquezas pelos tipos da forma (4×, 2×, ½×, ¼×,
+    0×) e contra o que o STAB acerta 2×, pela tabela da geração 6
+    ([`type_chart.dart`](../lib/core/utils/type_chart.dart), constantes do
+    frontend). Fica aqui, e não no Resumo, para o detalhe do espécime caber
+    sem rolar no iPhone. Os tipos aparecem em todo lugar com o mesmo
+    `TypeChip` (ícone do HOME e nome).
   - Os dados vêm do detalhe da forma (`formDetailProvider` →
     `GET /forms/{id}/`), com carregamento e erro contidos na aba.
 
