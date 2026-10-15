@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
+import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -83,6 +84,21 @@ bool? _checked(WidgetTester tester, String game) => tester
 void main() {
   for (final size in [compactSize, expandedSize]) {
     final px = '${size.width.toInt()}px';
+
+    testWidgets('chips: Situação · Jogo · Motivos (#251, $px)', (tester) async {
+      await _openHunts(tester, size: size);
+      expect(
+        readingOrder(tester, [
+          find.widgetWithText(MenuChip, 'Situação'),
+          find.widgetWithText(FilterChip, 'Jogo'),
+          // O chip Motivos sempre tem algo marcado: só ícones e o tooltip.
+          find.byWidgetPredicate(
+            (w) => w is Tooltip && (w.message ?? '').startsWith('Motivos'),
+          ),
+        ]),
+        [0, 1, 2],
+      );
+    });
 
     testWidgets('ícones dos jogos e filtro pelos seus saves ($px)', (
       tester,

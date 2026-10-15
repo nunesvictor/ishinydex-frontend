@@ -319,7 +319,7 @@ void main() {
   });
 
   group('compacto', () {
-    testWidgets('Raridade: shiny e alfa num chip com menu (#217)', (
+    testWidgets('Raridade: shiny e alfa num chip com menu (#217, #251)', (
       tester,
     ) async {
       final backend = FakeBackend.seeded();
@@ -327,11 +327,17 @@ void main() {
       await pumpFullApp(tester, size: compactSize, backend: backend);
       await openSpecimensTab(tester);
 
-      // Situação · Raridade · Jogo, sem chips só de ícone e sem rolar de
-      // lado.
-      double left(String chip) =>
-          tester.getTopLeft(find.widgetWithText(MenuChip, chip)).dx;
-      expect(left('Situação'), lessThan(left('Raridade')));
+      // Situação · Jogo · Raridade (#251), na ordem de leitura (no
+      // celular, os chips quebram linha), sem chips só de ícone e sem rolar
+      // de lado.
+      expect(
+        readingOrder(tester, [
+          find.widgetWithText(MenuChip, 'Situação'),
+          find.widgetWithText(FilterChip, 'Jogo'),
+          find.widgetWithText(MenuChip, 'Raridade'),
+        ]),
+        [0, 1, 2],
+      );
       expect(
         find.ancestor(
           of: find.widgetWithText(MenuChip, 'Raridade'),

@@ -506,6 +506,8 @@ class _Filters extends StatelessWidget {
               ),
         ],
       ),
+      // Situação · Jogo · Raridade (#251), a mesma ordem das Caçadas.
+      _GameChip(query: query, onChanged: onChanged),
       // Raridade (#217): shiny e alfa num chip com menu, como Situação e
       // Jogo, em vez de dois chips só de ícone.
       MenuChip(
@@ -570,7 +572,6 @@ class _Filters extends StatelessWidget {
           ),
         ],
       ),
-      _GameChip(query: query, onChanged: onChanged),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
