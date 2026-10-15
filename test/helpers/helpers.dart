@@ -23,6 +23,11 @@ Finder ballSprite(Pattern label) => find.byWidgetPredicate(
   (w) => w is PokemonSprite && (w.semanticLabel?.contains(label) ?? false),
 );
 
+/// O atalho de Caçadas na barra do dex (a barra de navegação também tem um
+/// destino "Caçadas" desde a #246).
+Finder huntsShortcut([String label = 'Caçadas']) =>
+    find.descendant(of: find.byType(AppBar), matching: find.byTooltip(label));
+
 /// Tamanhos de tela usados nos testes responsivos.
 
 /// Os textos de cada idioma, para testar rótulos sem montar uma tela.

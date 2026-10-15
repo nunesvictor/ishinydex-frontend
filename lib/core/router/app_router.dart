@@ -47,9 +47,27 @@ abstract final class Routes {
     }.nullIfEmpty,
   ).toString();
 
-  /// Caçadas do shiny dex [dexId]; com [active], já na aba Ativas.
-  static String hunts(int dexId, {bool active = false}) =>
-      '$dexes/$dexId/hunts${active ? '?tab=active' : ''}';
+  /// Aba Caçadas (#246), sem depender de dex. Com [dexId], o Faltam usa
+  /// aquele shiny dex; com [active], abre na aba Ativas.
+  static String hunts({int? dexId, bool active = false}) => Uri(
+    path: huntsRoot,
+    queryParameters: {
+      if (dexId != null) 'dex': '$dexId',
+      if (active) 'tab': 'active',
+    }.nullIfEmpty,
+  ).toString();
+
+  static const huntsRoot = '/hunts';
+
+  /// O dex [id] aberto a partir de um item do Faltam, dentro da aba
+  /// Caçadas: o voltar retorna à lista, com os filtros.
+  static String huntsDex(int id, {int? boxId, int? slotId}) => Uri(
+    path: '$huntsRoot/dex/$id',
+    queryParameters: {
+      if (boxId != null) 'box': '$boxId',
+      if (slotId != null) 'slot': '$slotId',
+    }.nullIfEmpty,
+  ).toString();
 
   static String specimen(int id) => '$specimens/$id';
 }
@@ -96,36 +114,40 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: ':dexId',
-                    builder: (context, state) {
-                      final dexId =
-                          int.tryParse(state.pathParameters['dexId']!) ?? 0;
-                      final query = state.uri.queryParameters;
-                      final boxId = int.tryParse(query['box'] ?? '');
-                      final slotId = int.tryParse(query['slot'] ?? '');
-                      // Trocar de dex (ou de slot pedido na URL) recria a
-                      // página, com box e seleção novas.
-                      return DexDetailPage(
-                        key: ValueKey((dexId, boxId, slotId)),
-                        dexId: dexId,
-                        initialBoxId: boxId,
-                        initialSlotId: slotId,
-                      );
-                    },
+                    builder: _dexPage,
                     routes: [
+                      // Antes da #246, as caçadas ficavam dentro do dex: os
+                      // links e atalhos salvos vão para a aba Caçadas.
                       GoRoute(
                         path: 'hunts',
-                        builder: (context, state) => HuntsPage(
-                          dexId:
-                              int.tryParse(state.pathParameters['dexId']!) ?? 0,
-                          initialTab:
-                              state.uri.queryParameters['tab'] == 'active'
-                              ? HuntsTab.active
-                              : HuntsTab.missing,
+                        redirect: (context, state) => Routes.hunts(
+                          dexId: int.tryParse(state.pathParameters['dexId']!),
+                          active: state.uri.queryParameters['tab'] == 'active',
                         ),
                       ),
                     ],
                   ),
                 ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.huntsRoot,
+                builder: (context, state) {
+                  final query = state.uri.queryParameters;
+                  final dexId = int.tryParse(query['dex'] ?? '');
+                  final active = query['tab'] == 'active';
+                  // Um atalho (do dex ou do slot) recria a página com o dex
+                  // e a aba pedidos.
+                  return HuntsPage(
+                    key: ValueKey((dexId, active)),
+                    dexId: dexId,
+                    initialTab: active ? HuntsTab.active : HuntsTab.missing,
+                  );
+                },
+                routes: [GoRoute(path: 'dex/:dexId', builder: _dexPage)],
               ),
             ],
           ),
@@ -185,6 +207,23 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// O dex da URL (`:dexId`); com `box`/`slot`, abre naquela box com o slot
+/// selecionado.
+Widget _dexPage(BuildContext context, GoRouterState state) {
+  final dexId = int.tryParse(state.pathParameters['dexId']!) ?? 0;
+  final query = state.uri.queryParameters;
+  final boxId = int.tryParse(query['box'] ?? '');
+  final slotId = int.tryParse(query['slot'] ?? '');
+  // Trocar de dex (ou de slot pedido na URL) recria a página, com box e
+  // seleção novas.
+  return DexDetailPage(
+    key: ValueKey((dexId, boxId, slotId)),
+    dexId: dexId,
+    initialBoxId: boxId,
+    initialSlotId: slotId,
+  );
+}
 
 extension on Map<String, String> {
   Map<String, String>? get nullIfEmpty => isEmpty ? null : this;

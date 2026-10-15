@@ -22,9 +22,12 @@ Future<void> startHuntFromPicker(BuildContext context) async {
 /// com um cronômetro rodando, as outras ficam bloqueadas, e uma faixa avisa.
 /// No celular, uma coluna; no PC, cartões em grade.
 class HuntCards extends ConsumerWidget {
-  const HuntCards({required this.paused, super.key});
+  const HuntCards({required this.paused, this.hasDex = true, super.key});
 
   final bool paused;
+
+  /// Há shiny dex: a dica da aba vazia aponta para o Faltam.
+  final bool hasDex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +46,9 @@ class HuntCards extends ConsumerWidget {
             : hunts.where((h) => h.running).firstOrNull;
         final empty = paused
             ? context.l10n.huntsPausedEmpty
-            : context.l10n.huntsActiveEmpty;
+            : hasDex
+            ? context.l10n.huntsActiveEmpty
+            : context.l10n.huntsActiveEmptyNoDex;
         return LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 720;

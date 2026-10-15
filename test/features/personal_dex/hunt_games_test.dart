@@ -31,7 +31,7 @@ Future<void> _openHunts(WidgetTester tester, {required Size size}) async {
       .read(routerProvider)
       .go(Routes.dex(dexId));
   await tester.pumpAndSettle();
-  await tester.tap(find.byTooltip('Caçadas'));
+  await tester.tap(huntsShortcut());
   await tester.pumpAndSettle();
 }
 
@@ -211,7 +211,7 @@ void main() {
         .read(routerProvider)
         .go(Routes.dex(1));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Caçadas'));
+    await tester.tap(huntsShortcut());
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilterChip, 'Jogo'), findsNothing);
@@ -318,7 +318,7 @@ void main() {
         .read(routerProvider)
         .go(Routes.dex(dexId));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Caçadas'));
+    await tester.tap(huntsShortcut());
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilterChip, 'Jogo'));
     await tester.pumpAndSettle();

@@ -17,7 +17,7 @@ void main() {
     await tester.tap(find.text('Shiny Living Dex'));
     await tester.pumpAndSettle();
     expect(find.textContaining('registered ·'), findsOneWidget);
-    expect(find.byTooltip('Hunts'), findsOneWidget);
+    expect(huntsShortcut('Hunts'), findsOneWidget);
     expect(find.byTooltip('Highlight missing'), findsOneWidget);
   });
 

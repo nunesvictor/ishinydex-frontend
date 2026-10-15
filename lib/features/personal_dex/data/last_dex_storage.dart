@@ -8,10 +8,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract interface class LastDexStorage {
   Future<int?> read();
   Future<void> write(int dexId);
+
+  /// O shiny dex escolhido na aba Caçadas (#246), à parte do último aberto.
+  Future<int?> readHunts();
+  Future<void> writeHunts(int dexId);
 }
 
 class PrefsLastDexStorage implements LastDexStorage {
   static const _key = 'last_dex_id';
+  static const _huntsKey = 'last_hunts_dex_id';
 
   Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
@@ -22,18 +27,33 @@ class PrefsLastDexStorage implements LastDexStorage {
   Future<void> write(int dexId) async {
     await (await _prefs).setInt(_key, dexId);
   }
+
+  @override
+  Future<int?> readHunts() async => (await _prefs).getInt(_huntsKey);
+
+  @override
+  Future<void> writeHunts(int dexId) async {
+    await (await _prefs).setInt(_huntsKey, dexId);
+  }
 }
 
 class InMemoryLastDexStorage implements LastDexStorage {
   InMemoryLastDexStorage([this._dexId]);
 
   int? _dexId;
+  int? _huntsDexId;
 
   @override
   Future<int?> read() async => _dexId;
 
   @override
   Future<void> write(int dexId) async => _dexId = dexId;
+
+  @override
+  Future<int?> readHunts() async => _huntsDexId;
+
+  @override
+  Future<void> writeHunts(int dexId) async => _huntsDexId = dexId;
 }
 
 /// Dex que o app abre ao entrar: o último usado, se ainda existir; senão o

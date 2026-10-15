@@ -52,15 +52,30 @@ class ErrorView extends StatelessWidget {
 }
 
 class EmptyView extends StatelessWidget {
-  const EmptyView({required this.message, super.key});
+  const EmptyView({required this.message, this.detail, super.key});
 
   final String message;
+
+  /// Uma linha a mais, menor, embaixo da mensagem.
+  final String? detail;
 
   @override
   Widget build(BuildContext context) => Center(
     child: Padding(
       padding: const EdgeInsets.all(24),
-      child: Text(message, textAlign: TextAlign.center),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
+        children: [
+          Text(message, textAlign: TextAlign.center),
+          if (detail case final detail?)
+            Text(
+              detail,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+        ],
+      ),
     ),
   );
 }

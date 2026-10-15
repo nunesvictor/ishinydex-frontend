@@ -29,7 +29,11 @@ class DexListPage extends ConsumerWidget {
       ),
       body: dexes.when(
         data: (items) => items.isEmpty
-            ? EmptyView(message: context.l10n.dexListEmpty)
+            ? EmptyView(
+                message: context.l10n.dexListEmpty,
+                // Quem só caça não precisa de dex (#246).
+                detail: context.l10n.dexListHuntsHint,
+              )
             : RefreshIndicator.adaptive(
                 // Puxar a lista também sincroniza (com o Dropbox conectado).
                 onRefresh: () async {
@@ -61,15 +65,19 @@ class DexListPage extends ConsumerWidget {
 
 /// Abre o cadastro e, se um dex for criado, vai direto para ele.
 Future<void> _createDex(BuildContext context) async {
-  final dex = await Navigator.of(context, rootNavigator: true)
-      .push<PersonalDex>(
-        MaterialPageRoute(
-          fullscreenDialog: true,
-          builder: (_) => const NewDexPage(),
-        ),
-      );
+  final dex = await openNewDex(context);
   if (dex != null && context.mounted) context.go(Routes.dex(dex.id));
 }
+
+/// Abre o "Novo PersonalDex" em tela cheia; devolve o dex criado, ou `null`
+/// se a pessoa desistir.
+Future<PersonalDex?> openNewDex(BuildContext context) =>
+    Navigator.of(context, rootNavigator: true).push<PersonalDex>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const NewDexPage(),
+      ),
+    );
 
 class _DexCard extends StatelessWidget {
   const _DexCard({required this.dex});

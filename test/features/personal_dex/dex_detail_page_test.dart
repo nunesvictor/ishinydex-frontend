@@ -964,7 +964,7 @@ void main() {
       ) async {
         await pumpFullApp(tester, size: size);
         await openShinyDex(tester);
-        expect(find.byTooltip('Caçadas'), findsOneWidget);
+        expect(huntsShortcut(), findsOneWidget);
 
         // Cancelar não muda nada.
         await openMenuItem(tester, 'Editar dex');
@@ -991,7 +991,7 @@ void main() {
         expect(find.text('Dex atualizado.'), findsOneWidget);
         expect(find.text('Minha Dex'), findsOneWidget);
         // Sem shiny dex, sem caçadas.
-        expect(find.byTooltip('Caçadas'), findsNothing);
+        expect(huntsShortcut(), findsNothing);
       });
 
       testWidgets('apaga e volta para a lista (${size.width.toInt()}px)', (
