@@ -32,12 +32,9 @@ Future<void> _go(WidgetTester tester, String location) async {
   await tester.pumpAndSettle();
 }
 
-/// Abre o shiny dex da semente e toca em "Caçadas".
-Future<void> _openHunts(WidgetTester tester) async {
-  await _go(tester, Routes.dex(1));
-  await tester.tap(huntsShortcut());
-  await tester.pumpAndSettle();
-}
+/// Abre a aba Caçadas no shiny dex da semente.
+Future<void> _openHunts(WidgetTester tester) =>
+    _go(tester, Routes.hunts(dexId: 1));
 
 /// O chip pelo texto; com valores marcados, ele só mostra os ícones e se
 /// acha pelo tooltip (#219).
@@ -92,9 +89,7 @@ void main() {
 
     testWidgets('em inglês: abas, contagem e filtros ($px)', (tester) async {
       await pumpFullApp(tester, size: size, language: AppLanguage.en);
-      await _go(tester, Routes.dex(1));
-      await tester.tap(huntsShortcut('Hunts'));
-      await tester.pumpAndSettle();
+      await _go(tester, Routes.hunts(dexId: 1));
       expect(find.text('Hunts'), findsWidgets);
       expect(find.text('19 to hunt'), findsOneWidget);
       expect(find.text('#0003 · HOME 1 · R1 C3 · Missing'), findsOneWidget);
@@ -274,7 +269,7 @@ void main() {
     expect(find.text('19 para caçar'), findsOneWidget);
   });
 
-  testWidgets('shiny lock com cadeado; dex normal sem "Caçadas"', (
+  testWidgets('shiny lock com cadeado; um dex normal não vale no Faltam', (
     tester,
   ) async {
     final fake = FakeBackend()
@@ -286,11 +281,8 @@ void main() {
       ..addBox(dexId: normal, name: 'HOME 2', formIds: [1]);
     await pumpFullApp(tester, size: compactSize, backend: fake);
 
-    await _go(tester, Routes.dex(normal));
-    expect(huntsShortcut(), findsNothing);
-    await _go(tester, Routes.dex(dex));
-    await tester.tap(huntsShortcut());
-    await tester.pumpAndSettle();
+    // Pedido um dex normal, o Faltam usa o shiny dex.
+    await _go(tester, Routes.hunts(dexId: normal));
     expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     expect(find.byTooltip('Só por distribuição'), findsOneWidget);
   });

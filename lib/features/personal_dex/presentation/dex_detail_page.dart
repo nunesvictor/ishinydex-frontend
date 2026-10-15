@@ -318,12 +318,6 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
             icon: const Icon(Icons.view_sidebar_outlined),
             selectedIcon: const Icon(Icons.view_sidebar),
           ),
-        if (dex?.isShinyDex ?? false)
-          IconButton(
-            tooltip: context.l10n.huntsTitle,
-            onPressed: () => context.go(Routes.hunts(dexId: _dexId)),
-            icon: const Icon(Icons.track_changes),
-          ),
         _missingToggle(context),
         if (dex != null)
           DexMenu(

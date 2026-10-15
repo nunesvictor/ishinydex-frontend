@@ -346,9 +346,10 @@ sem criar nenhum. A aba **Faltam** precisa de um shiny dex:
 - sem nenhum, mostra o que ele daria e o botão "Criar shiny dex";
 - com um, usa esse; com mais de um, um seletor no topo, lembrado no
   `LastDexStorage.readHunts` (à parte do último dex aberto);
-- `/hunts?dex={id}` escolhe o dex, e `&tab=active` abre em Ativas. O ícone
-  de alvo no AppBar do shiny dex e o atalho do painel do slot usam isso. A
-  rota antiga, `/dexes/{id}/hunts`, redireciona para cá;
+- `/hunts?dex={id}` escolhe o dex, e `&tab=active` abre em Ativas. O atalho
+  do painel do slot usa isso (o ícone no AppBar do dex saiu na #264: a barra
+  de navegação já leva a Caçadas). A rota antiga, `/dexes/{id}/hunts`,
+  redireciona para cá;
 - tocar num item empilha o dex dentro da própria aba (`/hunts/dex/{id}`),
   para o voltar retornar à lista com os filtros.
 

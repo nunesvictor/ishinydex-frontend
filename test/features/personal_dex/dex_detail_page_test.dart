@@ -964,7 +964,14 @@ void main() {
       ) async {
         await pumpFullApp(tester, size: size);
         await openShinyDex(tester);
-        expect(huntsShortcut(), findsOneWidget);
+        // Caçadas fica na barra de navegação, sem atalho no dex (#264).
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.byIcon(Icons.track_changes),
+          ),
+          findsNothing,
+        );
 
         // Cancelar não muda nada.
         await openMenuItem(tester, 'Editar dex');
@@ -990,8 +997,6 @@ void main() {
         expect(find.byType(AlertDialog), findsNothing);
         expect(find.text('Dex atualizado.'), findsOneWidget);
         expect(find.text('Minha Dex'), findsOneWidget);
-        // Sem shiny dex, sem caçadas.
-        expect(huntsShortcut(), findsNothing);
       });
 
       testWidgets('apaga e volta para a lista (${size.width.toInt()}px)', (
