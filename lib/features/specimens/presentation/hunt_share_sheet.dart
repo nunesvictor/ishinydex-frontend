@@ -6,28 +6,62 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/web/share_outcome.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-/// Abre a folha "Compartilhar a caçada" (#243) com a prévia do card.
-Future<void> showHuntShareSheet(BuildContext context, HuntShareData data) =>
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (_) => HuntShareSheet(data: data),
-    );
+/// O que o card mostra do [specimen], com o método no idioma da tela e o
+/// OT; `null` se ele não tiver o que compartilhar (ver [HuntShareData.of]).
+HuntShareData? huntShareDataOf(
+  BuildContext context,
+  WidgetRef ref,
+  Specimen specimen,
+) {
+  final method = ref
+      .watch(shinyMethodsProvider)(null)
+      .where((m) => m.id == specimen.hunt?.method)
+      .firstOrNull;
+  final ot = ref
+      .watch(trainersProvider)
+      .value
+      ?.where((t) => t.id == specimen.ot)
+      .firstOrNull;
+  return HuntShareData.of(
+    specimen,
+    method: method == null
+        ? null
+        : context.catalogText(method.label, method.labels),
+    ot: ot,
+  );
+}
 
-/// A folha com a prévia do card e o botão "Compartilhar".
+/// Abre a folha do card da caçada (#243). [found]: logo depois do
+/// "Encontrei!" ("Shiny registrado!", com "Agora não").
+Future<void> showHuntShareSheet(
+  BuildContext context,
+  Specimen specimen, {
+  bool found = false,
+}) => showModalBottomSheet<void>(
+  context: context,
+  showDragHandle: true,
+  useSafeArea: true,
+  isScrollControlled: true,
+  builder: (_) => HuntShareSheet(specimen: specimen, found: found),
+);
+
+/// A folha com a prévia do card, a chave do ID do treinador e o botão
+/// "Compartilhar".
 ///
-/// O PNG é gerado assim que a folha abre, e não no toque: o Safari do iOS só
-/// abre a folha de compartilhar se a chamada vier logo depois do toque, sem
-/// nada assíncrono antes. O botão fica desligado até a imagem ficar pronta.
+/// O PNG é gerado assim que a folha abre (e de novo se os dados ou a chave
+/// mudarem), e não no toque: o Safari do iOS só abre a folha de
+/// compartilhar se a chamada vier logo depois do toque, sem nada
+/// assíncrono antes (provado no iPhone na v2.12.0-beta.1). O botão fica
+/// desligado enquanto a imagem não está pronta.
 class HuntShareSheet extends ConsumerStatefulWidget {
-  const HuntShareSheet({required this.data, super.key});
+  const HuntShareSheet({required this.specimen, this.found = false, super.key});
 
-  final HuntShareData data;
+  final Specimen specimen;
+  final bool found;
 
   @override
   ConsumerState<HuntShareSheet> createState() => _HuntShareSheetState();
@@ -35,22 +69,31 @@ class HuntShareSheet extends ConsumerStatefulWidget {
 
 class _HuntShareSheetState extends ConsumerState<HuntShareSheet> {
   final GlobalKey _boundary = GlobalKey();
+  bool _showTrainerId = false;
+
+  /// A imagem pronta e de quê ela é (os dados e a chave do ID).
   Uint8List? _png;
+  Object? _captured;
+  Object? _capturing;
   bool _failed = false;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_capture()));
+  /// Gera a imagem de [key] depois deste quadro, se ainda não for a dela.
+  void _scheduleCapture(Object key, String? spriteUrl) {
+    if (key == _captured || key == _capturing) return;
+    _capturing = key;
+    _failed = false;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => unawaited(_capture(key, spriteUrl)),
+    );
   }
 
-  Future<void> _capture() async {
+  Future<void> _capture(Object key, String? spriteUrl) async {
     try {
       // O sprite precisa ter chegado, senão sai o ícone de reserva.
-      if (widget.data.spriteUrl case final url?) {
+      if (spriteUrl != null) {
         await precacheImage(
           NetworkImage(
-            url,
+            spriteUrl,
             webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
           ),
           context,
@@ -58,7 +101,7 @@ class _HuntShareSheetState extends ConsumerState<HuntShareSheet> {
         );
       }
       await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) return;
+      if (!mounted || key != _capturing) return;
       final boundary =
           _boundary.currentContext!.findRenderObject()!
               as RenderRepaintBoundary;
@@ -66,19 +109,24 @@ class _HuntShareSheetState extends ConsumerState<HuntShareSheet> {
         boundary,
         HuntShareCard.pixelRatio,
       );
-      if (mounted) setState(() => _png = png);
+      if (!mounted || key != _capturing) return;
+      setState(() {
+        _png = png;
+        _captured = key;
+        _failed = false;
+      });
     } on Object {
-      if (mounted) setState(() => _failed = true);
+      if (mounted && key == _capturing) setState(() => _failed = true);
     }
   }
 
   /// Compartilha na hora do toque: o PNG já está pronto.
-  Future<void> _share(Uint8List png) async {
+  Future<void> _share(Uint8List png, String name) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
     final outcome = await ref.read(fileSharerProvider)(
       png,
-      name: 'ishinydex-${widget.data.name.toLowerCase()}.png',
+      name: 'ishinydex-${name.toLowerCase()}.png',
       type: 'image/png',
     );
     if (!outcome.silent) {
@@ -97,52 +145,89 @@ class _HuntShareSheetState extends ConsumerState<HuntShareSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final png = _png;
+    final l10n = context.l10n;
+    final data = huntShareDataOf(context, ref, widget.specimen);
+    if (data == null) return const SizedBox.shrink();
+    final key = (data, _showTrainerId);
+    _scheduleCapture(key, data.spriteUrl);
+    final png = key == _captured ? _png : null;
+    final preparing = png == null && !_failed;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 16,
         children: [
-          Text(context.l10n.shareHuntTitle, style: theme.textTheme.titleLarge),
+          if (widget.found) ...[
+            Text(
+              l10n.shareFoundTitle,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            Text(l10n.shareFoundText(data.name), textAlign: TextAlign.center),
+          ] else
+            Text(l10n.shareHuntTitle, style: theme.textTheme.titleLarge),
           // A prévia encolhe para caber; a imagem sai do tamanho cheio.
           Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: HuntShareCard.size.width,
-                maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+                maxHeight: MediaQuery.sizeOf(context).height * 0.5,
               ),
               child: FittedBox(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: RepaintBoundary(
                     key: _boundary,
-                    child: HuntShareCard(data: widget.data),
+                    child: HuntShareCard(
+                      data: data,
+                      showTrainerId: _showTrainerId,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+          // A única opção do card (v3): o ID fica de fora por padrão.
+          if (data.trainerId != null)
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.shareShowTrainerId),
+              value: _showTrainerId,
+              onChanged: (on) => setState(() => _showTrainerId = on),
+            ),
           if (_failed)
             Text(
-              context.l10n.shareFailed,
+              l10n.shareFailed,
               style: TextStyle(color: theme.colorScheme.error),
               textAlign: TextAlign.center,
             ),
-          FilledButton.icon(
-            key: const ValueKey('share-hunt'),
-            onPressed: png == null ? null : () => unawaited(_share(png)),
-            icon: png == null && !_failed
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.ios_share),
-            label: Text(
-              png == null && !_failed
-                  ? context.l10n.sharePreparing
-                  : context.l10n.shareHunt,
-            ),
+          Row(
+            spacing: 12,
+            children: [
+              if (widget.found)
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(l10n.shareNotNow),
+                  ),
+                ),
+              Expanded(
+                child: FilledButton.icon(
+                  key: const ValueKey('share-hunt'),
+                  onPressed: png == null
+                      ? null
+                      : () => unawaited(_share(png, data.name)),
+                  icon: preparing
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.ios_share),
+                  label: Text(preparing ? l10n.sharePreparing : l10n.shareHunt),
+                ),
+              ),
+            ],
           ),
         ],
       ),
