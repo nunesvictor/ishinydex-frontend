@@ -77,17 +77,7 @@ class SlotDetailPanel extends ConsumerWidget {
         ),
       );
     }
-    final theme = Theme.of(context);
     final specimen = current.specimen;
-    final full = specimen == null
-        ? null
-        : ref.watch(specimenProvider(specimen.id)).value;
-    // Como o selo da grade: caçada ativa da forma e o slot ainda precisa do
-    // Pokémon (faltante, ou registrado sem ser shiny). Só num shiny dex.
-    final hunting =
-        onShowHunts != null &&
-        ref.watch(huntedFormsProvider).contains(form.id) &&
-        !(specimen?.isShiny ?? false);
     return Column(
       mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -96,83 +86,8 @@ class SlotDetailPanel extends ConsumerWidget {
           fit: fillHeight ? FlexFit.tight : FlexFit.loose,
           child: _navigable(
             context,
-            SingleChildScrollView(
-              key: ValueKey('slot-panel-${current.id}'),
-              padding: const EdgeInsets.all(16),
-              child: DetailBody(
-                spriteUrl: current.spriteUrl,
-                semanticLabel: form.displayName,
-                title: specimen == null
-                    ? Text(form.displayName, style: theme.textTheme.titleLarge)
-                    : SpecimenHeadline(
-                        name: specimen.displayName,
-                        pokeballSpriteUrl: specimen.pokeballSpriteUrl,
-                        pokeballLabel: specimen.pokeball == null
-                            ? null
-                            : prettifyName(specimen.pokeball!),
-                        gender: full?.gender,
-                        isShiny: specimen.isShiny,
-                        isAlpha: specimen.isAlpha,
-                        style: theme.textTheme.titleLarge,
-                      ),
-                subtitle: [
-                  if (specimen != null) form.displayName,
-                  form.dexNumber,
-                  if (form.formName.isNotEmpty) prettifyName(form.formName),
-                ].join(' · '),
-                caption: navigation == null
-                    ? context.l10n.slotPosition(
-                        current.box.name,
-                        current.row + 1,
-                        current.col + 1,
-                      )
-                    : null,
-                position: switch (navigation) {
-                  final navigation? => SlotNavigationBar(navigation),
-                  null => null,
-                },
-                formId: form.id,
-                // Uma aba por slot: trocar de slot volta para o resumo.
-                tabsKey: ValueKey('tabs-${current.id}'),
-                summaryLabel: specimen == null
-                    ? context.l10n.summaryForm
-                    : context.l10n.summarySpecimen,
-                highlightAbility: specimen?.ability,
-                chips: [
-                  if (specimen == null)
-                    Chip(
-                      avatar: const Icon(Icons.radio_button_unchecked),
-                      label: Text(context.l10n.slotMissing),
-                    )
-                  else ...[
-                    Chip(
-                      avatar: const SuccessIcon(Icons.check_circle),
-                      label: Text(context.l10n.slotRegistered),
-                    ),
-                    if (OriginMark.fromSlug(full?.originMark) case final mark?)
-                      OriginMarkChip(mark),
-                    if (full?.isVisitingChampions ?? false)
-                      const ChampionsChip(),
-                    ?languageTag(context, ref, full?.language),
-                    ?homeTagOf(ref, specimen.location),
-                  ],
-                ],
-                fields: full == null
-                    ? const []
-                    : specimenFields(context, ref, full),
-                footer: specimenFooter(
-                  save: specimen?.location,
-                  since: specimen?.locationSince,
-                  specimen: full,
-                  trailing: hunting
-                      ? ActiveHuntTile(formId: form.id, onTap: onShowHunts)
-                      : null,
-                ),
-                nature: full?.nature,
-                dexId: current.personalDex,
-                onOpenSlot: onOpenSlot,
-              ),
-            ),
+            ref,
+            _body(context, ref, current, navigation),
           ),
         ),
         DetailActionBar(
@@ -220,20 +135,140 @@ class SlotDetailPanel extends ConsumerWidget {
     );
   }
 
+  /// O corpo do painel de [current]: o do slot selecionado e, durante o
+  /// gesto, o do vizinho (#267). [navigation] dá a linha da posição com as
+  /// setas; sem ela, a legenda com a posição.
+  Widget _body(
+    BuildContext context,
+    WidgetRef ref,
+    Slot current,
+    SlotNavigation? navigation,
+  ) {
+    final theme = Theme.of(context);
+    final form = current.form!;
+    final specimen = current.specimen;
+    final full = specimen == null
+        ? null
+        : ref.watch(specimenProvider(specimen.id)).value;
+    // Como o selo da grade: caçada ativa da forma e o slot ainda precisa do
+    // Pokémon (faltante, ou registrado sem ser shiny). Só num shiny dex.
+    final hunting =
+        onShowHunts != null &&
+        ref.watch(huntedFormsProvider).contains(form.id) &&
+        !(specimen?.isShiny ?? false);
+    return SingleChildScrollView(
+      key: ValueKey('slot-panel-${current.id}'),
+      padding: const EdgeInsets.all(16),
+      child: DetailBody(
+        spriteUrl: current.spriteUrl,
+        semanticLabel: form.displayName,
+        title: specimen == null
+            ? Text(form.displayName, style: theme.textTheme.titleLarge)
+            : SpecimenHeadline(
+                name: specimen.displayName,
+                pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+                pokeballLabel: specimen.pokeball == null
+                    ? null
+                    : prettifyName(specimen.pokeball!),
+                gender: full?.gender,
+                isShiny: specimen.isShiny,
+                isAlpha: specimen.isAlpha,
+                style: theme.textTheme.titleLarge,
+              ),
+        subtitle: [
+          if (specimen != null) form.displayName,
+          form.dexNumber,
+          if (form.formName.isNotEmpty) prettifyName(form.formName),
+        ].join(' · '),
+        caption: navigation == null
+            ? context.l10n.slotPosition(
+                current.box.name,
+                current.row + 1,
+                current.col + 1,
+              )
+            : null,
+        position: switch (navigation) {
+          final navigation? => SlotNavigationBar(navigation),
+          null => null,
+        },
+        formId: form.id,
+        // Uma aba por slot: trocar de slot volta para o resumo.
+        tabsKey: ValueKey('tabs-${current.id}'),
+        summaryLabel: specimen == null
+            ? context.l10n.summaryForm
+            : context.l10n.summarySpecimen,
+        highlightAbility: specimen?.ability,
+        chips: [
+          if (specimen == null)
+            Chip(
+              avatar: const Icon(Icons.radio_button_unchecked),
+              label: Text(context.l10n.slotMissing),
+            )
+          else ...[
+            Chip(
+              avatar: const SuccessIcon(Icons.check_circle),
+              label: Text(context.l10n.slotRegistered),
+            ),
+            if (OriginMark.fromSlug(full?.originMark) case final mark?)
+              OriginMarkChip(mark),
+            if (full?.isVisitingChampions ?? false) const ChampionsChip(),
+            ?languageTag(context, ref, full?.language),
+            ?homeTagOf(ref, specimen.location),
+          ],
+        ],
+        fields: full == null ? const [] : specimenFields(context, ref, full),
+        footer: specimenFooter(
+          save: specimen?.location,
+          since: specimen?.locationSince,
+          specimen: full,
+          trailing: hunting
+              ? ActiveHuntTile(formId: form.id, onTap: onShowHunts)
+              : null,
+        ),
+        nature: full?.nature,
+        dexId: current.personalDex,
+        onOpenSlot: onOpenSlot,
+      ),
+    );
+  }
+
   /// Com [navigation]: o gesto de deslizar entre slots, acompanhando o
   /// dedo ([SlotSwipe], #256), e o balão da troca de box, parado por cima.
   /// Como a rolagem do painel é vertical, os dois gestos não disputam o
   /// mesmo toque.
-  Widget _navigable(BuildContext context, Widget content) {
+  Widget _navigable(BuildContext context, WidgetRef ref, Widget content) {
     final navigation = this.navigation;
     if (navigation == null) return content;
     final notice = navigation.notice;
+    Widget? preview(SlotPreview? preview, {required bool forward}) =>
+        switch (preview) {
+          // O vizinho como ele vai ficar: o mesmo corpo, com a posição dele.
+          // As setas ficam só de enfeite (a prévia não recebe toques), ligadas
+          // como estarão depois da troca.
+          NeighborSlot(:final slot, :final label) => _body(
+            context,
+            ref,
+            slot,
+            SlotNavigation(
+              label: label,
+              onPrevious: navigation.onPrevious ?? navigation.onNext,
+              onNext: navigation.onNext ?? navigation.onPrevious,
+            ),
+          ),
+          NeighborBox(:final boxName) => BoxPreview(
+            boxName: boxName,
+            forward: forward,
+          ),
+          null => null,
+        };
     return Stack(
       children: [
         SlotSwipe(
           direction: navigation.direction,
           onPrevious: navigation.onPrevious,
           onNext: navigation.onNext,
+          previous: preview(navigation.previousPreview, forward: false),
+          next: preview(navigation.nextPreview, forward: true),
           child: content,
         ),
         if (notice != null)

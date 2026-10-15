@@ -29,6 +29,8 @@ class SlotNavigation {
     this.onNext,
     this.notice,
     this.direction = 0,
+    this.previousPreview,
+    this.nextPreview,
   });
 
   /// "HOME 1 · L1 C2 · 2 de 30".
@@ -43,6 +45,32 @@ class SlotNavigation {
   /// Para onde foi o último passo: 1 (seguinte), -1 (anterior) ou 0 (um
   /// toque na grade). Decide de que lado o slot novo entra.
   final int direction;
+
+  /// O que aparece de cada lado durante o gesto (#267): o slot vizinho, na
+  /// mesma box, ou a box vizinha. `null` no começo e no fim do dex.
+  final SlotPreview? previousPreview;
+  final SlotPreview? nextPreview;
+}
+
+/// O vizinho mostrado durante o gesto de deslizar (#267).
+sealed class SlotPreview {
+  const SlotPreview();
+}
+
+/// Na mesma box: o slot vizinho inteiro, com a posição dele ("HOME 1 · L1
+/// C3 · 3 de 30").
+class NeighborSlot extends SlotPreview {
+  const NeighborSlot(this.slot, this.label);
+
+  final Slot slot;
+  final String label;
+}
+
+/// Na borda da box: a box vizinha, que pode não ter carregado ainda.
+class NeighborBox extends SlotPreview {
+  const NeighborBox(this.boxName);
+
+  final String boxName;
 }
 
 /// Uma troca de box. O [id] muda a cada troca, então duas trocas seguidas

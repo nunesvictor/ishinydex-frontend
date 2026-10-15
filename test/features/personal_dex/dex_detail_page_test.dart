@@ -1310,6 +1310,58 @@ void main() {
         )
         .opacity;
 
+    /// Arrasta o painel [dx] px sem soltar; devolve o gesto.
+    Future<TestGesture> drag(WidgetTester tester, double dx) async {
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(SlotDetailPanel)),
+      );
+      await gesture.moveBy(Offset(dx.sign * 30, 0));
+      await gesture.moveBy(Offset(dx, 0));
+      await tester.pump();
+      return gesture;
+    }
+
+    Future<void> release(WidgetTester tester, TestGesture gesture) async {
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('prévia ao deslizar: o slot vizinho, a box e o começo (#267)', (
+      tester,
+    ) async {
+      await pumpFullApp(tester);
+      await openShinyDex(tester);
+      await tester.tap(slot(1));
+      await tester.pumpAndSettle();
+
+      // Começo do dex: resiste, com o aviso.
+      var gesture = await drag(tester, 120);
+      expect(find.text('Início do dex'), findsOneWidget);
+      await release(tester, gesture);
+
+      // Na mesma box: o slot seguinte inteiro, com a posição dele.
+      gesture = await drag(tester, -120);
+      expect(find.text('HOME 1 · L1 C2 · 2 de 30'), findsOneWidget);
+      // Soltar rápido completa: o vizinho que já estava à vista fica.
+      await release(tester, gesture);
+      expect(find.text('HOME 1 · L1 C2 · 2 de 30'), findsOneWidget);
+
+      // Último slot da box: a prévia da próxima box.
+      await tester.tap(slot(30));
+      await tester.pumpAndSettle();
+      gesture = await drag(tester, -120);
+      expect(find.text('PRÓXIMA BOX'), findsOneWidget);
+      await release(tester, gesture);
+
+      // Soltou rápido: foi para o primeiro slot da box seguinte, de onde
+      // aparece a box anterior.
+      expect(find.text('HOME 2 · L1 C1 · 1 de 28'), findsOneWidget);
+      gesture = await drag(tester, 120);
+      expect(find.text('BOX ANTERIOR'), findsOneWidget);
+      expect(find.text('HOME 1'), findsWidgets);
+      await release(tester, gesture);
+    });
+
     testWidgets('setas, deslizar e a troca de box com o balão (expandido)', (
       tester,
     ) async {

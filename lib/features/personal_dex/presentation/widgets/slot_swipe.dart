@@ -2,23 +2,31 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 
 /// O deslizar entre slots no painel (#256): o conteúdo acompanha o dedo e,
 /// ao soltar, completa a troca ou volta com uma mola, como as fotos do
 /// iPhone.
 ///
-/// Não é um `PageView` porque o vizinho não precisa estar pronto antes (o da
-/// box seguinte nem carregou): só o slot atual se move com o dedo. Ao
-/// completar, ele termina de sair pelo lado do gesto e chama [onNext] ou
-/// [onPrevious]; quando o [child] novo chega (outra `key`), ele entra
-/// inteiro pelo lado oposto. Uma troca pelas setas ([direction] 1 ou -1)
-/// entra do mesmo jeito; um toque na grade ([direction] 0) troca na hora.
+/// Durante o gesto, o vizinho entra junto pelo lado oposto (#267): o slot
+/// ao lado, na mesma box, ou a prévia da box vizinha ([previous], [next]).
+/// No começo e no fim do dex não há vizinho: o conteúdo resiste e aparece
+/// "Início do dex" ou "Fim do dex".
+///
+/// Não é um `PageView`: o vizinho só é montado durante o gesto, e o da box
+/// seguinte nem precisa ter carregado. Ao completar, o atual termina de
+/// sair e chama [onNext] ou [onPrevious]; quando o [child] novo chega
+/// (outra `key`), ele toma o lugar da prévia, que já estava no centro. Uma
+/// troca pelas setas ([direction] 1 ou -1) entra pelo lado do passo; um
+/// toque na grade ([direction] 0) troca na hora.
 class SlotSwipe extends StatefulWidget {
   const SlotSwipe({
     required this.child,
     required this.direction,
     this.onPrevious,
     this.onNext,
+    this.previous,
+    this.next,
     super.key,
   });
 
@@ -31,6 +39,10 @@ class SlotSwipe extends StatefulWidget {
   /// `null` no começo (ou no fim) do dex: o gesto resiste e não troca.
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
+
+  /// O que aparece de cada lado durante o gesto (#267).
+  final Widget? previous;
+  final Widget? next;
 
   /// Velocidade mínima (px/s) para soltar no meio e ainda completar.
   static const flingVelocity = 200.0;
@@ -63,7 +75,8 @@ class _SlotSwipeState extends State<SlotSwipe>
   double _width = 0;
 
   /// Lado de onde o próximo slot deve entrar, depois de um gesto completo
-  /// (1: pela direita; -1: pela esquerda); `null` sem gesto pendente.
+  /// (1: pela direita; -1: pela esquerda; 0: já está no lugar, porque a
+  /// prévia entrou junto); `null` sem gesto pendente.
   int? _pendingEnter;
   Timer? _giveUp;
 
@@ -74,8 +87,8 @@ class _SlotSwipeState extends State<SlotSwipe>
     super.didUpdateWidget(old);
     if (widget.child.key == old.child.key) return;
     _giveUp?.cancel();
-    // O slot mudou: pelo gesto (entra do lado oposto ao que saiu), pelas
-    // setas (entra do lado do passo) ou pela grade (na hora).
+    // O slot mudou: pelo gesto (a prévia já estava no lugar), pelas setas
+    // (entra do lado do passo) ou pela grade (na hora).
     final side = _pendingEnter ?? widget.direction.sign;
     _pendingEnter = null;
     if (side == 0 || _reduceMotion || _width == 0) {
@@ -102,6 +115,13 @@ class _SlotSwipeState extends State<SlotSwipe>
       ? widget.onPrevious
       : null;
 
+  /// A prévia do lado para onde o dedo vai.
+  Widget? _preview(double dx) => dx < 0
+      ? widget.next
+      : dx > 0
+      ? widget.previous
+      : null;
+
   void _onUpdate(DragUpdateDetails details) {
     if (_pendingEnter != null) return;
     _offset.stop();
@@ -123,16 +143,22 @@ class _SlotSwipeState extends State<SlotSwipe>
     final target = _target(dx);
     final far = x.abs() > _width * SlotSwipe.completeFraction;
     if (target != null && (fling || far) && x.sign != -dx.sign) {
-      _complete(target, dx.sign.toInt(), velocity);
+      _complete(target, dx.sign.toInt(), velocity, preview: _preview(dx));
     } else {
       _settle(velocity);
     }
   }
 
   /// Termina de sair pelo lado do gesto e chama [target].
-  void _complete(VoidCallback target, int sign, double velocity) {
-    // O novo entra pelo lado oposto ao que o atual saiu.
-    _pendingEnter = -sign;
+  void _complete(
+    VoidCallback target,
+    int sign,
+    double velocity, {
+    Widget? preview,
+  }) {
+    // Com a prévia, o novo já está no lugar quando chega; sem ela, entra
+    // pelo lado oposto ao que o atual saiu.
+    _pendingEnter = preview == null ? -sign : 0;
     _giveUp = Timer(SlotSwipe.giveUp, () {
       if (!mounted || _pendingEnter == null) return;
       _pendingEnter = null;
@@ -189,14 +215,144 @@ class _SlotSwipeState extends State<SlotSwipe>
         child: ClipRect(
           child: AnimatedBuilder(
             animation: _offset,
-            builder: (context, child) => Transform.translate(
-              offset: Offset(_offset.value, 0),
-              child: child,
-            ),
+            builder: (context, child) {
+              final x = _offset.value;
+              // O lado que aparece: à direita ao arrastar para a esquerda.
+              final side = x < 0 ? 1 : -1;
+              final preview = _preview(x);
+              return Stack(
+                children: [
+                  if (x != 0 && preview != null)
+                    Positioned.fill(
+                      child: Transform.translate(
+                        offset: Offset(x + side * _width, 0),
+                        // Só para ver: os toques ficam com o slot atual.
+                        child: IgnorePointer(
+                          key: ValueKey('swipe-preview-$side'),
+                          child: preview,
+                        ),
+                      ),
+                    )
+                  else if (x != 0 && _target(x) == null)
+                    // Começo ou fim do dex, no espaço que o conteúdo abriu.
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: x > 0 ? 0 : null,
+                      right: x < 0 ? 0 : null,
+                      width: x.abs(),
+                      child: _DexEdge(end: x < 0),
+                    ),
+                  // Com chave: a prévia entra antes na lista e o slot atual
+                  // não é recriado (perderia a rolagem e a aba).
+                  Transform.translate(
+                    key: const ValueKey('swipe-current'),
+                    offset: Offset(x, 0),
+                    child: child,
+                  ),
+                ],
+              );
+            },
             child: widget.child,
           ),
         ),
       );
     },
   );
+}
+
+/// "Início do dex" ou "Fim do dex", no espaço que o gesto abriu.
+class _DexEdge extends StatelessWidget {
+  const _DexEdge({required this.end});
+
+  final bool end;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Center(
+      child: OverflowBox(
+        maxWidth: 80,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 6,
+          children: [
+            Icon(Icons.pause, color: color),
+            Text(
+              end ? context.l10n.swipeDexEnd : context.l10n.swipeDexStart,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall
+                  ?.copyWith(color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A prévia da box vizinha (#267): ela pode não ter carregado, então
+/// mostra só o nome, e ao soltar vai para o primeiro slot dela (ou o
+/// último, voltando).
+class BoxPreview extends StatelessWidget {
+  const BoxPreview({required this.boxName, required this.forward, super.key});
+
+  final String boxName;
+
+  /// Para a box seguinte (`false`: a anterior).
+  final bool forward;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final l10n = context.l10n;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 64, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 10,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: scheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                Icons.grid_view,
+                size: 34,
+                color: scheme.onSecondaryContainer,
+              ),
+            ),
+            Text(
+              (forward ? l10n.swipeNextBox : l10n.swipePreviousBox)
+                  .toUpperCase(),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                letterSpacing: 0.8,
+              ),
+            ),
+            Text(
+              boxName,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              forward ? l10n.swipeNextBoxHint : l10n.swipePreviousBoxHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
