@@ -244,7 +244,8 @@ class _Filters extends ConsumerWidget {
         ],
     };
     final chips = <Widget>[
-      // Situação · Motivos · Jogo, a mesma ordem do inventário (#217).
+      // Situação · Jogo · Motivos (#251): o que falta e onde ficam juntos;
+      // o refinamento vem depois, como a Raridade no inventário.
       MenuChip(
         label: context.l10n.filterSituation,
         icons: [?_situationIcon(query.situation)],
@@ -276,6 +277,13 @@ class _Filters extends ConsumerWidget {
             ),
         ],
       ),
+      if (savesOf.isNotEmpty)
+        _GameChip(
+          dexId: dexId,
+          query: query,
+          savesOf: savesOf,
+          onChanged: onChanged,
+        ),
       MenuChip(
         label: context.l10n.filterReasons,
         icons: [for (final r in query.reasons) _reasonIcon(r)],
@@ -324,13 +332,6 @@ class _Filters extends ConsumerWidget {
           ),
         ],
       ),
-      if (savesOf.isNotEmpty)
-        _GameChip(
-          dexId: dexId,
-          query: query,
-          savesOf: savesOf,
-          onChanged: onChanged,
-        ),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

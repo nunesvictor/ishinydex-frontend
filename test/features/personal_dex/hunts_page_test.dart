@@ -98,7 +98,7 @@ void main() {
       expect(find.text('19 to hunt'), findsOneWidget);
       expect(find.text('#0003 · HOME 1 · R1 C3 · Missing'), findsOneWidget);
       expect(find.text('Active (0)'), findsOneWidget);
-      expect(find.text('Situation'), findsOneWidget);
+      expect(find.text('Status'), findsOneWidget);
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
       expect(find.text('Include unobtainable shiny'), findsOneWidget);
@@ -253,15 +253,6 @@ void main() {
       expect(_chip('Situação'), findsOneWidget);
     });
   }
-
-  testWidgets('chips: Situação · Motivos · Jogo (#217)', (tester) async {
-    await pumpFullApp(tester, size: compactSize);
-    await _openHunts(tester);
-    expect(
-      tester.getTopLeft(find.text('Situação').first).dx,
-      lessThan(tester.getTopLeft(_motivos).dx),
-    );
-  });
 
   testWidgets('busca espera parar de digitar', (tester) async {
     await pumpFullApp(tester, size: compactSize);

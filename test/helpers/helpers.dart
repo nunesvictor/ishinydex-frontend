@@ -29,6 +29,18 @@ Finder ballSprite(Pattern label) => find.byWidgetPredicate(
 final AppLocalizations ptText = lookupAppLocalizations(const Locale('pt'));
 final AppLocalizations enText = lookupAppLocalizations(const Locale('en'));
 
+/// Os índices de [finders] na ordem de leitura da tela: linha a linha, da
+/// esquerda para a direita (chips que quebram linha).
+List<int> readingOrder(WidgetTester tester, List<Finder> finders) {
+  final rects = [for (final f in finders) tester.getRect(f)];
+  return [for (var i = 0; i < rects.length; i++) i]..sort((a, b) {
+    final (ra, rb) = (rects[a], rects[b]);
+    return ra.top != rb.top
+        ? ra.top.compareTo(rb.top)
+        : ra.left.compareTo(rb.left);
+  });
+}
+
 const compactSize = Size(400, 800);
 const mediumSize = Size(900, 900);
 const expandedSize = Size(1400, 900);
