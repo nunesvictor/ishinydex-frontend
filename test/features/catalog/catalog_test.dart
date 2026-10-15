@@ -116,6 +116,52 @@ void main() {
     expect(catalog.formDetail(3).otherForms.single.name, 'venusaur-mega');
   });
 
+  test('formas regionais: a linha pelas evoluções curadas (#252)', () {
+    // Como o Meowth de Galar (que só vira Perrserker) e o Farfetch'd comum
+    // (que não vira Sirfetch'd): no catálogo de teste, o Eevee só vira
+    // Espeon, e o Vaporeon de Galar não evolui nem vem de outro.
+    final regional = Catalog.fromJson({
+      ...catalogJson(),
+      'formEvolutions': {
+        'evolutions': [
+          [1, 2],
+          [2, 3],
+          [133, 196],
+        ],
+        'withoutEvolution': [10600],
+      },
+    }, spriteBase: '$_base/');
+    List<List<String>> names(int id) => [
+      for (final stage in regional.formDetail(id).evolutionChain)
+        [for (final f in stage) f.name],
+    ];
+    // O caminho da forma: de onde ela vem e o que vem dela.
+    expect(names(2), [
+      ['bulbasaur'],
+      ['ivysaur'],
+      ['venusaur'],
+    ]);
+    expect(names(196), [
+      ['eevee'],
+      ['espeon'],
+    ]);
+    expect(names(133), [
+      ['eevee'],
+      ['espeon'],
+    ]);
+    expect(names(10600), isEmpty);
+    // Fora das arestas: pela espécie, como antes.
+    expect(names(134), [
+      ['eevee'],
+      ['vaporeon', 'espeon'],
+    ]);
+    // A regra do "evoluiu fora do HOME" também.
+    expect(regional.evolvesFromForm(196), 133);
+    expect(regional.evolvesFromForm(10600), isNull);
+    expect(regional.evolvesFromForm(1), isNull);
+    expect(regional.evolvesFromForm(134), 133);
+  });
+
   test('linha evolutiva em estágios, com ramificação e sem a Mega', () {
     List<List<String>> names(int id) => [
       for (final stage in catalog.formDetail(id).evolutionChain)

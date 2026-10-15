@@ -33,6 +33,8 @@ class Catalog {
     required this._gameLocks,
     required this.shinyMethods,
     required this.shinyOdds,
+    required this._formEvolutions,
+    required this._withoutEvolution,
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
@@ -256,7 +258,76 @@ class Catalog {
         for (final o in _objects(json['shinyOdds'] ?? const <Object>[]))
           OddsRule.fromJson(o),
       ],
+      // Catálogo antigo, sem a chave: a linha evolutiva só pela espécie.
+      formEvolutions: switch (json['formEvolutions']) {
+        {'evolutions': final List<Object?> edges} => [
+          for (final e in edges.cast<List<Object?>>())
+            (from: e[0]! as int, to: e[1]! as int),
+        ],
+        _ => const [],
+      },
+      withoutEvolution: switch (json['formEvolutions']) {
+        {'withoutEvolution': final List<Object?> ids} => {
+          for (final id in ids) id! as int,
+        },
+        _ => const {},
+      },
     );
+  }
+
+  /// As evoluções entre formas das famílias com forma regional
+  /// (backend#121): o Rattata de Alola vira o Raticate de Alola, e não o
+  /// comum. Vazio em catálogo antigo.
+  final List<({int from, int to})> _formEvolutions;
+
+  /// Formas dessas famílias que não evoluem (o Farfetch'd comum).
+  final Set<int> _withoutEvolution;
+
+  /// Forma → a forma da qual ela evolui, pelas arestas curadas.
+  late final Map<int, int> _formParent = {
+    for (final e in _formEvolutions) e.to: e.from,
+  };
+
+  /// Forma → as formas em que ela evolui, pelas arestas curadas.
+  late final Map<int, List<int>> _formChildren = () {
+    final result = <int, List<int>>{};
+    for (final e in _formEvolutions) {
+      (result[e.from] ??= []).add(e.to);
+    }
+    return result;
+  }();
+
+  /// A forma tem a evolução curada (está numa aresta ou não evolui).
+  bool _curated(int formId) =>
+      _withoutEvolution.contains(formId) ||
+      _formParent.containsKey(formId) ||
+      _formChildren.containsKey(formId);
+
+  /// A linha evolutiva de uma forma curada: só o caminho dela, das formas
+  /// das quais ela vem até as que vêm dela (o Raichu de Alola: Pichu →
+  /// Pikachu → Raichu de Alola). Vazia se ela não evolui nem vem de outra.
+  List<List<FormRef>> _formChain(int formId) {
+    final up = <int>[];
+    final seen = {formId};
+    for (var id = _formParent[formId]; id != null && seen.add(id);) {
+      up.insert(0, id);
+      id = _formParent[id];
+    }
+    final stages = [
+      for (final id in up) [id],
+      [formId],
+    ];
+    while (true) {
+      final next = [for (final id in stages.last) ...?_formChildren[id]]
+          .where(seen.add)
+          .toList();
+      if (next.isEmpty) break;
+      stages.add(next);
+    }
+    if (stages.length == 1) return const [];
+    return [
+      for (final stage in stages) [for (final id in stage) formRef(id)],
+    ];
   }
 
   /// As regras de odds (backend#113; vazio em catálogo antigo).
@@ -408,7 +479,11 @@ class Catalog {
         for (final entry in _originMarks.keys)
           if (_groupOfVersion[entry] == form.versionGroup) entry,
       ],
-      evolutionChain: species == null ? const [] : _evolutionChain(species),
+      evolutionChain: _curated(formId)
+          ? _formChain(formId)
+          : species == null
+          ? const []
+          : _evolutionChain(species),
       otherForms: [
         if (species != null)
           for (final other in _formsOfSpecies[species.name] ?? const <int>[])
@@ -628,6 +703,8 @@ class Catalog {
   /// Forma padrão da espécie da qual [formId] evolui (a regra do
   /// "evoluiu fora do HOME"); `null` se não evolui de nenhuma.
   int? evolvesFromForm(int formId) {
+    // Nas famílias com forma regional, a forma certa (backend#121).
+    if (_curated(formId)) return _formParent[formId];
     final species = _speciesOf(_forms[formId]!);
     final from = _species[species?.evolvesFrom];
     return from == null ? null : _defaultFormOf(from);
