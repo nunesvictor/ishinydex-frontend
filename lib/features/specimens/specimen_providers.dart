@@ -1,8 +1,13 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/core/clock.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/web/browser.dart' as browser;
+import 'package:ishinydex/core/web/share_outcome.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -186,3 +191,36 @@ List<Specimen> sortForDeposit(
     if (aMatches != bMatches) return aMatches - bMatches;
     return a.id.compareTo(b.id);
   });
+
+/// Compartilha um arquivo pela folha do sistema (Web Share, #243); os
+/// testes trocam.
+typedef FileSharer = Future<ShareOutcome> Function(
+  Uint8List bytes, {
+  required String name,
+  required String type,
+});
+
+final fileSharerProvider = Provider<FileSharer>((ref) => browser.shareFile);
+
+/// Transforma o que está desenhado em [boundary] num PNG, em [pixelRatio]
+/// pixels por ponto (#243); os testes trocam.
+typedef PngCapturer = Future<Uint8List> Function(
+  RenderRepaintBoundary boundary,
+  double pixelRatio,
+);
+
+final pngCapturerProvider = Provider<PngCapturer>((ref) => capturePng);
+
+/// O [PngCapturer] de verdade: `toImage` e a conversão para PNG.
+Future<Uint8List> capturePng(
+  RenderRepaintBoundary boundary,
+  double pixelRatio,
+) async {
+  final image = await boundary.toImage(pixelRatio: pixelRatio);
+  try {
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  } finally {
+    image.dispose();
+  }
+}

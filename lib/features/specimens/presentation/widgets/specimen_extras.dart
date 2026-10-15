@@ -110,7 +110,11 @@ Widget? specimenFooter({
     if (save != null) LocationTile(save: save, since: since),
     if (champions != null) ChampionsTile(since: champions),
     if (hunt != null)
-      HuntRecordCard(hunt: hunt, capturedAt: specimen!.capturedAt),
+      HuntRecordCard(
+        hunt: hunt,
+        capturedAt: specimen!.capturedAt,
+        specimen: specimen,
+      ),
     ?trailing,
   ];
   if (children.isEmpty) return null;

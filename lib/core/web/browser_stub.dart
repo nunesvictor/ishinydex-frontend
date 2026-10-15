@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:ishinydex/core/web/share_outcome.dart';
+
 /// Arquivo escolhido: nome e conteúdo.
 typedef PickedFile = ({String name, Uint8List bytes});
 
@@ -21,3 +23,10 @@ void onAppUpdateReady(void Function() onReady) {}
 
 /// Fora do navegador não há página: ver `browser_web.dart`.
 void reloadPage() => throw UnsupportedError('Só no navegador.');
+
+/// Fora do navegador não há página: ver `browser_web.dart`.
+Future<ShareOutcome> shareFile(
+  Uint8List bytes, {
+  required String name,
+  required String type,
+}) => throw UnsupportedError('Só no navegador.');
