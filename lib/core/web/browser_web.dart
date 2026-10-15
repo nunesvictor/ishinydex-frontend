@@ -4,6 +4,7 @@ import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/web/share_outcome.dart';
 import 'package:web/web.dart' as web;
 
 /// Arquivo escolhido: nome e conteúdo.
@@ -84,3 +85,55 @@ void reloadPage() => web.window.location.reload();
 /// Troca o endereço na barra sem recarregar (tira o `?code=` da volta do
 /// login, para um recarregamento não tentar usá-lo de novo).
 void replaceUrl(String url) => web.window.history.replaceState(null, '', url);
+
+/// Compartilha [bytes] como o arquivo [name] pela folha do sistema (Web
+/// Share com arquivo, #243). Sem suporte, baixa o arquivo.
+///
+/// O Safari do iOS só abre a folha se `navigator.share` for chamado logo
+/// depois do toque: por isso o arquivo já chega pronto, e nada assíncrono
+/// vem antes da chamada.
+Future<ShareOutcome> shareFile(
+  Uint8List bytes, {
+  required String name,
+  required String type,
+}) async {
+  final file = web.File(
+    [bytes.toJS].toJS,
+    name,
+    web.FilePropertyBag(type: type),
+  );
+  final data = web.ShareData(files: [file].toJS);
+  final navigator = web.window.navigator;
+  var canShare = false;
+  try {
+    canShare = navigator.canShare(data);
+  } on Object {
+    canShare = false;
+  }
+  if (!canShare) {
+    _download(file, name);
+    return ShareOutcome.downloaded;
+  }
+  try {
+    await navigator.share(data).toDart;
+    return ShareOutcome.shared;
+  } on Object catch (error) {
+    final message = error.toString();
+    if (message.contains('AbortError')) return ShareOutcome.cancelled;
+    if (message.contains('NotAllowedError')) return ShareOutcome.notAllowed;
+    return ShareOutcome.failed;
+  }
+}
+
+/// Baixa [file] com um link temporário.
+void _download(web.File file, String name) {
+  final url = web.URL.createObjectURL(file);
+  final link = web.HTMLAnchorElement()
+    ..href = url
+    ..download = name;
+  web.document.body!.append(link);
+  link
+    ..click()
+    ..remove();
+  web.URL.revokeObjectURL(url);
+}

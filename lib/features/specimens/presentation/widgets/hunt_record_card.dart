@@ -1,18 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/hunt_share_sheet.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// O registro da caçada no detalhe do espécime (#163): "Soft reset · 4.213
-/// resets · 3 meses", as datas de início e de captura e o botão do post.
+/// resets · 3 meses", as datas de início e de captura, o botão do post e,
+/// num shiny, o de compartilhar o card (#243).
 class HuntRecordCard extends ConsumerWidget {
-  const HuntRecordCard({required this.hunt, this.capturedAt, super.key});
+  const HuntRecordCard({
+    required this.hunt,
+    this.capturedAt,
+    this.specimen,
+    super.key,
+  });
 
   final HuntRecord hunt;
   final DateTime? capturedAt;
+
+  /// O espécime da caçada: com ele (e shiny), o botão de compartilhar.
+  final Specimen? specimen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,6 +84,12 @@ class HuntRecordCard extends ConsumerWidget {
                 ],
               ),
             ),
+            if (_shareData(context, ref) case final data?)
+              IconButton(
+                tooltip: context.l10n.shareHunt,
+                onPressed: () => unawaited(showHuntShareSheet(context, data)),
+                icon: const Icon(Icons.ios_share),
+              ),
             if (post != null)
               TextButton.icon(
                 onPressed: () => ref.read(openLinkProvider)(post),
@@ -80,6 +99,38 @@ class HuntRecordCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// O que o card mostra; `null` sem espécime shiny com forma.
+  HuntShareData? _shareData(BuildContext context, WidgetRef ref) {
+    final specimen = this.specimen;
+    final form = specimen?.formRef;
+    if (specimen == null || form == null || !specimen.isShiny) return null;
+    final method = ref
+        .watch(shinyMethodsProvider)(null)
+        .where((m) => m.id == hunt.method)
+        .firstOrNull;
+    final ot = ref
+        .watch(trainersProvider)
+        .value
+        ?.where((t) => t.id == specimen.ot)
+        .firstOrNull;
+    return HuntShareData(
+      name: form.displayName,
+      dexNumber: form.dexNumber,
+      spriteUrl: form.spriteFor(shiny: true),
+      version: ot?.version,
+      capturedAt: capturedAt,
+      startedAt: hunt.startedAt,
+      method: method == null
+          ? null
+          : context.catalogText(method.label, method.labels),
+      count: hunt.count,
+      unit: hunt.unit,
+      odds: hunt.odds,
+      multiple: hunt.multiple,
+      bestChain: hunt.bestChain,
     );
   }
 }
