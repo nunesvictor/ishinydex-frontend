@@ -4,6 +4,7 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/species_info.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/type_matchups.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -80,11 +81,28 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
       switch (_tab) {
         _Tab.summary => _summary(),
         _Tab.species => _withForm(
-          (form) => SpeciesInfo(
-            form: form,
-            dexId: widget.dexId,
-            onOpenSlot: widget.onOpenSlot,
-            onOpenForm: widget.onOpenForm,
+          (form) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 12,
+            children: [
+              // Forças e fraquezas pelos tipos da forma (#230). Ficam aqui,
+              // e não no Resumo, para o detalhe do espécime continuar
+              // cabendo sem rolar no iPhone (#207).
+              TypeMatchupsCard(
+                types: [
+                  for (final t in [
+                    ...form.types,
+                  ]..sort((a, b) => a.slot.compareTo(b.slot)))
+                    t.type,
+                ],
+              ),
+              SpeciesInfo(
+                form: form,
+                dexId: widget.dexId,
+                onOpenSlot: widget.onOpenSlot,
+                onOpenForm: widget.onOpenForm,
+              ),
+            ],
           ),
         ),
       },

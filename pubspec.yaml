@@ -49,6 +49,7 @@ flutter:
     - assets/game_icons/
     - assets/icons/
     - assets/origin_marks/
+    - assets/type_icons/
   # A Roboto vai junto com o app (#212): sem ela, o motor da web baixa a
   # fonte do Google antes do primeiro quadro, e um atraso deixa os números
   # espaçados. Daqui, o service worker guarda e funciona sem internet.

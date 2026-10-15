@@ -7,6 +7,7 @@ import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
+import 'package:ishinydex/core/widgets/type_chip.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
@@ -155,9 +156,7 @@ class _SpecimenFiltersPanelState extends ConsumerState<SpecimenFiltersPanel> {
                 child: _chips([
                   for (final type in options.type)
                     FilterChip(
-                      avatar: type.spriteUrl == null
-                          ? null
-                          : PokemonSprite(url: type.spriteUrl, size: 18),
+                      avatar: TypeIcon(type.value),
                       label: Text(context.l10n.choice(type)),
                       selected: _draft.types.contains(type.value),
                       onSelected: _canToggleType(type.value)

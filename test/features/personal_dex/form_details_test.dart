@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
-import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/type_chip.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -50,16 +50,21 @@ void main() {
       await pump(tester, size: size);
       await tester.pumpAndSettle();
 
+      // Os tipos com o ícone do HOME e o nome (#230), depois os selos.
+      expect(
+        tester.widgetList<TypeChip>(find.byType(TypeChip)).map((c) => c.type),
+        ['grass', 'poison'],
+      );
+      expect(
+        tester.widgetList<TypeIcon>(find.byType(TypeIcon)).map((i) => i.type),
+        ['grass', 'poison'],
+      );
+      expect(find.text('Grass'), findsOneWidget);
       final labels = tester
           .widgetList<Chip>(find.byType(Chip))
           .map((c) => (c.label as Text).data)
           .toList();
-      expect(labels, ['Grass', 'Poison', 'Shiny-lock', 'Só distribuição']);
-      // Só o tipo com sprite_url ganha o ícone no chip.
-      final sprites = tester
-          .widgetList<PokemonSprite>(find.byType(PokemonSprite))
-          .map((s) => s.url);
-      expect(sprites, ['http://x/types/small/12.png']);
+      expect(labels, ['Shiny-lock', 'Só distribuição']);
       expect(
         find.text('Habilidades: Overgrow · Chlorophyll (oculta)'),
         findsOneWidget,

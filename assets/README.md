@@ -1,6 +1,6 @@
 # Assets
 
-Fora de `game_icons/`, `icons/` e `origin_marks/` para não entrar no bundle (o `pubspec.yaml` declara as pastas inteiras).
+Fora de `game_icons/`, `icons/`, `origin_marks/` e `type_icons/` para não entrar no bundle (o `pubspec.yaml` declara as pastas inteiras).
 
 ## Marcas de origem (`origin_marks/`)
 
@@ -69,3 +69,10 @@ Usado por `ShinyIcon` (`lib/core/widgets/mark_icons.dart`), que volta ao emoji �
 ## Fonte (`fonts/`)
 
 A Roboto (Regular, Medium e Bold), da pasta `web/static` da release [v3.015 do roboto-classic](https://github.com/googlefonts/roboto-classic/releases/tag/v3.015), sob a licença SIL Open Font License 1.1 (`fonts/OFL.txt`). Ela vai junto com o app (#212): sem uma família `Roboto` declarada no `pubspec.yaml`, o motor do Flutter na web baixa a fonte do `fonts.gstatic.com` antes do primeiro quadro. Esse download fica fora do cache do service worker e, se atrasar (comum na primeira abertura depois de uma atualização), os números saem espaçados. O `pubspec.yaml` declara os três arquivos um a um, então o `OFL.txt` não entra no bundle.
+
+## Ícones de tipo (`type_icons/`)
+
+Os ícones dos 18 tipos no Pokémon HOME (64×64, círculo colorido com o símbolo branco), baixados da Bulbagarden Archives como `<Tipo>_icon_HOME3.png` (ex.: `Fire_icon_HOME3.png`), com o nome do tipo em minúsculas, como no catálogo. Mesma ressalva de propriedade das marcas de origem.
+
+Usados por `TypeIcon` (`lib/core/widgets/type_chip.dart`) nos chips de tipo (ficha da forma, quadro "Tipos em batalha" e filtros, #230). Um tipo sem ícone (o Stellar) mostra só a cor.
+
