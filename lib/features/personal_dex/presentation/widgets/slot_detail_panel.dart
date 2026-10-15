@@ -9,6 +9,7 @@ import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_swipe.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/active_hunt_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
@@ -219,46 +220,21 @@ class SlotDetailPanel extends ConsumerWidget {
     );
   }
 
-  /// Com [navigation]: o gesto de deslizar, a transição entre um slot e
-  /// outro e o balão da troca de box, por cima do conteúdo.
-  ///
-  /// O gesto é um `GestureDetector` horizontal, e não um `PageView`: as
-  /// páginas vizinhas teriam de estar prontas antes (e a da box vizinha nem
-  /// carregou ainda). Como a rolagem do painel é vertical, os dois gestos
-  /// não disputam o mesmo toque.
+  /// Com [navigation]: o gesto de deslizar entre slots, acompanhando o
+  /// dedo ([SlotSwipe], #256), e o balão da troca de box, parado por cima.
+  /// Como a rolagem do painel é vertical, os dois gestos não disputam o
+  /// mesmo toque.
   Widget _navigable(BuildContext context, Widget content) {
     final navigation = this.navigation;
     if (navigation == null) return content;
     final notice = navigation.notice;
     return Stack(
       children: [
-        GestureDetector(
-          onHorizontalDragEnd: (details) {
-            final velocity = details.primaryVelocity ?? 0;
-            // Dedo para a esquerda: o próximo slot, como virar uma página.
-            if (velocity < -_swipeVelocity) navigation.onNext?.call();
-            if (velocity > _swipeVelocity) navigation.onPrevious?.call();
-          },
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            // O slot novo entra pelo lado de onde veio o passo, por cima do
-            // antigo, que só some.
-            layoutBuilder: (current, previous) => Stack(
-              alignment: Alignment.topCenter,
-              children: [...previous, ?current],
-            ),
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween(
-                  begin: Offset(0.15 * navigation.direction, 0),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
-            ),
-            child: content,
-          ),
+        SlotSwipe(
+          direction: navigation.direction,
+          onPrevious: navigation.onPrevious,
+          onNext: navigation.onNext,
+          child: content,
         ),
         if (notice != null)
           Positioned(
@@ -270,7 +246,4 @@ class SlotDetailPanel extends ConsumerWidget {
       ],
     );
   }
-
-  /// Velocidade mínima (px/s) para o gesto contar como deslizar.
-  static const _swipeVelocity = 200.0;
 }
