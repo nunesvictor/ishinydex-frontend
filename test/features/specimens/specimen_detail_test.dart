@@ -8,6 +8,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_sheet.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
@@ -114,6 +115,18 @@ void main() {
       await tester.tap(find.text('ver menos'));
       await tester.pumpAndSettle();
       expect(find.text('ver mais'), findsOneWidget);
+    });
+
+    testWidgets('tela larga: conteúdo em até 720 px e campos juntos (#250)', (
+      tester,
+    ) async {
+      await pumpDetail(tester, size: const Size(1600, 1600));
+      expect(tester.getSize(find.byType(DetailBody)).width, 720);
+      final ot = tester.getTopLeft(find.text('Treinador original'));
+      final date = tester.getTopLeft(find.text('Data de captura'));
+      // Lado a lado, a uma coluna (260 px) mais o espaço entre elas.
+      expect(date.dy, ot.dy);
+      expect(date.dx - ot.dx, 260 + 16);
     });
 
     for (final size in [compactSize, expandedSize]) {

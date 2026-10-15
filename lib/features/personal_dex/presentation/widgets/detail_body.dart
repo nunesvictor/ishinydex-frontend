@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -167,7 +169,8 @@ class FieldGrid extends StatelessWidget {
   /// Campos já preenchidos (nome, valor).
   final List<(String, String)> fields;
 
-  /// O campo de texto livre, em largura total.
+  /// Largura máxima de cada coluna.
+  static const _maxColumn = 260.0;
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +191,8 @@ class FieldGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const gap = 16.0;
-        final half = (constraints.maxWidth - gap) / 2;
+        // Duas colunas, mas sem afastar os pares numa tela larga (#250).
+        final half = math.min((constraints.maxWidth - gap) / 2, _maxColumn);
         return Wrap(
           spacing: gap,
           runSpacing: 10,

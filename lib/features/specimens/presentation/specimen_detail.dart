@@ -84,53 +84,65 @@ class _Details extends ConsumerWidget {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: DetailBody(
-              spriteUrl: specimen.spriteUrl,
-              semanticLabel: specimen.displayName,
-              title: SpecimenHeadline(
-                name: specimen.displayName,
-                pokeballSpriteUrl: specimen.pokeballSpriteUrl,
-                pokeballLabel: specimen.pokeball == null
-                    ? null
-                    : prettifyName(specimen.pokeball!),
-                gender: specimen.gender,
-                isShiny: specimen.isShiny,
-                isAlpha: specimen.isAlpha,
-                isFromGo: specimen.isFromGo,
-                style: theme.textTheme.titleLarge,
-              ),
-              subtitle: form == null
-                  ? null
-                  : '${form.displayName} · ${form.dexNumber}',
-              formId: form?.id,
-              tabsKey: ValueKey('tabs-${specimen.id}'),
-              highlightAbility: specimen.ability,
-              chips: [
-                if (specimen.isDeposited)
-                  Chip(
-                    avatar: const Icon(Icons.inventory_2, color: Colors.green),
-                    label: Text(context.l10n.depositedLabel),
-                  )
-                else
-                  Chip(
-                    avatar: const Icon(Icons.radio_button_unchecked),
-                    label: Text(context.l10n.availableLabel),
+            // No PC, o painel passa de 1.000 px: sem limite, os campos e o
+            // cartão de status se espalham pela largura toda (#250).
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: DetailBody(
+                  spriteUrl: specimen.spriteUrl,
+                  semanticLabel: specimen.displayName,
+                  title: SpecimenHeadline(
+                    name: specimen.displayName,
+                    pokeballSpriteUrl: specimen.pokeballSpriteUrl,
+                    pokeballLabel: specimen.pokeball == null
+                        ? null
+                        : prettifyName(specimen.pokeball!),
+                    gender: specimen.gender,
+                    isShiny: specimen.isShiny,
+                    isAlpha: specimen.isAlpha,
+                    isFromGo: specimen.isFromGo,
+                    style: theme.textTheme.titleLarge,
                   ),
-                if (OriginMark.fromSlug(specimen.originMark) case final mark?)
-                  OriginMarkChip(mark),
-                if (specimen.isVisitingChampions) const ChampionsChip(),
-                ?languageTag(context, ref, specimen.language),
-                ?homeTagOf(ref, specimen.location),
-              ],
-              fields: specimenFields(context, ref, specimen),
-              footer: specimenFooter(
-                save: specimen.location,
-                since: specimen.locationSince,
-                specimen: specimen,
+                  subtitle: form == null
+                      ? null
+                      : '${form.displayName} · ${form.dexNumber}',
+                  formId: form?.id,
+                  tabsKey: ValueKey('tabs-${specimen.id}'),
+                  highlightAbility: specimen.ability,
+                  chips: [
+                    if (specimen.isDeposited)
+                      Chip(
+                        avatar: const Icon(
+                          Icons.inventory_2,
+                          color: Colors.green,
+                        ),
+                        label: Text(context.l10n.depositedLabel),
+                      )
+                    else
+                      Chip(
+                        avatar: const Icon(Icons.radio_button_unchecked),
+                        label: Text(context.l10n.availableLabel),
+                      ),
+                    if (OriginMark.fromSlug(specimen.originMark)
+                        case final mark?)
+                      OriginMarkChip(mark),
+                    if (specimen.isVisitingChampions) const ChampionsChip(),
+                    ?languageTag(context, ref, specimen.language),
+                    ?homeTagOf(ref, specimen.location),
+                  ],
+                  fields: specimenFields(context, ref, specimen),
+                  footer: specimenFooter(
+                    save: specimen.location,
+                    since: specimen.locationSince,
+                    specimen: specimen,
+                  ),
+                  nature: specimen.nature,
+                  // Fora de um dex não há slot: a forma tocada abre a ficha.
+                  onOpenForm: (other) => showFormSheet(context, other),
+                ),
               ),
-              nature: specimen.nature,
-              // Fora de um dex não há slot: a forma tocada abre a ficha.
-              onOpenForm: (other) => showFormSheet(context, other),
             ),
           ),
         ),
