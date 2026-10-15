@@ -517,6 +517,24 @@ novo e a `duration`, sem `AnimationController`. Na busca do dex:
 - `AnimatedSwitcher` faz o "Cancelar" e o painel de resultados aparecerem e
   sumirem com fade.
 
+**Animações explícitas.** Quando a animação depende do dedo, as implícitas
+não bastam: o valor muda a cada quadro do gesto, e depois precisa continuar
+de onde parou. O deslizar entre slots
+([`SlotSwipe`](../lib/features/personal_dex/presentation/widgets/slot_swipe.dart),
+#256) usa um `AnimationController.unbounded`, cujo valor é o deslocamento em
+px:
+
+- durante o gesto, `onHorizontalDragUpdate` soma o movimento do dedo ao
+  valor (um `AnimatedBuilder` com `Transform.translate` redesenha);
+- ao soltar, `animateTo` termina a saída na velocidade do dedo, ou
+  `animateWith(SpringSimulation(...))` volta com uma mola, que parte da
+  velocidade do gesto;
+- o slot novo chega com outra `key`; o `didUpdateWidget` percebe e o faz
+  entrar pelo lado oposto.
+
+O `SingleTickerProviderStateMixin` dá ao controller o relógio da tela (o
+`vsync`), que para quando a tela não está visível.
+
 ### Desenho próprio: `CustomPainter`
 
 O hexágono dos status base
