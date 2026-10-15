@@ -1,4 +1,5 @@
-"""Gera todos os ícones do app: brilho shiny dourado sobre o índigo do tema.
+"""Gera todos os ícones do app na identidade C · Clássico (#162): brilho
+vermelho de 4 pontas e um ponto amarelo sobre o grafite.
 
 Uso (na raiz do repositório; precisa do Pillow: `pip install pillow`):
 
@@ -16,54 +17,45 @@ from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 S = 4096
-INDIGO = (63, 81, 181)  # #3F51B5, theme_color do manifest
-INDIGO_LIGHT = (92, 107, 192)  # #5C6BC0
-GOLD = (255, 202, 40)  # #FFCA28
-GOLD_LIGHT = (255, 236, 179)  # #FFECB3
+GRAPHITE = (38, 35, 42)  # #26232A, theme_color do manifest
+GRAPHITE_LIGHT = (58, 54, 64)  # #3A3640
+RED = (229, 57, 53)  # #E53935
+YELLOW = (255, 203, 5)  # #FFCB05
+
+# O desenho do mock aprovado (viewBox 24×24, num ícone de 96 com 60 de
+# desenho): o brilho em (12, 12) com raio 10 e o ponto em (19, 5), raio 1,8.
+CONTENT = 60 / 96
 
 
-def sparkle(cx, cy, r, pinch=0.18, steps=64):
-    """Estrela de 4 pontas com lados côncavos (curvas de Bézier quadráticas)."""
-    tips = [(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)]
-    points = []
-    for i in range(4):
-        (x0, y0), (x2, y2) = tips[i], tips[(i + 1) % 4]
-        # Controle perto do centro: quanto menor o pinch, mais fina a ponta.
-        mx, my = (x0 + x2) / 2, (y0 + y2) / 2
-        x1, y1 = cx + (mx - cx) * pinch, cy + (my - cy) * pinch
-        for step in range(steps):
-            t = step / steps
-            a, b, c = (1 - t) ** 2, 2 * (1 - t) * t, t**2
-            points.append((a * x0 + b * x1 + c * x2, a * y0 + b * y1 + c * y2))
-    return points
+def star(cx, cy, r, inner=0.31):
+    """Estrela de 4 pontas com lados retos (o brilho do mock)."""
+    d = r * inner / 2**0.5
+    return [
+        (cx, cy - r), (cx + d, cy - d), (cx + r, cy), (cx + d, cy + d),
+        (cx, cy + r), (cx - d, cy + d), (cx - r, cy), (cx - d, cy - d),
+    ]
 
 
-def draw(scale=1.0, small_sparkles=True):
+def draw(scale=1.0, dot=True):
     """Desenha o ícone em S×S.
 
-    scale < 1 encolhe o desenho (zona segura do ícone maskable); sem as
-    estrelas pequenas para tamanhos em que elas sumiriam (favicon).
+    scale < 1 encolhe o desenho (zona segura do ícone maskable); sem o ponto
+    amarelo nos tamanhos em que ele sumiria (favicon).
     """
-    image = Image.new("RGB", (S, S), INDIGO)
+    image = Image.new("RGB", (S, S), GRAPHITE)
     # Luz radial suave no centro, para dar profundidade.
     glow = Image.new("L", (S, S), 0)
     ImageDraw.Draw(glow).ellipse([S * 0.15, S * 0.12, S * 0.85, S * 0.82], fill=150)
     glow = glow.filter(ImageFilter.GaussianBlur(S * 0.12))
-    image = Image.composite(Image.new("RGB", (S, S), INDIGO_LIGHT), image, glow)
+    image = Image.composite(Image.new("RGB", (S, S), GRAPHITE_LIGHT), image, glow)
 
-    c, k = S / 2, scale
-    # (cx, cy, raio, cor): brilho grande + dois pequenos, como o ✨.
-    shapes = [
-        (c - S * 0.06 * k, c + S * 0.05 * k, S * 0.30 * k, GOLD),
-        (c + S * 0.23 * k, c - S * 0.21 * k, S * 0.11 * k, GOLD_LIGHT),
-        (c + S * 0.20 * k, c + S * 0.25 * k, S * 0.06 * k, GOLD_LIGHT),
-    ]
+    unit = S * CONTENT * scale / 24  # 1 unidade do viewBox, em px
+    c = S / 2
     canvas = ImageDraw.Draw(image)
-    for cx, cy, r, color in shapes if small_sparkles else shapes[:1]:
-        canvas.polygon(sparkle(cx, cy, r), fill=color)
-    # Núcleo claro no brilho principal.
-    cx, cy, r, _ = shapes[0]
-    canvas.polygon(sparkle(cx, cy, r * 0.42, pinch=0.3), fill=GOLD_LIGHT)
+    canvas.polygon(star(c, c, 10 * unit), fill=RED)
+    if dot:
+        x, y, r = c + 7 * unit, c - 7 * unit, 1.8 * unit
+        canvas.ellipse([x - r, y - r, x + r, y + r], fill=YELLOW)
     return image
 
 
@@ -76,7 +68,7 @@ def save(image, size, path):
 def main():
     full = draw()
     maskable = draw(scale=0.8)  # conteúdo dentro do círculo de 80%
-    favicon = draw(scale=1.25, small_sparkles=False)
+    favicon = draw(scale=1.4, dot=False)
 
     web = ROOT / "web"
     save(favicon, 16, web / "favicon.png")

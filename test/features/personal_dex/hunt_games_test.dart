@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/theme/version_colors.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -71,6 +72,15 @@ Future<void> _toggleGames(
   await tester.pumpAndSettle();
 }
 
+/// O chip Jogo, pelo tooltip (com jogos marcados, ele só mostra ícones).
+FilterChip _gameChip(WidgetTester tester, String tooltip) =>
+    tester.widget<FilterChip>(
+      find.ancestor(
+        of: find.byTooltip(tooltip),
+        matching: find.byType(FilterChip),
+      ),
+    );
+
 /// A caixa do item [game] da folha Jogo (aberta).
 bool? _checked(WidgetTester tester, String game) => tester
     .widget<CheckboxListTile>(
@@ -115,6 +125,11 @@ void main() {
 
       await _toggleGames(tester, 'Jogo', ['Scarlet']);
       expect(find.byTooltip('Jogo: Scarlet'), findsOneWidget);
+      // Um jogo só: o chip na cor dele (#203).
+      expect(
+        _gameChip(tester, 'Jogo: Scarlet').selectedColor,
+        versionTone('scarlet', Brightness.light)!.background,
+      );
       expect(find.textContaining('para caçar em Scarlet'), findsOneWidget);
       expect(find.text('Espeon'), findsOneWidget);
       expect(find.text('Vaporeon'), findsNothing);
@@ -123,6 +138,11 @@ void main() {
       // catálogo da fixture, então nada muda na lista).
       await _toggleGames(tester, 'Jogo: Scarlet', ['Legends: Z-A']);
       expect(find.byTooltip('Jogo: Scarlet e Legends: Z-A'), findsOneWidget);
+      // Dois: a cor neutra do tema.
+      expect(
+        _gameChip(tester, 'Jogo: Scarlet e Legends: Z-A').selectedColor,
+        isNull,
+      );
       expect(
         find.textContaining('para caçar em Scarlet ou Legends: Z-A'),
         findsOneWidget,
@@ -147,6 +167,11 @@ void main() {
       Navigator.of(tester.element(find.byType(CheckboxListTile).first)).pop();
       await tester.pumpAndSettle();
       expect(find.byTooltip('Jogo: Scarlet e Legends: Z-A'), findsOneWidget);
+      // Dois: a cor neutra do tema.
+      expect(
+        _gameChip(tester, 'Jogo: Scarlet e Legends: Z-A').selectedColor,
+        isNull,
+      );
 
       await _toggleGames(tester, 'Jogo: Scarlet e Legends: Z-A', ['Scarlet']);
       expect(find.text('Nada para caçar com estes filtros.'), findsOneWidget);

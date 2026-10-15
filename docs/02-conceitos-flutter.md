@@ -436,6 +436,27 @@ viram Cupertino no iOS:
 | Switches | `SwitchListTile.adaptive` |
 | Carregamento | `CircularProgressIndicator.adaptive` |
 
+### Cores: a paleta como dado
+
+O app não usa cor fixa nos widgets. As cores vêm de uma
+[`AppPalette`](../lib/core/theme/app_palette.dart) (hoje só a **Clássico**,
+#162), com um lado claro e um escuro, e o `AppTheme` monta o `ThemeData` a
+partir dela:
+
+- o que tem papel no Material 3 (botão, fundo, pílula da navegação, slot
+  faltante e registrado...) vai para o `ColorScheme`, e os widgets leem
+  `Theme.of(context).colorScheme`;
+- o que não tem (o amarelo do shiny, o verde de concluído, o selo da caçada)
+  vai para um `ThemeExtension`, o `AppColors`, lido com
+  `AppColors.of(context)`.
+
+Como as duas coisas ficam no tema, trocam sozinhas entre claro e escuro, e
+um tema novo (as paletas A e B, #244/#245) vai ser só outra constante de
+`AppPalette`. As cores das versões (#203, Scarlet vermelho, Violet roxo) são
+outro mapa, em [`version_colors.dart`](../lib/core/theme/version_colors.dart):
+de cada cor de marca saem um fundo e um texto por tema, com o contraste
+conferido nos testes.
+
 ### Campos de texto: um padrão só
 
 Todo campo segue um de dois estilos, para o app não misturar campos com e

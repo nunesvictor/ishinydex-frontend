@@ -1,25 +1,25 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/theme/app_palette.dart';
 
-/// Tema Material 3 compartilhado por web e iOS.
+/// Tema Material 3 compartilhado por web e iOS, montado a partir de uma
+/// [AppPalette] (por padrão, a Clássico).
 abstract final class AppTheme {
-  static const seed = Color(0xFF3F51B5);
-
   /// A família declarada no `pubspec.yaml`.
   static const fontFamily = 'Roboto';
 
-  static ThemeData light() => _build(Brightness.light);
+  static ThemeData light([AppPalette palette = AppPalette.classic]) =>
+      _build(palette.light, Brightness.light);
 
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData dark([AppPalette palette = AppPalette.classic]) =>
+      _build(palette.dark, Brightness.dark);
 
-  static ThemeData _build(Brightness brightness) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: brightness,
-    );
+  static ThemeData _build(PaletteColors colors, Brightness brightness) {
+    final scheme = colors.scheme(brightness);
     return ThemeData(
       colorScheme: scheme,
+      extensions: [colors.extension],
       // A Roboto do app (`assets/fonts/`, #212), a mesma em todas as
       // plataformas.
       fontFamily: fontFamily,
@@ -60,7 +60,7 @@ abstract final class AppTheme {
           // `surfaceContainer` ao rolar.
           backgroundColor: scheme.surface,
           // Sem isto, com elevação o Material 3 pinta a barra com o
-          // `surfaceTint` (o índigo) e ela escurece do mesmo jeito (#215).
+          // `surfaceTint` e ela escurece do mesmo jeito (#215).
           surfaceTintColor: Colors.transparent,
           scrolledUnderElevation: 1,
           shadowColor: scheme.outlineVariant,

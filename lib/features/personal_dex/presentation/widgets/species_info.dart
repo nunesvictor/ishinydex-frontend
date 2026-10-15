@@ -6,6 +6,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/version_tag.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -281,51 +282,25 @@ class _Pokedexes extends ConsumerWidget {
                               style: theme.textTheme.bodyLarge,
                             ),
                             // "exclusivo Scarlet", como a comunidade diz
-                            // ("Scarlet exclusive"); cor neutra do tema.
+                            // ("Scarlet exclusive"), na cor da versão (#203).
                             for (final version in game.exclusiveTo)
-                              DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color:
-                                      theme.colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 1,
-                                  ),
-                                  child: Text(
-                                    context.l10n.exclusiveTo(
-                                      versionLabel(version),
-                                    ),
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
+                              VersionTag(
+                                context.l10n.exclusiveTo(versionLabel(version)),
+                                version: version,
                               ),
                           ],
                         ),
                         if (mine(game) case final versions
                             when versions.isNotEmpty)
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(6),
+                          // "Seu: Violet": com um jogo só, na cor dele.
+                          VersionTag(
+                            context.l10n.yourGames(
+                              versions.length,
+                              versions.map(versionLabel).join(', '),
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              child: Text(
-                                context.l10n.yourGames(
-                                  versions.length,
-                                  versions.map(versionLabel).join(', '),
-                                ),
-                                style: theme.textTheme.labelSmall,
-                              ),
-                            ),
+                            version: versions.length == 1
+                                ? versions.single
+                                : null,
                           ),
                         Text(
                           game.entries

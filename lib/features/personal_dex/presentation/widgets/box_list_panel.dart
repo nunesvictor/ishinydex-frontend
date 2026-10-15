@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
 /// Lista lateral de boxes (layout expandido).
@@ -23,9 +24,7 @@ class BoxListPanel extends StatelessWidget {
         selected: i == index,
         title: Text(box.name),
         subtitle: Text('${box.registered}/${box.total}'),
-        trailing: box.isComplete
-            ? const Icon(Icons.check_circle, color: Colors.green)
-            : null,
+        trailing: box.isComplete ? const SuccessIcon(Icons.check_circle) : null,
         onTap: () => onSelected(i),
       );
     },

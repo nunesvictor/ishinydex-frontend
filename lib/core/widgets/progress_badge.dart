@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/utils/format.dart';
 
 /// Barra de progresso com o texto "registrados/total (xx%)" e, se houver,
@@ -29,7 +30,7 @@ class ProgressBadge extends StatelessWidget {
           child: LinearProgressIndicator(
             value: total == 0 ? 0 : registered / total,
             minHeight: 6,
-            color: complete ? Colors.green : null,
+            color: complete ? AppColors.of(context).success : null,
           ),
         ),
         const SizedBox(height: 4),
