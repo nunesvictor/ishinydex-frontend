@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
-import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/type_chip.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -131,9 +131,7 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
                 children: [
                   for (final type in options.type)
                     FilterChip(
-                      avatar: type.spriteUrl == null
-                          ? null
-                          : PokemonSprite(url: type.spriteUrl, size: 18),
+                      avatar: TypeIcon(type.value),
                       label: Text(context.catalogText(type.label, type.labels)),
                       selected: _draft.types.contains(type.value),
                       onSelected: (on) => _update(

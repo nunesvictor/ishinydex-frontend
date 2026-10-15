@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
-import 'package:ishinydex/core/utils/pokemon_types.dart';
-import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/type_chip.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -98,20 +97,8 @@ class _Details extends StatelessWidget {
             runSpacing: 8,
             alignment: alone ? WrapAlignment.start : WrapAlignment.center,
             children: [
-              for (final t in types)
-                Chip(
-                  avatar: t.spriteUrl == null
-                      ? null
-                      : PokemonSprite(url: t.spriteUrl, size: 20),
-                  label: Text(typeLabel(t.type)),
-                  backgroundColor: typeColor(t.type),
-                  labelStyle: TextStyle(
-                    color: typeOnColor(t.type),
-                    fontWeight: FontWeight.w600,
-                  ),
-                  side: BorderSide.none,
-                  visualDensity: VisualDensity.compact,
-                ),
+              // O ícone do tipo do HOME e o nome (#230).
+              for (final t in types) TypeChip(t.type),
               if (form.isShinylocked)
                 Chip(
                   avatar: Icon(Icons.lock, color: theme.colorScheme.error),
