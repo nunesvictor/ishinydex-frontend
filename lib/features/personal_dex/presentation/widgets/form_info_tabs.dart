@@ -85,9 +85,16 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 12,
             children: [
-              // Forças e fraquezas pelos tipos da forma (#230). Ficam aqui,
-              // e não no Resumo, para o detalhe do espécime continuar
-              // cabendo sem rolar no iPhone (#207).
+              SpeciesInfo(
+                form: form,
+                dexId: widget.dexId,
+                onOpenSlot: widget.onOpenSlot,
+                onOpenForm: widget.onOpenForm,
+              ),
+              // Forças e fraquezas pelos tipos da forma (#230), por último:
+              // a linha evolutiva fica no topo da aba (#270). Ficam aqui, e
+              // não no Resumo, para o detalhe do espécime continuar cabendo
+              // sem rolar no iPhone (#207).
               TypeMatchupsCard(
                 types: [
                   for (final t in [
@@ -95,12 +102,6 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
                   ]..sort((a, b) => a.slot.compareTo(b.slot)))
                     t.type,
                 ],
-              ),
-              SpeciesInfo(
-                form: form,
-                dexId: widget.dexId,
-                onOpenSlot: widget.onOpenSlot,
-                onOpenForm: widget.onOpenForm,
               ),
             ],
           ),
