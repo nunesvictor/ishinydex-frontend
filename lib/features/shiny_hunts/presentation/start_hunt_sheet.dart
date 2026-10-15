@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
@@ -83,6 +85,13 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
       ),
     );
     return ok ?? false;
+  }
+
+  /// Fecha a folha e abre Ajustes → Meus saves.
+  void _addSave(BuildContext context) {
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop();
+    router.go(Routes.saves);
   }
 
   Future<void> _submit() async {
@@ -169,8 +178,9 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
     final huntable = ref.watch(huntableInProvider);
     // Só os saves de jogos onde a forma pode ser caçada (o já escolhido
     // fica, ao editar).
+    final allSaves = ref.watch(savesProvider).value;
     final saves = [
-      for (final s in ref.watch(savesProvider).value ?? const <Save>[])
+      for (final s in allSaves ?? const <Save>[])
         if (s.id == _hunt.save || huntable(widget.form.id, s.trainer.version))
           s,
     ];
@@ -210,6 +220,10 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
               title: Text(widget.form.displayName),
               subtitle: Text(widget.form.dexNumber),
             ),
+            // Sem nenhum save (#246): a caçada vale do mesmo jeito; o save
+            // só traz os métodos e as odds do jogo.
+            if (allSaves != null && allSaves.isEmpty)
+              _NoSaveHint(onAdd: () => _addSave(context)),
             if (saves.isNotEmpty)
               ChoiceSelect(
                 key: const ValueKey('field-hunt-save'),
@@ -357,6 +371,48 @@ class _OddsPreview extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A dica da folha sem nenhum save, com o atalho para Ajustes → Meus saves.
+class _NoSaveHint extends StatelessWidget {
+  const _NoSaveHint({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card.filled(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                Expanded(child: Text(context.l10n.huntNoSaveHint)),
+              ],
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: onAdd,
+                child: Text(context.l10n.huntAddSave),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

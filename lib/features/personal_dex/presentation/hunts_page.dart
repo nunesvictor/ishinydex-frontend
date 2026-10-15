@@ -16,6 +16,7 @@ import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
+import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
@@ -31,20 +32,20 @@ import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filte
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-/// Caçadas de um shiny dex: o que ainda falta, ou não serve, em shiny.
+/// Aba Caçadas (#246): o que ainda falta em shiny num shiny dex, e as
+/// caçadas em andamento e pausadas, que não dependem de dex.
 ///
-/// Os motivos (sem shiny, shiny do GO, pokébola fora da lista) e a situação
-/// do slot (faltando ou registrado) ficam à vista, em chips com menu; o
-/// escopo (categoria, geração, tipo) fica na folha de filtros. Tocar num item empilha o dex naquela box, com o slot aberto: o
-/// voltar retorna para cá, com os filtros intactos.
+/// No Faltam, os motivos (sem shiny, shiny do GO, pokébola fora da lista) e
+/// a situação do slot (faltando ou registrado) ficam à vista, em chips com
+/// menu; o escopo (categoria, geração, tipo) fica na folha de filtros.
+/// Tocar num item empilha o dex naquela box, com o slot aberto: o voltar
+/// retorna para cá, com os filtros intactos.
 class HuntsPage extends ConsumerStatefulWidget {
-  const HuntsPage({
-    required this.dexId,
-    this.initialTab = HuntsTab.missing,
-    super.key,
-  });
+  const HuntsPage({this.dexId, this.initialTab = HuntsTab.missing, super.key});
 
-  final int dexId;
+  /// O shiny dex do Faltam, pedido por um atalho; sem ele, o último
+  /// escolhido aqui (ou o primeiro shiny dex).
+  final int? dexId;
   final HuntsTab initialTab;
 
   @override
@@ -59,6 +60,20 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
   HuntQuery _query = const HuntQuery();
   late HuntsTab _tab = widget.initialTab;
   Timer? _debounce;
+
+  /// O shiny dex escolhido da última vez; `null` até ler (ou sem nenhum).
+  late final Future<int?> _stored;
+
+  @override
+  void initState() {
+    super.initState();
+    final storage = ref.read(lastDexStorageProvider);
+    // Um atalho também conta como escolha: a aba volta nele depois.
+    final asked = widget.dexId;
+    _stored = asked == null
+        ? storage.readHunts()
+        : storage.writeHunts(asked).then((_) => asked);
+  }
 
   @override
   void dispose() {
@@ -82,6 +97,10 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
     _debounce?.cancel();
     _setQuery(_query.copyWith(search: text.trim()));
   }
+
+  /// Os shiny dexes do usuário (o Faltam só faz sentido neles).
+  List<PersonalDex>? get _shinyDexes =>
+      ref.watch(dexListProvider).value?.where((d) => d.isShinyDex).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +147,13 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
               if (_tab == HuntsTab.missing)
                 ..._missing(context)
               else
-                Expanded(child: HuntCards(paused: _tab == HuntsTab.paused)),
+                Expanded(
+                  child: HuntCards(
+                    paused: _tab == HuntsTab.paused,
+                    // Sem shiny dex, não há Faltam de onde começar.
+                    hasDex: _shinyDexes?.isNotEmpty ?? true,
+                  ),
+                ),
             ],
           ),
         ),
@@ -136,29 +161,163 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
     );
   }
 
-  List<Widget> _missing(BuildContext context) => [
-    _Filters(
-      dexId: widget.dexId,
-      query: _query,
-      onSearchChanged: _onSearchChanged,
-      onSearchSubmitted: _submitSearch,
-      onChanged: _setQuery,
-    ),
-    Expanded(
-      child: HuntList(
-        dexId: widget.dexId,
-        query: _query,
-        onShowActive: () => setState(() => _tab = HuntsTab.active),
-        onTap: (hunt) => context.push(
-          Routes.dex(
-            widget.dexId,
-            boxId: hunt.slot.box.id,
-            slotId: hunt.slot.id,
+  List<Widget> _missing(BuildContext context) {
+    final dexes = ref.watch(dexListProvider);
+    if (dexes case AsyncError(:final error)) {
+      return [
+        Expanded(
+          child: ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(dexListProvider),
+          ),
+        ),
+      ];
+    }
+    final shiny = _shinyDexes;
+    if (shiny == null) return [const Expanded(child: LoadingView())];
+    if (shiny.isEmpty) return [const Expanded(child: _NoShinyDex())];
+    return [
+      Expanded(
+        child: FutureBuilder<int?>(
+          future: _stored,
+          builder: (context, stored) {
+            if (stored.connectionState != ConnectionState.done) {
+              return const LoadingView();
+            }
+            // O pedido (ou o último escolhido), se ainda for um shiny dex;
+            // senão o primeiro.
+            final dex =
+                shiny.where((d) => d.id == stored.data).firstOrNull ??
+                shiny.first;
+            return Column(
+              children: [
+                if (shiny.length > 1) _DexPicker(dexes: shiny, selected: dex),
+                _Filters(
+                  dexId: dex.id,
+                  query: _query,
+                  onSearchChanged: _onSearchChanged,
+                  onSearchSubmitted: _submitSearch,
+                  onChanged: _setQuery,
+                ),
+                Expanded(
+                  child: HuntList(
+                    dexId: dex.id,
+                    query: _query,
+                    onShowActive: () => setState(() => _tab = HuntsTab.active),
+                    onTap: (hunt) => context.push(
+                      Routes.huntsDex(
+                        dex.id,
+                        boxId: hunt.slot.box.id,
+                        slotId: hunt.slot.id,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    ];
+  }
+}
+
+/// O seletor do shiny dex do Faltam, com mais de um (#246). Trocar recria a
+/// página no dex novo, que fica lembrado para a próxima vez.
+class _DexPicker extends StatelessWidget {
+  const _DexPicker({required this.dexes, required this.selected});
+
+  final List<PersonalDex> dexes;
+  final PersonalDex selected;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: MenuAnchor(
+        menuChildren: [
+          for (final dex in dexes)
+            RadioMenuButton<int>(
+              value: dex.id,
+              groupValue: selected.id,
+              onChanged: (id) => context.go(Routes.hunts(dexId: id)),
+              child: Text(dex.name),
+            ),
+        ],
+        builder: (context, controller, _) => Tooltip(
+          message: context.l10n.huntsChooseDex,
+          child: FilledButton.tonalIcon(
+            key: const ValueKey('hunts-dex-picker'),
+            onPressed: () =>
+                controller.isOpen ? controller.close() : controller.open(),
+            icon: const Icon(Icons.grid_view, size: 18),
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(selected.name, overflow: TextOverflow.ellipsis),
+                ),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
           ),
         ),
       ),
     ),
-  ];
+  );
+}
+
+/// O Faltam sem nenhum shiny dex (#246): o que ele mostraria, e o atalho
+/// para criar um. As caçadas seguem nas outras abas.
+class _NoShinyDex extends ConsumerWidget {
+  const _NoShinyDex();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 12,
+            children: [
+              Icon(
+                Icons.grid_view,
+                size: 56,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              Text(
+                context.l10n.huntsNoDexTitle,
+                style: theme.textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              Text(context.l10n.huntsNoDexBody, textAlign: TextAlign.center),
+              FilledButton(
+                onPressed: () => _create(context),
+                child: Text(context.l10n.huntsNoDexAction),
+              ),
+              Text(
+                context.l10n.huntsNoDexNote,
+                style: theme.textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _create(BuildContext context) async {
+    final dex = await openNewDex(context);
+    if (dex != null && dex.isShinyDex && context.mounted) {
+      context.go(Routes.hunts(dexId: dex.id));
+    }
+  }
 }
 
 /// Busca + botão Filtros numa linha; Motivos, Situação e Jogo em chips com

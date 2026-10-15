@@ -330,12 +330,23 @@ registrados/total e "Faltam N". Tocar numa geração leva à primeira box dela. 
 `generationsProvider` é invalidado junto com as outras contagens em
 `SlotActions`.
 
-## Caçadas (shiny dex)
+## Caçadas
 
-Num shiny dex, o ícone de alvo no AppBar abre a
-[`HuntsPage`](../lib/features/personal_dex/presentation/hunts_page.dart)
-(rota `/dexes/{id}/hunts`, `GET /personal-dexes/{id}/hunts/`): o que ainda
-falta caçar, na ordem das boxes. Dois grupos de filtros no
+A [`HuntsPage`](../lib/features/personal_dex/presentation/hunts_page.dart) é
+um destino próprio da barra de navegação (rota `/hunts`, #246): as abas
+**Ativas** e **Pausadas** não dependem de dex, então quem só caça usa o app
+sem criar nenhum. A aba **Faltam** precisa de um shiny dex:
+
+- sem nenhum, mostra o que ele daria e o botão "Criar shiny dex";
+- com um, usa esse; com mais de um, um seletor no topo, lembrado no
+  `LastDexStorage.readHunts` (à parte do último dex aberto);
+- `/hunts?dex={id}` escolhe o dex, e `&tab=active` abre em Ativas. O ícone
+  de alvo no AppBar do shiny dex e o atalho do painel do slot usam isso. A
+  rota antiga, `/dexes/{id}/hunts`, redireciona para cá;
+- tocar num item empilha o dex dentro da própria aba (`/hunts/dex/{id}`),
+  para o voltar retornar à lista com os filtros.
+
+O Faltam lista o que ainda falta caçar no dex, na ordem das boxes. Dois grupos de filtros no
 [`HuntQuery`](../lib/features/personal_dex/domain/models.dart):
 
 - **Motivos** (somados com OU), sempre à vista em chips: sem shiny (vazio ou
@@ -516,7 +527,9 @@ Exemplo: uma tela que lista **todos os specimens**.
    `ref.watch(...).when(...)` com `LoadingView`/`ErrorView`/`EmptyView`.
 5. **Rota**: registre em `app_router.dart`. Para virar uma aba, adicione um
    `StatefulShellBranch` e um item em `shellDestinations`
-   ([adaptive_shell.dart](../lib/core/responsive/adaptive_shell.dart)).
+   ([adaptive_shell.dart](../lib/core/responsive/adaptive_shell.dart)), na
+   mesma posição (o índice liga um ao outro); confira o
+   `settingsDestination`, que aponta o índice de Ajustes.
 6. **Testes**: teste do repositório HTTP com `http_mock_adapter`, teste do
    `FakeBackend` e teste de widget da tela em tamanho compacto e expandido.
    Rode `flutter test --coverage && dart run tool/check_coverage.dart`.

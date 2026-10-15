@@ -10,6 +10,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
@@ -34,7 +35,7 @@ Future<void> _go(WidgetTester tester, String location) async {
 /// Abre o shiny dex da semente e toca em "Caçadas".
 Future<void> _openHunts(WidgetTester tester) async {
   await _go(tester, Routes.dex(1));
-  await tester.tap(find.byTooltip('Caçadas'));
+  await tester.tap(huntsShortcut());
   await tester.pumpAndSettle();
 }
 
@@ -92,7 +93,7 @@ void main() {
     testWidgets('em inglês: abas, contagem e filtros ($px)', (tester) async {
       await pumpFullApp(tester, size: size, language: AppLanguage.en);
       await _go(tester, Routes.dex(1));
-      await tester.tap(find.byTooltip('Hunts'));
+      await tester.tap(huntsShortcut('Hunts'));
       await tester.pumpAndSettle();
       expect(find.text('Hunts'), findsWidgets);
       expect(find.text('19 to hunt'), findsOneWidget);
@@ -286,9 +287,9 @@ void main() {
     await pumpFullApp(tester, size: compactSize, backend: fake);
 
     await _go(tester, Routes.dex(normal));
-    expect(find.byTooltip('Caçadas'), findsNothing);
+    expect(huntsShortcut(), findsNothing);
     await _go(tester, Routes.dex(dex));
-    await tester.tap(find.byTooltip('Caçadas'));
+    await tester.tap(huntsShortcut());
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     expect(find.byTooltip('Só por distribuição'), findsOneWidget);
@@ -298,7 +299,21 @@ void main() {
     late MockPersonalDexRepository repository;
 
     setUpAll(() => registerFallbackValue(const HuntQuery()));
-    setUp(() => repository = MockPersonalDexRepository());
+    setUp(() {
+      repository = MockPersonalDexRepository();
+      // O Faltam só abre num shiny dex (#246).
+      when(repository.fetchDexes).thenAnswer(
+        (_) async => const [
+          PersonalDex(
+            id: 1,
+            name: 'Shiny',
+            total: 1,
+            registered: 0,
+            isShinyDex: true,
+          ),
+        ],
+      );
+    });
 
     Hunt hunt(
       int id, {
@@ -331,6 +346,7 @@ void main() {
           hunts: hunts,
           overrides: [
             personalDexRepositoryProvider.overrideWithValue(repository),
+            lastDexStorageProvider.overrideWithValue(InMemoryLastDexStorage()),
             specimenOptionsProvider.overrideWith(
               (ref) => const SpecimenOptions(),
             ),
@@ -468,6 +484,7 @@ void main() {
         const HuntsPage(dexId: 1),
         overrides: [
           personalDexRepositoryProvider.overrideWithValue(repository),
+          lastDexStorageProvider.overrideWithValue(InMemoryLastDexStorage()),
           specimenOptionsProvider.overrideWith(
             (ref) => const SpecimenOptions(),
           ),

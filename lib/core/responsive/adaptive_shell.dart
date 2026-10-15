@@ -22,6 +22,12 @@ final shellDestinations = [
     icon: Icons.catching_pokemon_outlined,
     selectedIcon: Icons.catching_pokemon,
   ),
+  // Caçadas (#246): um destino próprio, para quem caça sem ter um dex.
+  ShellDestination(
+    label: (l10n) => l10n.huntsTitle,
+    icon: Icons.track_changes_outlined,
+    selectedIcon: Icons.track_changes,
+  ),
   ShellDestination(
     label: (l10n) => l10n.navSpecimens,
     icon: Icons.inventory_2_outlined,
@@ -35,7 +41,7 @@ final shellDestinations = [
 ];
 
 /// Índice de Ajustes em [shellDestinations].
-const settingsDestination = 2;
+const settingsDestination = 3;
 
 /// Casca de navegação: NavigationBar no compacto, NavigationRail nos demais.
 class AdaptiveShell extends StatelessWidget {

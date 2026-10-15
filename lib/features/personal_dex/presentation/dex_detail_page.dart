@@ -321,7 +321,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
         if (dex?.isShinyDex ?? false)
           IconButton(
             tooltip: context.l10n.huntsTitle,
-            onPressed: () => context.push(Routes.hunts(_dexId)),
+            onPressed: () => context.go(Routes.hunts(dexId: _dexId)),
             icon: const Icon(Icons.track_changes),
           ),
         _missingToggle(context),
@@ -756,7 +756,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   /// Abre as caçadas na aba Ativas; `null` fora de um shiny dex.
   VoidCallback? get _showHunts =>
       (ref.read(dexProvider(_dexId)).value?.isShinyDex ?? false)
-      ? () => unawaited(context.push(Routes.hunts(_dexId, active: true)))
+      ? () => context.go(Routes.hunts(dexId: _dexId, active: true))
       : null;
 
   Future<void> _showSlotSheet(BoxSummary box) => showModalBottomSheet<void>(

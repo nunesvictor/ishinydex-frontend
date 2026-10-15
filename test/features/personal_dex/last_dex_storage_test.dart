@@ -16,6 +16,11 @@ void main() {
     expect(await storage.read(), isNull);
     await storage.write(7);
     expect(await storage.read(), 7);
+    // O dex da aba Caçadas (#246) fica à parte.
+    expect(await storage.readHunts(), isNull);
+    await storage.writeHunts(3);
+    expect(await storage.readHunts(), 3);
+    expect(await storage.read(), 7);
   });
 
   test('provider padrão usa shared_preferences', () {
