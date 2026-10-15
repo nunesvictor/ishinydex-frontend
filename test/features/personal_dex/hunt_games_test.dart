@@ -30,9 +30,7 @@ Future<void> _openHunts(WidgetTester tester, {required Size size}) async {
   await pumpFullApp(tester, size: size, backend: backend);
   ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
       .read(routerProvider)
-      .go(Routes.dex(dexId));
-  await tester.pumpAndSettle();
-  await tester.tap(huntsShortcut());
+      .go(Routes.hunts(dexId: dexId));
   await tester.pumpAndSettle();
 }
 
@@ -234,9 +232,7 @@ void main() {
     await pumpFullApp(tester, size: compactSize);
     ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
         .read(routerProvider)
-        .go(Routes.dex(1));
-    await tester.pumpAndSettle();
-    await tester.tap(huntsShortcut());
+        .go(Routes.hunts(dexId: 1));
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilterChip, 'Jogo'), findsNothing);
@@ -341,9 +337,7 @@ void main() {
     );
     ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
         .read(routerProvider)
-        .go(Routes.dex(dexId));
-    await tester.pumpAndSettle();
-    await tester.tap(huntsShortcut());
+        .go(Routes.hunts(dexId: dexId));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilterChip, 'Jogo'));
     await tester.pumpAndSettle();
