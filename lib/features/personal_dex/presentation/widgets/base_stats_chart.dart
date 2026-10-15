@@ -115,7 +115,9 @@ class BaseStatsChart extends StatelessWidget {
         painter: _HexagonPainter(
           stats: vertices,
           statName: context.l10n.stat,
-          grid: theme.colorScheme.outlineVariant,
+          // `outline`, e não `outlineVariant`: na paleta C, este fica quase
+          // da cor do fundo (#263).
+          grid: theme.colorScheme.outline,
           fill: theme.colorScheme.primary,
           label: theme.textTheme.labelSmall!.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
