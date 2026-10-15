@@ -5,6 +5,7 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
+import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
@@ -144,10 +145,7 @@ class SlotDetailPanel extends ConsumerWidget {
                     )
                   else ...[
                     Chip(
-                      avatar: const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                      ),
+                      avatar: const SuccessIcon(Icons.check_circle),
                       label: Text(context.l10n.slotRegistered),
                     ),
                     if (OriginMark.fromSlug(full?.originMark) case final mark?)

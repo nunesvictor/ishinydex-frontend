@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/theme/version_colors.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
@@ -13,6 +14,7 @@ import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
+import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
@@ -571,6 +573,10 @@ class _GameChip extends StatelessWidget {
         ],
       ),
       selected: games.isNotEmpty,
+      // Um jogo só marcado: o chip na cor dele (#203).
+      selectedColor: {...games}.length == 1
+          ? versionTone(games.first, Theme.of(context).brightness)?.background
+          : null,
       showCheckmark: false,
       onSelected: (_) async {
         final picked = await showGamePicker(
@@ -968,10 +974,7 @@ class HuntGames extends StatelessWidget {
 Widget? _situationIcon(HuntSituation situation) => switch (situation) {
   HuntSituation.all => null,
   HuntSituation.missing => const Icon(Icons.radio_button_unchecked),
-  HuntSituation.registered => const Icon(
-    Icons.check_circle,
-    color: Colors.green,
-  ),
+  HuntSituation.registered => const SuccessIcon(Icons.check_circle),
 };
 
 /// O ícone de cada motivo (#219), os mesmos do menu.

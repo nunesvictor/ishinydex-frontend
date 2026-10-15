@@ -198,7 +198,8 @@ A mesma regra de 7 dias vale para Apple ID gratuito.
 
 ## Ícone do app
 
-O ícone (brilho shiny dourado sobre o índigo do tema, #3F51B5) é gerado por
+O ícone (identidade C · Clássico, #162: brilho vermelho de 4 pontas e um
+ponto amarelo sobre o grafite, #26232A, o `theme_color` do manifest) é gerado por
 [`tool/icon/generate_icons.py`](../tool/icon/generate_icons.py), que
 sobrescreve todos os arquivos de uma vez:
 

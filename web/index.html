@@ -11,11 +11,11 @@
   <!-- Cor da barra de status/do navegador: a do AppBar de cada tema
        (colorScheme.surface do AppTheme; conferida em test/web_index_test.dart).
        O app troca a cor quando o sistema muda de modo (Title em app.dart). -->
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF8FF">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121318">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAFAFA">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131313">
   <style>
-    body { background-color: #FBF8FF; }
-    @media (prefers-color-scheme: dark) { body { background-color: #121318; } }
+    body { background-color: #FAFAFA; }
+    @media (prefers-color-scheme: dark) { body { background-color: #131313; } }
 
     /* Splash do primeiro carregamento (#159). Antes do primeiro quadro o
        navegador baixa o app (main.dart.wasm, motor, catálogo) e a tela fica
@@ -29,7 +29,7 @@
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; gap: 16px;
       font-family: Roboto, system-ui, -apple-system, sans-serif;
-      color: #1B1B21; opacity: 0;
+      color: #1C1B1B; opacity: 0;
       animation: splash-in 200ms ease 450ms forwards;
     }
     #splash img { width: 96px; height: 96px; border-radius: 22px; }
@@ -37,16 +37,16 @@
     /* Barra indeterminada: o loader não diz quanto falta. */
     .splash-track {
       width: 120px; height: 4px; border-radius: 2px; overflow: hidden;
-      margin-top: 8px; background: #DEE0FF;
+      margin-top: 8px; background: #FFDAD6;
     }
     .splash-bar {
-      width: 40%; height: 100%; border-radius: 2px; background: #515B92;
+      width: 40%; height: 100%; border-radius: 2px; background: #C62828;
       animation: splash-bar 1.2s ease-in-out infinite;
     }
     @media (prefers-color-scheme: dark) {
-      #splash { color: #E4E1E9; }
-      .splash-track { background: #394379; }
-      .splash-bar { background: #BAC3FF; }
+      #splash { color: #E6E1E1; }
+      .splash-track { background: #8C1D18; }
+      .splash-bar { background: #FF8A80; }
     }
     @media (prefers-reduced-motion: reduce) {
       .splash-bar { width: 100%; animation: none; opacity: 0.6; }
@@ -55,17 +55,17 @@
        travou (um download pendurado, por exemplo); o splash explica e
        oferece recarregar. */
     .splash-slow { display: none; flex-direction: column; align-items: center;
-      gap: 12px; margin-top: 8px; font-size: 14px; color: #46464F; }
+      gap: 12px; margin-top: 8px; font-size: 14px; color: #4A4646; }
     #splash .splash-slow span { font-size: 14px; font-weight: 400; }
     #splash.slow { pointer-events: auto; }
     #splash.slow .splash-slow { display: flex; }
     .splash-slow button {
       font: inherit; font-weight: 500; border: 0; border-radius: 20px;
-      padding: 10px 24px; background: #515B92; color: #FFFFFF;
+      padding: 10px 24px; background: #C62828; color: #FFFFFF;
     }
     @media (prefers-color-scheme: dark) {
-      .splash-slow { color: #C7C5D0; }
-      .splash-slow button { background: #BAC3FF; color: #222C61; }
+      .splash-slow { color: #CAC4C4; }
+      .splash-slow button { background: #FF8A80; color: #5F0010; }
     }
     @keyframes splash-in { to { opacity: 1; } }
     @keyframes splash-bar {

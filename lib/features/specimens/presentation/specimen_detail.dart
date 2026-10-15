@@ -10,6 +10,7 @@ import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
+import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
@@ -114,10 +115,7 @@ class _Details extends ConsumerWidget {
                   chips: [
                     if (specimen.isDeposited)
                       Chip(
-                        avatar: const Icon(
-                          Icons.inventory_2,
-                          color: Colors.green,
-                        ),
+                        avatar: const SuccessIcon(Icons.inventory_2),
                         label: Text(context.l10n.depositedLabel),
                       )
                     else

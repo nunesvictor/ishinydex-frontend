@@ -7,6 +7,7 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/theme/version_colors.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
@@ -16,6 +17,7 @@ import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/menu_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
+import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
@@ -414,10 +416,7 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
 Widget? _statusIcon(SpecimenStatus status) => switch (status) {
   SpecimenStatus.all => null,
   SpecimenStatus.available => const Icon(Icons.radio_button_unchecked),
-  SpecimenStatus.deposited => const Icon(
-    Icons.inventory_2,
-    color: Colors.green,
-  ),
+  SpecimenStatus.deposited => const SuccessIcon(Icons.inventory_2),
 };
 
 /// O nome e a explicação de cada situação, no menu Situação.
@@ -767,6 +766,10 @@ class _GameChip extends ConsumerWidget {
         ],
       ),
       selected: games.isNotEmpty,
+      // Um jogo só marcado: o chip na cor dele (#203).
+      selectedColor: {...games}.length == 1
+          ? versionTone(games.first, Theme.of(context).brightness)?.background
+          : null,
       showCheckmark: false,
       onSelected: (_) async {
         final picked = await showGamePicker(
