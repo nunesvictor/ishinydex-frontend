@@ -14,9 +14,11 @@ import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/hunt_share_sheet.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 void _notify(BuildContext context, String message) =>
@@ -37,17 +39,23 @@ Future<void> runHuntAction(
 }
 
 /// "Encontrei!": abre o cadastro do espécime preenchido pela caçada; ao
-/// salvar, a caçada sai da lista (o formulário a apaga).
-Future<void> finishHunt(BuildContext context, ShinyHunt hunt) =>
-    Navigator.of(context).push(
-      MaterialPageRoute<Specimen>(
-        builder: (_) => SpecimenFormPage(
-          form: hunt.formRef!,
-          fromHunt: hunt,
-          depositAfterSave: false,
-        ),
+/// salvar, a caçada sai da lista (o formulário a apaga) e a folha oferece o
+/// card para compartilhar (#243).
+Future<void> finishHunt(BuildContext context, ShinyHunt hunt) async {
+  final saved = await Navigator.of(context).push(
+    MaterialPageRoute<Specimen>(
+      builder: (_) => SpecimenFormPage(
+        form: hunt.formRef!,
+        fromHunt: hunt,
+        depositAfterSave: false,
       ),
-    );
+    ),
+  );
+  if (saved == null || HuntShareData.of(saved) == null || !context.mounted) {
+    return;
+  }
+  await showHuntShareSheet(context, saved, found: true);
+}
 
 /// Um cartão de caçada (#164): sprite, jogo e método, desde quando, e a
 /// contagem com +1 grande (mobile first), −1 e tocar no número para

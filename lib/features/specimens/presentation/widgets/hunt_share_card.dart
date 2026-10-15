@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 
 /// As cores do card: fundo escuro sempre, mesmo com o app no tema claro (o
@@ -37,7 +39,34 @@ class HuntShareData {
     this.odds,
     this.multiple,
     this.bestChain,
+    this.trainerName,
+    this.trainerId,
   });
+
+  /// Os dados de um espécime shiny com registro da caçada; `null` se faltar
+  /// algum (não é shiny, não tem forma ou registro). [method] é o nome do
+  /// método já no idioma da tela, e [ot], o treinador original.
+  static HuntShareData? of(Specimen specimen, {String? method, Trainer? ot}) {
+    final form = specimen.formRef;
+    final hunt = specimen.hunt;
+    if (!specimen.isShiny || form == null || hunt == null) return null;
+    return HuntShareData(
+      name: form.displayName,
+      dexNumber: form.dexNumber,
+      spriteUrl: form.spriteFor(shiny: true),
+      version: ot?.version,
+      capturedAt: specimen.capturedAt,
+      startedAt: hunt.startedAt,
+      method: method,
+      count: hunt.count,
+      unit: hunt.unit,
+      odds: hunt.odds,
+      multiple: hunt.multiple,
+      bestChain: hunt.bestChain,
+      trainerName: ot?.name,
+      trainerId: ot?.trainerId,
+    );
+  }
 
   final String name;
 
@@ -59,6 +88,36 @@ class HuntShareData {
   final double? odds;
   final double? multiple;
   final int? bestChain;
+
+  /// O OT: o nome aparece sempre; o ID, só se a pessoa ligar a chave.
+  final String? trainerName;
+  final String? trainerId;
+
+  List<Object?> get _fields => [
+    name,
+    dexNumber,
+    spriteUrl,
+    version,
+    capturedAt,
+    startedAt,
+    method,
+    count,
+    unit,
+    odds,
+    multiple,
+    bestChain,
+    trainerName,
+    trainerId,
+  ];
+
+  // Igualdade por valor: a folha gera a imagem de novo quando os dados
+  // mudam (o OT, por exemplo, chega depois de abrir).
+  @override
+  bool operator ==(Object other) =>
+      other is HuntShareData && listEquals(other._fields, _fields);
+
+  @override
+  int get hashCode => Object.hashAll(_fields);
 }
 
 /// O card da caçada para compartilhar (#243, v3 aprovada em 2026-10-14):
@@ -66,9 +125,17 @@ class HuntShareData {
 /// iguais e o nome e a logo do app no rodapé. Desenhado em 432×540; a
 /// imagem sai em 1080×1350 ([pixelRatio]).
 class HuntShareCard extends StatelessWidget {
-  const HuntShareCard({required this.data, super.key});
+  const HuntShareCard({
+    required this.data,
+    this.showTrainerId = false,
+    super.key,
+  });
 
   final HuntShareData data;
+
+  /// O ID do treinador no rodapé (desligado por padrão: o card é para
+  /// postar).
+  final bool showTrainerId;
 
   static const size = Size(432, 540);
   static const pixelRatio = 2.5;
@@ -221,12 +288,27 @@ class HuntShareCard extends StatelessWidget {
                   ),
                 if (detail.isNotEmpty)
                   Text(detail, textAlign: TextAlign.center, style: muted),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Row(
                   spacing: 7,
                   children: [
-                    _Logo(),
-                    Text('iShinyDex', style: _logoText),
+                    Expanded(
+                      child: Text(
+                        switch ((data.trainerName, data.trainerId)) {
+                          (final name?, final id?) when showTrainerId =>
+                            l10n.shareCardTrainer('$name ($id)'),
+                          (final name?, _) => l10n.shareCardTrainer(name),
+                          _ => '',
+                        },
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _CardColors.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const _Logo(),
+                    const Text('iShinyDex', style: _logoText),
                   ],
                 ),
               ],

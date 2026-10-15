@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,6 +89,11 @@ void main() {
     size: const Size(420, 2400),
     hunts: hunts ?? backend,
     overrides: [
+      // A folha do card (#243) abre depois do "Encontrei!": sem a captura
+      // de verdade, que trava sem `runAsync`.
+      pngCapturerProvider.overrideWithValue(
+        (_, _) async => Uint8List.fromList([1]),
+      ),
       fakeBackendProvider.overrideWithValue(backend),
       clockProvider.overrideWithValue(() => _now),
       shinyMethodsProvider.overrideWithValue((_, {fromGo = false}) => _methods),
@@ -239,6 +246,9 @@ void main() {
     await tap(tester, find.text('Encontrei!'));
     expect(find.text('Registro da caçada'), findsOne);
     await tap(tester, find.text('Salvar'));
+    // A folha do card (#243): "Agora não" fecha.
+    expect(find.text('Shiny registrado!'), findsOne);
+    await tap(tester, find.text('Agora não'));
     expect((await backend.fetchShinyHunts()).map((h) => h.id), [
       counter.id,
       running.id,

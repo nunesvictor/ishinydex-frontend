@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -128,6 +130,11 @@ void main() {
     size: const Size(420, 2400),
     hunts: backend,
     overrides: [
+      // A folha do card (#243) abre depois do "Encontrei!": sem a captura
+      // de verdade, que trava sem `runAsync`.
+      pngCapturerProvider.overrideWithValue(
+        (_, _) async => Uint8List.fromList([1]),
+      ),
       fakeBackendProvider.overrideWithValue(backend),
       clockProvider.overrideWithValue(() => _now),
       shinyMethodsProvider.overrideWithValue((_, {fromGo = false}) => _methods),
@@ -322,6 +329,9 @@ void main() {
     await tap(tester, inCard(random.id, find.byTooltip('Mais ações')));
     await tap(tester, find.text('Encontrei!'));
     await tap(tester, find.text('Salvar'));
+    // A folha do card (#243): "Agora não" fecha.
+    expect(find.text('Shiny registrado!'), findsOne);
+    await tap(tester, find.text('Agora não'));
     final specimens = await backend.fetchSpecimens(
       const SpecimenQuery(),
       page: 1,
