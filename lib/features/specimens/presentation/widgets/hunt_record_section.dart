@@ -8,8 +8,9 @@ import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.
 
 /// Seção recolhível "Registro da caçada" do formulário do espécime (#163):
 /// método, contagem com a unidade, início e link do post. Só aparece com
-/// Shiny ligado (quem decide é o formulário). Ao abrir pela primeira vez, o
-/// início vem com hoje.
+/// Shiny ligado (quem decide é o formulário). O início vem vazio (#294): uma
+/// caçada já concluída raramente começou hoje; o "Encontrei!" já traz o
+/// início da própria caçada.
 class HuntRecordSection extends StatefulWidget {
   const HuntRecordSection({
     required this.value,
@@ -110,22 +111,19 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
     _set(_hunt.copyWith(count: count, unit: _unit));
   }
 
+  /// O início vai até a data da captura (#294); sem ela, até hoje.
   Future<void> _pickStart() async {
     final now = widget.today ?? DateTime.now();
+    final captured = widget.capturedAt;
+    final last = captured != null && captured.isBefore(now) ? captured : now;
+    final start = _hunt.startedAt;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _hunt.startedAt ?? now,
+      initialDate: start != null && !start.isAfter(last) ? start : last,
       firstDate: DateTime(1996),
-      lastDate: now,
+      lastDate: last,
     );
     if (picked != null) _set(_hunt.copyWith(startedAt: picked));
-  }
-
-  void _expanded(bool open) {
-    if (open && widget.value == null) {
-      final now = widget.today ?? DateTime.now();
-      _set(HuntRecord(startedAt: DateTime(now.year, now.month, now.day)));
-    }
   }
 
   String get _summary {
@@ -161,7 +159,6 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
       child: ExpansionTile(
         key: const ValueKey('hunt-record'),
         initiallyExpanded: !(widget.value?.isBlank ?? true),
-        onExpansionChanged: _expanded,
         leading: Icon(Icons.track_changes, color: theme.colorScheme.primary),
         title: Text(context.l10n.huntRecord),
         subtitle: Text(_summary),
@@ -187,81 +184,97 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
                 onChanged: _pickMethod,
               ),
             ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 8,
-            children: [
-              if (_unit == 'hours') ...[
-                SizedBox(
-                  width: 72,
-                  child: TextField(
-                    key: const ValueKey('field-hunt-hours'),
-                    controller: _hours,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: digits,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.hoursLabel,
-                    ),
-                    onChanged: (_) => _countChanged(),
-                  ),
+          // Com métodos para escolher, a contagem espera o método (#293): as
+          // unidades são as dele. Uma contagem já salva sem método aparece.
+          if (widget.methods.isNotEmpty &&
+              hunt.method == null &&
+              hunt.count == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                context.l10n.huntPickMethodFirst,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                SizedBox(
-                  width: 64,
-                  child: TextField(
-                    key: const ValueKey('field-hunt-minutes'),
-                    controller: _minutes,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      ...digits,
-                      LengthLimitingTextInputFormatter(2),
-                    ],
-                    decoration: InputDecoration(
-                      labelText: context.l10n.minutesLabel,
-                    ),
-                    onChanged: (_) => _countChanged(),
-                  ),
-                ),
-              ] else
-                SizedBox(
-                  width: 128,
-                  child: TextField(
-                    key: const ValueKey('field-hunt-count'),
-                    controller: _count,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: digits,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.huntCountTitle,
-                      errorText: widget.errorFor?.call('huntCount'),
-                    ),
-                    onChanged: (_) => _countChanged(),
-                  ),
-                ),
-            ],
-          ),
-          // Unidades numa linha própria: lado a lado com a contagem, passam
-          // da largura do iPhone.
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SegmentedButton<String>(
-                  key: const ValueKey('field-hunt-unit'),
-                  segments: [
-                    for (final u in _units)
-                      ButtonSegment(
-                        value: u,
-                        label: Text(context.l10n.huntUnit(u)),
+              ),
+            )
+          else ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 8,
+              children: [
+                if (_unit == 'hours') ...[
+                  SizedBox(
+                    width: 72,
+                    child: TextField(
+                      key: const ValueKey('field-hunt-hours'),
+                      controller: _hours,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: digits,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.hoursLabel,
                       ),
-                  ],
-                  selected: {_unit},
-                  showSelectedIcon: _units.length > 1,
-                  onSelectionChanged: (v) => _changeUnit(v.single),
+                      onChanged: (_) => _countChanged(),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 64,
+                    child: TextField(
+                      key: const ValueKey('field-hunt-minutes'),
+                      controller: _minutes,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        ...digits,
+                        LengthLimitingTextInputFormatter(2),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: context.l10n.minutesLabel,
+                      ),
+                      onChanged: (_) => _countChanged(),
+                    ),
+                  ),
+                ] else
+                  SizedBox(
+                    width: 128,
+                    child: TextField(
+                      key: const ValueKey('field-hunt-count'),
+                      controller: _count,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: digits,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.huntCountTitle,
+                        errorText: widget.errorFor?.call('huntCount'),
+                      ),
+                      onChanged: (_) => _countChanged(),
+                    ),
+                  ),
+              ],
+            ),
+            // Unidades numa linha própria: lado a lado com a contagem, passam
+            // da largura do iPhone.
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SegmentedButton<String>(
+                    key: const ValueKey('field-hunt-unit'),
+                    segments: [
+                      for (final u in _units)
+                        ButtonSegment(
+                          value: u,
+                          label: Text(context.l10n.huntUnit(u)),
+                        ),
+                    ],
+                    selected: {_unit},
+                    showSelectedIcon: _units.length > 1,
+                    onSelectionChanged: (v) => _changeUnit(v.single),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
           if (widget.methods.isNotEmpty && widget.game != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -303,7 +316,6 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
             keyboardType: TextInputType.url,
             decoration: InputDecoration(
               labelText: context.l10n.postLink,
-              helperText: context.l10n.postLinkHelper,
               prefixIcon: const Icon(Icons.link),
               errorText: widget.errorFor?.call('huntPostUrl'),
             ),

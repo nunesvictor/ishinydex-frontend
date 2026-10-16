@@ -36,6 +36,8 @@ void main() {
     HuntRecord? initial,
     List<ShinyMethod> methods = const [_sr, _random],
     String? Function(String)? errorFor,
+    DateTime? capturedAt,
+    Locale locale = portuguese,
   }) async {
     final value = ValueNotifier<HuntRecord?>(initial);
     await pumpWidgetApp(
@@ -49,7 +51,7 @@ void main() {
               methods: methods,
               allMethods: const [_sr, _random, _dynamax],
               game: 'Sword',
-              capturedAt: DateTime(2026, 10, 20),
+              capturedAt: capturedAt ?? DateTime(2026, 10, 20),
               errorFor: errorFor,
               today: today,
               onChanged: (h) => value.value = h,
@@ -58,6 +60,7 @@ void main() {
         ),
       ),
       size: const Size(400, 1200),
+      locale: locale,
     );
     return value;
   }
@@ -68,16 +71,23 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('abre com hoje, escolhe método, unidade, horas e post', (
+  testWidgets('abre vazio, escolhe método, unidade, horas e post', (
     tester,
   ) async {
     final value = await pump(tester);
     expect(find.text('Opcional: método, contagem, início e post'), findsOne);
 
+    // Abrir não preenche nada (#294); a contagem espera o método (#293).
     await tap(tester, find.text('Registro da caçada'));
-    expect(value.value, HuntRecord(startedAt: today));
-    expect(find.textContaining('11 dias até a captura'), findsOne);
+    expect(value.value, isNull);
+    expect(find.text('Não informado'), findsOne);
     expect(find.text('Métodos de Sword, o jogo do OT'), findsOne);
+    expect(find.text('Escolha o método para informar a contagem.'), findsOne);
+    expect(find.byKey(const ValueKey('field-hunt-count')), findsNothing);
+    expect(find.byKey(const ValueKey('field-hunt-unit')), findsNothing);
+    // O campo do post sem o texto de ajuda (#296).
+    expect(find.text('Post em rede social'), findsOne);
+    expect(find.textContaining('r/ShinyPokemon'), findsNothing);
 
     await tap(tester, find.byKey(const ValueKey('field-hunt-method')));
     await tap(tester, find.text('Soft reset').last);
@@ -118,7 +128,11 @@ void main() {
     await tester.pump();
     expect(value.value?.count, isNull);
 
-    // Início: limpar e escolher no calendário.
+    // Início: escolher no calendário (até hoje, antes da captura) e limpar.
+    await tap(tester, find.text('Início da caçada'));
+    await tap(tester, find.text('OK'));
+    expect(value.value?.startedAt, today);
+    expect(find.textContaining('11 dias até a captura'), findsOne);
     await tap(tester, find.byTooltip('Limpar o início'));
     expect(find.text('Não informado'), findsOne);
     await tap(tester, find.text('Início da caçada'));
@@ -137,6 +151,44 @@ void main() {
     // Fechar não mexe no registro.
     await tap(tester, find.text('Registro da caçada'));
     expect(value.value?.postUrl, 'https://x');
+  });
+
+  testWidgets('o início vai até a data da captura (#294)', (tester) async {
+    final value = await pump(
+      tester,
+      initial: HuntRecord(method: 'sr', startedAt: DateTime(2026, 10, 5)),
+      capturedAt: DateTime(2026, 9),
+    );
+    // Um início depois da captura (salvo antes): o calendário abre na captura.
+    await tap(tester, find.text('Início da caçada'));
+    final picker = tester.widget<CalendarDatePicker>(
+      find.byType(CalendarDatePicker),
+    );
+    expect(picker.lastDate, DateTime(2026, 9));
+    expect(picker.initialDate, DateTime(2026, 9));
+    await tap(tester, find.text('OK'));
+    expect(value.value?.startedAt, DateTime(2026, 9));
+  });
+
+  testWidgets('em inglês: o post e o aviso do método', (tester) async {
+    await pump(tester, locale: english);
+    await tap(tester, find.text('Hunt record'));
+    expect(find.text('Social media post'), findsOne);
+    expect(find.text('Pick the method to enter the count.'), findsOne);
+  });
+
+  testWidgets('contagem salva sem método continua aparecendo (#293)', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      initial: const HuntRecord(count: 40, unit: 'encounters'),
+    );
+    expect(find.byKey(const ValueKey('field-hunt-count')), findsOne);
+    expect(
+      find.text('Escolha o método para informar a contagem.'),
+      findsNothing,
+    );
   });
 
   testWidgets('preenchido: abre aberto; método fora do jogo; erros', (
