@@ -16,16 +16,6 @@
   <style>
     body { background-color: #FAFAFA; }
     @media (prefers-color-scheme: dark) { body { background-color: #131313; } }
-    /* De onde o iPhone tira a cor da barra de status no app instalado
-       (#286): um elemento fixo no topo, por cima do Flutter (por baixo, na
-       beta 1, o iOS não o usou) e sem toques. O Flutter troca a cor a cada
-       mudança de tema (StatusTint). */
-    #status-tint {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 2147483647;
-      height: max(4px, env(safe-area-inset-top));
-      background-color: #FAFAFA; pointer-events: none;
-    }
-    @media (prefers-color-scheme: dark) { #status-tint { background-color: #131313; } }
 
     /* Splash do primeiro carregamento (#159). Antes do primeiro quadro o
        navegador baixa o app (main.dart.wasm, motor, catálogo) e a tela fica
@@ -123,7 +113,6 @@
   </script>
 </head>
 <body>
-  <div id="status-tint" aria-hidden="true"></div>
   <div id="splash" aria-hidden="true">
     <img src="icons/Icon-192.png" alt="">
     <span>iShinyDex</span>
