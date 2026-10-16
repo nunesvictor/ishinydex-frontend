@@ -258,7 +258,12 @@ void main() {
       await pumpWidgetApp(
         tester,
         Scaffold(
-          body: SingleChildScrollView(child: SpeciesInfo(form: form)),
+          body: SingleChildScrollView(
+            child: SpeciesInfo(
+              form: form.copyWith(captureRate: 45),
+              beforeFacts: const Text('quadro de tipos'),
+            ),
+          ),
         ),
         overrides: [
           savesProvider.overrideWith(
@@ -273,6 +278,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Na pokédex de'), findsOneWidget);
+      // O quadro de tipos entre "Na pokédex de" e os dados (#274).
+      double y(String text) => tester.getTopLeft(find.text(text)).dy;
+      expect(y('Na pokédex de'), lessThan(y('quadro de tipos')));
+      expect(y('quadro de tipos'), lessThan(y('Captura')));
       expect(find.text('Seu: Sword'), findsOneWidget);
       expect(find.text('Seus: Scarlet, Violet'), findsOneWidget);
       expect(
