@@ -501,6 +501,8 @@
   "maleOnly": "Male only",
   "femaleOnly": "Female only",
   "huntsTabMissing": "Missing",
+  "huntsTabMissingCount": "Missing ({count})",
+  "@huntsTabMissingCount": {"placeholders": {"count": {"type": "int", "example": "613"}}},
   "huntsTabActive": "Active ({count})",
   "@huntsTabActive": {"placeholders": {"count": {"type": "int", "example": "2"}}},
   "huntsTabPaused": "Paused ({count})",

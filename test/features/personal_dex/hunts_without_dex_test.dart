@@ -69,6 +69,8 @@ void main() {
       // Faltam sem shiny dex: o convite.
       expect(find.text('O que falta caçar?'), findsOneWidget);
       expect(find.text('Criar shiny dex'), findsOneWidget);
+      // Sem shiny dex, a aba fica sem número (#277).
+      expect(find.text('Faltam'), findsOneWidget);
       // Criar e desistir: continua no convite.
       await _tap(tester, find.text('Criar shiny dex'));
       expect(find.byType(NewDexPage), findsOneWidget);

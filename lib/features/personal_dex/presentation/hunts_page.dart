@@ -63,8 +63,10 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
   late HuntsTab _tab = widget.initialTab;
   Timer? _debounce;
 
-  /// O shiny dex escolhido da última vez; `null` até ler (ou sem nenhum).
-  late final Future<int?> _stored;
+  /// O shiny dex escolhido da última vez (`null` sem nenhum), e se já foi
+  /// lido do aparelho.
+  int? _stored;
+  bool _storedRead = false;
 
   @override
   void initState() {
@@ -72,9 +74,19 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
     final storage = ref.read(lastDexStorageProvider);
     // Um atalho também conta como escolha: a aba volta nele depois.
     final asked = widget.dexId;
-    _stored = asked == null
-        ? storage.readHunts()
-        : storage.writeHunts(asked).then((_) => asked);
+    unawaited(
+      (asked == null
+              ? storage.readHunts()
+              : storage.writeHunts(asked).then((_) => asked))
+          .then((id) {
+            if (mounted) {
+              setState(() {
+                _stored = id;
+                _storedRead = true;
+              });
+            }
+          }),
+    );
   }
 
   @override
@@ -104,6 +116,29 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
   List<PersonalDex>? get _shinyDexes =>
       ref.watch(dexListProvider).value?.where((d) => d.isShinyDex).toList();
 
+  /// O shiny dex do Faltam: o pedido (ou o último escolhido), se ainda for
+  /// um shiny dex; senão o primeiro. `null` sem nenhum ou até ler a escolha.
+  PersonalDex? get _missingDex {
+    final shiny = _shinyDexes;
+    if (!_storedRead || shiny == null || shiny.isEmpty) return null;
+    return shiny.where((d) => d.id == _stored).firstOrNull ?? shiny.first;
+  }
+
+  /// "Faltam (n)" com o total da lista (o mesmo do "n para caçar"); só
+  /// "Faltam" enquanto carrega ou sem shiny dex (#277).
+  String _missingLabel(BuildContext context) {
+    final dex = _missingDex;
+    final count = dex == null
+        ? null
+        : ref
+              .watch(huntPageProvider((dexId: dex.id, query: _query, page: 1)))
+              .value
+              ?.count;
+    return count == null
+        ? context.l10n.huntsTabMissing
+        : context.l10n.huntsTabMissingCount(count);
+  }
+
   @override
   Widget build(BuildContext context) {
     final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
@@ -116,7 +151,7 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
         segments: [
           ButtonSegment(
             value: HuntsTab.missing,
-            label: Text(context.l10n.huntsTabMissing),
+            label: Text(_missingLabel(context)),
           ),
           ButtonSegment(
             value: HuntsTab.active,
@@ -178,46 +213,29 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
     final shiny = _shinyDexes;
     if (shiny == null) return [const Expanded(child: LoadingView())];
     if (shiny.isEmpty) return [const Expanded(child: _NoShinyDex())];
+    final dex = _missingDex;
+    if (dex == null) return [const Expanded(child: LoadingView())];
     return [
+      if (shiny.length > 1) _DexPicker(dexes: shiny, selected: dex),
+      _Filters(
+        dexId: dex.id,
+        query: _query,
+        onSearchChanged: _onSearchChanged,
+        onSearchSubmitted: _submitSearch,
+        onChanged: _setQuery,
+      ),
       Expanded(
-        child: FutureBuilder<int?>(
-          future: _stored,
-          builder: (context, stored) {
-            if (stored.connectionState != ConnectionState.done) {
-              return const LoadingView();
-            }
-            // O pedido (ou o último escolhido), se ainda for um shiny dex;
-            // senão o primeiro.
-            final dex =
-                shiny.where((d) => d.id == stored.data).firstOrNull ??
-                shiny.first;
-            return Column(
-              children: [
-                if (shiny.length > 1) _DexPicker(dexes: shiny, selected: dex),
-                _Filters(
-                  dexId: dex.id,
-                  query: _query,
-                  onSearchChanged: _onSearchChanged,
-                  onSearchSubmitted: _submitSearch,
-                  onChanged: _setQuery,
-                ),
-                Expanded(
-                  child: HuntList(
-                    dexId: dex.id,
-                    query: _query,
-                    onShowActive: () => setState(() => _tab = HuntsTab.active),
-                    onTap: (hunt) => context.push(
-                      Routes.huntsDex(
-                        dex.id,
-                        boxId: hunt.slot.box.id,
-                        slotId: hunt.slot.id,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
+        child: HuntList(
+          dexId: dex.id,
+          query: _query,
+          onShowActive: () => setState(() => _tab = HuntsTab.active),
+          onTap: (hunt) => context.push(
+            Routes.huntsDex(
+              dex.id,
+              boxId: hunt.slot.box.id,
+              slotId: hunt.slot.id,
+            ),
+          ),
         ),
       ),
     ];
