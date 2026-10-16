@@ -123,6 +123,71 @@ void main() {
       expect(find.text('de caçada'), findsNothing);
     });
 
+    testWidgets('com dados faltando, a fileira se ajusta (#295)', (
+      tester,
+    ) async {
+      double centerX(Finder f) => tester.getCenter(f).dx;
+      final card = find.byType(HuntShareCard);
+
+      // Um número (o Buzzwole): centralizado, com a unidade e o método.
+      await pump(
+        tester,
+        const HuntShareData(
+          name: 'Buzzwole',
+          dexNumber: '#0794',
+          spriteUrl: null,
+          count: 22,
+          unit: 'runs',
+          method: 'Dynamax Adventures',
+        ),
+      );
+      expect(find.text('runs · Dynamax Adventures'), findsOne);
+      expect(centerX(find.text('22')), moreOrLessEquals(centerX(card)));
+
+      // Nenhum número: o método no lugar da fileira.
+      await pump(
+        tester,
+        const HuntShareData(
+          name: 'Buzzwole',
+          dexNumber: '#0794',
+          spriteUrl: null,
+          method: 'Dynamax Adventures',
+        ),
+      );
+      expect(
+        tester.widget<Text>(find.text('Dynamax Adventures')).style?.fontSize,
+        16,
+      );
+
+      // Dois números: espaços iguais também nas bordas.
+      await pump(
+        tester,
+        HuntShareData(
+          name: 'Jangmo-o',
+          dexNumber: '#0782',
+          spriteUrl: null,
+          count: 312,
+          unit: 'encounters',
+          startedAt: DateTime(2026, 10, 12),
+          capturedAt: DateTime(2026, 10, 17),
+        ),
+      );
+      Rect cell(String text) => tester.getRect(
+        find.ancestor(of: find.text(text), matching: find.byType(FittedBox)),
+      );
+      final row = tester.getRect(
+        find.ancestor(of: find.text('312'), matching: find.byType(Row)).first,
+      );
+      final (left, right) = (cell('312'), cell('5 dias'));
+      final gaps = [
+        left.left - row.left,
+        right.left - left.right,
+        row.right - right.right,
+      ];
+      expect(gaps[0], moreOrLessEquals(gaps[1], epsilon: 1));
+      expect(gaps[2], moreOrLessEquals(gaps[1], epsilon: 1));
+    });
+
     test('o brilho só se redesenha se a cor ou o ponto mudarem', () {
       const red = SparklePainter(color: Colors.red, dot: true);
       expect(

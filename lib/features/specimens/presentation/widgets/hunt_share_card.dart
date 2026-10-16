@@ -251,43 +251,70 @@ class HuntShareCard extends StatelessWidget {
                   ],
                 ),
                 const Divider(height: 1, color: _CardColors.line),
-                if (stats.isNotEmpty)
-                  Row(
-                    // Os números com espaços iguais entre eles.
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      for (final (value, label) in stats)
-                        // Um número comprido encolhe, em vez de vazar.
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Column(
-                              children: [
-                                Text(
-                                  value,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                    fontFeatures: [
-                                      FontFeature.tabularFigures(),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  label,
-                                  style: const TextStyle(
-                                    color: _CardColors.muted,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
+                // A fileira se ajusta a quantos números há (#295): com um,
+                // centralizado e maior, com a unidade e o método embaixo;
+                // com dois ou três, espaços iguais também nas bordas; sem
+                // nenhum, o método no lugar dela.
+                ...switch (stats) {
+                  [] when detail.isNotEmpty => [
+                    Text(
+                      detail,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                  [] => const <Widget>[],
+                  [(final value, final label)] => [
+                    Column(
+                      spacing: 2,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(value, style: _value(30)),
+                        ),
+                        Text(
+                          [
+                            if (label.isNotEmpty) label,
+                            if (detail.isNotEmpty) detail,
+                          ].join(' · '),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _CardColors.muted,
+                            fontSize: 12,
                           ),
                         ),
-                    ],
-                  ),
-                if (detail.isNotEmpty)
-                  Text(detail, textAlign: TextAlign.center, style: muted),
+                      ],
+                    ),
+                  ],
+                  _ => [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        for (final (value, label) in stats)
+                          // Um número comprido encolhe, em vez de vazar.
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Column(
+                                children: [
+                                  Text(value, style: _value(24)),
+                                  Text(
+                                    label,
+                                    style: const TextStyle(
+                                      color: _CardColors.muted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (detail.isNotEmpty)
+                      Text(detail, textAlign: TextAlign.center, style: muted),
+                  ],
+                },
                 Row(
                   spacing: 7,
                   children: [
@@ -318,6 +345,13 @@ class HuntShareCard extends StatelessWidget {
       ),
     );
   }
+
+  /// Um número da fileira, em [size] px.
+  static TextStyle _value(double size) => TextStyle(
+    fontSize: size,
+    fontWeight: FontWeight.w700,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
 }
 
 const _logoText = TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
