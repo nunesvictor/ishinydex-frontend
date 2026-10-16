@@ -191,6 +191,13 @@ Future<void> saveSpecimenForm(WidgetTester tester) async {
 }
 
 void main() {
+  test('painel do slot: 28% da janela, entre 360 e 440 px (#301)', () {
+    expect(DexDetailPage.panelWidth(900), 360);
+    expect(DexDetailPage.panelWidth(1280), 360);
+    expect(DexDetailPage.panelWidth(1400), moreOrLessEquals(392));
+    expect(DexDetailPage.panelWidth(2000), 440);
+  });
+
   group('layout expandido', () {
     testWidgets('lista de boxes, seleção e detalhe (tela larga)', (
       tester,

@@ -21,6 +21,12 @@ const _random = ShinyMethod(
   units: ['encounters', 'hours'],
   versions: {'sword'},
 );
+const _sparkling = ShinyMethod(
+  id: 'sparkling',
+  label: 'Sparkling Power (sanduíche)',
+  units: ['encounters', 'hours'],
+  versions: {'scarlet'},
+);
 const _dynamax = ShinyMethod(
   id: 'dynamax',
   label: 'Dynamax Adventures',
@@ -262,4 +268,52 @@ void main() {
     await tester.tap(find.text('Ver post'));
     expect(opened, ['https://x']);
   });
+
+  for (final panel in [320.0, 360.0, 440.0]) {
+    testWidgets('cartão no painel de ${panel.toInt()} px: o pior caso, com os '
+        'botões embaixo (#301)', (tester) async {
+      await pumpWidgetApp(
+        tester,
+        Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              // O painel menos o respiro dos lados.
+              width: panel - 32,
+              child: HuntRecordCard(
+                hunt: HuntRecord(
+                  method: 'sparkling',
+                  count: 12345,
+                  unit: 'encounters',
+                  bestChain: 38,
+                  odds: 273,
+                  multiple: 0.6,
+                  startedAt: DateTime(2025, 2),
+                  postUrl: 'https://x',
+                ),
+                capturedAt: DateTime(2025, 5, 18),
+              ),
+            ),
+          ),
+        ),
+        overrides: [
+          fakeBackendProvider.overrideWithValue(FakeBackend()),
+          shinyMethodsProvider.overrideWithValue(
+            (_, {fromGo = false}) => const [_sparkling],
+          ),
+        ],
+        size: const Size(500, 1400),
+      );
+      expect(tester.takeException(), isNull);
+      final headline = find.textContaining('Sparkling Power (sanduíche)');
+      expect(
+        tester.getRect(find.text('Ver post')).top,
+        greaterThanOrEqualTo(
+          tester.getRect(find.textContaining('Captura')).bottom,
+        ),
+      );
+      // O texto usa a largura do cartão, sem os botões ao lado.
+      expect(tester.getSize(headline).width, greaterThan(panel - 32 - 120));
+    });
+  }
 }

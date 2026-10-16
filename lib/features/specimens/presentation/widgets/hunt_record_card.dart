@@ -56,47 +56,64 @@ class HuntRecordCard extends ConsumerWidget {
       if (end != null) context.l10n.huntCaptureDate(format(end)),
     ].join(' · ');
     final post = hunt.postUrl;
+    final actions = [
+      if (specimen case final specimen?
+          when huntShareDataOf(context, ref, specimen) != null)
+        IconButton(
+          tooltip: context.l10n.shareHunt,
+          onPressed: () => unawaited(showHuntShareSheet(context, specimen)),
+          icon: const Icon(Icons.ios_share),
+        ),
+      if (post != null)
+        TextButton.icon(
+          onPressed: () => ref.read(openLinkProvider)(post),
+          icon: const Icon(Icons.open_in_new),
+          label: Text(context.l10n.seePost),
+        ),
+    ];
     return Card.outlined(
       key: const ValueKey('hunt-card'),
       margin: const EdgeInsets.only(top: 12),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Row(
-          spacing: 12,
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+        // Os botões numa linha embaixo do texto (#301): ao lado, num painel
+        // de 320 a 440 px, o texto ficava com poucos pixels e quebrava no
+        // meio das palavras.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(Icons.track_changes, color: theme.colorScheme.primary),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 2,
-                children: [
-                  Text(
-                    context.l10n.huntRecord,
-                    style: theme.textTheme.labelLarge,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                Icon(Icons.track_changes, color: theme.colorScheme.primary),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 2,
+                      children: [
+                        Text(
+                          context.l10n.huntRecord,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                        if (headline.isNotEmpty)
+                          Text(headline, style: theme.textTheme.bodyLarge),
+                        if (odds.isNotEmpty)
+                          Text(odds, style: theme.textTheme.bodyMedium),
+                        if (dates.isNotEmpty)
+                          Text(dates, style: theme.textTheme.bodySmall),
+                      ],
+                    ),
                   ),
-                  if (headline.isNotEmpty)
-                    Text(headline, style: theme.textTheme.bodyLarge),
-                  if (odds.isNotEmpty)
-                    Text(odds, style: theme.textTheme.bodyMedium),
-                  if (dates.isNotEmpty)
-                    Text(dates, style: theme.textTheme.bodySmall),
-                ],
-              ),
+                ),
+              ],
             ),
-            if (specimen case final specimen?
-                when huntShareDataOf(context, ref, specimen) != null)
-              IconButton(
-                tooltip: context.l10n.shareHunt,
-                onPressed: () =>
-                    unawaited(showHuntShareSheet(context, specimen)),
-                icon: const Icon(Icons.ios_share),
-              ),
-            if (post != null)
-              TextButton.icon(
-                onPressed: () => ref.read(openLinkProvider)(post),
-                icon: const Icon(Icons.open_in_new),
-                label: Text(context.l10n.seePost),
-              ),
+            if (actions.isNotEmpty)
+              Row(mainAxisAlignment: MainAxisAlignment.end, children: actions)
+            else
+              const SizedBox(height: 4),
           ],
         ),
       ),

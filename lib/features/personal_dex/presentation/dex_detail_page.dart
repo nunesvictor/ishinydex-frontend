@@ -50,6 +50,11 @@ class DexDetailPage extends ConsumerStatefulWidget {
   final int? initialBoxId;
   final int? initialSlotId;
 
+  /// A largura do painel do slot (#301): 28% da janela, entre 360 e 440 px.
+  /// No iPad deitado fica perto de 360; num monitor largo, 440.
+  static double panelWidth(double windowWidth) =>
+      (windowWidth * 0.28).clamp(360, 440);
+
   /// A aba do slot pedido ao abrir (`&tab=species`, #276); os outros slots
   /// abrem no resumo.
   final FormInfoTab initialTab;
@@ -492,7 +497,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       ],
     );
     final detail = SizedBox(
-      width: size.isExpanded ? 320 : 280,
+      width: DexDetailPage.panelWidth(MediaQuery.sizeOf(context).width),
       child: SlotDetailPanel(
         slot: _selectedSlot(box),
         onDeposit: () => _deposit(_selectedSlot(box)!),
