@@ -230,7 +230,8 @@ void main() {
             as SpecimenDraft;
     expect(draft.hunt?.count, 42);
     expect(draft.hunt?.unit, 'encounters');
-    expect(draft.hunt?.startedAt, isNotNull);
+    // O início vem vazio no registro direto (#294).
+    expect(draft.hunt?.startedAt, isNull);
   });
 
   testWidgets('cadastro direto: é o fim da caçada? Não e Sim', (tester) async {
