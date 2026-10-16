@@ -8,6 +8,7 @@ import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/detail_body.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_swipe.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/active_hunt_tile.dart';
@@ -41,6 +42,7 @@ class SlotDetailPanel extends ConsumerWidget {
     this.onShowHunts,
     this.navigation,
     this.fillHeight = false,
+    this.initialTab = FormInfoTab.summary,
     super.key,
   });
 
@@ -64,6 +66,9 @@ class SlotDetailPanel extends ConsumerWidget {
   /// Painel lateral: ocupa a altura toda, com a barra presa embaixo. No
   /// bottom sheet (`false`), o painel tem a altura do conteúdo.
   final bool fillHeight;
+
+  /// A aba ao abrir o slot (ver [FormInfoTabs.initialTab]).
+  final FormInfoTab initialTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -194,6 +199,7 @@ class SlotDetailPanel extends ConsumerWidget {
         formId: form.id,
         // Uma aba por slot: trocar de slot volta para o resumo.
         tabsKey: ValueKey('tabs-${current.id}'),
+        initialTab: initialTab,
         summaryLabel: specimen == null
             ? context.l10n.summaryForm
             : context.l10n.summarySpecimen,

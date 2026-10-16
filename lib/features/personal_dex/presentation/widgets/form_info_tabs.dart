@@ -8,7 +8,8 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/type_matchu
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-enum _Tab { summary, species }
+/// As abas de [FormInfoTabs].
+enum FormInfoTab { summary, species }
 
 /// As abas dos detalhes (slot, espécime e ficha da forma): o resumo
 /// ("Espécime", ou "Forma" sem espécime) e os dados da espécie. Com abas, a
@@ -28,6 +29,7 @@ class FormInfoTabs extends ConsumerStatefulWidget {
     this.dexId,
     this.onOpenSlot,
     this.onOpenForm,
+    this.initialTab = FormInfoTab.summary,
     super.key,
   });
 
@@ -50,27 +52,31 @@ class FormInfoTabs extends ConsumerStatefulWidget {
   final ValueChanged<Slot>? onOpenSlot;
   final ValueChanged<FormRef>? onOpenForm;
 
+  /// A aba ao abrir, ex.: Espécie a partir dos ícones de jogo do Faltam
+  /// (#276).
+  final FormInfoTab initialTab;
+
   @override
   ConsumerState<FormInfoTabs> createState() => _FormInfoTabsState();
 }
 
 class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
-  _Tab _tab = _Tab.summary;
+  late FormInfoTab _tab = widget.initialTab;
 
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     spacing: 12,
     children: [
-      SegmentedButton<_Tab>(
+      SegmentedButton<FormInfoTab>(
         showSelectedIcon: false,
         segments: [
           ButtonSegment(
-            value: _Tab.summary,
+            value: FormInfoTab.summary,
             label: Text(widget.summaryLabel ?? context.l10n.summarySpecimen),
           ),
           ButtonSegment(
-            value: _Tab.species,
+            value: FormInfoTab.species,
             label: Text(context.l10n.tabSpecies),
           ),
         ],
@@ -79,8 +85,8 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
             setState(() => _tab = selected.single),
       ),
       switch (_tab) {
-        _Tab.summary => _summary(),
-        _Tab.species => _withForm(
+        FormInfoTab.summary => _summary(),
+        FormInfoTab.species => _withForm(
           (form) => SpeciesInfo(
             form: form,
             dexId: widget.dexId,

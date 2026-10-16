@@ -108,6 +108,39 @@ void main() {
       );
     });
 
+    testWidgets('tocar nos ícones abre a aba Espécie; no nome, o Resumo '
+        '(#276, $px)', (tester) async {
+      await _openHunts(tester, size: size);
+      final games = find.descendant(
+        of: find.ancestor(
+          of: find.text('Espeon'),
+          matching: find.byType(ListTile),
+        ),
+        matching: find.byTooltip('Ver todos os jogos'),
+      );
+      expect(games, findsOneWidget);
+      await tester.ensureVisible(games);
+      await tester.pumpAndSettle();
+      await tester.tap(games);
+      await tester.pumpAndSettle();
+      // A lista completa dos jogos fica no "Na pokédex de" da aba Espécie.
+      expect(find.text('Na pokédex de'), findsOneWidget);
+
+      if (size == compactSize) {
+        // Fecha o sheet do slot para chegar ao voltar.
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Espeon'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Espeon'));
+      await tester.pumpAndSettle();
+      expect(find.text('Na pokédex de'), findsNothing);
+      expect(find.text('Status base'), findsOneWidget);
+    });
+
     testWidgets('ícones dos jogos e filtro pelos seus saves ($px)', (
       tester,
     ) async {

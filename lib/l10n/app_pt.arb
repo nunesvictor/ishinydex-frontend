@@ -427,6 +427,7 @@
   "genderless": "Sem gênero",
   "maleOnly": "Só macho",
   "femaleOnly": "Só fêmea",
+  "huntGamesAll": "Ver todos os jogos",
   "huntsTabMissing": "Faltam",
   "huntsTabMissingCount": "Faltam ({count})",
   "huntsTabActive": "Ativas ({count})",

@@ -500,6 +500,7 @@
   "genderless": "Genderless",
   "maleOnly": "Male only",
   "femaleOnly": "Female only",
+  "huntGamesAll": "See all games",
   "huntsTabMissing": "Missing",
   "huntsTabMissingCount": "Missing ({count})",
   "@huntsTabMissingCount": {"placeholders": {"count": {"type": "int", "example": "613"}}},
