@@ -42,6 +42,13 @@ abstract final class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
+      // Os avisos embaixo da tela (#278): flutuantes, acima da barra de
+      // navegação, com cantos arredondados. As cores vêm das `inverse*` da
+      // paleta.
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 

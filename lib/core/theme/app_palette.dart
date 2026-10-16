@@ -39,6 +39,9 @@ class AppPalette {
       surfaceContainer: Color(0xFFF0EEEE),
       surfaceContainerHigh: Color(0xFFEEECEC),
       surfaceContainerHighest: Color(0xFFE6E1E1),
+      inverseSurface: Color(0xFF2B2929),
+      onInverseSurface: Color(0xFFF4F0F0),
+      inversePrimary: Color(0xFFFF8A80),
       shiny: Color(0xFFC28E00),
       success: Color(0xFF2E7D32),
       huntBadge: Color(0xFFC62828),
@@ -60,6 +63,9 @@ class AppPalette {
       surfaceContainer: Color(0xFF1E1E1E),
       surfaceContainerHigh: Color(0xFF242323),
       surfaceContainerHighest: Color(0xFF353333),
+      inverseSurface: Color(0xFFE6E1E1),
+      onInverseSurface: Color(0xFF1C1B1B),
+      inversePrimary: Color(0xFFB71C1C),
       shiny: Color(0xFFFFCB05),
       success: Color(0xFF81C784),
       // No escuro, o selo da caçada fica amarelo, como antes da paleta.
@@ -88,6 +94,9 @@ class PaletteColors {
     required this.surfaceContainer,
     required this.surfaceContainerHigh,
     required this.surfaceContainerHighest,
+    required this.inverseSurface,
+    required this.onInverseSurface,
+    required this.inversePrimary,
     required this.shiny,
     required this.success,
     required this.huntBadge,
@@ -115,6 +124,13 @@ class PaletteColors {
   final Color surfaceContainer;
   final Color surfaceContainerHigh;
   final Color surfaceContainerHighest;
+
+  /// Os avisos embaixo da tela (SnackBar, #278): o contrário do tema, com a
+  /// ação no vermelho do outro lado (grafite com vermelho claro no tema
+  /// claro; claro com vermelho escuro no escuro).
+  final Color inverseSurface;
+  final Color onInverseSurface;
+  final Color inversePrimary;
 
   /// As cores fora do `ColorScheme` (ver [AppColors]).
   final Color shiny;
@@ -147,6 +163,9 @@ class PaletteColors {
         surfaceContainer: surfaceContainer,
         surfaceContainerHigh: surfaceContainerHigh,
         surfaceContainerHighest: surfaceContainerHighest,
+        inverseSurface: inverseSurface,
+        onInverseSurface: onInverseSurface,
+        inversePrimary: inversePrimary,
         // Sem a tinta vermelha nas superfícies elevadas.
         surfaceTint: onSurface,
       );

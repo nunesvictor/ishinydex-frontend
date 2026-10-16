@@ -24,6 +24,11 @@ void main() {
         expect(scheme.surfaceContainerHighest, colors.surfaceContainerHighest);
         // Sem a tinta vermelha nas superfícies elevadas.
         expect(scheme.surfaceTint, colors.onSurface);
+        // Os avisos (SnackBar, #278).
+        expect(scheme.inverseSurface, colors.inverseSurface);
+        expect(scheme.onInverseSurface, colors.onInverseSurface);
+        expect(scheme.inversePrimary, colors.inversePrimary);
+        expect(theme.snackBarTheme.behavior, SnackBarBehavior.floating);
         final extension = theme.extension<AppColors>()!;
         expect(extension.success, colors.success);
         expect(extension.huntBadge, colors.huntBadge);
@@ -55,6 +60,8 @@ void main() {
           (scheme.primary, scheme.surface, 3, 'ação sobre o fundo'),
           (colors.onHuntBadge, colors.huntBadge, 3, 'selo da caçada'),
           (colors.success, scheme.surface, 3, 'concluído'),
+          (scheme.onInverseSurface, scheme.inverseSurface, 4.5, 'aviso'),
+          (scheme.inversePrimary, scheme.inverseSurface, 4.5, 'ação do aviso'),
         ]) {
           expect(contrast(fg, bg), greaterThanOrEqualTo(min), reason: name);
         }
