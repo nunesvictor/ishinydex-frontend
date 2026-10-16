@@ -164,8 +164,9 @@ seguem o mesmo padrão, para as ações não empilharem botões:
     [form_sheet.dart](../lib/features/personal_dex/presentation/widgets/form_sheet.dart)),
     um bottom sheet só de leitura com as mesmas abas; tocar em outra forma
     troca a ficha, sem empilhar sheets, e a aba aberta continua.
-    Por último, **Tipos em batalha** (`TypeMatchupsCard`, #230, abaixo de
-    tudo desde a #270): as fraquezas pelos tipos da forma (4×, 2×, ½×, ¼×,
+    Entre "Na pokédex de" e a grade de dados, **Tipos em batalha**
+    (`TypeMatchupsCard`, #230; posição da #274, pelo `beforeFacts` do
+    `SpeciesInfo`): as fraquezas pelos tipos da forma (4×, 2×, ½×, ¼×,
     0×) e contra o que o STAB acerta 2×, pela tabela da geração 6
     ([`type_chart.dart`](../lib/core/utils/type_chart.dart), constantes do
     frontend). Fica aqui, e não no Resumo, para o detalhe do espécime caber

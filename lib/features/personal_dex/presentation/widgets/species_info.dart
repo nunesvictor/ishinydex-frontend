@@ -27,10 +27,15 @@ class SpeciesInfo extends ConsumerWidget {
     this.dexId,
     this.onOpenSlot,
     this.onOpenForm,
+    this.beforeFacts,
     super.key,
   });
 
   final FormDetail form;
+
+  /// Entra entre "Na pokédex de" e os dados da espécie: o quadro Tipos em
+  /// batalha (#274).
+  final Widget? beforeFacts;
   final int? dexId;
   final ValueChanged<Slot>? onOpenSlot;
   final ValueChanged<FormRef>? onOpenForm;
@@ -152,6 +157,7 @@ class SpeciesInfo extends ConsumerWidget {
           Text(context.l10n.inPokedexOf, style: theme.textTheme.titleSmall),
           _Pokedexes(form.pokedexes),
         ],
+        ?beforeFacts,
         if (facts.isNotEmpty)
           LayoutBuilder(
             builder: (context, constraints) {

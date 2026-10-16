@@ -1074,13 +1074,12 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Linha evolutiva'), findsOneWidget);
         expect(find.text('Captura'), findsOneWidget);
-        // A linha evolutiva no topo; Tipos em batalha por último (#270).
-        expect(
-          tester.getTopLeft(find.text('Linha evolutiva')).dy,
-          lessThan(
-            tester.getTopLeft(find.byKey(const ValueKey('type-matchups'))).dy,
-          ),
-        );
+        // A linha evolutiva no topo; Tipos em batalha antes dos dados da
+        // espécie (#274).
+        double top(Finder f) => tester.getTopLeft(f).dy;
+        final matchups = find.byKey(const ValueKey('type-matchups'));
+        expect(top(find.text('Linha evolutiva')), lessThan(top(matchups)));
+        expect(top(matchups), lessThan(top(find.text('Captura'))));
         // A forma atual não navega; as outras levam ao slot delas.
         // No celular, a forma pode estar fora da tela: rolar até lá.
         await tester.ensureVisible(
