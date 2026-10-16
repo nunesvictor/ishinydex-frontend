@@ -94,6 +94,8 @@ void main() {
       expect(find.text('19 to hunt'), findsOneWidget);
       expect(find.text('#0003 · HOME 1 · R1 C3 · Missing'), findsOneWidget);
       expect(find.text('Active (0)'), findsOneWidget);
+      // A aba com o mesmo total da lista (#277).
+      expect(find.text('Missing (19)'), findsOneWidget);
       expect(find.text('Status'), findsOneWidget);
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
@@ -107,6 +109,7 @@ void main() {
 
       // Semente: 19 formas sem espécime no shiny dex.
       expect(find.text('19 para caçar'), findsOneWidget);
+      expect(find.text('Faltam (19)'), findsOneWidget);
       expect(find.text('Venusaur'), findsOneWidget);
       // Nº da dex, posição na box e motivo.
       expect(find.text('#0003 · HOME 1 · L1 C3 · Faltando'), findsOneWidget);
@@ -185,6 +188,8 @@ void main() {
 
     await _tapReason(tester, 'Shiny do GO');
     expect(find.text('25 para caçar'), findsOneWidget);
+    // O número da aba acompanha os filtros (#277).
+    expect(find.text('Faltam (25)'), findsOneWidget);
     expect(_chip('Motivos: sem shiny e shiny do GO'), findsOneWidget);
     await _tapReason(tester, 'Sem shiny');
     expect(find.text('6 para caçar'), findsOneWidget);
@@ -372,7 +377,7 @@ void main() {
       await tester.tap(find.text('Pausadas (0)'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Nenhuma caçada pausada'), findsOne);
-      await tester.tap(find.text('Faltam'));
+      await tester.tap(find.text('Faltam (1)'));
       await tester.pumpAndSettle();
       // O selo no lugar do botão leva a Ativas.
       expect(find.byKey(const ValueKey('hunt-badge')), findsOne);

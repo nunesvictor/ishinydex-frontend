@@ -428,6 +428,7 @@
   "maleOnly": "Só macho",
   "femaleOnly": "Só fêmea",
   "huntsTabMissing": "Faltam",
+  "huntsTabMissingCount": "Faltam ({count})",
   "huntsTabActive": "Ativas ({count})",
   "huntsTabPaused": "Pausadas ({count})",
   "huntsTitle": "Caçadas",
