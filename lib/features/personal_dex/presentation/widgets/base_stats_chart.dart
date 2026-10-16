@@ -43,6 +43,12 @@ class BaseStatsChart extends StatelessWidget {
       ? const Color(0xFF90CAF9)
       : const Color(0xFF1565C0);
 
+  /// A largura do hexágono compacto.
+  static const _compactWidth = 190.0;
+
+  /// O mínimo da legenda ao lado do hexágono compacto (#301).
+  static const minLegendWidth = 140.0;
+
   /// Escala fixa: dá para comparar o hexágono de Pokémon diferentes. Quase
   /// nenhum status base passa disso (os que passam encostam na borda).
   static const maxValue = 200;
@@ -111,7 +117,7 @@ class BaseStatsChart extends StatelessWidget {
           '${context.l10n.stat(stat.stat)} ${stat.baseStat}${effect(stat.stat)}',
       ].join('; '),
       child: CustomPaint(
-        size: compact ? const Size(190, 164) : const Size(300, 252),
+        size: compact ? const Size(_compactWidth, 164) : const Size(300, 252),
         painter: _HexagonPainter(
           stats: vertices,
           statName: context.l10n.stat,
@@ -162,18 +168,30 @@ class BaseStatsChart extends StatelessWidget {
       ),
     ];
     if (compact) {
-      return Row(
-        spacing: 8,
-        children: [
-          chart,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 6,
-              children: legend,
-            ),
-          ),
-        ],
+      final column = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 6,
+        children: legend,
+      );
+      // A legenda ao lado só com espaço para ela (#301): no painel estreito
+      // do PC e do iPad, desce para baixo do hexágono.
+      return LayoutBuilder(
+        builder: (context, constraints) =>
+            constraints.maxWidth >= _compactWidth + 8 + minLegendWidth
+            ? Row(
+                spacing: 8,
+                children: [
+                  chart,
+                  Expanded(child: column),
+                ],
+              )
+            : Column(
+                spacing: 8,
+                children: [
+                  chart,
+                  SizedBox(width: double.infinity, child: column),
+                ],
+              ),
       );
     }
     return Column(spacing: 4, children: [chart, ...legend]);

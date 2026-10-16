@@ -55,6 +55,39 @@ void main() {
       expect(find.textContaining('Natureza Modest'), findsOneWidget);
     });
 
+    for (final (width, beside) in [(304.0, false), (384.0, true)]) {
+      testWidgets('compacto em ${width.toInt()} px: a legenda '
+          '${beside ? 'ao lado' : 'embaixo'} (#301)', (tester) async {
+        await pumpWidgetApp(
+          tester,
+          Center(
+            child: SizedBox(
+              width: width,
+              child: const BaseStatsChart(
+                compact: true,
+                stats: [FormStat(stat: 'hp', baseStat: 100, effort: 1)],
+              ),
+            ),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+        final chart = tester.getRect(
+          find
+              .descendant(
+                of: find.byType(BaseStatsChart),
+                matching: find.byType(CustomPaint),
+              )
+              .first,
+        );
+        final total = tester.getRect(find.textContaining('Total '));
+        if (beside) {
+          expect(total.left, greaterThan(chart.right));
+        } else {
+          expect(total.top, greaterThanOrEqualTo(chart.bottom));
+        }
+      });
+    }
+
     testWidgets('acima da escala encosta na borda; vários EV; redesenha', (
       tester,
     ) async {
