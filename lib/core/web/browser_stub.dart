@@ -21,6 +21,9 @@ void openInNewTab(String url) => throw UnsupportedError('Só no navegador.');
 /// Fora do navegador não há versão nova de página: nunca chama.
 void onAppUpdateReady(void Function() onReady) {}
 
+/// Fora do navegador não há barra de status: não faz nada.
+void setTopColor(String cssColor) {}
+
 /// Fora do navegador não há página: ver `browser_web.dart`.
 void reloadPage() => throw UnsupportedError('Só no navegador.');
 
