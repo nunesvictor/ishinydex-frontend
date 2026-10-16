@@ -79,16 +79,6 @@ void onAppUpdateReady(void Function() onReady) {
   );
 }
 
-/// Pinta o fundo da página e o `#status-tint` do `index.html` com
-/// [cssColor] (#286): no app instalado no iPhone, a barra de status tira a
-/// cor de um elemento fixo no topo, e o canvas do Flutter não serve.
-void setTopColor(String cssColor) {
-  web.document.body?.style.backgroundColor = cssColor;
-  (web.document.getElementById(
-    'status-tint',
-  ) as web.HTMLElement?)?.style.backgroundColor = cssColor;
-}
-
 /// Recarrega a página: abre a versão nova do app.
 void reloadPage() => web.window.location.reload();
 

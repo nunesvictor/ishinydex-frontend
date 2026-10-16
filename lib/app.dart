@@ -5,7 +5,6 @@ import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
-import 'package:ishinydex/core/widgets/status_tint.dart';
 import 'package:ishinydex/core/widgets/update_notice.dart';
 import 'package:ishinydex/features/sync/presentation/sync_lifecycle.dart';
 
@@ -32,8 +31,7 @@ class IShinyDexApp extends ConsumerWidget {
     // Na web, o `Title` grava o `<meta name="theme-color">`, que o iPhone usa
     // na barra de status (relógio, bateria). O do MaterialApp usa sempre o
     // tema claro; este, abaixo dele, usa a cor do AppBar do tema em uso e é
-    // refeito quando o sistema troca entre claro e escuro. O StatusTint
-    // leva a mesma cor ao elemento fixo do topo da página (#286).
+    // refeito quando o sistema troca entre claro e escuro.
     // O SyncLifecycle sincroniza com o Dropbox ao abrir e ao voltar ao app
     // (sem Dropbox neste build, não faz nada).
     // O UpdateNotice avisa quando sai uma versão nova com o app aberto.
@@ -43,13 +41,10 @@ class IShinyDexApp extends ConsumerWidget {
       Intl.defaultLocale = Localizations.localeOf(context).toString();
       return UpdateNotice(
         child: SyncLifecycle(
-          child: StatusTint(
+          child: Title(
+            title: 'iShinyDex',
             color: Theme.of(context).colorScheme.surface,
-            child: Title(
-              title: 'iShinyDex',
-              color: Theme.of(context).colorScheme.surface,
-              child: child!,
-            ),
+            child: child!,
           ),
         ),
       );
