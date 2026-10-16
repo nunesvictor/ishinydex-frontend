@@ -195,7 +195,9 @@ void main() {
     testWidgets('lista de boxes, seleção e detalhe (tela larga)', (
       tester,
     ) async {
-      await pumpFullApp(tester, size: largeSize);
+      final storage = InMemoryLastDexStorage();
+      await storage.writeBoxList(open: true);
+      await pumpFullApp(tester, size: largeSize, lastDex: storage);
       await openShinyDex(tester);
       expect(
         find.text('Selecione um slot para ver os detalhes.'),
@@ -251,6 +253,23 @@ void main() {
       await tester.tap(find.byTooltip('Ocultar lista de boxes'));
       await tester.pumpAndSettle();
       expect(find.byType(BoxListPanel), findsNothing);
+    });
+
+    testWidgets('lista de boxes: fechada também em tela larga e lembrada '
+        '(#302)', (tester) async {
+      final storage = InMemoryLastDexStorage();
+      await pumpFullApp(tester, size: largeSize, lastDex: storage);
+      await openShinyDex(tester);
+      expect(find.byType(BoxListPanel), findsNothing);
+      await tester.tap(find.byTooltip('Mostrar lista de boxes'));
+      await tester.pumpAndSettle();
+      expect(await storage.readBoxList(), isTrue);
+
+      // Reabre o dex: volta aberta.
+      await tester.pumpWidget(const SizedBox());
+      await pumpFullApp(tester, size: largeSize, lastDex: storage);
+      await openShinyDex(tester);
+      expect(find.byType(BoxListPanel), findsOneWidget);
     });
 
     testWidgets('libertar exige confirmação e deixa o slot faltante', (
