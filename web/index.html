@@ -17,10 +17,11 @@
     body { background-color: #FAFAFA; }
     @media (prefers-color-scheme: dark) { body { background-color: #131313; } }
     /* De onde o iPhone tira a cor da barra de status no app instalado
-       (#286): um elemento fixo no topo, por baixo do Flutter e sem toques.
-       O Flutter troca a cor a cada mudança de tema (StatusTint). */
+       (#286): um elemento fixo no topo, por cima do Flutter (por baixo, na
+       beta 1, o iOS não o usou) e sem toques. O Flutter troca a cor a cada
+       mudança de tema (StatusTint). */
     #status-tint {
-      position: fixed; top: 0; left: 0; right: 0; z-index: -1;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 2147483647;
       height: max(4px, env(safe-area-inset-top));
       background-color: #FAFAFA; pointer-events: none;
     }
