@@ -6,7 +6,8 @@
 // - Versionados (v/<hash>/, canvaskit/): cache primeiro. Nunca mudam: um
 //   build novo tem outro hash.
 // - Resto do próprio site (index.html, flutter_bootstrap.js, manifesto,
-//   ícones, catalog/catalog.json): rede primeiro, com o cache de reserva.
+//   ícones, catalog/catalog.json): rede primeiro, sempre conferida com o
+//   servidor (sem o cache HTTP), com o cache de reserva.
 // - Sprites (raw do PokeAPI/sprites, com CORS): cache primeiro, num cache
 //   que sobrevive às versões do app.
 // - Nunca passa pelo cache: o que não é GET (o Dropbox, por exemplo).
@@ -104,7 +105,11 @@ async function cacheFirst(name, request) {
 async function networkFirst(name, request) {
   const cache = await caches.open(name);
   try {
-    const response = await fetch(request);
+    // 'no-cache': confere com o servidor (ETag) em vez de usar a cópia do
+    // cache HTTP. O Pages manda max-age=600, e o flutter_bootstrap.js de até
+    // 10 minutos atrás abriria o build anterior logo depois de uma versão
+    // nova (#291). Sem mudança, a resposta é um 304, sem baixar de novo.
+    const response = await fetch(request, { cache: 'no-cache' });
     if (response.ok) cache.put(request, response.clone());
     return response;
   } catch (error) {
