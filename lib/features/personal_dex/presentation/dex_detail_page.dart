@@ -20,6 +20,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigat
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_view.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_menu.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/generation_progress.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
@@ -41,12 +42,17 @@ class DexDetailPage extends ConsumerStatefulWidget {
     required this.dexId,
     this.initialBoxId,
     this.initialSlotId,
+    this.initialTab = FormInfoTab.summary,
     super.key,
   });
 
   final int dexId;
   final int? initialBoxId;
   final int? initialSlotId;
+
+  /// A aba do slot pedido ao abrir (`&tab=species`, #276); os outros slots
+  /// abrem no resumo.
+  final FormInfoTab initialTab;
 
   @override
   ConsumerState<DexDetailPage> createState() => _DexDetailPageState();
@@ -120,6 +126,12 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
 
   bool get _preferShiny =>
       ref.read(dexProvider(_dexId)).value?.isShinyDex ?? false;
+
+  /// A aba ao abrir [slot]: a pedida na URL só para o slot pedido.
+  FormInfoTab _tabFor(Slot? slot) =>
+      slot != null && slot.id == widget.initialSlotId
+      ? widget.initialTab
+      : FormInfoTab.summary;
 
   @override
   void dispose() {
@@ -480,6 +492,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
         onShowHunts: _showHunts,
         navigation: _navigation(boxes, index),
         fillHeight: true,
+        initialTab: _tabFor(_selectedSlot(box)),
       ),
     );
     return Row(
@@ -792,6 +805,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
             ),
             child: SlotDetailPanel(
               slot: slot,
+              initialTab: _tabFor(slot),
               onDeposit: () {
                 Navigator.of(sheetContext).pop();
                 unawaited(_deposit(slot!));

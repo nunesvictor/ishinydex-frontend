@@ -37,6 +37,7 @@ class DetailBody extends StatelessWidget {
     this.dexId,
     this.onOpenSlot,
     this.onOpenForm,
+    this.initialTab = FormInfoTab.summary,
     super.key,
   });
 
@@ -70,6 +71,9 @@ class DetailBody extends StatelessWidget {
   final int? dexId;
   final ValueChanged<Slot>? onOpenSlot;
   final ValueChanged<FormRef>? onOpenForm;
+
+  /// Ver [FormInfoTabs.initialTab].
+  final FormInfoTab initialTab;
 
   @override
   Widget build(BuildContext context) {
@@ -154,6 +158,7 @@ class DetailBody extends StatelessWidget {
             dexId: dexId,
             onOpenSlot: onOpenSlot,
             onOpenForm: onOpenForm,
+            initialTab: initialTab,
           ),
       ],
     );

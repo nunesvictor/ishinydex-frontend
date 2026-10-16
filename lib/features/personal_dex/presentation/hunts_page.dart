@@ -236,6 +236,14 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
               slotId: hunt.slot.id,
             ),
           ),
+          onTapGames: (hunt) => context.push(
+            Routes.huntsDex(
+              dex.id,
+              boxId: hunt.slot.box.id,
+              slotId: hunt.slot.id,
+              species: true,
+            ),
+          ),
         ),
       ),
     ];
@@ -667,6 +675,7 @@ class HuntList extends ConsumerWidget {
     required this.dexId,
     required this.query,
     required this.onTap,
+    this.onTapGames,
     this.onShowActive,
     super.key,
   });
@@ -674,6 +683,9 @@ class HuntList extends ConsumerWidget {
   final int dexId;
   final HuntQuery query;
   final ValueChanged<Hunt> onTap;
+
+  /// Os ícones de jogo de um item (#276): abrem o slot na aba Espécie.
+  final ValueChanged<Hunt>? onTapGames;
 
   /// O selo da caçada de um item, e começar uma caçada, levam à aba Ativas.
   final VoidCallback? onShowActive;
@@ -713,6 +725,7 @@ class HuntList extends ConsumerWidget {
                   query: query,
                   index: i,
                   onTap: onTap,
+                  onTapGames: onTapGames,
                   onShowActive: onShowActive,
                 ),
               ),
@@ -735,6 +748,7 @@ class _HuntItem extends ConsumerWidget {
     required this.query,
     required this.index,
     required this.onTap,
+    this.onTapGames,
     this.onShowActive,
   });
 
@@ -742,6 +756,7 @@ class _HuntItem extends ConsumerWidget {
   final HuntQuery query;
   final int index;
   final ValueChanged<Hunt> onTap;
+  final ValueChanged<Hunt>? onTapGames;
   final VoidCallback? onShowActive;
 
   @override
@@ -753,6 +768,10 @@ class _HuntItem extends ConsumerWidget {
         HuntTile(
           hunt: page.results[offset],
           onTap: () => onTap(page.results[offset]),
+          onTapGames: switch (onTapGames) {
+            final open? => () => open(page.results[offset]),
+            null => null,
+          },
           onShowActive: onShowActive,
         ),
       // A lista encolheu entre páginas (ex.: depositou um shiny).
@@ -783,12 +802,16 @@ class HuntTile extends ConsumerWidget {
   const HuntTile({
     required this.hunt,
     required this.onTap,
+    this.onTapGames,
     this.onShowActive,
     super.key,
   });
 
   final Hunt hunt;
   final VoidCallback onTap;
+
+  /// Tocar nos ícones de jogo; `null` = eles fazem parte do item.
+  final VoidCallback? onTapGames;
   final VoidCallback? onShowActive;
 
   @override
@@ -844,7 +867,7 @@ class HuntTile extends ConsumerWidget {
         children: [
           if (hunt.versions.isNotEmpty) ...[
             ?_homeTag(ref),
-            HuntGames(versions: hunt.versions, owned: _owned(ref)),
+            _games(context, ref),
           ],
           ?_huntAction(context, ref, form),
         ],
@@ -862,6 +885,26 @@ class HuntTile extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       ),
       onTap: onTap,
+    );
+  }
+
+  /// Os ícones de jogo; com [onTapGames], um alvo de toque próprio (com a
+  /// altura do item), que leva à lista completa na aba Espécie (#276).
+  Widget _games(BuildContext context, WidgetRef ref) {
+    final games = HuntGames(versions: hunt.versions, owned: _owned(ref));
+    final open = onTapGames;
+    if (open == null) return games;
+    return Tooltip(
+      message: context.l10n.huntGamesAll,
+      child: InkWell(
+        key: ValueKey('hunt-games-${hunt.slot.id}'),
+        onTap: open,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
+          child: games,
+        ),
+      ),
     );
   }
 

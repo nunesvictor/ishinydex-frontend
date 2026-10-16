@@ -7,6 +7,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_detail_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart';
 import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 import 'package:ishinydex/features/settings/presentation/about_page.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
 import 'package:ishinydex/features/shiny_locks/presentation/shiny_locks_page.dart';
@@ -61,11 +62,18 @@ abstract final class Routes {
 
   /// O dex [id] aberto a partir de um item do Faltam, dentro da aba
   /// Caçadas: o voltar retorna à lista, com os filtros.
-  static String huntsDex(int id, {int? boxId, int? slotId}) => Uri(
+  /// Com [species], o slot abre na aba Espécie (#276).
+  static String huntsDex(
+    int id, {
+    int? boxId,
+    int? slotId,
+    bool species = false,
+  }) => Uri(
     path: '$huntsRoot/dex/$id',
     queryParameters: {
       if (boxId != null) 'box': '$boxId',
       if (slotId != null) 'slot': '$slotId',
+      if (species) 'tab': 'species',
     }.nullIfEmpty,
   ).toString();
 
@@ -209,19 +217,23 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 /// O dex da URL (`:dexId`); com `box`/`slot`, abre naquela box com o slot
-/// selecionado.
+/// selecionado; com `tab=species`, o slot na aba Espécie.
 Widget _dexPage(BuildContext context, GoRouterState state) {
   final dexId = int.tryParse(state.pathParameters['dexId']!) ?? 0;
   final query = state.uri.queryParameters;
   final boxId = int.tryParse(query['box'] ?? '');
   final slotId = int.tryParse(query['slot'] ?? '');
+  final tab = query['tab'] == 'species'
+      ? FormInfoTab.species
+      : FormInfoTab.summary;
   // Trocar de dex (ou de slot pedido na URL) recria a página, com box e
   // seleção novas.
   return DexDetailPage(
-    key: ValueKey((dexId, boxId, slotId)),
+    key: ValueKey((dexId, boxId, slotId, tab)),
     dexId: dexId,
     initialBoxId: boxId,
     initialSlotId: slotId,
+    initialTab: tab,
   );
 }
 
