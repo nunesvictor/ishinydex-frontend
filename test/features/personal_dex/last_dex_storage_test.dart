@@ -20,6 +20,10 @@ void main() {
     expect(await storage.readHunts(), isNull);
     await storage.writeHunts(3);
     expect(await storage.readHunts(), 3);
+    // A lista de boxes (#302): sem escolha, null; depois, a escolha.
+    expect(await storage.readBoxList(), isNull);
+    await storage.writeBoxList(open: true);
+    expect(await storage.readBoxList(), isTrue);
     expect(await storage.read(), 7);
   });
 

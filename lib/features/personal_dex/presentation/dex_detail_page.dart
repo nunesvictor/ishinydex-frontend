@@ -79,11 +79,10 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   /// `setState` da página não o reconstrói.
   final ValueNotifier<int> _selection = ValueNotifier(0);
 
-  /// Lista de boxes ao lado da grade (expandido e maior). `null` = padrão do
-  /// tamanho: aberta só em telas largas, para a grade crescer no PC.
-  bool? _boxListOpen;
-
-  bool _isBoxListOpen(WindowSize size) => _boxListOpen ?? size.isLarge;
+  /// Lista de boxes ao lado da grade (expandido e maior): fechada até a
+  /// pessoa abrir, e a escolha fica no aparelho (#302). A grade e o painel do
+  /// slot ganham a largura dela.
+  bool _boxListOpen = false;
   PageController? _pageController;
 
   int get _dexId => widget.dexId;
@@ -119,9 +118,22 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   @override
   void initState() {
     super.initState();
-    unawaited(ref.read(lastDexStorageProvider).write(_dexId));
+    final storage = ref.read(lastDexStorageProvider);
+    unawaited(storage.write(_dexId));
+    unawaited(
+      storage.readBoxList().then((open) {
+        if (mounted && open != null) setState(() => _boxListOpen = open);
+      }),
+    );
     // Ganhar ou perder o foco muda o layout (AppBar, "Cancelar").
     _searchFocus.addListener(() => setState(() {}));
+  }
+
+  void _toggleBoxList() {
+    setState(() => _boxListOpen = !_boxListOpen);
+    unawaited(
+      ref.read(lastDexStorageProvider).writeBoxList(open: _boxListOpen),
+    );
   }
 
   bool get _preferShiny =>
@@ -321,12 +333,11 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       actions: [
         if (size.isExpanded)
           IconButton(
-            tooltip: _isBoxListOpen(size)
+            tooltip: _boxListOpen
                 ? context.l10n.hideBoxList
                 : context.l10n.showBoxList,
-            isSelected: _isBoxListOpen(size),
-            onPressed: () =>
-                setState(() => _boxListOpen = !_isBoxListOpen(size)),
+            isSelected: _boxListOpen,
+            onPressed: _toggleBoxList,
             icon: const Icon(Icons.view_sidebar_outlined),
             selectedIcon: const Icon(Icons.view_sidebar),
           ),
@@ -497,7 +508,7 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     );
     return Row(
       children: [
-        if (size.isExpanded && _isBoxListOpen(size)) ...[
+        if (size.isExpanded && _boxListOpen) ...[
           SizedBox(
             width: 220,
             child: BoxListPanel(
