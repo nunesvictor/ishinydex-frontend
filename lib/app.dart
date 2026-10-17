@@ -4,10 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/widgets/update_notice.dart';
-import 'package:ishinydex/core/widgets/web_safe_area.dart';
 import 'package:ishinydex/features/sync/presentation/sync_lifecycle.dart';
 
 /// Desliga o retry automático do Riverpod 3: as telas têm botão
@@ -31,26 +29,22 @@ class IShinyDexApp extends ConsumerWidget {
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     routerConfig: ref.watch(routerProvider),
     // Na web, o `Title` grava o `<meta name="theme-color">`, que o iPhone usa
-    // na barra de status (relógio, bateria). O do MaterialApp usaria a cor
-    // primária; este, abaixo dele, usa o topo grafite (#290), o mesmo do
-    // `index.html` nos dois temas.
+    // na barra de status (relógio, bateria). O do MaterialApp usa sempre o
+    // tema claro; este, abaixo dele, usa a cor do AppBar do tema em uso e é
+    // refeito quando o sistema troca entre claro e escuro.
     // O SyncLifecycle sincroniza com o Dropbox ao abrir e ao voltar ao app
     // (sem Dropbox neste build, não faz nada).
     // O UpdateNotice avisa quando sai uma versão nova com o app aberto.
-    // O WebSafeArea dá ao app a altura da barra de status do iPhone, que
-    // fica transparente por cima do topo grafite (#290).
     builder: (context, child) {
       // Datas e números formatados sem `locale` explícito (`DateFormat`,
       // `NumberFormat`) seguem o idioma da interface.
       Intl.defaultLocale = Localizations.localeOf(context).toString();
-      return WebSafeArea(
-        child: UpdateNotice(
-          child: SyncLifecycle(
-            child: Title(
-              title: 'iShinyDex',
-              color: AppColors.of(context).topBar,
-              child: child!,
-            ),
+      return UpdateNotice(
+        child: SyncLifecycle(
+          child: Title(
+            title: 'iShinyDex',
+            color: Theme.of(context).colorScheme.surface,
+            child: child!,
           ),
         ),
       );

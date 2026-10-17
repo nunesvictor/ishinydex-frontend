@@ -8,8 +8,6 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/theme/app_palette.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
@@ -230,22 +228,6 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
                 topInset: top + _barHeight + 2 * _barMargin,
               ),
             ),
-            // Ativa, a busca ocupa o lugar da barra de título, na mesma
-            // faixa grafite (#290).
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: top + _barHeight + 2 * _barMargin,
-              child: IgnorePointer(
-                child: AnimatedOpacity(
-                  key: const ValueKey('search-top-bar'),
-                  duration: const Duration(milliseconds: 200),
-                  opacity: active ? 1 : 0,
-                  child: _searchTopBar(context),
-                ),
-              ),
-            ),
             Positioned(
               top: top + _barMargin,
               left: barLeft + barWidth + 8,
@@ -255,7 +237,6 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
                 child: active
                     ? TextButton(
                         key: const ValueKey('search-cancel'),
-                        style: AppTheme.topBarTextButton(context),
                         onPressed: _cancelSearch,
                         child: Text(context.l10n.cancel),
                       )
@@ -290,22 +271,6 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
           ],
         );
       },
-    );
-  }
-
-  /// A faixa grafite por trás da busca ativa, com a linha de baixo do tema
-  /// escuro, como a da AppBar.
-  Widget _searchTopBar(BuildContext context) {
-    final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.of(context).topBar,
-        border: theme.brightness == Brightness.dark
-            ? Border(
-                bottom: BorderSide(color: theme.colorScheme.outlineVariant),
-              )
-            : null,
-      ),
     );
   }
 
@@ -393,9 +358,9 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   }
 
   /// Filtro da visualização, na AppBar. Selecionado, ganha fundo para o
-  /// estado ficar visível (o tom de campo do topo grafite, #290).
+  /// estado ficar visível.
   Widget _missingToggle(BuildContext context) {
-    final colors = AppColors.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return IconButton(
       tooltip: _onlyMissing
           ? context.l10n.showAll
@@ -404,8 +369,8 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
       onPressed: () => setState(() => _onlyMissing = !_onlyMissing),
       style: _onlyMissing
           ? IconButton.styleFrom(
-              backgroundColor: colors.topBarField,
-              foregroundColor: colors.onTopBar,
+              backgroundColor: scheme.secondaryContainer,
+              foregroundColor: scheme.onSecondaryContainer,
             )
           : null,
       icon: const Icon(Icons.filter_alt_outlined),
