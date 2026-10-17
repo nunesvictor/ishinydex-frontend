@@ -7,7 +7,6 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/theme/version_colors.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
@@ -650,8 +649,7 @@ class _SelectionTitle extends ConsumerWidget {
         if (outside > 0)
           Text(
             context.l10n.outsideList(outside),
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: AppColors.of(context).onTopBarVariant),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
       ],
     );

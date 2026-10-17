@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 S = 4096
-GRAPHITE = (38, 35, 42)  # #26232A, o fundo do ícone
+GRAPHITE = (38, 35, 42)  # #26232A, theme_color do manifest
 GRAPHITE_LIGHT = (58, 54, 64)  # #3A3640
 RED = (229, 57, 53)  # #E53935
 YELLOW = (255, 203, 5)  # #FFCB05

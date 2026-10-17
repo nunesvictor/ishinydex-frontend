@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -350,11 +349,7 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
             ),
             title: Text(context.l10n.editSave),
             actions: [
-              TextButton(
-                style: AppTheme.topBarTextButton(context),
-                onPressed: _submit,
-                child: Text(context.l10n.save),
-              ),
+              TextButton(onPressed: _submit, child: Text(context.l10n.save)),
             ],
           ),
           body: ListView(

@@ -3,47 +3,33 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 
 String _hex(Color c) =>
     '#${c.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
 
 void main() {
-  test('index.html: uma só theme-color, o topo grafite (#290)', () {
+  test('index.html usa a cor do AppBar de cada tema na barra de status', () {
     final html = File('web/index.html').readAsStringSync();
-    final topBar = _hex(AppPalette.classic.light.topBar);
-    expect(_hex(AppPalette.classic.dark.topBar), topBar);
-    expect(html, contains('<meta name="theme-color" content="$topBar">'));
-    expect('name="theme-color"'.allMatches(html), hasLength(1));
-    // A barra de status transparente, por cima do topo grafite; a altura
-    // dela chega ao Flutter pelo #safe-area-probe (WebSafeArea).
+    final light = _hex(AppTheme.light().colorScheme.surface);
+    final dark = _hex(AppTheme.dark().colorScheme.surface);
+
     expect(
       html,
       contains(
-        '<meta name="apple-mobile-web-app-status-bar-style" '
-        'content="black-translucent">',
+        '<meta name="theme-color" media="(prefers-color-scheme: light)" '
+        'content="$light">',
       ),
     );
-    expect(html, contains('height: env(safe-area-inset-top, 0px);'));
-    expect(html, contains('<div id="safe-area-probe" aria-hidden="true">'));
-    // O fundo da página também é o grafite: é ele que a barra de status
-    // do PWA no iPhone segue.
-    expect(html, contains('html, body { background-color: $topBar; }'));
-    // Abaixo da barra de status, até o Flutter desenhar, o tema do aparelho.
-    final light = _hex(AppTheme.light().colorScheme.surface);
-    final dark = _hex(AppTheme.dark().colorScheme.surface);
-    expect(html, contains('top: env(safe-area-inset-top, 0px);'));
-    expect(html, contains('background-color: $light;\n    }'));
-    expect(html, contains('#backdrop { background-color: $dark; }'));
     expect(
-      html.indexOf('<div id="backdrop"'),
-      lessThan(html.indexOf('<div id="splash"')),
+      html,
+      contains(
+        '<meta name="theme-color" media="(prefers-color-scheme: dark)" '
+        'content="$dark">',
+      ),
     );
-    for (final name in ['manifest.json', 'manifest.pt-BR.json']) {
-      final manifest = jsonDecode(File('web/$name').readAsStringSync()) as Map;
-      expect(manifest['theme_color'], topBar, reason: name);
-    }
+    expect(html, contains('body { background-color: $light; }'));
+    expect(html, contains('body { background-color: $dark; }'));
   });
 
   test('splash: invisível até a margem, com as cores do tema', () {

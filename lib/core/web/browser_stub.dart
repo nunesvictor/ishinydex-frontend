@@ -30,6 +30,3 @@ Future<ShareOutcome> shareFile(
   required String name,
   required String type,
 }) => throw UnsupportedError('Só no navegador.');
-
-/// Fora do navegador não há barra de status por cima da página: 0.
-double safeAreaTop() => 0;

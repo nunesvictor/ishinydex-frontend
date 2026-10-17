@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
@@ -825,58 +824,6 @@ void main() {
         await tester.pump();
       },
     );
-
-    for (final brightness in Brightness.values) {
-      testWidgets(
-        'ativa, o campo fica dentro da faixa grafite (#290, ${brightness.name})',
-        (tester) async {
-          tester.platformDispatcher.platformBrightnessTestValue = brightness;
-          addTearDown(
-            tester.platformDispatcher.clearPlatformBrightnessTestValue,
-          );
-          final colors = AppPalette.classic.of(brightness);
-          await pumpFullApp(tester, size: compactSize);
-          await openShinyDex(tester);
-          double stripOpacity() => tester
-              .widget<AnimatedOpacity>(
-                find.byKey(const ValueKey('search-top-bar')),
-              )
-              .opacity;
-          expect(stripOpacity(), 0);
-
-          await searchFor(tester, 'wiggly');
-          expect(stripOpacity(), 1);
-          final strip = find.descendant(
-            of: find.byKey(const ValueKey('search-top-bar')),
-            matching: find.byType(DecoratedBox),
-          );
-          final decoration =
-              tester.widget<DecoratedBox>(strip).decoration as BoxDecoration;
-          expect(decoration.color, colors.topBar);
-          expect(
-            decoration.border,
-            brightness == Brightness.dark
-                ? Border(bottom: BorderSide(color: colors.outlineVariant))
-                : isNull,
-          );
-          // O campo escuro, com o texto claro, por cima da faixa.
-          expect(
-            tester.getRect(find.byType(SlotSearchPill)).bottom,
-            lessThanOrEqualTo(tester.getRect(strip).bottom),
-          );
-          final field = tester.widget<TextField>(searchField());
-          expect(field.style!.color, colors.onTopBarField);
-          expect(field.cursorColor, colors.topBarAccent);
-          final cancel = tester.widget<RichText>(
-            find.descendant(
-              of: find.text('Cancelar'),
-              matching: find.byType(RichText),
-            ),
-          );
-          expect(cancel.text.style!.color, colors.onTopBar);
-        },
-      );
-    }
 
     testWidgets('o "x" apaga o texto e mantém a busca aberta', (tester) async {
       await pumpFullApp(tester, size: compactSize);

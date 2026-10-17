@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
-import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -57,19 +56,15 @@ class SlotSearchPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    // Ativa, a busca fica dentro da faixa grafite do topo (#290): o campo
-    // escuro com o texto claro, nos dois temas.
-    final colors = AppColors.of(context);
-    final fg = active ? colors.onTopBarField : null;
     return AnimatedContainer(
       duration: searchAnimationDuration,
       curve: searchAnimationCurve,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: active ? colors.topBarField : scheme.surfaceContainerHigh,
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(active ? 28 : 22),
         border: Border.all(
-          color: active ? colors.topBarAccent : scheme.outlineVariant,
+          color: active ? scheme.primary : scheme.outlineVariant,
           width: active ? 2 : 1,
         ),
         // Em repouso, a pílula flutua sobre a tela.
@@ -97,15 +92,8 @@ class SlotSearchPill extends StatelessWidget {
             focusNode: focusNode,
             textInputAction: TextInputAction.search,
             textAlignVertical: TextAlignVertical.center,
-            style: TextStyle(color: fg),
-            cursorColor: active ? colors.topBarAccent : null,
             decoration: InputDecoration(
               border: InputBorder.none,
-              hintStyle: active
-                  ? TextStyle(color: colors.onTopBarVariant)
-                  : null,
-              prefixIconColor: fg,
-              suffixIconColor: fg,
               isDense: true,
               hintText: active
                   ? context.l10n.searchNameOrNumber
