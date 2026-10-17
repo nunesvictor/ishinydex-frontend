@@ -287,15 +287,19 @@ void main() {
       await openShinyDex(tester);
       await tester.tap(slot(1));
       await tester.pumpAndSettle();
-      // Ação destrutiva: na folha "Mais ações", por último, na cor de erro.
+      // Ação destrutiva: no menu "Mais ações", por último, na cor de erro.
       await tester.tap(find.byTooltip('Mais ações'));
       await tester.pumpAndSettle();
-      final release = find.widgetWithText(ListTile, 'Libertar');
+      final release = find.widgetWithText(MenuItemButton, 'Libertar');
       expect(
         tester
-            .widget<Text>(
-              find.descendant(of: release, matching: find.text('Libertar')),
+            .widget<RichText>(
+              find.descendant(
+                of: find.text('Libertar'),
+                matching: find.byType(RichText),
+              ),
             )
+            .text
             .style
             ?.color,
         Theme.of(tester.element(release)).colorScheme.error,
@@ -955,6 +959,31 @@ void main() {
   });
 
   group('layout compacto', () {
+    testWidgets('o "⋯" da folha do slot abre um menu, não outra folha (#298)', (
+      tester,
+    ) async {
+      await pumpFullApp(tester, size: compactSize);
+      await openShinyDex(tester);
+      await tester.tap(slot(1));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.tap(find.byTooltip('Mais ações'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(
+        find.widgetWithText(MenuItemButton, 'Retirar do slot'),
+        findsOneWidget,
+      );
+      expect(find.text('Volta para o inventário, disponível'), findsOneWidget);
+      // O menu fica dentro da tela, acima do "⋯".
+      final more = tester.getRect(find.byTooltip('Mais ações'));
+      final menu = tester.getRect(
+        find.widgetWithText(MenuItemButton, 'Libertar'),
+      );
+      expect(menu.bottom, lessThanOrEqualTo(more.top));
+      expect(menu.right, lessThanOrEqualTo(compactSize.width));
+    });
+
     testWidgets('swipe entre boxes e detalhe em bottom sheet', (tester) async {
       await pumpFullApp(tester, size: compactSize);
       await openShinyDex(tester);

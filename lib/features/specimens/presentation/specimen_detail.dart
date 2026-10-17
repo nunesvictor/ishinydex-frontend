@@ -6,9 +6,9 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
-import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
+import 'package:ishinydex/core/widgets/more_actions.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -152,39 +152,35 @@ class _Details extends ConsumerWidget {
                   icon: const Icon(Icons.edit),
                   label: Text(context.l10n.editSpecimen),
                 ),
-          onMore: () => showActionSheet(
-            context,
-            title: specimen.displayName,
-            actions: [
-              if (specimen.isDeposited)
-                SheetAction(
-                  icon: Icons.catching_pokemon,
-                  label: context.l10n.seeInDex,
-                  onSelected: () => _openInDex(context, ref),
-                ),
-              ...locationActions(
-                context,
-                ref,
-                id: specimen.id,
-                name: specimen.displayName,
-                away: specimen.isAway,
-                visiting: specimen.isVisitingChampions,
-                location: specimen.location,
+          actions: [
+            if (specimen.isDeposited)
+              MoreAction(
+                icon: Icons.catching_pokemon,
+                label: context.l10n.seeInDex,
+                onSelected: () => _openInDex(context, ref),
               ),
-              if (specimen.slot case final slotId?)
-                SheetAction(
-                  icon: Icons.move_up,
-                  label: context.l10n.withdrawFromSlot,
-                  subtitle: context.l10n.withdrawStaysAvailable,
-                  onSelected: () => _withdraw(context, ref, slotId),
-                ),
-              releaseAction(
-                context.l10n,
-                visiting: specimen.isVisitingChampions,
-                onSelected: () => _release(context, ref),
+            ...locationActions(
+              context,
+              ref,
+              id: specimen.id,
+              name: specimen.displayName,
+              away: specimen.isAway,
+              visiting: specimen.isVisitingChampions,
+              location: specimen.location,
+            ),
+            if (specimen.slot case final slotId?)
+              MoreAction(
+                icon: Icons.move_up,
+                label: context.l10n.withdrawFromSlot,
+                subtitle: context.l10n.withdrawStaysAvailable,
+                onSelected: () => _withdraw(context, ref, slotId),
               ),
-            ],
-          ),
+            releaseAction(
+              context.l10n,
+              visiting: specimen.isVisitingChampions,
+              onSelected: () => _release(context, ref),
+            ),
+          ],
         ),
       ],
     );

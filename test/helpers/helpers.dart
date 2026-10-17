@@ -133,7 +133,7 @@ Future<FakeBackend> pumpFullApp(
   return fake;
 }
 
-/// Abre a folha "Mais ações" (painel do slot, detalhe do espécime) e toca
+/// Abre o menu "Mais ações" (painel do slot, detalhe do espécime) e toca
 /// na ação [label].
 Future<void> tapMoreAction(WidgetTester tester, String label) async {
   // Uma mensagem da ação anterior cobriria a barra de ações.
@@ -143,6 +143,6 @@ Future<void> tapMoreAction(WidgetTester tester, String label) async {
   // A barra visível (uma tela por trás pode ter a sua).
   await tester.tap(find.byTooltip('Mais ações').hitTestable().last);
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(ListTile, label));
+  await tester.tap(find.widgetWithText(MenuItemButton, label));
   await tester.pumpAndSettle();
 }
