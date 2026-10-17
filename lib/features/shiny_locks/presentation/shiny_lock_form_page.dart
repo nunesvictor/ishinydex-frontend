@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -83,7 +84,8 @@ class _ShinyLockFormPageState extends ConsumerState<ShinyLockFormPage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FilledButton(
+            child: TextButton(
+              style: AppTheme.topBarTextButton(context),
               onPressed: _busy ? null : _save,
               child: Text(context.l10n.save),
             ),

@@ -32,6 +32,8 @@ void main() {
         final extension = theme.extension<AppColors>()!;
         expect(extension.success, colors.success);
         expect(extension.huntBadge, colors.huntBadge);
+        expect(extension.topBar, colors.topBar);
+        expect(extension.onTopBarVariant, colors.onTopBarVariant);
       });
 
       test('contraste: texto 4,5, ícones 3', () {
@@ -62,6 +64,13 @@ void main() {
           (colors.success, scheme.surface, 3, 'concluído'),
           (scheme.onInverseSurface, scheme.inverseSurface, 4.5, 'aviso'),
           (scheme.inversePrimary, scheme.inverseSurface, 4.5, 'ação do aviso'),
+          // O topo grafite (#290).
+          (colors.onTopBar, colors.topBar, 4.5, 'título na barra'),
+          (colors.onTopBarVariant, colors.topBar, 4.5, 'subtítulo na barra'),
+          (colors.onTopBar, colors.topBarField, 4.5, 'filtro marcado na barra'),
+          (colors.onTopBarField, colors.topBarField, 4.5, 'campo na barra'),
+          (colors.onTopBarVariant, colors.topBarField, 4.5, 'dica do campo'),
+          (colors.topBarAccent, colors.topBarField, 3, 'borda do campo'),
         ]) {
           expect(contrast(fg, bg), greaterThanOrEqualTo(min), reason: name);
         }
