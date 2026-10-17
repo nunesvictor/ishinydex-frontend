@@ -46,6 +46,12 @@ class AppPalette {
       success: Color(0xFF2E7D32),
       huntBadge: Color(0xFFC62828),
       onHuntBadge: Color(0xFFFFFFFF),
+      topBar: _topBar,
+      onTopBar: _onTopBar,
+      onTopBarVariant: _onTopBarVariant,
+      topBarField: _topBarField,
+      onTopBarField: _onTopBarField,
+      topBarAccent: _topBarAccent,
     ),
     dark: PaletteColors(
       primary: Color(0xFFFF8A80),
@@ -71,8 +77,24 @@ class AppPalette {
       // No escuro, o selo da caçada fica amarelo, como antes da paleta.
       huntBadge: Color(0xFFFFCB05),
       onHuntBadge: Color(0xFF1C1B1B),
+      topBar: _topBar,
+      onTopBar: _onTopBar,
+      onTopBarVariant: _onTopBarVariant,
+      topBarField: _topBarField,
+      onTopBarField: _onTopBarField,
+      topBarAccent: _topBarAccent,
     ),
   );
+
+  // O topo grafite (#290), igual nos dois temas: a barra de status do
+  // iPhone não troca de cor com o app aberto (bug do WebKit), então a cor
+  // do topo nunca muda.
+  static const _topBar = Color(0xFF1C1B1B);
+  static const _onTopBar = Color(0xFFFFFFFF);
+  static const _onTopBarVariant = Color(0xFFCAC4C4);
+  static const _topBarField = Color(0xFF353333);
+  static const _onTopBarField = Color(0xFFE6E1E1);
+  static const _topBarAccent = Color(0xFFFF8A80);
 }
 
 /// As cores de um lado (claro ou escuro) de uma [AppPalette].
@@ -101,6 +123,12 @@ class PaletteColors {
     required this.success,
     required this.huntBadge,
     required this.onHuntBadge,
+    required this.topBar,
+    required this.onTopBar,
+    required this.onTopBarVariant,
+    required this.topBarField,
+    required this.onTopBarField,
+    required this.topBarAccent,
   });
 
   /// Ações: botões, aba e slot selecionados, progresso.
@@ -137,6 +165,18 @@ class PaletteColors {
   final Color success;
   final Color huntBadge;
   final Color onHuntBadge;
+
+  /// O topo do app (#290): a barra de status e a de título, numa cor fixa.
+  /// O título e os ícones ficam em [onTopBar]; textos de apoio (o progresso
+  /// do dex) em [onTopBarVariant]; campos dentro da barra (a busca do dex)
+  /// em [topBarField], com o texto em [onTopBarField] e o cursor e a borda
+  /// em [topBarAccent].
+  final Color topBar;
+  final Color onTopBar;
+  final Color onTopBarVariant;
+  final Color topBarField;
+  final Color onTopBarField;
+  final Color topBarAccent;
 
   /// O `ColorScheme` do Material 3: o que a paleta não define (secundária,
   /// terciária, erro...) sai do `fromSeed` com a [primary], na variante
@@ -175,6 +215,12 @@ class PaletteColors {
     success: success,
     huntBadge: huntBadge,
     onHuntBadge: onHuntBadge,
+    topBar: topBar,
+    onTopBar: onTopBar,
+    onTopBarVariant: onTopBarVariant,
+    topBarField: topBarField,
+    onTopBarField: onTopBarField,
+    topBarAccent: topBarAccent,
   );
 }
 
@@ -188,6 +234,12 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.success,
     required this.huntBadge,
     required this.onHuntBadge,
+    required this.topBar,
+    required this.onTopBar,
+    required this.onTopBarVariant,
+    required this.topBarField,
+    required this.onTopBarField,
+    required this.topBarAccent,
   });
 
   /// O amarelo do shiny (textos e destaques ligados a ele).
@@ -200,6 +252,14 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color huntBadge;
   final Color onHuntBadge;
 
+  /// O topo grafite (#290; ver [PaletteColors.topBar]).
+  final Color topBar;
+  final Color onTopBar;
+  final Color onTopBarVariant;
+  final Color topBarField;
+  final Color onTopBarField;
+  final Color topBarAccent;
+
   /// As cores do tema em volta de [context].
   static AppColors of(BuildContext context) =>
       Theme.of(context).extension<AppColors>() ??
@@ -211,11 +271,23 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? success,
     Color? huntBadge,
     Color? onHuntBadge,
+    Color? topBar,
+    Color? onTopBar,
+    Color? onTopBarVariant,
+    Color? topBarField,
+    Color? onTopBarField,
+    Color? topBarAccent,
   }) => AppColors(
     shiny: shiny ?? this.shiny,
     success: success ?? this.success,
     huntBadge: huntBadge ?? this.huntBadge,
     onHuntBadge: onHuntBadge ?? this.onHuntBadge,
+    topBar: topBar ?? this.topBar,
+    onTopBar: onTopBar ?? this.onTopBar,
+    onTopBarVariant: onTopBarVariant ?? this.onTopBarVariant,
+    topBarField: topBarField ?? this.topBarField,
+    onTopBarField: onTopBarField ?? this.onTopBarField,
+    topBarAccent: topBarAccent ?? this.topBarAccent,
   );
 
   @override
@@ -226,5 +298,15 @@ class AppColors extends ThemeExtension<AppColors> {
           success: Color.lerp(success, other.success, t)!,
           huntBadge: Color.lerp(huntBadge, other.huntBadge, t)!,
           onHuntBadge: Color.lerp(onHuntBadge, other.onHuntBadge, t)!,
+          topBar: Color.lerp(topBar, other.topBar, t)!,
+          onTopBar: Color.lerp(onTopBar, other.onTopBar, t)!,
+          onTopBarVariant: Color.lerp(
+            onTopBarVariant,
+            other.onTopBarVariant,
+            t,
+          )!,
+          topBarField: Color.lerp(topBarField, other.topBarField, t)!,
+          onTopBarField: Color.lerp(onTopBarField, other.onTopBarField, t)!,
+          topBarAccent: Color.lerp(topBarAccent, other.topBarAccent, t)!,
         );
 }

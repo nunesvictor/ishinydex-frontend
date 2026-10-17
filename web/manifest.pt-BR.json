@@ -4,7 +4,7 @@
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FAFAFA",
-    "theme_color": "#26232A",
+    "theme_color": "#1C1B1B",
     "description": "Controle do PersonalDex do iShinyDex.",
     "orientation": "any",
     "lang": "pt-BR",

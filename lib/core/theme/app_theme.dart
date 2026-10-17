@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ishinydex/core/theme/app_palette.dart';
 
 /// Tema Material 3 compartilhado por web e iOS, montado a partir de uma
@@ -23,7 +23,7 @@ abstract final class AppTheme {
       // A Roboto do app (`assets/fonts/`, #212), a mesma em todas as
       // plataformas.
       fontFamily: fontFamily,
-      appBarTheme: appBarTheme(scheme, defaultTargetPlatform),
+      appBarTheme: appBarTheme(colors, brightness),
       visualDensity: VisualDensity.standard,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -52,25 +52,32 @@ abstract final class AppTheme {
     );
   }
 
-  /// A barra de título (#205). No iOS (também no navegador do iPhone), ela
-  /// não muda de cor quando a lista rola por baixo: fica igual à faixa da
-  /// hora, que o PWA não consegue trocar de cor com o app aberto. Ganha só
-  /// uma sombra de 1 px, a linha fina do iOS. Nas outras plataformas, fica
-  /// o padrão do Material 3 (a barra muda de tom).
+  /// A barra de título: grafite nos dois temas e em todas as plataformas
+  /// (#290), com o título e os ícones em branco. A cor nunca muda, nem ao
+  /// rolar a lista por baixo (#205/#215): é a mesma da barra de status do
+  /// iPhone, que o PWA não consegue trocar com o app aberto. No escuro, uma
+  /// linha de 1 px separa a barra do fundo, que é quase da mesma cor.
   @visibleForTesting
-  static AppBarThemeData? appBarTheme(
-    ColorScheme scheme,
-    TargetPlatform platform,
-  ) => platform == TargetPlatform.iOS
-      ? AppBarThemeData(
-          // Com a cor definida, o Material 3 não troca pela
-          // `surfaceContainer` ao rolar.
-          backgroundColor: scheme.surface,
-          // Sem isto, com elevação o Material 3 pinta a barra com o
-          // `surfaceTint` e ela escurece do mesmo jeito (#215).
-          surfaceTintColor: Colors.transparent,
-          scrolledUnderElevation: 1,
-          shadowColor: scheme.outlineVariant,
-        )
-      : null;
+  static AppBarThemeData appBarTheme(
+    PaletteColors colors,
+    Brightness brightness,
+  ) => AppBarThemeData(
+    backgroundColor: colors.topBar,
+    foregroundColor: colors.onTopBar,
+    iconTheme: IconThemeData(color: colors.onTopBar),
+    actionsIconTheme: IconThemeData(color: colors.onTopBar),
+    // Sem isto, ao rolar, o Material 3 pinta a barra com o `surfaceTint`.
+    surfaceTintColor: Colors.transparent,
+    scrolledUnderElevation: 0,
+    // Ícones da barra de status claros (Android e iOS nativos).
+    systemOverlayStyle: SystemUiOverlayStyle.light,
+    shape: brightness == Brightness.dark
+        ? Border(bottom: BorderSide(color: colors.outlineVariant))
+        : null,
+  );
+
+  /// Botão de texto dentro da barra de título ("Salvar", "Cancelar"): em
+  /// branco, porque o vermelho das ações não lê sobre o grafite (#290).
+  static ButtonStyle topBarTextButton(BuildContext context) =>
+      TextButton.styleFrom(foregroundColor: AppColors.of(context).onTopBar);
 }

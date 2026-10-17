@@ -8,11 +8,11 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Keep track of your shiny PersonalDex with iShinyDex.">
-  <!-- Cor da barra de status/do navegador: a do AppBar de cada tema
-       (colorScheme.surface do AppTheme; conferida em test/web_index_test.dart).
-       O app troca a cor quando o sistema muda de modo (Title em app.dart). -->
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAFAFA">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131313">
+  <!-- Cor da barra de status/do navegador: o topo grafite do app, igual nos
+       dois temas (#290; PaletteColors.topBar, conferida em
+       test/web_index_test.dart). Com uma cor só, o bug do WebKit (a barra
+       não troca de cor com o PWA aberto) não aparece. -->
+  <meta name="theme-color" content="#1C1B1B">
   <style>
     body { background-color: #FAFAFA; }
     @media (prefers-color-scheme: dark) { body { background-color: #131313; } }
@@ -78,7 +78,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <!-- "default": o iOS pinta a barra com o theme-color e escolhe o texto
-       que contrasta (escuro no claro, branco no escuro). -->
+       que contrasta (branco sobre o grafite). -->
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="iShinyDex">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">

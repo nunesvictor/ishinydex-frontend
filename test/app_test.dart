@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/app.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:ishinydex/core/theme/app_palette.dart';
 
 import 'helpers/helpers.dart';
 
@@ -19,7 +19,7 @@ void main() {
     expect(noRetry(0, Exception()), isNull);
   });
 
-  testWidgets('theme-color da web segue o tema em uso (barra do iPhone)', (
+  testWidgets('theme-color da web: o grafite do topo nos dois temas (#290)', (
     tester,
   ) async {
     final colors = <int>[];
@@ -39,12 +39,13 @@ void main() {
       ),
     );
 
+    final topBar = AppPalette.classic.light.topBar.toARGB32();
     await pumpFullApp(tester);
-    expect(colors.last, AppTheme.light().colorScheme.surface.toARGB32());
+    expect(colors.last, topBar);
 
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     await tester.pumpAndSettle();
-    expect(colors.last, AppTheme.dark().colorScheme.surface.toARGB32());
+    expect(colors.last, topBar);
   });
 }
