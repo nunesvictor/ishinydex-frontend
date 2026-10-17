@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
-import 'package:ishinydex/core/widgets/action_sheet.dart';
+import 'package:ishinydex/core/widgets/more_actions.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -107,34 +107,30 @@ class SlotDetailPanel extends ConsumerWidget {
                   icon: const Icon(Icons.edit),
                   label: Text(context.l10n.editSpecimen),
                 ),
-          onMore: specimen == null
+          actions: specimen == null
               ? null
-              : () => showActionSheet(
-                  context,
-                  title: specimen.displayName,
-                  actions: [
-                    ...locationActions(
-                      context,
-                      ref,
-                      id: specimen.id,
-                      name: specimen.displayName,
-                      away: specimen.location != null,
-                      visiting: specimen.isVisitingChampions,
-                      location: specimen.location,
-                    ),
-                    SheetAction(
-                      icon: Icons.move_up,
-                      label: context.l10n.withdrawFromSlot,
-                      subtitle: context.l10n.withdrawSubtitle,
-                      onSelected: onWithdraw,
-                    ),
-                    releaseAction(
-                      context.l10n,
-                      visiting: specimen.isVisitingChampions,
-                      onSelected: onRelease,
-                    ),
-                  ],
-                ),
+              : [
+                  ...locationActions(
+                    context,
+                    ref,
+                    id: specimen.id,
+                    name: specimen.displayName,
+                    away: specimen.location != null,
+                    visiting: specimen.isVisitingChampions,
+                    location: specimen.location,
+                  ),
+                  MoreAction(
+                    icon: Icons.move_up,
+                    label: context.l10n.withdrawFromSlot,
+                    subtitle: context.l10n.withdrawSubtitle,
+                    onSelected: onWithdraw,
+                  ),
+                  releaseAction(
+                    context.l10n,
+                    visiting: specimen.isVisitingChampions,
+                    onSelected: onRelease,
+                  ),
+                ],
         ),
       ],
     );

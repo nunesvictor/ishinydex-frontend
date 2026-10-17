@@ -5,9 +5,9 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
-import 'package:ishinydex/core/widgets/action_sheet.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
+import 'package:ishinydex/core/widgets/more_actions.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -430,11 +430,11 @@ class ChampionsTile extends StatelessWidget {
   );
 }
 
-/// Ações de localização para a folha "Mais ações" (detalhe do espécime e
+/// Ações de localização para o menu "Mais ações" (detalhe do espécime e
 /// painel do slot): fora do HOME, "Trazer de volta"; visitando o Champions
 /// (#174), "Voltou do Champions" e o envio desabilitado; no HOME, "Enviar
 /// para jogo…" e "Visitar o Champions".
-List<SheetAction> locationActions(
+List<MoreAction> locationActions(
   BuildContext context,
   WidgetRef ref, {
   required int id,
@@ -449,7 +449,7 @@ List<SheetAction> locationActions(
         ref.read(homeCutoffProvider)(location?.trainer.version)?.passed ??
         false;
     return [
-      SheetAction(
+      MoreAction(
         icon: Icons.flight_land,
         label: context.l10n.bringBackToHome,
         subtitle: stuck ? context.l10n.gameNoLongerSends(location!.game) : null,
@@ -460,14 +460,14 @@ List<SheetAction> locationActions(
   }
   return [
     if (visiting)
-      SheetAction(
+      MoreAction(
         icon: Icons.emoji_events,
         leading: const ChampionsIcon(),
         label: context.l10n.backFromChampions,
         subtitle: context.l10n.backFromChampionsHint,
         onSelected: () => _champions(context, ref, id, visiting: false),
       ),
-    SheetAction(
+    MoreAction(
       icon: Icons.flight_takeoff,
       label: context.l10n.sendToGame,
       subtitle: visiting ? context.l10n.problemVisitingChampions : null,
@@ -475,7 +475,7 @@ List<SheetAction> locationActions(
       onSelected: () => sendToGame(context, ref, [id]),
     ),
     if (!visiting)
-      SheetAction(
+      MoreAction(
         icon: Icons.emoji_events,
         leading: const ChampionsIcon(),
         label: context.l10n.visitChampions,
@@ -486,11 +486,11 @@ List<SheetAction> locationActions(
 }
 
 /// Libertar, desabilitado enquanto visita o Champions.
-SheetAction releaseAction(
+MoreAction releaseAction(
   AppLocalizations l10n, {
   required bool visiting,
   required VoidCallback onSelected,
-}) => SheetAction(
+}) => MoreAction(
   icon: Icons.warning_amber_rounded,
   label: l10n.releaseAction,
   subtitle: visiting ? l10n.releaseWhileVisiting : l10n.releaseHint,
