@@ -137,3 +137,14 @@ void _download(web.File file, String name) {
     ..remove();
   web.URL.revokeObjectURL(url);
 }
+
+/// A altura da barra de status por cima da página (`safe-area-inset-top`),
+/// medida pelo `#safe-area-probe` do `index.html`. O Flutter web não lê
+/// esse valor (o `viewPadding` dele é sempre zero), e com a barra
+/// transparente do iPhone (#290) o app desenha por baixo dela.
+double safeAreaTop() =>
+    web.document
+        .getElementById('safe-area-probe')
+        ?.getBoundingClientRect()
+        .height ??
+    0;

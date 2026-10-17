@@ -7,6 +7,7 @@ import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/widgets/update_notice.dart';
+import 'package:ishinydex/core/widgets/web_safe_area.dart';
 import 'package:ishinydex/features/sync/presentation/sync_lifecycle.dart';
 
 /// Desliga o retry automático do Riverpod 3: as telas têm botão
@@ -36,16 +37,20 @@ class IShinyDexApp extends ConsumerWidget {
     // O SyncLifecycle sincroniza com o Dropbox ao abrir e ao voltar ao app
     // (sem Dropbox neste build, não faz nada).
     // O UpdateNotice avisa quando sai uma versão nova com o app aberto.
+    // O WebSafeArea dá ao app a altura da barra de status do iPhone, que
+    // fica transparente por cima do topo grafite (#290).
     builder: (context, child) {
       // Datas e números formatados sem `locale` explícito (`DateFormat`,
       // `NumberFormat`) seguem o idioma da interface.
       Intl.defaultLocale = Localizations.localeOf(context).toString();
-      return UpdateNotice(
-        child: SyncLifecycle(
-          child: Title(
-            title: 'iShinyDex',
-            color: AppColors.of(context).topBar,
-            child: child!,
+      return WebSafeArea(
+        child: UpdateNotice(
+          child: SyncLifecycle(
+            child: Title(
+              title: 'iShinyDex',
+              color: AppColors.of(context).topBar,
+              child: child!,
+            ),
           ),
         ),
       );

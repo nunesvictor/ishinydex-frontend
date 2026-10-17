@@ -16,6 +16,17 @@ void main() {
     expect(_hex(AppPalette.classic.dark.topBar), topBar);
     expect(html, contains('<meta name="theme-color" content="$topBar">'));
     expect('name="theme-color"'.allMatches(html), hasLength(1));
+    // A barra de status transparente, por cima do topo grafite; a altura
+    // dela chega ao Flutter pelo #safe-area-probe (WebSafeArea).
+    expect(
+      html,
+      contains(
+        '<meta name="apple-mobile-web-app-status-bar-style" '
+        'content="black-translucent">',
+      ),
+    );
+    expect(html, contains('height: env(safe-area-inset-top, 0px);'));
+    expect(html, contains('<div id="safe-area-probe" aria-hidden="true">'));
     // O fundo da página também é o grafite: é ele que a barra de status
     // do PWA no iPhone segue.
     expect(html, contains('html, body { background-color: $topBar; }'));
