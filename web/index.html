@@ -14,8 +14,20 @@
        não troca de cor com o PWA aberto) não aparece. -->
   <meta name="theme-color" content="#1C1B1B">
   <style>
-    body { background-color: #FAFAFA; }
-    @media (prefers-color-scheme: dark) { body { background-color: #131313; } }
+    /* O fundo da página é o grafite do topo (#290): no PWA do iPhone, a
+       barra de status segue o fundo da página, não a theme-color (na
+       v2.13.0-beta.1, só a theme-color grafite deixou a barra clara). O
+       resto da tela, até o Flutter desenhar, fica no tema do aparelho pelo
+       #backdrop, que começa abaixo da barra de status. */
+    html, body { background-color: #1C1B1B; }
+    #backdrop {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      top: env(safe-area-inset-top, 0px);
+      background-color: #FAFAFA;
+    }
+    @media (prefers-color-scheme: dark) {
+      #backdrop { background-color: #131313; }
+    }
 
     /* Splash do primeiro carregamento (#159). Antes do primeiro quadro o
        navegador baixa o app (main.dart.wasm, motor, catálogo) e a tela fica
@@ -113,6 +125,7 @@
   </script>
 </head>
 <body>
+  <div id="backdrop" aria-hidden="true"></div>
   <div id="splash" aria-hidden="true">
     <img src="icons/Icon-192.png" alt="">
     <span>iShinyDex</span>

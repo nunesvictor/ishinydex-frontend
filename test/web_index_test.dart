@@ -16,11 +16,19 @@ void main() {
     expect(_hex(AppPalette.classic.dark.topBar), topBar);
     expect(html, contains('<meta name="theme-color" content="$topBar">'));
     expect('name="theme-color"'.allMatches(html), hasLength(1));
-    // O fundo (por trás do splash) continua com o tema do aparelho.
+    // O fundo da página também é o grafite: é ele que a barra de status
+    // do PWA no iPhone segue.
+    expect(html, contains('html, body { background-color: $topBar; }'));
+    // Abaixo da barra de status, até o Flutter desenhar, o tema do aparelho.
     final light = _hex(AppTheme.light().colorScheme.surface);
     final dark = _hex(AppTheme.dark().colorScheme.surface);
-    expect(html, contains('body { background-color: $light; }'));
-    expect(html, contains('body { background-color: $dark; }'));
+    expect(html, contains('top: env(safe-area-inset-top, 0px);'));
+    expect(html, contains('background-color: $light;\n    }'));
+    expect(html, contains('#backdrop { background-color: $dark; }'));
+    expect(
+      html.indexOf('<div id="backdrop"'),
+      lessThan(html.indexOf('<div id="splash"')),
+    );
     for (final name in ['manifest.json', 'manifest.pt-BR.json']) {
       final manifest = jsonDecode(File('web/$name').readAsStringSync()) as Map;
       expect(manifest['theme_color'], topBar, reason: name);
