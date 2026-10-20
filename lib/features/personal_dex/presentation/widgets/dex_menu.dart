@@ -7,8 +7,9 @@ import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_update.dart';
 
-enum _DexMenuAction { progress, autoDeposit, edit, delete }
+enum _DexMenuAction { update, progress, autoDeposit, edit, delete }
 
 /// Menu "⋮" da barra do dex: progresso por geração, editar (nome e shiny
 /// dex) e apagar. Fica num menu, e não em mais ícones, para o nome do dex
@@ -28,15 +29,27 @@ class DexMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final error = Theme.of(context).colorScheme.error;
+    // O padrão mudou (#308): fica aqui até o usuário atualizar ou dizer
+    // "Não atualizar", mesmo depois do "Agora não" do aviso.
+    final update = pendingUpdate(ref, dex);
     return PopupMenuButton<_DexMenuAction>(
       tooltip: context.l10n.moreOptions,
       onSelected: (action) => switch (action) {
+        _DexMenuAction.update => showDexUpdateSheet(context, dex),
         _DexMenuAction.progress => onShowProgress(),
         _DexMenuAction.autoDeposit => onAutoDeposit(),
         _DexMenuAction.edit => showEditDexDialog(context, dex),
         _DexMenuAction.delete => deleteDex(context, ref, dex),
       },
       itemBuilder: (context) => [
+        if (update != null)
+          PopupMenuItem(
+            value: _DexMenuAction.update,
+            child: ListTile(
+              leading: const Icon(Icons.update),
+              title: Text(context.l10n.dexUpdateMenu(updateChange(update))),
+            ),
+          ),
         PopupMenuItem(
           value: _DexMenuAction.progress,
           child: ListTile(

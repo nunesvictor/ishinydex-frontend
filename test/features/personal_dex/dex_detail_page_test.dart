@@ -115,6 +115,26 @@ class _FlakyRepository implements PersonalDexRepository {
   }) => inner.previewNewDex(recipe: recipe, forceNewBox: forceNewBox);
 
   @override
+  Future<DexUpdatePreview?> previewDexUpdate(
+    int dexId, {
+    bool dropRemoved = true,
+  }) => inner.previewDexUpdate(dexId, dropRemoved: dropRemoved);
+
+  @override
+  Future<PersonalDex> applyDexUpdate(
+    int dexId, {
+    required DexUpdateMode mode,
+    required bool dropRemoved,
+  }) => inner.applyDexUpdate(dexId, mode: mode, dropRemoved: dropRemoved);
+
+  @override
+  Future<PersonalDex> snoozeDexUpdate(
+    int dexId, {
+    required String signature,
+    required bool ignore,
+  }) => inner.snoozeDexUpdate(dexId, signature: signature, ignore: ignore);
+
+  @override
   Future<PersonalDex> createDex({
     required String name,
     required bool isShinyDex,
