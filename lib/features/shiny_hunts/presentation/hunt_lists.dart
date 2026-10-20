@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,8 +52,7 @@ class HuntCards extends ConsumerWidget {
             : context.l10n.huntsActiveEmptyNoDex;
         return LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 720;
-            final cardWidth = wide ? 340.0 : constraints.maxWidth - 32;
+            final columns = huntColumns(constraints.maxWidth);
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
               children: [
@@ -88,20 +88,32 @@ class HuntCards extends ConsumerWidget {
                     padding: const EdgeInsets.all(24),
                     child: Text(empty, textAlign: TextAlign.center),
                   ),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    for (final h in hunts)
-                      SizedBox(
-                        width: cardWidth,
-                        child: HuntCard(
-                          hunt: h,
-                          locked: running != null && running.id != h.id,
-                        ),
+                // Em fileiras de [columns] cards de largura igual, que
+                // preenchem a linha; na fileira, todos com a altura do mais
+                // alto (o de cronômetro é mais alto que o de contador).
+                for (var i = 0; i < hunts.length; i += columns)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: 16,
+                        children: [
+                          for (var j = i; j < i + columns; j++)
+                            Expanded(
+                              child: j < hunts.length
+                                  ? HuntCard(
+                                      hunt: hunts[j],
+                                      locked:
+                                          running != null &&
+                                          running.id != hunts[j].id,
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
+                    ),
+                  ),
               ],
             );
           },
@@ -135,3 +147,13 @@ class StartHuntButton extends ConsumerWidget {
     );
   }
 }
+
+/// Quantos cards de caçada cabem lado a lado em [width] (#312): cada um com
+/// pelo menos [huntCardMinWidth], além das margens de 16 e do espaço de 16
+/// entre eles. No celular, um; no iPad em retrato, dois; no PC, três ou
+/// mais.
+int huntColumns(double width) =>
+    math.max(1, ((width - 32 + 16) / (huntCardMinWidth + 16)).floor());
+
+/// A largura mínima de um card de caçada nas telas largas.
+const huntCardMinWidth = 340.0;
