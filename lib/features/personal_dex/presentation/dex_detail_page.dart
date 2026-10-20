@@ -20,6 +20,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/box_navigat
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_view.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_menu.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switcher.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_update.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/generation_progress.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
@@ -165,7 +166,19 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
     final dex = ref.watch(dexProvider(_dexId));
     final boxes = ref.watch(boxesProvider(_dexId));
     final body = _body(context, dex, boxes);
-    return Scaffold(body: _searchLayout(context, dex.value, body));
+    return Scaffold(
+      body: _searchLayout(
+        context,
+        dex.value,
+        Column(
+          children: [
+            // O padrão mudou desde que o dex foi criado (#308).
+            if (dex.value case final dex?) DexUpdateBanner(dex: dex),
+            Expanded(child: body),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Como a tela inicial do iPhone, a busca é uma pílula logo abaixo da

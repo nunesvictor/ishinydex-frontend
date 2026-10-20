@@ -129,6 +129,17 @@ class _SlotRecord {
 /// `FakeBackend`).
 typedef DexLayout = ({List<FormDetail> forms, Set<int> starts});
 
+/// O que o padrão de hoje mudou num dex (#308): a receita dele, o esquema
+/// que ela dá, as formas que o dex tem (na ordem das boxes) e as que
+/// entram e saem.
+typedef DexChange = ({
+  DexRecipe recipe,
+  DexLayout target,
+  List<int> current,
+  List<int> added,
+  List<int> removed,
+});
+
 /// O backend do app, em memória: as regras de negócio (dexes, boxes,
 /// depósito, caçadas...) que antes ficavam no servidor. No modo local, os
 /// dados vêm do aparelho e voltam para ele ([records]); na demonstração, são
@@ -359,6 +370,9 @@ class FakeBackend
           'forceNewBox': d.forceNewBox,
           // Só nos dex do #34: os de antes continuam como eram.
           if (d.recipe case final recipe?) 'recipe': recipe.toJson(),
+          // A decisão sobre a mudança do padrão (#308).
+          'updateLater': ?d.updateLater,
+          'updateIgnored': ?d.updateIgnored,
         },
     ],
     'boxes': [
@@ -504,6 +518,8 @@ class FakeBackend
           final Map<String, dynamic> recipe => DexRecipe.fromJson(recipe),
           _ => null,
         },
+        updateLater: d['updateLater'] as String?,
+        updateIgnored: d['updateIgnored'] as String?,
       );
     }
     for (final b in of('boxes')) {
@@ -1240,6 +1256,370 @@ class FakeBackend
         ..formId = null
         ..specimenId = null;
     }
+  }
+
+  // --- Dex desatualizado (#308) ---
+
+  /// Os slots do dex com forma, na ordem das boxes.
+  List<_SlotRecord> _dexSlots(int dexId) =>
+      _slots.values.where((s) => s.dexId == dexId && s.formId != null).toList()
+        ..sort(_slotOrder);
+
+  static int _slotOrder(_SlotRecord a, _SlotRecord b) =>
+      switch (a.box.position.compareTo(b.box.position)) {
+        0 => (a.row * 6 + a.col).compareTo(b.row * 6 + b.col),
+        final c => c,
+      };
+
+  /// O que o padrão de hoje mudou no dex [dexId]: o que a receita dele dá,
+  /// as formas que entram e as que saem; `null` sem catálogo.
+  DexChange? _dexChange(int dexId) {
+    final dex = _dexes[dexId];
+    if (dex == null) throw const NotFoundFailure();
+    if (catalog == null) return null;
+    final recipe = dex.recipe ?? const DexRecipe();
+    final target = _layoutFor(recipe);
+    final current = [for (final s in _dexSlots(dexId)) s.formId!];
+    final targetIds = {for (final f in target.forms) f.id};
+    final currentIds = current.toSet();
+    return (
+      recipe: recipe,
+      target: target,
+      current: current,
+      added: [
+        for (final f in target.forms)
+          if (!currentIds.contains(f.id)) f.id,
+      ],
+      removed: [
+        for (final id in current)
+          if (!targetIds.contains(id)) id,
+      ],
+    );
+  }
+
+  static String _signature(List<int> added, List<int> removed) =>
+      '+${(added.toList()..sort()).join(',')}'
+      '-${(removed.toList()..sort()).join(',')}';
+
+  /// As formas do dex "na ordem": o esquema do padrão de hoje; com as
+  /// formas que saíram mantidas, cada uma logo depois da que vinha antes
+  /// dela no dex (na mesma seção).
+  DexLayout _inOrderLayout(DexChange change, {required bool dropRemoved}) {
+    if (dropRemoved || change.removed.isEmpty) return change.target;
+    final forms = [...change.target.forms];
+    final sectionOf = <int>[];
+    var section = 0;
+    for (var i = 0; i < forms.length; i++) {
+      if (change.target.starts.contains(i)) section++;
+      sectionOf.add(section);
+    }
+    final removed = change.removed.toSet();
+    int? previous;
+    for (final id in change.current) {
+      if (removed.contains(id)) {
+        final at = previous == null
+            ? 0
+            : forms.indexWhere((f) => f.id == previous) + 1;
+        forms.insert(at, _forms[id]!);
+        sectionOf.insert(at, at == 0 ? 0 : sectionOf[at - 1]);
+      }
+      previous = id;
+    }
+    // No Nacional, a seção é a geração da própria forma, como ao criar o
+    // dex (o Mewtwo mantido volta a uma box da 1ª geração); no dex por
+    // jogo, a pokédex da forma de antes.
+    final catalog = this.catalog!;
+    final national = change.recipe.versionGroup == null;
+    return (
+      forms: forms,
+      starts: {
+        for (var i = 1; i < forms.length; i++)
+          if (national
+              ? catalog.generation(forms[i].id) !=
+                    catalog.generation(forms[i - 1].id)
+              : sectionOf[i] != sectionOf[i - 1])
+            i,
+      },
+    );
+  }
+
+  /// As boxes que o dex pode usar, em ordem: as dele; depois, as livres que
+  /// vêm depois da última dele; depois, até [needed], boxes novas no fim
+  /// (só os nomes, sem criar).
+  ({List<BoxRef> boxes, List<String> newNames}) _boxesForDex(
+    int dexId,
+    int needed,
+  ) {
+    final own = {for (final s in _dexSlots(dexId)) s.box.id: s.box}.values
+        .toList();
+    final last = own.isEmpty ? 0 : own.last.position;
+    final used = {
+      for (final s in _slots.values)
+        if (s.dexId != null) s.box.id,
+    };
+    final free =
+        _boxes.values
+            .where((b) => b.position > last && !used.contains(b.id))
+            .toList()
+          ..sort((a, b) => a.position.compareTo(b.position));
+    final boxes = [...own, ...free];
+    final names = {for (final b in _boxes.values) b.name};
+    final newNames = <String>[];
+    var number = _boxes.length + 1;
+    while (boxes.length + newNames.length < needed) {
+      while (names.contains('HOME $number')) {
+        number++;
+      }
+      names.add('HOME $number');
+      newNames.add('HOME $number');
+    }
+    return (boxes: boxes, newNames: newNames);
+  }
+
+  /// Quantas boxes o esquema [layout] ocupa, com "nova box" por seção.
+  static int _boxesNeeded(DexLayout layout, {required bool forceNewBox}) {
+    var needed = 0;
+    for (var index = 0; index < layout.forms.length;) {
+      needed++;
+      for (
+        var position = 0;
+        position < 30 && index < layout.forms.length;
+        position++
+      ) {
+        if (forceNewBox && position > 0 && layout.starts.contains(index)) {
+          break;
+        }
+        index++;
+      }
+    }
+    return needed;
+  }
+
+  @override
+  Future<DexUpdatePreview?> previewDexUpdate(
+    int dexId, {
+    bool dropRemoved = true,
+  }) async {
+    await _delay();
+    final change = _dexChange(dexId);
+    if (change == null || (change.added.isEmpty && change.removed.isEmpty)) {
+      return null;
+    }
+    final dex = _dexes[dexId]!;
+    final before = _dexSlots(dexId);
+    final boxesBefore = {for (final s in before) s.box.id}.length;
+
+    // Na ordem: onde cada forma iria, e o que muda.
+    final layout = _inOrderLayout(change, dropRemoved: dropRemoved);
+    final needed = _boxesNeeded(layout, forceNewBox: dex.forceNewBox);
+    final available = _boxesForDex(dexId, needed);
+    final fits = _boxes.length + available.newNames.length <= maxBoxes;
+    final allBoxes = [
+      ...available.boxes.map((b) => b.name),
+      ...available.newNames,
+    ];
+    final placed = <String, int>{}; // "box:posição" → forma
+    var index = 0;
+    for (var b = 0; b < needed; b++) {
+      for (var position = 0; position < 30; position++) {
+        if (index >= layout.forms.length) break;
+        if (dex.forceNewBox && position > 0 && layout.starts.contains(index)) {
+          break;
+        }
+        placed['${allBoxes[b]}:$position'] = layout.forms[index++].id;
+      }
+    }
+    final was = {
+      for (final s in before) '${s.box.name}:${s.row * 6 + s.col}': s,
+    };
+    final changed = <String>{
+      for (final MapEntry(:key, :value) in was.entries)
+        if (placed[key] != value.formId) key.split(':').first,
+      for (final MapEntry(:key, :value) in placed.entries)
+        if (was[key]?.formId != value) key.split(':').first,
+    };
+    final moved = before
+        .where(
+          (s) =>
+              s.specimenId != null &&
+              placed['${s.box.name}:${s.row * 6 + s.col}'] != s.formId &&
+              !(dropRemoved && change.removed.contains(s.formId)),
+        )
+        .length;
+
+    // No fim: as formas novas em boxes depois da última do dex.
+    final atEnd = _atEndBoxes(dexId, change.added.length);
+    final removed = change.removed.toSet();
+    return DexUpdatePreview(
+      added: [for (final id in change.added) _formRef(_forms[id]!)],
+      removed: [for (final id in change.removed) _formRef(_forms[id]!)],
+      signature: _signature(change.added, change.removed),
+      recipe: change.recipe,
+      boxesBefore: boxesBefore,
+      boxesAfter: needed,
+      changedBoxes: [
+        for (final name in allBoxes)
+          if (changed.contains(name)) name,
+      ],
+      movedSpecimens: moved,
+      inOrderFits: fits,
+      atEndBoxes: atEnd.boxes,
+      atEndFits: atEnd.fits,
+      removedWithSpecimen: before
+          .where((s) => removed.contains(s.formId) && s.specimenId != null)
+          .length,
+    );
+  }
+
+  /// "No fim": as boxes (livres depois do dex, ou novas) que recebem
+  /// [count] formas, cada uma com quantas.
+  ({List<DexUpdateBox> boxes, bool fits}) _atEndBoxes(int dexId, int count) {
+    final needed = (count / 30).ceil();
+    final own = {for (final s in _dexSlots(dexId)) s.box.id};
+    final available = _boxesForDex(dexId, own.length + needed);
+    final free = available.boxes.where((b) => !own.contains(b.id)).toList();
+    final names = [
+      for (final b in free) (name: b.name, isNew: false),
+      for (final n in available.newNames) (name: n, isNew: true),
+    ];
+    return (
+      boxes: [
+        for (var i = 0; i < needed; i++)
+          DexUpdateBox(
+            name: names[i].name,
+            forms: i < needed - 1 ? 30 : count - 30 * (needed - 1),
+            isNew: names[i].isNew,
+          ),
+      ],
+      fits: _boxes.length + available.newNames.length <= maxBoxes,
+    );
+  }
+
+  @override
+  Future<PersonalDex> applyDexUpdate(
+    int dexId, {
+    required DexUpdateMode mode,
+    required bool dropRemoved,
+  }) async {
+    await _delay();
+    final change = _dexChange(dexId);
+    if (change == null || (change.added.isEmpty && change.removed.isEmpty)) {
+      return _dexWithCounts(dexId);
+    }
+    final dex = _dexes[dexId]!;
+    final removed = change.removed.toSet();
+    final before = _dexSlots(dexId);
+    // Cada espécime vai junto com a forma dele.
+    final specimenOf = {
+      for (final s in before)
+        if (s.specimenId != null) s.formId!: s.specimenId,
+    };
+    List<_SlotRecord> slotsOf(BoxRef box) =>
+        _slots.values.where((s) => s.box.id == box.id).toList()
+          ..sort(_slotOrder);
+    List<BoxRef> take(List<String> newNames) => [
+      for (final name in newNames) _boxes[addFreeBox(name)]!,
+    ];
+
+    switch (mode) {
+      case DexUpdateMode.inOrder:
+        final layout = _inOrderLayout(change, dropRemoved: dropRemoved);
+        final needed = _boxesNeeded(layout, forceNewBox: dex.forceNewBox);
+        final available = _boxesForDex(dexId, needed);
+        if (_boxes.length + available.newNames.length > maxBoxes) {
+          throw ValidationFailure({
+            ValidationFailure.nonFieldKey: [
+              Problem.noFreeBoxes(
+                needed: needed,
+                largest: available.boxes.length,
+                max: maxBoxes,
+              ),
+            ],
+          });
+        }
+        for (final slot in before) {
+          slot
+            ..dexId = null
+            ..formId = null
+            ..specimenId = null;
+        }
+        final boxes = [...available.boxes, ...take(available.newNames)];
+        var index = 0;
+        for (final box in boxes.take(needed)) {
+          for (final (position, slot) in slotsOf(box).indexed) {
+            if (index >= layout.forms.length) break;
+            if (dex.forceNewBox &&
+                position > 0 &&
+                layout.starts.contains(index)) {
+              break;
+            }
+            final form = layout.forms[index++].id;
+            slot
+              ..dexId = dexId
+              ..formId = form
+              ..specimenId = specimenOf[form];
+          }
+        }
+      case DexUpdateMode.atEnd:
+        // As boxes antes de tirar as formas que saíram: como na prévia.
+        final atEnd = _atEndBoxes(dexId, change.added.length);
+        if (!atEnd.fits) {
+          throw ValidationFailure({
+            ValidationFailure.nonFieldKey: [
+              Problem.noFreeBoxes(
+                needed: atEnd.boxes.length,
+                largest: 0,
+                max: maxBoxes,
+              ),
+            ],
+          });
+        }
+        if (dropRemoved) {
+          for (final slot in before.where((s) => removed.contains(s.formId))) {
+            slot
+              ..dexId = null
+              ..formId = null
+              ..specimenId = null;
+          }
+        }
+        final byName = {for (final b in _boxes.values) b.name: b};
+        var index = 0;
+        for (final target in atEnd.boxes) {
+          final box = byName[target.name] ?? take([target.name]).single;
+          for (final slot in slotsOf(box)) {
+            if (index >= change.added.length) break;
+            slot
+              ..dexId = dexId
+              ..formId = change.added[index++];
+          }
+        }
+    }
+    // O que sobra da mudança são as formas que o usuário quis manter: o
+    // aviso não volta por elas, só se o padrão mudar de novo.
+    final rest = _dexChange(dexId)!;
+    _dexes[dexId] = dex.copyWith(
+      recipe: change.recipe,
+      updateLater: null,
+      updateIgnored: rest.added.isEmpty && rest.removed.isEmpty
+          ? null
+          : _signature(rest.added, rest.removed),
+    );
+    return _dexWithCounts(dexId);
+  }
+
+  @override
+  Future<PersonalDex> snoozeDexUpdate(
+    int dexId, {
+    required String signature,
+    required bool ignore,
+  }) async {
+    await _delay();
+    final dex = _dexes[dexId];
+    if (dex == null) throw const NotFoundFailure();
+    _dexes[dexId] = ignore
+        ? dex.copyWith(updateIgnored: signature, updateLater: null)
+        : dex.copyWith(updateLater: signature);
+    return _dexWithCounts(dexId);
   }
 
   @override

@@ -22,6 +22,33 @@ abstract interface class PersonalDexRepository {
     DexRecipe recipe = const DexRecipe(),
   });
 
+  /// O que mudou no padrão desde que o dex foi criado (#308), com o que
+  /// cada jeito de atualizar faz nas boxes, e com as formas que saíram
+  /// fora do dex ([dropRemoved]) ou mantidas. `null` sem mudança ou sem
+  /// catálogo.
+  Future<DexUpdatePreview?> previewDexUpdate(
+    int dexId, {
+    bool dropRemoved = true,
+  });
+
+  /// Traz o dex para o padrão de hoje, [mode]: na ordem ou no fim. Com
+  /// [dropRemoved], as formas que saíram saem do dex, e os espécimes delas
+  /// voltam ao inventário; senão, ficam.
+  Future<PersonalDex> applyDexUpdate(
+    int dexId, {
+    required DexUpdateMode mode,
+    required bool dropRemoved,
+  });
+
+  /// Guarda a decisão sobre a mudança [signature]: [ignore] = "Não
+  /// atualizar" (some até o padrão mudar de novo); senão, "Agora não" (sai
+  /// do topo e fica no menu).
+  Future<PersonalDex> snoozeDexUpdate(
+    int dexId, {
+    required String signature,
+    required bool ignore,
+  });
+
   /// Renomeia o dex ou troca se é shiny dex (`force_new_box` não muda).
   Future<PersonalDex> updateDex(
     int dexId, {

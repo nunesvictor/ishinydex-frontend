@@ -157,7 +157,49 @@ class DexActions {
     await _ref.read(personalDexRepositoryProvider).deleteDex(dexId);
     _ref.read(slotActionsProvider).specimensChanged();
   }
+
+  /// Traz o dex para o padrão de hoje (#308). Slots e boxes mudam, e os
+  /// espécimes das formas que saíram voltam ao inventário.
+  Future<PersonalDex> applyUpdate(
+    int dexId, {
+    required DexUpdateMode mode,
+    required bool dropRemoved,
+  }) async {
+    final dex = await _ref
+        .read(personalDexRepositoryProvider)
+        .applyDexUpdate(dexId, mode: mode, dropRemoved: dropRemoved);
+    _ref
+      ..invalidate(dexUpdateProvider)
+      ..read(slotActionsProvider).specimensChanged();
+    return dex;
+  }
+
+  /// "Agora não" ou "Não atualizar" (#308) para a mudança [signature].
+  Future<PersonalDex> snoozeUpdate(
+    int dexId, {
+    required String signature,
+    required bool ignore,
+  }) async {
+    final dex = await _ref
+        .read(personalDexRepositoryProvider)
+        .snoozeDexUpdate(dexId, signature: signature, ignore: ignore);
+    _ref
+      ..invalidate(dexProvider(dexId))
+      ..invalidate(dexListProvider);
+    return dex;
+  }
 }
+
+typedef DexUpdateKey = ({int dexId, bool dropRemoved});
+
+/// O que mudou no padrão desde que o dex foi criado (#308), com as formas
+/// que saíram fora do dex ou mantidas; `null` sem mudança.
+final FutureProviderFamily<DexUpdatePreview?, DexUpdateKey> dexUpdateProvider =
+    FutureProvider.autoDispose.family<DexUpdatePreview?, DexUpdateKey>(
+      (ref, key) => ref
+          .watch(personalDexRepositoryProvider)
+          .previewDexUpdate(key.dexId, dropRemoved: key.dropRemoved),
+    );
 
 /// Depositar, libertar e editar specimens de um slot, invalidando o que a
 /// tela mostra (slots, contagens da box, do dex e da lista).

@@ -212,6 +212,64 @@ abstract class GameDexChoice with _$GameDexChoice {
   }) = _GameDexChoice;
 }
 
+/// Como as formas novas entram no dex desatualizado (#308).
+enum DexUpdateMode {
+  /// Cada forma no lugar certo: o esquema é refeito, e slots e boxes mudam.
+  inOrder,
+
+  /// Em boxes depois da última do dex, fora da ordem: nada do que existe
+  /// muda de lugar.
+  atEnd,
+}
+
+/// Uma box que recebe formas no "No fim" (#308).
+@freezed
+abstract class DexUpdateBox with _$DexUpdateBox {
+  const factory DexUpdateBox({
+    required String name,
+    required int forms,
+
+    /// Criada no fim do HOME (não havia box livre ali).
+    @Default(false) bool isNew,
+  }) = _DexUpdateBox;
+}
+
+/// O que mudou no padrão desde que o dex foi criado, e o que cada jeito de
+/// atualizar faz nas boxes do HOME (#308).
+@freezed
+abstract class DexUpdatePreview with _$DexUpdatePreview {
+  const factory DexUpdatePreview({
+    /// As formas que a receita do dex dá hoje e o dex não tem.
+    required List<FormRef> added,
+
+    /// As formas do dex que saíram do padrão.
+    required List<FormRef> removed,
+
+    /// A mudança em si (as formas que entram e saem): o aviso que o usuário
+    /// adiou ou ignorou só vale para ela.
+    required String signature,
+
+    /// De onde o dex nasceu (o padrão, nos dex de antes do #34).
+    required DexRecipe recipe,
+
+    /// "Na ordem": as boxes que o dex usa antes e depois, as boxes cujo
+    /// conteúdo muda e quantos espécimes mudam de lugar.
+    required int boxesBefore,
+    required int boxesAfter,
+    required List<String> changedBoxes,
+    required int movedSpecimens,
+    required bool inOrderFits,
+
+    /// "No fim": as boxes que recebem as formas novas.
+    required List<DexUpdateBox> atEndBoxes,
+    required bool atEndFits,
+
+    /// Quantas das formas que saíram têm espécime: voltam ao inventário se
+    /// saírem do dex.
+    @Default(0) int removedWithSpecimen,
+  }) = _DexUpdatePreview;
+}
+
 @freezed
 abstract class PersonalDex with _$PersonalDex {
   const factory PersonalDex({
@@ -228,6 +286,14 @@ abstract class PersonalDex with _$PersonalDex {
     /// De onde o dex nasceu (#34); `null` nos dex criados antes, que vieram
     /// do conjunto padrão (o Living Form Lite).
     DexRecipe? recipe,
+
+    /// A mudança do padrão ([DexUpdatePreview.signature]) que o usuário
+    /// deixou para depois (#308): o aviso sai do topo e fica no menu.
+    String? updateLater,
+
+    /// A mudança que o usuário decidiu não aplicar: o aviso some até o
+    /// padrão mudar de novo.
+    String? updateIgnored,
   }) = _PersonalDex;
 
   const PersonalDex._();
