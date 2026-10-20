@@ -1856,6 +1856,13 @@ class FakeBackend
     }
     final search = query.search.trim().toLowerCase();
     final number = int.tryParse(search);
+    // Os jogos que ainda chegam ao HOME, mas vão deixar de chegar (#316).
+    final today = now();
+    final closing = {
+      for (final MapEntry(key: version, value: until)
+          in (catalog?.homeCutoffs ?? const <String, DateTime>{}).entries)
+        if (today.isBefore(until)) version,
+    };
     final hunts = <Hunt>[];
     for (final slot in _slots.values) {
       final formId = slot.formId;
@@ -1880,6 +1887,12 @@ class FakeBackend
               form.types.any((t) => query.types.contains(t.type))) &&
           (query.categories.isEmpty || query.categories.contains(category)) &&
           (query.versions.isEmpty || query.versions.any(versions.contains)) &&
+          switch (query.homeCutoff) {
+            HomeCutoffFilter.all => true,
+            HomeCutoffFilter.only =>
+              versions.isNotEmpty && versions.every(closing.contains),
+            HomeCutoffFilter.also => versions.any(closing.contains),
+          } &&
           (search.isEmpty ||
               (number == null
                   ? form.name.contains(slugSearch(search))

@@ -368,6 +368,25 @@ enum HuntSituation {
   final bool? param;
 }
 
+/// "Fecha no HOME" (#316): o que dá para caçar nos jogos que deixam de
+/// chegar ao HOME (os do Pokémon Bank, com `homeUntil` no catálogo) e ainda
+/// não fecharam.
+enum HomeCutoffFilter {
+  all,
+
+  /// Todos os jogos em que a forma pode ser caçada fecham: depois do corte,
+  /// não há outro jeito.
+  only(param: 'only'),
+
+  /// Algum jogo em que a forma pode ser caçada fecha.
+  also(param: 'also');
+
+  HomeCutoffFilter({this.param});
+
+  /// Valor de `home_cutoff` na API; `null` não filtra.
+  final String? param;
+}
+
 /// Categoria da espécie, nos filtros das caçadas e do inventário.
 enum SpeciesCategory {
   legendary('legendary'),
@@ -462,6 +481,7 @@ abstract class HuntQuery with _$HuntQuery {
     @Default('') String search,
     @Default(false) bool includeLocked,
     @Default(HuntSituation.all) HuntSituation situation,
+    @Default(HomeCutoffFilter.all) HomeCutoffFilter homeCutoff,
 
     /// Só o que dá para caçar em alguma destas versões (as dos saves do
     /// usuário); vazio = qualquer jogo.
@@ -476,6 +496,7 @@ abstract class HuntQuery with _$HuntQuery {
     types.isNotEmpty,
     categories.isNotEmpty,
     includeLocked,
+    homeCutoff != HomeCutoffFilter.all,
   ].where((active) => active).length;
 
   /// Limpa o escopo, mantendo motivos, situação e busca.
@@ -502,6 +523,7 @@ abstract class HuntQuery with _$HuntQuery {
       if (search.isNotEmpty) 'search': search,
       if (includeLocked) 'include_locked': true,
       'registered': ?situation.param,
+      'home_cutoff': ?homeCutoff.param,
       if (versions.isNotEmpty) 'version': join(versions),
     };
   }
