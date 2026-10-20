@@ -254,6 +254,12 @@ void main() {
       // Exclusivo de versão: a versão em que a forma aparece (#202).
       expect(catalog.formDetail(196).pokedexes.single.exclusiveTo, ['scarlet']);
       expect(catalog.pokedexesOf(133).first.exclusiveTo, isEmpty);
+      // O shiny lock por jogo (#313): o Eevee só em Scarlet.
+      final eevee = {
+        for (final g in catalog.pokedexesOf(133)) g.versionGroup: g,
+      };
+      expect(eevee['scarlet-violet']!.shinyLockedIn, ['scarlet']);
+      expect(eevee['sword-shield']!.shinyLockedIn, isEmpty);
     });
 
     test('versões na ordem da série, com o par na ordem do grupo', () {

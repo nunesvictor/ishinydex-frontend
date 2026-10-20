@@ -560,6 +560,10 @@ class Catalog {
           versions: _homeVersions[group] ?? const [],
           entries: entries[group]!,
           exclusiveTo: exclusiveTo(_homeVersions[group] ?? const []),
+          shinyLockedIn: [
+            for (final v in _homeVersions[group] ?? const <String>[])
+              if (lockedVersions(formId).contains(v)) v,
+          ],
         ),
     ];
   }
