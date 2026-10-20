@@ -294,6 +294,10 @@ class _Pokedexes extends ConsumerWidget {
                                 context.l10n.exclusiveTo(versionLabel(version)),
                                 version: version,
                               ),
+                            // O shiny lock do jogo (#313), com a explicação
+                            // ao tocar.
+                            if (game.shinyLockedIn.isNotEmpty)
+                              _ShinyLockTag(game.shinyLockedIn),
                           ],
                         ),
                         if (mine(game) case final versions
@@ -347,3 +351,32 @@ String genderRatio(AppLocalizations l10n, int rate) => switch (rate) {
 /// 50.0 → "50".
 String decimal(AppLocalizations l10n, num value) =>
     NumberFormat('0.###', l10n.localeName).format(value);
+
+/// "Shiny lock em Scarlet": a forma não pode ser shiny nessas versões do
+/// jogo. Tocar explica.
+class _ShinyLockTag extends StatelessWidget {
+  const _ShinyLockTag(this.versions);
+
+  final List<String> versions;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.error;
+    return Tooltip(
+      message: context.l10n.shinyLockedInHint,
+      triggerMode: TooltipTriggerMode.tap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 2,
+        children: [
+          Icon(Icons.lock, size: 14, color: color),
+          Text(
+            context.l10n.shinyLockedIn(versions.map(versionLabel).join(' / ')),
+            style: theme.textTheme.labelSmall?.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}

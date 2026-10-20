@@ -285,6 +285,8 @@ void main() {
             versionGroup: 'scarlet-violet',
             versions: ['scarlet', 'violet'],
             entries: [PokedexEntry(label: 'Paldea', number: 316)],
+            // Como o Solgaleo em Scarlet (#313).
+            shinyLockedIn: ['scarlet'],
           ),
         ],
       );
@@ -317,6 +319,15 @@ void main() {
       expect(y('quadro de tipos'), lessThan(y('Captura')));
       expect(find.text('Seu: Sword'), findsOneWidget);
       expect(find.text('Seus: Scarlet, Violet'), findsOneWidget);
+      // O shiny lock só no jogo travado, com a explicação ao tocar.
+      expect(find.text('Shiny lock em Scarlet'), findsOneWidget);
+      expect(find.byIcon(Icons.lock), findsOneWidget);
+      await tester.tap(find.text('Shiny lock em Scarlet'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Esta forma não pode ser shiny neste jogo.'),
+        findsOneWidget,
+      );
       expect(
         find.text('Galar nº 383 · Tundra Coroada nº 139 (DLC)'),
         findsOneWidget,

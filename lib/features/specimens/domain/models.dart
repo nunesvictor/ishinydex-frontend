@@ -296,6 +296,10 @@ abstract class GamePokedex with _$GamePokedex {
     /// A forma só aparece nestas das [versions] (o Koraidon só no
     /// Scarlet); vazio = em todas.
     @Default(<String>[]) List<String> exclusiveTo,
+
+    /// As das [versions] em que a forma não pode ser shiny (o Solgaleo em
+    /// Scarlet, #313).
+    @Default(<String>[]) List<String> shinyLockedIn,
   }) = _GamePokedex;
 
   factory GamePokedex.fromJson(Map<String, dynamic> json) =>
