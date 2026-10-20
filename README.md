@@ -15,6 +15,17 @@ slots.
 - 📴 **Funciona offline** (service worker próprio) e se instala como PWA.
 - ✅ **100% de cobertura de testes** (unitários, de widget e de integração no navegador).
 
+## Créditos
+
+Os tipos de dex do "Novo PersonalDex" (Living Form Lite, Living, Final Form
+Form e Final Form, com as chaves de formas regionais, pré-evoluções e formas
+alternativas) vêm da planilha **"Austin John's Home Living Dex Organizer"**,
+de **Austin John** (canal *Austin John Plays*),
+[divulgada pela PokeJungle](https://pokejungle.net/2023/03/27/how-to-organize-pokemon-home-for-a-living-dex/).
+Usamos a ideia de organização, não os dados: as formas saem do catálogo do app.
+Diferente da planilha, o conjunto padrão inclui todas as formas, mesmo quando o
+shiny é igual (os núcleos do Minior, por exemplo).
+
 ## Início rápido
 
 Pré-requisitos: [Flutter](https://docs.flutter.dev/get-started/install) 3.47+ e um

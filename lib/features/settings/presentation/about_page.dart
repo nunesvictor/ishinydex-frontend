@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_recipe_picker.dart';
 
 /// Endereço do código, mostrado (selecionável) em "Sobre".
 const projectUrl = 'https://github.com/nunesvictor/ishinydex';
@@ -65,6 +66,13 @@ class AboutPage extends ConsumerWidget {
                   l10n.aboutDemoNothingSent,
                 ],
               ]),
+              // A classificação dos dex pré-moldados (#34) vem da planilha
+              // de Austin John: usamos a ideia, não os dados.
+              section(l10n.aboutCredits, [l10n.dexTypesCredit]),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: SelectableText(austinJohnSheetUrl),
+              ),
               section(l10n.aboutLegal, [
                 l10n.aboutTrademarks,
                 l10n.aboutFanProject,

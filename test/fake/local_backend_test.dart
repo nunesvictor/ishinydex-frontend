@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
@@ -27,10 +28,19 @@ void main() {
     'dex novo do zero: cria as boxes, com o dex padrão do catálogo',
     () async {
       final backend = FakeBackend.local(catalog);
-      final preview = await backend.previewNewDex(forceNewBox: false);
+      final preview = await backend.previewNewDex(
+        recipe: const DexRecipe(),
+        forceNewBox: false,
+      );
       expect((preview.forms, preview.boxesToCreate), (9, 1));
       // Box nova por geração (no fixture: I, II, I, II).
-      expect((await backend.previewNewDex(forceNewBox: true)).boxesNeeded, 4);
+      expect(
+        (await backend.previewNewDex(
+          recipe: const DexRecipe(),
+          forceNewBox: true,
+        )).boxesNeeded,
+        4,
+      );
 
       final dex = await backend.createDex(
         name: 'Shiny',

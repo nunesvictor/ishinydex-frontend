@@ -900,7 +900,10 @@ void main() {
     });
 
     test('novo dex: simulação, criação e erros', () async {
-      final preview = await backend.previewNewDex(forceNewBox: false);
+      final preview = await backend.previewNewDex(
+        recipe: const DexRecipe(),
+        forceNewBox: false,
+      );
       // 58 formas em 2 boxes; livres: HOME 4–6.
       expect(preview.forms, 58);
       expect(preview.boxesNeeded, 2);
@@ -930,7 +933,10 @@ void main() {
       );
       // Sobrou 1 box livre (HOME 6), a última: o próximo dex a completa
       // com uma box nova no fim.
-      final extending = await backend.previewNewDex(forceNewBox: false);
+      final extending = await backend.previewNewDex(
+        recipe: const DexRecipe(),
+        forceNewBox: false,
+      );
       expect(extending.enoughSpace, true);
       expect(extending.boxesToCreate, 1);
       expect(extending.firstBox!.name, 'HOME 6');
@@ -945,11 +951,17 @@ void main() {
       ]);
 
       // Sem nenhuma livre: tudo em boxes novas, até o limite.
-      final allNew = await backend.previewNewDex(forceNewBox: false);
+      final allNew = await backend.previewNewDex(
+        recipe: const DexRecipe(),
+        forceNewBox: false,
+      );
       expect(allNew.boxesToCreate, 2);
       expect(allNew.firstBox, isNull);
       backend.maxBoxes = 8;
-      final full = await backend.previewNewDex(forceNewBox: false);
+      final full = await backend.previewNewDex(
+        recipe: const DexRecipe(),
+        forceNewBox: false,
+      );
       expect(full.enoughSpace, false);
       expect(full.boxesToCreate, 0);
       expect(full.firstBox, isNull);
@@ -1023,7 +1035,10 @@ void main() {
       )).count;
       expect(stillDeposited, lessThan(deposited));
       expect(
-        (await backend.previewNewDex(forceNewBox: false)).firstBox!.name,
+        (await backend.previewNewDex(
+          recipe: const DexRecipe(),
+          forceNewBox: false,
+        )).firstBox!.name,
         'HOME 1',
       );
       expect(backend.deleteDex(1), throwsA(isA<NotFoundFailure>()));
@@ -1036,8 +1051,20 @@ void main() {
         ..addForm(id: 152, name: 'chikorita')
         ..addFreeBox('A')
         ..addFreeBox('B');
-      expect((await gens.previewNewDex(forceNewBox: false)).boxesNeeded, 1);
-      expect((await gens.previewNewDex(forceNewBox: true)).boxesNeeded, 2);
+      expect(
+        (await gens.previewNewDex(
+          recipe: const DexRecipe(),
+          forceNewBox: false,
+        )).boxesNeeded,
+        1,
+      );
+      expect(
+        (await gens.previewNewDex(
+          recipe: const DexRecipe(),
+          forceNewBox: true,
+        )).boxesNeeded,
+        2,
+      );
       final dex = await gens.createDex(
         name: 'Por geração',
         isShinyDex: false,

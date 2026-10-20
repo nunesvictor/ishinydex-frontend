@@ -4,31 +4,7 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
-
-/// Regras do conjunto padrão, as mesmas de `home/services.py` no backend.
-List<String> standardSetRules(AppLocalizations l10n) => [
-  l10n.ruleBattleOnly,
-  l10n.ruleDefaultFormOnly,
-  l10n.ruleExcludedForms,
-  l10n.ruleExcludedVariants,
-  l10n.ruleAlcremie,
-];
-
-/// Fluxo do dex personalizado (escolher as formas). Ainda não existe: por
-/// enquanto só avisa. É o ponto a substituir quando o fluxo for definido.
-Future<void> openCustomDexFlow(BuildContext context) => showDialog<void>(
-  context: context,
-  builder: (context) => AlertDialog(
-    title: Text(context.l10n.comingSoon),
-    content: Text(context.l10n.customDexSoon),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: Text(context.l10n.gotIt),
-      ),
-    ],
-  ),
-);
+import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_recipe_picker.dart';
 
 /// Cadastro de um PersonalDex. Retorna o dex criado.
 class NewDexPage extends ConsumerStatefulWidget {
@@ -40,6 +16,7 @@ class NewDexPage extends ConsumerStatefulWidget {
 
 class _NewDexPageState extends ConsumerState<NewDexPage> {
   final _name = TextEditingController();
+  DexRecipe _recipe = const DexRecipe();
   bool _isShinyDex = false;
   bool _forceNewBox = false;
   bool _saving = false;
@@ -52,60 +29,38 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
     super.dispose();
   }
 
+  NewDexOptions get _options => (recipe: _recipe, forceNewBox: _forceNewBox);
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final preview = ref.watch(dexPreviewProvider(_forceNewBox));
+    final l10n = context.l10n;
+    final preview = ref.watch(dexPreviewProvider(_options));
     final canCreate = !_saving && (preview.value?.enoughSpace ?? false);
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.dexNew)),
+      appBar: AppBar(
+        title: Text(l10n.dexNew),
+        actions: [
+          IconButton(
+            tooltip: l10n.dexTypesTitle,
+            onPressed: () => showDexTypesHelp(context),
+            icon: const Icon(Icons.help_outline),
+          ),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(context.l10n.dexType, style: theme.textTheme.titleSmall),
+              Text(l10n.dexWhatGoesIn, style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.check_circle),
-                  title: Text(context.l10n.dexStandard),
-                  subtitle: Text(context.l10n.dexStandardSubtitle),
-                ),
+              DexRecipePicker(
+                recipe: _recipe,
+                onChanged: (recipe) => setState(() => _recipe = recipe),
               ),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.tune),
-                  // Wrap: em tela estreita o chip desce para a linha de baixo.
-                  title: Wrap(
-                    spacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(context.l10n.dexCustom),
-                      Chip(
-                        label: Text(context.l10n.comingSoon),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(context.l10n.dexCustomSubtitle),
-                  onTap: () => openCustomDexFlow(context),
-                ),
-              ),
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                title: Text(context.l10n.standardSetQuestion),
-                children: [
-                  for (final rule in standardSetRules(context.l10n))
-                    ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.circle, size: 8),
-                      title: Text(rule),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
+              const Divider(height: 32),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -117,26 +72,26 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
               TextField(
                 controller: _name,
                 decoration: InputDecoration(
-                  labelText: context.l10n.fieldName,
+                  labelText: l10n.fieldName,
                   errorText: context.fieldError(_validation, 'name'),
                 ),
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: Text(context.l10n.shinyDex),
-                subtitle: Text(context.l10n.shinyDexNewSubtitle),
+                title: Text(l10n.shinyDex),
+                subtitle: Text(l10n.shinyDexNewSubtitle),
                 value: _isShinyDex,
                 onChanged: (v) => setState(() => _isShinyDex = v),
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: Text(context.l10n.newBoxPerGeneration),
-                subtitle: Text(context.l10n.newBoxPerGenerationSubtitle),
+                title: Text(l10n.newBoxPerGeneration),
+                subtitle: Text(l10n.newBoxPerGenerationSubtitle),
                 value: _forceNewBox,
                 onChanged: (v) => setState(() => _forceNewBox = v),
               ),
               const SizedBox(height: 8),
-              _PreviewCard(preview: preview, forceNewBox: _forceNewBox),
+              _PreviewCard(preview: preview, options: _options),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: canCreate ? _create : null,
@@ -145,7 +100,7 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
                         dimension: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(context.l10n.createDex),
+                    : Text(l10n.createDex),
               ),
             ],
           ),
@@ -167,6 +122,7 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
             name: _name.text.trim(),
             isShinyDex: _isShinyDex,
             forceNewBox: _forceNewBox,
+            recipe: _recipe,
           );
       // O dex novo ocupou boxes: a simulação e a lista mudaram.
       ref
@@ -185,10 +141,10 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
 
 /// Resumo do que será criado, vindo da simulação da API.
 class _PreviewCard extends ConsumerWidget {
-  const _PreviewCard({required this.preview, required this.forceNewBox});
+  const _PreviewCard({required this.preview, required this.options});
 
   final AsyncValue<DexPreview> preview;
-  final bool forceNewBox;
+  final NewDexOptions options;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -234,8 +190,7 @@ class _PreviewCard extends ConsumerWidget {
                 ),
               ),
               TextButton(
-                onPressed: () =>
-                    ref.invalidate(dexPreviewProvider(forceNewBox)),
+                onPressed: () => ref.invalidate(dexPreviewProvider(options)),
                 child: Text(context.l10n.tryAgain),
               ),
             ],

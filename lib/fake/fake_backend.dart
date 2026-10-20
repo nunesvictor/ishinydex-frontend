@@ -353,6 +353,8 @@ class FakeBackend
           'name': d.name,
           'isShinyDex': d.isShinyDex,
           'forceNewBox': d.forceNewBox,
+          // Só nos dex do #34: os de antes continuam como eram.
+          if (d.recipe case final recipe?) 'recipe': recipe.toJson(),
         },
     ],
     'boxes': [
@@ -494,6 +496,10 @@ class FakeBackend
         registered: 0,
         isShinyDex: d['isShinyDex'] as bool,
         forceNewBox: d['forceNewBox'] as bool,
+        recipe: switch (d['recipe']) {
+          final Map<String, dynamic> recipe => DexRecipe.fromJson(recipe),
+          _ => null,
+        },
       );
     }
     for (final b in of('boxes')) {
@@ -1027,10 +1033,11 @@ class FakeBackend
     return [for (final id in _dexes.keys) _dexWithCounts(id)];
   }
 
-  /// O conjunto padrão de um dex novo: o `defaultDex` do catálogo; no seed
-  /// fixo, todas as formas cadastradas.
-  List<FormDetail> get _defaultForms => switch (catalog) {
-    final catalog? => [for (final id in catalog.defaultDex) ?_forms[id]],
+  /// As formas de um dex novo: o `defaultDex` do catálogo com as chaves de
+  /// [recipe] (#34); no seed fixo, todas as formas cadastradas (sem
+  /// catálogo não há como saber o que é regional ou evolui).
+  List<FormDetail> _formsFor(DexRecipe recipe) => switch (catalog) {
+    final catalog? => [for (final id in catalog.dexForms(recipe)) ?_forms[id]],
     null => _forms.values.toList()..sort((a, b) => a.id.compareTo(b.id)),
   };
 
@@ -1042,9 +1049,9 @@ class FakeBackend
   /// comportar, completa a sequência livre do fim com boxes novas, até
   /// [maxBoxes].
   ({int needed, int largest, List<BoxRef>? boxes, int toCreate}) _planDex(
+    List<FormDetail> forms,
     bool forceNewBox,
   ) {
-    final forms = _defaultForms;
     var needed = 0;
     for (var index = 0; index < forms.length;) {
       needed++;
@@ -1116,11 +1123,15 @@ class FakeBackend
   }
 
   @override
-  Future<DexPreview> previewNewDex({required bool forceNewBox}) async {
+  Future<DexPreview> previewNewDex({
+    required DexRecipe recipe,
+    required bool forceNewBox,
+  }) async {
     await _delay();
-    final plan = _planDex(forceNewBox);
+    final forms = _formsFor(recipe);
+    final plan = _planDex(forms, forceNewBox);
     return DexPreview(
-      forms: _defaultForms.length,
+      forms: forms.length,
       boxesNeeded: plan.needed,
       largestFreeRun: plan.largest,
       enoughSpace: plan.boxes != null,
@@ -1134,6 +1145,7 @@ class FakeBackend
     required String name,
     required bool isShinyDex,
     required bool forceNewBox,
+    DexRecipe recipe = const DexRecipe(),
   }) async {
     await _delay();
     if (name.trim().isEmpty) {
@@ -1146,7 +1158,8 @@ class FakeBackend
         'name': [Problem.dexNameTaken()],
       });
     }
-    final plan = _planDex(forceNewBox);
+    final forms = _formsFor(recipe);
+    final plan = _planDex(forms, forceNewBox);
     final boxes = plan.boxes;
     if (boxes == null) {
       throw ValidationFailure({
@@ -1160,8 +1173,7 @@ class FakeBackend
       });
     }
     final id = addDex(name: name, isShinyDex: isShinyDex);
-    _dexes[id] = _dexes[id]!.copyWith(forceNewBox: forceNewBox);
-    final forms = _defaultForms;
+    _dexes[id] = _dexes[id]!.copyWith(forceNewBox: forceNewBox, recipe: recipe);
     final newBoxes = [
       for (var i = 0; i < plan.toCreate; i++)
         _boxes[addFreeBox(_nextBoxName())]!,

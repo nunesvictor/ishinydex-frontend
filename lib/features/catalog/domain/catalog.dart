@@ -710,6 +710,60 @@ class Catalog {
     return from == null ? null : _defaultFormOf(from);
   }
 
+  /// As formas de um dex novo com as chaves de [recipe] (#34), na ordem do
+  /// conjunto padrão ([defaultDex]):
+  /// - sem as regionais, saem as formas de Alola, Galar, Hisui e Paldea;
+  /// - sem as pré-evoluções, ficam só as formas que não evoluem mais pelo
+  ///   próprio caminho: nas famílias com forma regional, pelas arestas
+  ///   curadas (o Farfetch'd comum fica, o de Galar sai); nas outras, pela
+  ///   espécie (o Eevee sai, as eeveeluções ficam);
+  /// - sem as formas alternativas, uma forma por espécie (a padrão; sem ela
+  ///   no conjunto, a primeira, como o núcleo vermelho do Minior), além das
+  ///   regionais.
+  List<int> dexForms(DexRecipe recipe) {
+    final picked = <int>[];
+    final speciesSeen = <String>{};
+    final withBase = {
+      for (final id in defaultDex)
+        if (_isBaseForm(id)) _speciesOf(_forms[id]!)?.name,
+    };
+    for (final id in defaultDex) {
+      final form = _forms[id];
+      if (form == null) continue;
+      final species = _speciesOf(form)?.name;
+      final regional = _isRegional(form);
+      if (regional && !recipe.regional) continue;
+      if (!recipe.preEvolutions && _evolves(id)) continue;
+      if (!recipe.alternateForms && !regional) {
+        final first = _isBaseForm(id) || !withBase.contains(species);
+        if (!first || !speciesSeen.add(species ?? '$id')) continue;
+      }
+      picked.add(id);
+    }
+    return picked;
+  }
+
+  /// A forma padrão do Pokémon padrão da espécie.
+  bool _isBaseForm(int formId) {
+    final form = _forms[formId]!;
+    return form.isDefault && (_pokemonOf(form)?.isDefault ?? false);
+  }
+
+  static final _regionalName = RegExp(r'(^|-)(alola|galar|hisui|paldea)(-|$)');
+
+  /// Forma regional: o nome da forma diz a região (`alola`,
+  /// `galar-standard`, `paldea-combat-breed`...).
+  bool _isRegional(_Form form) => _regionalName.hasMatch(form.formName);
+
+  /// A forma ainda evolui pelo próprio caminho: nas famílias com forma
+  /// regional, pelas arestas curadas (backend#121); nas outras, pela
+  /// espécie.
+  bool _evolves(int formId) {
+    if (_curated(formId)) return _formChildren.containsKey(formId);
+    final species = _speciesOf(_forms[formId]!);
+    return _evolutions[species?.name]?.isNotEmpty ?? false;
+  }
+
   /// `gender_rate` da espécie da forma.
   int? genderRate(int formId) => _speciesOf(_forms[formId]!)?.genderRate;
 

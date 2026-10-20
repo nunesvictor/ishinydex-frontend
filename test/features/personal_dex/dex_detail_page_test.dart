@@ -109,18 +109,22 @@ class _FlakyRepository implements PersonalDexRepository {
   Future<Slot> fetchSlot(int slotId) => inner.fetchSlot(slotId);
 
   @override
-  Future<DexPreview> previewNewDex({required bool forceNewBox}) =>
-      inner.previewNewDex(forceNewBox: forceNewBox);
+  Future<DexPreview> previewNewDex({
+    required DexRecipe recipe,
+    required bool forceNewBox,
+  }) => inner.previewNewDex(recipe: recipe, forceNewBox: forceNewBox);
 
   @override
   Future<PersonalDex> createDex({
     required String name,
     required bool isShinyDex,
     required bool forceNewBox,
+    DexRecipe recipe = const DexRecipe(),
   }) => inner.createDex(
     name: name,
     isShinyDex: isShinyDex,
     forceNewBox: forceNewBox,
+    recipe: recipe,
   );
 
   @override
