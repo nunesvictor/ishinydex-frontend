@@ -141,6 +141,15 @@ abstract class DexRecipe with _$DexRecipe {
     /// As formas alternativas (letras do Unown, padrões do Vivillon...).
     /// Sem elas, uma forma por espécie, além das regionais.
     @Default(true) bool alternateForms,
+
+    /// O dex por jogo (#34): o grupo de versões (`scarlet-violet`). `null` é
+    /// o Nacional. No dex por jogo não há a chave das regionais: cada
+    /// espécie entra com as formas que existem no jogo.
+    @JsonKey(includeIfNull: false) String? versionGroup,
+
+    /// As pokédex do jogo, na ordem em que entram (a principal, depois as
+    /// das DLCs...).
+    @Default(<String>[]) List<String> pokedexes,
   }) = _DexRecipe;
 
   const DexRecipe._();
@@ -159,11 +168,48 @@ abstract class DexRecipe with _$DexRecipe {
   };
 
   /// O atalho com estas chaves; `null` numa combinação fora deles (o
-  /// "Personalizado").
+  /// "Personalizado"). A base (Nacional ou o jogo) não conta.
   DexPreset? get preset => [
     for (final p in DexPreset.values)
-      if (DexRecipe.of(p) == this) p,
+      if (DexRecipe.of(p) ==
+          copyWith(versionGroup: null, pokedexes: const <String>[]))
+        p,
   ].firstOrNull;
+
+  /// As mesmas chaves de [preset] sobre esta base.
+  DexRecipe withPreset(DexPreset preset) =>
+      DexRecipe.of(preset)
+          .copyWith(versionGroup: versionGroup, pokedexes: pokedexes);
+
+  bool get byGame => versionGroup != null;
+}
+
+/// Uma pokédex de um jogo, para escolher no dex por jogo (#34).
+@freezed
+abstract class GameDexChoice with _$GameDexChoice {
+  const factory GameDexChoice({
+    required String name,
+    required String label,
+
+    /// Quantas espécies ela tem.
+    required int species,
+    @Default(<String, String>{}) Map<String, String> labels,
+
+    /// A DLC da pokédex (`the-teal-mask`); `null` no jogo base.
+    String? dlc,
+
+    /// Lista extra, sem número (Outros encontros, Aventura Dinamax...).
+    @Default(false) bool extra,
+
+    /// Uma pokédex anterior do jogo já tem todas as espécies desta (as
+    /// ilhas de Alola, dentro da de Alola): o rótulo dela.
+    String? coveredBy,
+    @Default(<String, String>{}) Map<String, String> coveredByLabels,
+
+    /// Marcada quando se escolhe o jogo: as numeradas que trazem espécies
+    /// novas.
+    @Default(false) bool selectedByDefault,
+  }) = _GameDexChoice;
 }
 
 @freezed

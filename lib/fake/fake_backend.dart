@@ -125,6 +125,10 @@ class _SlotRecord {
   int? specimenId;
 }
 
+/// As formas de um dex novo e onde começa cada seção (ver o `_layoutFor` do
+/// `FakeBackend`).
+typedef DexLayout = ({List<FormDetail> forms, Set<int> starts});
+
 /// O backend do app, em memória: as regras de negócio (dexes, boxes,
 /// depósito, caçadas...) que antes ficavam no servidor. No modo local, os
 /// dados vêm do aparelho e voltam para ele ([records]); na demonstração, são
@@ -1033,13 +1037,37 @@ class FakeBackend
     return [for (final id in _dexes.keys) _dexWithCounts(id)];
   }
 
-  /// As formas de um dex novo: o `defaultDex` do catálogo com as chaves de
-  /// [recipe] (#34); no seed fixo, todas as formas cadastradas (sem
-  /// catálogo não há como saber o que é regional ou evolui).
-  List<FormDetail> _formsFor(DexRecipe recipe) => switch (catalog) {
-    final catalog? => [for (final id in catalog.dexForms(recipe)) ?_forms[id]],
-    null => _forms.values.toList()..sort((a, b) => a.id.compareTo(b.id)),
-  };
+  /// As formas de um dex novo, na ordem das boxes, e onde começa cada seção
+  /// (uma geração no Nacional, uma pokédex no dex por jogo): com "nova box"
+  /// ligado, cada seção abre uma box. Com catálogo, o conjunto padrão com as
+  /// chaves de [recipe] (#34); no seed fixo, todas as formas cadastradas,
+  /// com as gerações pelos iniciais (sem catálogo não há como saber o que é
+  /// regional ou evolui).
+  DexLayout _layoutFor(DexRecipe recipe) {
+    final catalog = this.catalog;
+    if (catalog == null) {
+      final forms = _forms.values.toList()
+        ..sort((a, b) => a.id.compareTo(b.id));
+      const starters = [
+        'chikorita', 'treecko', 'turtwig', 'victini', //
+        'chespin', 'rowlet', 'grookey', 'sprigatito',
+      ];
+      return (
+        forms: forms,
+        starts: {
+          for (final (i, f) in forms.indexed)
+            if (i > 0 && starters.contains(f.name)) i,
+        },
+      );
+    }
+    final forms = <FormDetail>[];
+    final starts = <int>{};
+    for (final section in catalog.dexSections(recipe)) {
+      if (forms.isNotEmpty) starts.add(forms.length);
+      forms.addAll([for (final id in section) ?_forms[id]]);
+    }
+    return (forms: forms, starts: starts);
+  }
 
   /// Limite de boxes (o do HOME); os testes podem baixar.
   int maxBoxes = homeMaxBoxes;
@@ -1049,9 +1077,10 @@ class FakeBackend
   /// comportar, completa a sequência livre do fim com boxes novas, até
   /// [maxBoxes].
   ({int needed, int largest, List<BoxRef>? boxes, int toCreate}) _planDex(
-    List<FormDetail> forms,
+    DexLayout layout,
     bool forceNewBox,
   ) {
+    final (:forms, :starts) = layout;
     var needed = 0;
     for (var index = 0; index < forms.length;) {
       needed++;
@@ -1060,9 +1089,7 @@ class FakeBackend
         position < 30 && index < forms.length;
         position++
       ) {
-        if (forceNewBox && position > 0 && _startsGeneration(forms, index)) {
-          break;
-        }
+        if (forceNewBox && position > 0 && starts.contains(index)) break;
         index++;
       }
     }
@@ -1106,32 +1133,16 @@ class FakeBackend
     );
   }
 
-  /// A forma [index] abre uma geração nova: com catálogo, a geração da
-  /// espécie muda em relação à anterior (como no backend); no seed fixo, os
-  /// iniciais de cada geração.
-  bool _startsGeneration(List<FormDetail> forms, int index) {
-    final catalog = this.catalog;
-    if (catalog == null) {
-      return const [
-        'chikorita', 'treecko', 'turtwig', 'victini', //
-        'chespin', 'rowlet', 'grookey', 'sprigatito',
-      ].contains(forms[index].name);
-    }
-    return index > 0 &&
-        catalog.generation(forms[index].id) !=
-            catalog.generation(forms[index - 1].id);
-  }
-
   @override
   Future<DexPreview> previewNewDex({
     required DexRecipe recipe,
     required bool forceNewBox,
   }) async {
     await _delay();
-    final forms = _formsFor(recipe);
-    final plan = _planDex(forms, forceNewBox);
+    final layout = _layoutFor(recipe);
+    final plan = _planDex(layout, forceNewBox);
     return DexPreview(
-      forms: forms.length,
+      forms: layout.forms.length,
       boxesNeeded: plan.needed,
       largestFreeRun: plan.largest,
       enoughSpace: plan.boxes != null,
@@ -1158,8 +1169,9 @@ class FakeBackend
         'name': [Problem.dexNameTaken()],
       });
     }
-    final forms = _formsFor(recipe);
-    final plan = _planDex(forms, forceNewBox);
+    final layout = _layoutFor(recipe);
+    final (:forms, :starts) = layout;
+    final plan = _planDex(layout, forceNewBox);
     final boxes = plan.boxes;
     if (boxes == null) {
       throw ValidationFailure({
@@ -1183,9 +1195,7 @@ class FakeBackend
       final slots = _slots.values.where((s) => s.box.id == box.id).toList();
       for (final (position, slot) in slots.indexed) {
         if (index >= forms.length) break;
-        if (forceNewBox && position > 0 && _startsGeneration(forms, index)) {
-          break;
-        }
+        if (forceNewBox && position > 0 && starts.contains(index)) break;
         slot
           ..dexId = id
           ..formId = forms[index++].id;

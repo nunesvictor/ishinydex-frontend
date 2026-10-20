@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_recipe_picker.dart';
@@ -36,7 +37,11 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final preview = ref.watch(dexPreviewProvider(_options));
-    final canCreate = !_saving && (preview.value?.enoughSpace ?? false);
+    // Um dex por jogo sem nenhuma pokédex marcada não tem formas.
+    final canCreate =
+        !_saving &&
+        (preview.value?.enoughSpace ?? false) &&
+        (preview.value?.forms ?? 0) > 0;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.dexNew),
@@ -54,8 +59,6 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(l10n.dexWhatGoesIn, style: theme.textTheme.titleSmall),
-              const SizedBox(height: 8),
               DexRecipePicker(
                 recipe: _recipe,
                 onChanged: (recipe) => setState(() => _recipe = recipe),
@@ -85,13 +88,31 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: Text(l10n.newBoxPerGeneration),
-                subtitle: Text(l10n.newBoxPerGenerationSubtitle),
+                // No dex por jogo, a seção é a pokédex, não a geração.
+                title: Text(
+                  _recipe.byGame
+                      ? l10n.newBoxPerPokedex
+                      : l10n.newBoxPerGeneration,
+                ),
+                subtitle: Text(
+                  _recipe.byGame
+                      ? l10n.newBoxPerPokedexSubtitle
+                      : l10n.newBoxPerGenerationSubtitle,
+                ),
                 value: _forceNewBox,
                 onChanged: (v) => setState(() => _forceNewBox = v),
               ),
               const SizedBox(height: 8),
               _PreviewCard(preview: preview, options: _options),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  _orderText(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: canCreate ? _create : null,
@@ -107,6 +128,21 @@ class _NewDexPageState extends ConsumerState<NewDexPage> {
         ),
       ),
     );
+  }
+
+  /// A ordem das formas nas boxes: a nacional, ou as pokédex do jogo, uma
+  /// depois da outra.
+  String _orderText() {
+    final l10n = context.l10n;
+    final catalog = ref.read(catalogLoadProvider)?.catalog;
+    final group = _recipe.versionGroup;
+    if (catalog == null || group == null) return l10n.dexOrderNational;
+    final names = [
+      for (final dex in catalog.gamePokedexes(group))
+        if (_recipe.pokedexes.contains(dex.name))
+          context.catalogText(dex.label, dex.labels),
+    ];
+    return l10n.dexOrderGame(names.join(l10n.dexOrderThen));
   }
 
   Future<void> _create() async {
