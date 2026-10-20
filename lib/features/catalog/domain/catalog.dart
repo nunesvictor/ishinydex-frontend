@@ -206,6 +206,7 @@ class Catalog {
       pokedexes: [
         for (final p in _objects(json['pokedexes'] ?? const <Object>[]))
           _Pokedex(
+            name: p['name'] as String,
             label: p['label'] as String,
             labels: catalogLabels(p['labels']),
             versionGroups: [
@@ -710,8 +711,17 @@ class Catalog {
     return from == null ? null : _defaultFormOf(from);
   }
 
-  /// As formas de um dex novo com as chaves de [recipe] (#34), na ordem do
-  /// conjunto padrão ([defaultDex]):
+  /// As formas de um dex novo com as chaves de [recipe] (#34), na ordem em
+  /// que entram nas boxes: [dexSections] em sequência.
+  List<int> dexForms(DexRecipe recipe) => [
+    for (final section in dexSections(recipe)) ...section,
+  ];
+
+  /// As formas de um dex novo em seções: as gerações no Nacional, as
+  /// pokédex no dex por jogo. Com "nova box" ligado, cada seção começa numa
+  /// box.
+  ///
+  /// No Nacional, o conjunto padrão ([defaultDex]) com as chaves:
   /// - sem as regionais, saem as formas de Alola, Galar, Hisui e Paldea;
   /// - sem as pré-evoluções, ficam só as formas que não evoluem mais pelo
   ///   próprio caminho: nas famílias com forma regional, pelas arestas
@@ -720,12 +730,44 @@ class Catalog {
   /// - sem as formas alternativas, uma forma por espécie (a padrão; sem ela
   ///   no conjunto, a primeira, como o núcleo vermelho do Minior), além das
   ///   regionais.
-  List<int> dexForms(DexRecipe recipe) {
+  ///
+  /// No dex por jogo, as espécies das pokédex escolhidas, na ordem delas (a
+  /// que já entrou numa pokédex anterior não se repete), cada uma com as
+  /// formas do conjunto padrão que existem no jogo; as duas outras chaves
+  /// valem igual.
+  List<List<int>> dexSections(DexRecipe recipe) {
+    final group = recipe.versionGroup;
+    if (group == null) return _nationalSections(recipe);
+    final bySpecies = <String, List<int>>{};
+    for (final id in defaultDex) {
+      final form = _forms[id];
+      final species = form == null ? null : _speciesOf(form)?.name;
+      if (species == null) continue;
+      if (!_existsBy(form!, group) || !_formInGame(id, species, group)) {
+        continue;
+      }
+      (bySpecies[species] ??= []).add(id);
+    }
+    final seen = <String>{};
+    return [
+      for (final dex in _pokedexes)
+        if (dex.versionGroups.contains(group) &&
+            recipe.pokedexes.contains(dex.name))
+          [
+            for (final species in _orderedEntries(dex))
+              if (seen.add(species))
+                ..._withKeys(bySpecies[species] ?? const [], recipe),
+          ],
+    ]..removeWhere((section) => section.isEmpty);
+  }
+
+  List<List<int>> _nationalSections(DexRecipe recipe) {
     final picked = <int>[];
     final speciesSeen = <String>{};
     final withBase = {
       for (final id in defaultDex)
-        if (_isBaseForm(id)) _speciesOf(_forms[id]!)?.name,
+        if (_forms.containsKey(id) && _isBaseForm(id))
+          _speciesOf(_forms[id]!)?.name,
     };
     for (final id in defaultDex) {
       final form = _forms[id];
@@ -740,7 +782,112 @@ class Catalog {
       }
       picked.add(id);
     }
-    return picked;
+    final sections = <List<int>>[];
+    for (final id in picked) {
+      if (sections.isEmpty ||
+          generation(id) != generation(sections.last.last)) {
+        sections.add([]);
+      }
+      sections.last.add(id);
+    }
+    return sections;
+  }
+
+  /// As formas de uma espécie no dex por jogo, com as chaves de
+  /// pré-evoluções e formas alternativas. As regionais do jogo ficam
+  /// sempre (não há a chave delas): sem as alternativas, a forma padrão (ou
+  /// a primeira) e as regionais, como o Meowth comum e o de Galar no
+  /// Sword/Shield.
+  List<int> _withKeys(List<int> forms, DexRecipe recipe) {
+    final kept = [
+      for (final id in forms)
+        if (recipe.preEvolutions || !_evolves(id)) id,
+    ];
+    if (recipe.alternateForms) return kept;
+    final others = [
+      for (final id in kept)
+        if (!_isRegional(_forms[id]!)) id,
+    ];
+    final one = others.isEmpty
+        ? null
+        : others.firstWhere(_isBaseForm, orElse: () => others.first);
+    return [
+      for (final id in kept)
+        if (id == one || _isRegional(_forms[id]!)) id,
+    ];
+  }
+
+  /// As espécies de uma pokédex na ordem dela: pelo número; as sem número
+  /// (as listas extras), na ordem do catálogo, depois.
+  List<String> _orderedEntries(_Pokedex dex) {
+    final names = dex.entries.keys.toList();
+    final indexed = {for (final (i, name) in names.indexed) name: i};
+    // Sem número, depois de todas as numeradas.
+    int number(String species) => dex.entries[species] ?? 1 << 30;
+    return names..sort(
+      (a, b) => number(a) == number(b)
+          ? indexed[a]!.compareTo(indexed[b]!)
+          : number(a).compareTo(number(b)),
+    );
+  }
+
+  /// Os jogos do HOME com pokédex no catálogo, na ordem de lançamento: os
+  /// que dão para um dex por jogo (#34).
+  List<String> get dexGames {
+    final groups = {for (final dex in _pokedexes) ...dex.versionGroups}
+        .where(_homeVersions.containsKey)
+        .toList();
+    return groups
+      ..sort((a, b) => (_groupOrder[a] ?? 0).compareTo(_groupOrder[b] ?? 0));
+  }
+
+  /// As versões do jogo que recebem do HOME (`scarlet`, `violet`).
+  List<String> gameVersions(String group) => _homeVersions[group] ?? const [];
+
+  /// O grupo da versão (`scarlet` → `scarlet-violet`).
+  String? groupOf(String version) => _groupOfVersion[version];
+
+  /// Quantas espécies as pokédex do jogo têm juntas.
+  int gameSpecies(String group) => {
+    for (final dex in _pokedexes)
+      if (dex.versionGroups.contains(group)) ...dex.entries.keys,
+  }.length;
+
+  /// As pokédex de um jogo, para escolher no dex por jogo, na ordem do
+  /// catálogo (a principal, depois as das DLCs e as listas extras).
+  List<GameDexChoice> gamePokedexes(String group) {
+    final dexes = [
+      for (final dex in _pokedexes)
+        if (dex.versionGroups.contains(group)) dex,
+    ];
+    final picked = <_Pokedex>[];
+    return [
+      for (final dex in dexes)
+        () {
+          final extra = dex.entries.values.every((n) => n == null);
+          final cover = dexes
+              .where(
+                (other) =>
+                    other != dex &&
+                    dexes.indexOf(other) < dexes.indexOf(dex) &&
+                    dex.entries.keys.every(other.entries.containsKey),
+              )
+              .firstOrNull;
+          final selected = !extra && cover == null;
+          if (selected) picked.add(dex);
+          return GameDexChoice(
+            name: dex.name,
+            label: dex.label,
+            labels: dex.labels,
+            species: dex.entries.length,
+            dlc: dex.dlc,
+            extra: extra,
+            coveredBy: cover?.label,
+            coveredByLabels: cover?.labels ?? const {},
+            selectedByDefault: selected,
+          );
+        }(),
+    ];
   }
 
   /// A forma padrão do Pokémon padrão da espécie.
@@ -799,6 +946,7 @@ List<Map<String, dynamic>> _objects(Object? value) =>
 /// uma (`null` nas pokédex especiais).
 class _Pokedex {
   const _Pokedex({
+    required this.name,
     required this.label,
     required this.labels,
     required this.versionGroups,
@@ -806,6 +954,9 @@ class _Pokedex {
     required this.entries,
   });
 
+  /// O identificador (`paldea`, `the-teal-mask`...): o que o dex por jogo
+  /// guarda (#34).
+  final String name;
   final String label;
   final Map<String, String> labels;
   final List<String> versionGroups;
