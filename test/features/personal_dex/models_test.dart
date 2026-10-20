@@ -133,6 +133,7 @@ void main() {
         search: ' tapu ',
         includeLocked: true,
         situation: HuntSituation.missing,
+        homeCutoff: HomeCutoffFilter.only,
         versions: ['scarlet', 'sword'],
       );
       expect(query.toQueryParameters(), {
@@ -144,9 +145,10 @@ void main() {
         'search': 'tapu',
         'include_locked': true,
         'registered': false,
+        'home_cutoff': 'only',
         'version': 'scarlet,sword',
       });
-      expect(query.scopeCount, 4);
+      expect(query.scopeCount, 5);
       expect(
         query.clearScope(),
         const HuntQuery(

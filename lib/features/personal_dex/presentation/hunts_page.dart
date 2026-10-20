@@ -538,7 +538,11 @@ class _Filters extends ConsumerWidget {
               IconButton(
                 tooltip: context.l10n.filtersTitle,
                 onPressed: () async {
-                  final applied = await showHuntFilters(context, query);
+                  final applied = await showHuntFilters(
+                    context,
+                    query,
+                    dexId: dexId,
+                  );
                   if (applied != null) onChanged(applied);
                 },
                 icon: Badge(
@@ -561,8 +565,6 @@ class _Filters extends ConsumerWidget {
   }
 }
 
-/// Quantas caçadas há em um jogo (com os outros filtros), à direita do item
-/// do menu Jogo.
 /// O chip Jogo: abre a folha dos jogos ([showGamePicker]) e aplica o que
 /// ela devolver.
 class _GameChip extends StatelessWidget {
@@ -614,7 +616,7 @@ class _GameChip extends StatelessWidget {
               versions: [...savesOf.keys],
               selected: games,
               saves: {for (final e in savesOf.entries) e.key: e.value.length},
-              count: (version) => _GameCount(
+              count: (version) => HuntCount(
                 dexId: dexId,
                 query: query.copyWith(versions: [version]),
               ),
@@ -638,25 +640,6 @@ class _GameChip extends StatelessWidget {
         );
         if (picked != null) onChanged(query.copyWith(versions: picked.single));
       },
-    );
-  }
-}
-
-class _GameCount extends ConsumerWidget {
-  const _GameCount({required this.dexId, required this.query});
-
-  final int dexId;
-  final HuntQuery query;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final page = ref
-        .watch(huntPageProvider((dexId: dexId, query: query, page: 1)))
-        .value;
-    return Text(
-      page == null ? '' : '${page.count}',
-      style: Theme.of(context).textTheme.bodySmall
-          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
     );
   }
 }

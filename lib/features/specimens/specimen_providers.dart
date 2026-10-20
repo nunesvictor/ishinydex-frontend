@@ -98,6 +98,20 @@ final homeCutoffProvider = Provider<HomeCutoff? Function(String? version)>((
   };
 });
 
+/// O próximo corte do HOME que ainda não passou (#316): a data do filtro
+/// "Fecha no HOME" das caçadas. `null` sem corte (catálogo antigo) ou
+/// depois de todos.
+final nextHomeCutoffProvider = Provider<DateTime?>((ref) {
+  final cutoffs =
+      ref.watch(fakeBackendProvider).catalog?.homeCutoffs ??
+      const <String, DateTime>{};
+  final now = ref.watch(clockProvider)();
+  return ([
+    for (final until in cutoffs.values)
+      if (now.isBefore(until)) until,
+  ]..sort()).firstOrNull;
+});
+
 /// Os métodos de shiny do jogo do OT (`Catalog.shinyMethodsFor`); sem o
 /// catálogo, nenhum.
 final shinyMethodsProvider =

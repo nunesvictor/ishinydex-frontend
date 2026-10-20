@@ -5,16 +5,23 @@ import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/type_chip.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
-/// Abre os filtros de escopo das caçadas (categoria, geração, tipo, shiny
-/// impossível): bottom sheet no compacto, diálogo nos demais. Retorna a
-/// consulta nova ao aplicar, ou `null` se o usuário fechou sem aplicar.
-Future<HuntQuery?> showHuntFilters(BuildContext context, HuntQuery query) {
-  final panel = HuntFiltersPanel(initial: query);
+/// Abre os filtros de escopo das caçadas (fecha no HOME, categoria,
+/// geração, tipo, shiny impossível): bottom sheet no compacto, diálogo nos
+/// demais. Retorna a consulta nova ao aplicar, ou `null` se o usuário fechou
+/// sem aplicar. Com [dexId], as opções de "Fecha no HOME" mostram quantas
+/// caçadas dão.
+Future<HuntQuery?> showHuntFilters(
+  BuildContext context,
+  HuntQuery query, {
+  int? dexId,
+}) {
+  final panel = HuntFiltersPanel(initial: query, dexId: dexId);
   if (WindowSize.of(context).isCompact) {
     return showModalBottomSheet<HuntQuery>(
       context: context,
@@ -41,9 +48,10 @@ Future<HuntQuery?> showHuntFilters(BuildContext context, HuntQuery query) {
 /// Conteúdo da folha: edita um rascunho; só "Mostrar resultados" devolve.
 /// Os motivos não entram aqui: ficam sempre à vista na tela de caçadas.
 class HuntFiltersPanel extends ConsumerStatefulWidget {
-  const HuntFiltersPanel({required this.initial, super.key});
+  const HuntFiltersPanel({required this.initial, this.dexId, super.key});
 
   final HuntQuery initial;
+  final int? dexId;
 
   @override
   ConsumerState<HuntFiltersPanel> createState() => _HuntFiltersPanelState();
@@ -62,6 +70,8 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
     final options =
         ref.watch(specimenOptionsProvider).value ?? const SpecimenOptions();
     final theme = Theme.of(context);
+    final cutoff = ref.watch(nextHomeCutoffProvider);
+    final dexId = widget.dexId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -88,6 +98,54 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
+              // Até o corte do HOME (#316); depois, só para poder desligar
+              // um filtro que ficou ligado.
+              if (cutoff != null ||
+                  _draft.homeCutoff != HomeCutoffFilter.all) ...[
+                _Section(
+                  title: cutoff == null
+                      ? context.l10n.filterHomeCutoffPassed
+                      : context.l10n.filterHomeCutoff(
+                          MaterialLocalizations.of(context)
+                              .formatCompactDate(cutoff.toLocal()),
+                        ),
+                  children: [
+                    for (final option in HomeCutoffFilter.values)
+                      ChoiceChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 6,
+                          children: [
+                            Text(homeCutoffLabel(context.l10n, option)),
+                            if (dexId != null)
+                              HuntCount(
+                                dexId: dexId,
+                                query: _draft.copyWith(homeCutoff: option),
+                              ),
+                          ],
+                        ),
+                        selected: _draft.homeCutoff == option,
+                        onSelected: (_) =>
+                            _update(_draft.copyWith(homeCutoff: option)),
+                      ),
+                  ],
+                ),
+                if (switch (_draft.homeCutoff) {
+                      HomeCutoffFilter.all => null,
+                      HomeCutoffFilter.only => context.l10n.homeCutoffOnlyHint,
+                      HomeCutoffFilter.also => context.l10n.homeCutoffAlsoHint,
+                    }
+                    case final hint?)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                    child: Text(
+                      hint,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
               _Section(
                 title: context.l10n.filterCategory,
                 children: [
@@ -228,6 +286,11 @@ class ActiveHuntFilterChips extends ConsumerWidget {
         ),
       if (q.includeLocked)
         (context.l10n.withUnobtainable, q.copyWith(includeLocked: false)),
+      if (q.homeCutoff != HomeCutoffFilter.all)
+        (
+          homeCutoffLabel(context.l10n, q.homeCutoff),
+          q.copyWith(homeCutoff: HomeCutoffFilter.all),
+        ),
     ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -244,6 +307,35 @@ class ActiveHuntFilterChips extends ConsumerWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// O nome da opção de "Fecha no HOME" (#316), no chip e no filtro aplicado.
+String homeCutoffLabel(AppLocalizations l10n, HomeCutoffFilter filter) =>
+    switch (filter) {
+      HomeCutoffFilter.all => l10n.homeCutoffAll,
+      HomeCutoffFilter.only => l10n.homeCutoffOnly,
+      HomeCutoffFilter.also => l10n.homeCutoffAlso,
+    };
+
+/// Quantas caçadas a [query] dá (o total da 1ª página), em letra pequena: à
+/// direita dos jogos no menu Jogo e nas opções de "Fecha no HOME".
+class HuntCount extends ConsumerWidget {
+  const HuntCount({required this.dexId, required this.query, super.key});
+
+  final int dexId;
+  final HuntQuery query;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final page = ref
+        .watch(huntPageProvider((dexId: dexId, query: query, page: 1)))
+        .value;
+    return Text(
+      page == null ? '' : '${page.count}',
+      style: Theme.of(context).textTheme.bodySmall
+          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
     );
   }
 }
