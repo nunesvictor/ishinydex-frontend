@@ -109,6 +109,63 @@ abstract class Slot with _$Slot {
   String? get spriteUrl => form?.spriteFor(shiny: isShinyDisplay);
 }
 
+/// Os atalhos do "Novo PersonalDex" (#34): as combinações das chaves da
+/// planilha "Home Living Dex Organizer", de Austin John (Austin John
+/// Plays). Todos levam as formas regionais.
+enum DexPreset {
+  /// O conjunto padrão: regionais, pré-evoluções e formas alternativas.
+  livingFormLite,
+
+  /// Sem as formas alternativas.
+  living,
+
+  /// Só as formas que não evoluem mais, com as formas alternativas.
+  finalFormForm,
+
+  /// Só as formas que não evoluem mais, sem as formas alternativas.
+  finalForm,
+}
+
+/// De onde o dex nasceu (#34): as chaves aplicadas ao conjunto padrão do
+/// catálogo. Fica guardada no dex para comparar com o padrão depois (#308).
+@freezed
+abstract class DexRecipe with _$DexRecipe {
+  const factory DexRecipe({
+    /// As formas regionais (Raichu de Alola, Meowth de Galar...).
+    @Default(true) bool regional,
+
+    /// As formas que ainda evoluem. Sem elas, só as que não evoluem mais
+    /// pelo próprio caminho (o Final Form).
+    @Default(true) bool preEvolutions,
+
+    /// As formas alternativas (letras do Unown, padrões do Vivillon...).
+    /// Sem elas, uma forma por espécie, além das regionais.
+    @Default(true) bool alternateForms,
+  }) = _DexRecipe;
+
+  const DexRecipe._();
+
+  factory DexRecipe.fromJson(Map<String, dynamic> json) =>
+      _$DexRecipeFromJson(json);
+
+  factory DexRecipe.of(DexPreset preset) => switch (preset) {
+    DexPreset.livingFormLite => const DexRecipe(),
+    DexPreset.living => const DexRecipe(alternateForms: false),
+    DexPreset.finalFormForm => const DexRecipe(preEvolutions: false),
+    DexPreset.finalForm => const DexRecipe(
+      preEvolutions: false,
+      alternateForms: false,
+    ),
+  };
+
+  /// O atalho com estas chaves; `null` numa combinação fora deles (o
+  /// "Personalizado").
+  DexPreset? get preset => [
+    for (final p in DexPreset.values)
+      if (DexRecipe.of(p) == this) p,
+  ].firstOrNull;
+}
+
 @freezed
 abstract class PersonalDex with _$PersonalDex {
   const factory PersonalDex({
@@ -121,6 +178,10 @@ abstract class PersonalDex with _$PersonalDex {
     @Default(0) int away,
     @Default(false) bool isShinyDex,
     @Default(false) bool forceNewBox,
+
+    /// De onde o dex nasceu (#34); `null` nos dex criados antes, que vieram
+    /// do conjunto padrão (o Living Form Lite).
+    DexRecipe? recipe,
   }) = _PersonalDex;
 
   const PersonalDex._();

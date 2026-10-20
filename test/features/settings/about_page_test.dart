@@ -3,6 +3,7 @@ import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/data/catalog_loader.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_recipe_picker.dart';
 import 'package:ishinydex/features/settings/presentation/about_page.dart';
 
 import '../../fixtures/catalog_fixture.dart';
@@ -20,6 +21,10 @@ void main() {
     expect(find.text('Versão v2.0.0'), findsOneWidget);
     expect(find.text(projectUrl), findsOneWidget);
     expect(find.textContaining('The Pokémon Company'), findsOneWidget);
+    // Os créditos da classificação dos dex pré-moldados (#34).
+    expect(find.text('Créditos e agradecimentos'), findsOneWidget);
+    expect(find.textContaining('Austin John Plays'), findsOneWidget);
+    expect(find.text(austinJohnSheetUrl), findsOneWidget);
   });
 
   testWidgets('modo local com sync: a cópia no Dropbox', (tester) async {

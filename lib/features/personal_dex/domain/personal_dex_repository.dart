@@ -6,14 +6,20 @@ abstract interface class PersonalDexRepository {
 
   Future<PersonalDex> fetchDex(int dexId);
 
-  /// Simula um dex com o conjunto padrão de formas, sem criar nada.
-  Future<DexPreview> previewNewDex({required bool forceNewBox});
+  /// Simula um dex com as formas de [recipe] (o conjunto padrão com as
+  /// chaves do #34), sem criar nada.
+  Future<DexPreview> previewNewDex({
+    required DexRecipe recipe,
+    required bool forceNewBox,
+  });
 
-  /// Cria um dex com o conjunto padrão de formas nas primeiras boxes livres.
+  /// Cria um dex com as formas de [recipe] nas primeiras boxes livres e
+  /// guarda a receita no dex. Sem [recipe], o conjunto padrão.
   Future<PersonalDex> createDex({
     required String name,
     required bool isShinyDex,
     required bool forceNewBox,
+    DexRecipe recipe = const DexRecipe(),
   });
 
   /// Renomeia o dex ou troca se é shiny dex (`force_new_box` não muda).
