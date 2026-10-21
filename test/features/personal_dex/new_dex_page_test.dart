@@ -55,7 +55,7 @@ void main() {
         );
         await tester.enterText(nameField(), ' Minha Dex ');
         await tester.tap(find.text('Nova box a cada geração'));
-        await tester.tap(find.text('Dex shiny'));
+        await tester.tap(find.text('Shiny dex'));
         await tester.pumpAndSettle();
         await scrollToEnd(tester);
         expect(
@@ -129,10 +129,10 @@ void main() {
       expect(on('Formas alternativas'), isFalse);
       expect(on('Formas regionais'), isTrue);
 
-      // Ligar as formas alternativas dá o Final Form Form.
+      // Ligar as formas alternativas dá o Final Form + formas.
       await tester.tap(find.text('Formas alternativas'));
       await tester.pumpAndSettle();
-      expect(selected('Final Form Form'), isTrue);
+      expect(selected('Final Form + formas'), isTrue);
 
       // Sem as regionais, nenhum atalho: "Personalizado", que não se escolhe.
       await tester.tap(find.text('Formas regionais'));
@@ -147,9 +147,9 @@ void main() {
         isNull,
       );
 
-      await tester.tap(find.text('Living'));
+      await tester.tap(find.text('Living Dex'));
       await tester.pumpAndSettle();
-      expect(selected('Living'), isTrue);
+      expect(selected('Living Dex'), isTrue);
       expect(find.text('Personalizado'), findsNothing);
 
       // Desligar as pré-evoluções do Living dá o Final Form.
@@ -174,7 +174,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
       expect(find.text('Regionais'), findsOneWidget);
-      expect(find.text('Final Form Form'), findsWidgets);
+      expect(find.text('Final Form + formas'), findsWidgets);
       expect(
         find.textContaining('mesmo quando o shiny é igual'),
         findsOneWidget,

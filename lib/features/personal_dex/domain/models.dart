@@ -368,7 +368,7 @@ enum HuntSituation {
   final bool? param;
 }
 
-/// "Fecha no HOME" (#316): o que dá para caçar nos jogos que deixam de
+/// "Fim do Pokémon Bank" (#316): o que dá para caçar nos jogos que deixam de
 /// chegar ao HOME (os do Pokémon Bank, com `homeUntil` no catálogo) e ainda
 /// não fecharam.
 enum HomeCutoffFilter {

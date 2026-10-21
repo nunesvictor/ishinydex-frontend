@@ -18,8 +18,8 @@ const austinJohnSheetUrl =
 String presetLabel(AppLocalizations l10n, DexPreset? preset) =>
     switch (preset) {
       DexPreset.livingFormLite => l10n.dexPresetLivingFormLite,
-      DexPreset.living => 'Living',
-      DexPreset.finalFormForm => 'Final Form Form',
+      DexPreset.living => 'Living Dex',
+      DexPreset.finalFormForm => l10n.dexPresetFinalFormForm,
       DexPreset.finalForm => 'Final Form',
       null => l10n.dexPresetCustom,
     };

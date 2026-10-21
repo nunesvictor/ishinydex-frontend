@@ -164,7 +164,7 @@ seguem o mesmo padrão, para as ações não empilharem botões:
     [form_sheet.dart](../lib/features/personal_dex/presentation/widgets/form_sheet.dart)),
     um bottom sheet só de leitura com as mesmas abas; tocar em outra forma
     troca a ficha, sem empilhar sheets, e a aba aberta continua.
-    Entre "Na pokédex de" e a grade de dados, **Tipos em batalha**
+    Entre "Pokédex dos jogos" e a grade de dados, **Tipos em batalha**
     (`TypeMatchupsCard`, #230; posição da #274, pelo `beforeFacts` do
     `SpeciesInfo`): as fraquezas pelos tipos da forma (4×, 2×, ½×, ¼×,
     0×) e contra o que o STAB acerta 2×, pela tabela da geração 6
