@@ -232,13 +232,13 @@ void main() {
     expect(find.text('Tempo da caçada'), findsNothing);
     expect((await hunt(timed.id)).running, isTrue);
 
-    // Menu: Editar abre a folha; Fazer uma pausa leva a Pausadas.
+    // Menu: Editar abre a folha; Pausar leva a Pausadas.
     await tap(tester, inCard(counter.id, find.byTooltip('Mais ações')));
     await tap(tester, find.text('Editar'));
     expect(find.text('Editar caçada'), findsOne);
     await tap(tester, find.text('Salvar'));
     await tap(tester, inCard(counter.id, find.byTooltip('Mais ações')));
-    await tap(tester, find.text('Fazer uma pausa'));
+    await tap(tester, find.text('Pausar'));
     expect((await hunt(counter.id)).paused, isTrue);
 
     // Encontrei!: o cadastro preenchido; salvar apaga a caçada.
@@ -281,8 +281,8 @@ void main() {
     expect(inCard(hunt.id, find.text('1,204 encounters')), findsOne);
     await tap(tester, inCard(hunt.id, find.byTooltip('More actions')));
     expect(find.text('Found it!'), findsOne);
-    expect(find.text('Take a break'), findsOne);
-    await tap(tester, find.text('Take a break'));
+    expect(find.text('Pause'), findsOne);
+    await tap(tester, find.text('Pause'));
 
     await pump(
       tester,

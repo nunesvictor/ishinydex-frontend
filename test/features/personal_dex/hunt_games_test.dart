@@ -123,8 +123,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(games);
       await tester.pumpAndSettle();
-      // A lista completa dos jogos fica no "Na pokédex de" da aba Espécie.
-      expect(find.text('Na pokédex de'), findsOneWidget);
+      // A lista completa dos jogos fica no "Pokédex dos jogos" da aba Espécie.
+      expect(find.text('Pokédex dos jogos'), findsOneWidget);
 
       if (size == compactSize) {
         // Fecha o sheet do slot para chegar ao voltar.
@@ -137,7 +137,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Espeon'));
       await tester.pumpAndSettle();
-      expect(find.text('Na pokédex de'), findsNothing);
+      expect(find.text('Pokédex dos jogos'), findsNothing);
       expect(find.text('Status base'), findsOneWidget);
     });
 

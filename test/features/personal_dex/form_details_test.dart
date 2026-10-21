@@ -64,7 +64,7 @@ void main() {
           .widgetList<Chip>(find.byType(Chip))
           .map((c) => (c.label as Text).data)
           .toList();
-      expect(labels, ['Shiny-lock', 'Só distribuição']);
+      expect(labels, ['Shiny lock', 'Só distribuição']);
       expect(
         find.text('Habilidades: Overgrow · Chlorophyll (oculta)'),
         findsOneWidget,
@@ -88,7 +88,7 @@ void main() {
     );
     await pump(tester);
     await tester.pumpAndSettle();
-    expect(find.text('Shiny-lock'), findsNothing);
+    expect(find.text('Shiny lock'), findsNothing);
     expect(find.text('Só distribuição'), findsNothing);
     expect(find.textContaining('Habilidades'), findsNothing);
   });

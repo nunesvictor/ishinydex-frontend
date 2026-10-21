@@ -14,7 +14,7 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// Abre os filtros de escopo das caçadas (fecha no HOME, categoria,
 /// geração, tipo, shiny impossível): bottom sheet no compacto, diálogo nos
 /// demais. Retorna a consulta nova ao aplicar, ou `null` se o usuário fechou
-/// sem aplicar. Com [dexId], as opções de "Fecha no HOME" mostram quantas
+/// sem aplicar. Com [dexId], as opções de "Fim do Pokémon Bank" mostram quantas
 /// caçadas dão.
 Future<HuntQuery?> showHuntFilters(
   BuildContext context,
@@ -311,7 +311,7 @@ class ActiveHuntFilterChips extends ConsumerWidget {
   }
 }
 
-/// O nome da opção de "Fecha no HOME" (#316), no chip e no filtro aplicado.
+/// O nome da opção de "Fim do Pokémon Bank" (#316), no chip e no filtro aplicado.
 String homeCutoffLabel(AppLocalizations l10n, HomeCutoffFilter filter) =>
     switch (filter) {
       HomeCutoffFilter.all => l10n.homeCutoffAll,
@@ -320,7 +320,7 @@ String homeCutoffLabel(AppLocalizations l10n, HomeCutoffFilter filter) =>
     };
 
 /// Quantas caçadas a [query] dá (o total da 1ª página), em letra pequena: à
-/// direita dos jogos no menu Jogo e nas opções de "Fecha no HOME".
+/// direita dos jogos no menu Jogo e nas opções de "Fim do Pokémon Bank".
 class HuntCount extends ConsumerWidget {
   const HuntCount({required this.dexId, required this.query, super.key});
 

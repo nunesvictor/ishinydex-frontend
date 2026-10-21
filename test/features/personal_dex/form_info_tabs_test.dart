@@ -312,11 +312,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Na pokédex de'), findsOneWidget);
-      // O quadro de tipos entre "Na pokédex de" e os dados (#274).
+      expect(find.text('Pokédex dos jogos'), findsOneWidget);
+      // O quadro de tipos entre "Pokédex dos jogos" e os dados (#274).
       double y(String text) => tester.getTopLeft(find.text(text)).dy;
-      expect(y('Na pokédex de'), lessThan(y('quadro de tipos')));
-      expect(y('quadro de tipos'), lessThan(y('Captura')));
+      expect(y('Pokédex dos jogos'), lessThan(y('quadro de tipos')));
+      expect(y('quadro de tipos'), lessThan(y('Taxa de captura')));
       expect(find.text('Seu: Sword'), findsOneWidget);
       expect(find.text('Seus: Scarlet, Violet'), findsOneWidget);
       // O shiny lock só no jogo travado, com a explicação ao tocar.

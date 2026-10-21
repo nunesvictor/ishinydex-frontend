@@ -123,7 +123,7 @@ void main() {
     await _tap(tester, find.text('Criar shiny dex'));
     await tester.enterText(find.byType(TextField).first, 'Caça');
     await tester.pumpAndSettle();
-    await _tap(tester, find.text('Dex shiny'));
+    await _tap(tester, find.text('Shiny dex'));
     await _tap(tester, find.text('Criar PersonalDex'));
     expect(find.byType(HuntsPage), findsOneWidget);
     expect(find.text('O que falta caçar?'), findsNothing);

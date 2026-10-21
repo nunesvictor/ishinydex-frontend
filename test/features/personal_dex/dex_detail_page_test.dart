@@ -1068,7 +1068,7 @@ void main() {
         expect(find.text('Já existe uma dex com este nome.'), findsOneWidget);
 
         await tester.enterText(nameField(), ' Minha Dex ');
-        await tester.tap(find.text('Dex shiny'));
+        await tester.tap(find.text('Shiny dex'));
         await tester.pump();
         // Enter no campo também salva.
         await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -1152,13 +1152,13 @@ void main() {
         await tester.tap(find.text('Espécie'));
         await tester.pumpAndSettle();
         expect(find.text('Linha evolutiva'), findsOneWidget);
-        expect(find.text('Captura'), findsOneWidget);
+        expect(find.text('Taxa de captura'), findsOneWidget);
         // A linha evolutiva no topo; Tipos em batalha antes dos dados da
         // espécie (#274).
         double top(Finder f) => tester.getTopLeft(f).dy;
         final matchups = find.byKey(const ValueKey('type-matchups'));
         expect(top(find.text('Linha evolutiva')), lessThan(top(matchups)));
-        expect(top(matchups), lessThan(top(find.text('Captura'))));
+        expect(top(matchups), lessThan(top(find.text('Taxa de captura'))));
         // A forma atual não navega; as outras levam ao slot delas.
         // No celular, a forma pode estar fora da tela: rolar até lá.
         await tester.ensureVisible(

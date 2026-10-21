@@ -33,7 +33,7 @@ class SpeciesInfo extends ConsumerWidget {
 
   final FormDetail form;
 
-  /// Entra entre "Na pokédex de" e os dados da espécie: o quadro Tipos em
+  /// Entra entre "Pokédex dos jogos" e os dados da espécie: o quadro Tipos em
   /// batalha (#274).
   final Widget? beforeFacts;
   final int? dexId;

@@ -132,55 +132,62 @@ void main() {
   for (final size in [compactSize, expandedSize]) {
     final px = '${size.width.toInt()}px';
 
-    testWidgets('Fecha no HOME: escolher, aplicar e tirar o chip (#316, $px)', (
-      tester,
-    ) async {
-      await _openHunts(tester, size: size);
-      expect(find.text('Bulbasaur'), findsOneWidget);
+    testWidgets(
+      'Fim do Pokémon Bank: escolher, aplicar e tirar o chip (#316, $px)',
+      (tester) async {
+        await _openHunts(tester, size: size);
+        expect(find.text('Bulbasaur'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Filtros'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Fecha no HOME · '), findsOneWidget);
-      // Cada opção com a contagem; Todos vem marcado e sem explicação.
-      expect(
-        find.descendant(of: _option('Só no 3DS'), matching: find.text('1')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: _option('Também no 3DS'), matching: find.text('2')),
-        findsOneWidget,
-      );
-      expect(tester.widget<ChoiceChip>(_option('Todos')).selected, isTrue);
-      expect(find.textContaining('nenhum outro jogo tem'), findsNothing);
+        await tester.tap(find.byTooltip('Filtros'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Fim do Pokémon Bank · '), findsOneWidget);
+        // Cada opção com a contagem; Todos vem marcado e sem explicação.
+        expect(
+          find.descendant(of: _option('Só no 3DS'), matching: find.text('1')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: _option('Também no 3DS'),
+            matching: find.text('2'),
+          ),
+          findsOneWidget,
+        );
+        expect(tester.widget<ChoiceChip>(_option('Todos')).selected, isTrue);
+        expect(find.textContaining('nenhum outro jogo tem'), findsNothing);
 
-      await tester.tap(_option('Também no 3DS'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('mesmo que também em outro'), findsOneWidget);
-      await tester.tap(_option('Só no 3DS'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('nenhum outro jogo tem'), findsOneWidget);
-      await tester.tap(find.text('Mostrar resultados'));
-      await tester.pumpAndSettle();
+        await tester.tap(_option('Também no 3DS'));
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('mesmo que também em outro'),
+          findsOneWidget,
+        );
+        await tester.tap(_option('Só no 3DS'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('nenhum outro jogo tem'), findsOneWidget);
+        await tester.tap(find.text('Mostrar resultados'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Nihilego'), findsOneWidget);
-      expect(find.text('Bulbasaur'), findsNothing);
-      final chip = find.widgetWithText(InputChip, 'Só no 3DS');
-      expect(chip, findsOneWidget);
+        expect(find.text('Nihilego'), findsOneWidget);
+        expect(find.text('Bulbasaur'), findsNothing);
+        final chip = find.widgetWithText(InputChip, 'Só no 3DS');
+        expect(chip, findsOneWidget);
 
-      await tester.tap(
-        find.descendant(of: chip, matching: find.byTooltip('Remover filtro')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.widgetWithText(InputChip, 'Só no 3DS'), findsNothing);
-      expect(find.text('Bulbasaur'), findsOneWidget);
-    });
+        await tester.tap(
+          find.descendant(of: chip, matching: find.byTooltip('Remover filtro')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(InputChip, 'Só no 3DS'), findsNothing);
+        expect(find.text('Bulbasaur'), findsOneWidget);
+      },
+    );
   }
 
-  testWidgets('Fecha no HOME em inglês', (tester) async {
+  testWidgets('Fim do Pokémon Bank em inglês', (tester) async {
     await _openHunts(tester, size: compactSize, language: AppLanguage.en);
     await tester.tap(find.byTooltip('Filters'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Leaves HOME · '), findsOneWidget);
+    expect(find.textContaining('Pokémon Bank closes · '), findsOneWidget);
     await tester.tap(_option('Only on 3DS'));
     await tester.pumpAndSettle();
     expect(find.textContaining('no other game has it'), findsOneWidget);
@@ -199,7 +206,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Filtros'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Fecha no HOME'), findsNothing);
+    expect(find.textContaining('Fim do Pokémon Bank'), findsNothing);
   });
 
   testWidgets('depois do corte, um filtro que ficou ligado ainda se desliga, '
@@ -217,9 +224,9 @@ void main() {
       ],
     );
     await tester.pumpAndSettle();
-    expect(find.text('Fecha no HOME'), findsOneWidget);
+    expect(find.text('Fim do Pokémon Bank'), findsOneWidget);
     await tester.tap(_option('Todos'));
     await tester.pumpAndSettle();
-    expect(find.text('Fecha no HOME'), findsNothing);
+    expect(find.text('Fim do Pokémon Bank'), findsNothing);
   });
 }

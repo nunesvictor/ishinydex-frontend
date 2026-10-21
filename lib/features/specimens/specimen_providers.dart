@@ -99,7 +99,7 @@ final homeCutoffProvider = Provider<HomeCutoff? Function(String? version)>((
 });
 
 /// O próximo corte do HOME que ainda não passou (#316): a data do filtro
-/// "Fecha no HOME" das caçadas. `null` sem corte (catálogo antigo) ou
+/// "Fim do Pokémon Bank" das caçadas. `null` sem corte (catálogo antigo) ou
 /// depois de todos.
 final nextHomeCutoffProvider = Provider<DateTime?>((ref) {
   final cutoffs =
