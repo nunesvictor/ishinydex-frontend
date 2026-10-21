@@ -1630,7 +1630,7 @@ class FakeBackend
   }
 
   /// Como a API: slots com forma agrupados pela geração, na ordem da
-  /// primeira box. No fake, a geração sai do número da Pokédex (pokeapiId).
+  /// primeira box. No fake, a geração sai do número da Pokédex nacional.
   @override
   Future<List<GenerationProgress>> fetchGenerations(int dexId) async {
     await _delay();
@@ -1638,7 +1638,7 @@ class FakeBackend
     for (final slot in _slots.values) {
       final formId = slot.formId;
       if (slot.dexId != dexId || formId == null) continue;
-      final generation = _generationOf(_forms[formId]!.pokeapiId);
+      final generation = _generationOf(_forms[formId]!);
       byGeneration.putIfAbsent(generation, () => []).add(slot);
     }
     return [
@@ -1882,7 +1882,7 @@ class FakeBackend
               query.situation.param == (slot.specimenId != null)) &&
           (query.includeLocked || lock != ShinyLockType.unobtainable) &&
           (query.generations.isEmpty ||
-              query.generations.contains(_generationOf(form.pokeapiId))) &&
+              query.generations.contains(_generationOf(form))) &&
           (query.types.isEmpty ||
               form.types.any((t) => query.types.contains(t.type))) &&
           (query.categories.isEmpty || query.categories.contains(category)) &&
@@ -2613,7 +2613,7 @@ class FakeBackend
             query.ots.contains(s.ot) ||
             (query.withoutOt && s.ot == null)) &&
         query.types.every(formTypes.contains) &&
-        inList(query.generations, _generationOf(form.pokeapiId)) &&
+        inList(query.generations, _generationOf(form)) &&
         inList(
           query.categories,
           _categories[s.form] ?? SpeciesCategory.regular,
@@ -2709,7 +2709,10 @@ class FakeBackend
   static const _generationEnds = [151, 251, 386, 493, 649, 721, 809, 905];
   static const _romans = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii'];
 
-  static String _generationOf(int dexNumber) {
+  /// A geração pelo número nacional: o `pokeapiId` das formas alternativas
+  /// passa de 10000 e cairia sempre na geração 9 (#324).
+  static String _generationOf(FormDetail form) {
+    final dexNumber = form.nationalNumber ?? form.pokeapiId;
     for (final (i, end) in _generationEnds.indexed) {
       if (dexNumber <= end) return 'generation-${_romans[i]}';
     }
