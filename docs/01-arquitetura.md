@@ -380,6 +380,18 @@ Jogo usa a mesma folha das Faltam (`showGamePicker`), com os jogos do OT
 (`otVersions`). Método aceita vários (`huntMethods`). Tocar num item abre o
 espécime, e o botão à direita abre o card da caçada.
 
+**Caçar pela pré-evolução** (#315): na folha "Começar caçada", a seção
+"Caçar" lista a própria forma, que é o padrão, e as pré-evoluções
+(`preEvolutionsProvider`). Escolhida uma pré-evolução, a caçada guarda o
+objetivo (`ShinyHunt.goal`), e os saves e os métodos seguem a forma caçada.
+O cartão mostra "para Silvally", e o selo de caçada em andamento vale também
+no slot do objetivo (`ShinyHunt.aims`). No "Encontrei!", com objetivo, o app
+pergunta em que forma o Pokémon está agora e abre o cadastro nela. O registro
+guarda a forma caçada quando ela é outra (`HuntRecord.huntedForm`): "caçado
+como Poipole" no detalhe, na aba Concluídas e no card. No registro direto, o
+campo "Forma caçada" só aparece em formas com pré-evolução. Os dois campos
+são novos e opcionais no arquivo de dados.
+
 O seletor é um `TabBar` com um `TabBarView`, e deslizar troca a aba (#272).
 Cada aba fica viva (`AutomaticKeepAliveClientMixin`), então os filtros, a
 busca e a rolagem continuam ao voltar. O `HuntsTabBar` mede o texto de cada

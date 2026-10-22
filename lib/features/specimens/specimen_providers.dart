@@ -124,6 +124,17 @@ final shinyMethodsProvider =
           const [];
     });
 
+/// As pré-evoluções de uma forma, da mais básica à anterior (#315).
+final preEvolutionsProvider = Provider<List<FormRef> Function(int formId)>(
+  (ref) => ref.watch(fakeBackendProvider).preEvolutionsOf,
+);
+
+/// A forma pelo id (a forma caçada do registro, #315); `null` se não
+/// existir.
+final formRefOfProvider = Provider<FormRef? Function(int formId)>(
+  (ref) => ref.watch(fakeBackendProvider).formRefOf,
+);
+
 /// Abre um link externo (o post da caçada) numa aba nova.
 final openLinkProvider = Provider<void Function(String url)>(
   (ref) => browser.openInNewTab,

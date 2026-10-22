@@ -21,11 +21,12 @@ final FutureProvider<List<ShinyHunt>> shinyHuntsProvider =
       (ref) => ref.watch(shinyHuntRepositoryProvider).fetchShinyHunts(),
     );
 
-/// Formas com caçada em andamento (não pausada): o selo no slot da box.
+/// Formas com caçada em andamento (não pausada): o selo no slot da box. A
+/// caçada de uma pré-evolução vale também para o objetivo (#315).
 final Provider<Set<int>> huntedFormsProvider = Provider.autoDispose<Set<int>>(
   (ref) => {
     for (final h in ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[])
-      if (!h.paused) h.form,
+      if (!h.paused) ...[h.form, ?h.goal],
   },
 );
 

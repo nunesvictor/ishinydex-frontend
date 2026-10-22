@@ -386,6 +386,11 @@ class CompletedHuntTile extends ConsumerWidget {
         .firstOrNull
         ?.version;
     final (start, captured) = (hunt.startedAt, specimen.capturedAt);
+    // Caçado como a pré-evolução (#315).
+    final hunted = switch (hunt.huntedForm) {
+      final id? => ref.watch(formRefOfProvider)(id),
+      null => null,
+    };
     final name = Row(
       spacing: 6,
       children: [
@@ -420,12 +425,15 @@ class CompletedHuntTile extends ConsumerWidget {
       overflow: TextOverflow.ellipsis,
     );
     final when = Text(
-      captured == null
-          ? context.l10n.noCaptureDate
-          : [
-              if (start != null) context.l10n.huntDuration(start, captured),
-              MaterialLocalizations.of(context).formatCompactDate(captured),
-            ].join(' · '),
+      [
+        if (hunted != null) context.l10n.huntedAs(hunted.displayName),
+        if (captured == null)
+          context.l10n.noCaptureDate
+        else ...[
+          if (start != null) context.l10n.huntDuration(start, captured),
+          MaterialLocalizations.of(context).formatCompactDate(captured),
+        ],
+      ].join(' · '),
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),

@@ -20,7 +20,7 @@ class ActiveHuntTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hunt = (ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[])
-        .where((h) => !h.paused && h.form == formId)
+        .where((h) => !h.paused && h.aims(formId))
         .firstOrNull;
     if (hunt == null) return const SizedBox.shrink();
     final save = (ref.watch(savesProvider).value ?? const <Save>[])
