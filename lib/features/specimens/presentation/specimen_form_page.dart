@@ -152,17 +152,21 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     final save = (ref.read(savesProvider).value ?? const <Save>[])
         .where((s) => s.id == hunt.save)
         .firstOrNull;
+    final record = switch (ref.read(huntOddsProvider)(hunt)) {
+      (:final rule, :final hasCharm) => hunt.toRecord(
+        ref.read(shinyHuntActionsProvider).now(),
+        rule: rule,
+        hasCharm: hasCharm,
+      ),
+      null => hunt.toRecord(ref.read(shinyHuntActionsProvider).now()),
+    };
     return draft.copyWith(
       isShiny: true,
       ot: draft.ot ?? save?.trainer.id,
-      hunt: switch (ref.read(huntOddsProvider)(hunt)) {
-        (:final rule, :final hasCharm) => hunt.toRecord(
-          ref.read(shinyHuntActionsProvider).now(),
-          rule: rule,
-          hasCharm: hasCharm,
-        ),
-        null => hunt.toRecord(ref.read(shinyHuntActionsProvider).now()),
-      },
+      // Caçado como a pré-evolução (#315): o registro guarda qual.
+      hunt: record.copyWith(
+        huntedForm: hunt.form == widget.form.id ? null : hunt.form,
+      ),
     );
   }
 
@@ -372,6 +376,10 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
         formId: widget.form.id,
       ),
       allMethods: methods(null),
+      forms: [
+        ...ref.watch(preEvolutionsProvider)(widget.form.id),
+        ?ref.watch(formRefOfProvider)(widget.form.id),
+      ],
       game: version == null ? null : versionLabel(version),
       capturedAt: _draft.capturedAt,
       errorFor: (field) => context.fieldError(_validation, field),
@@ -389,7 +397,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       return null;
     }
     final hunt = (ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[])
-        .where((h) => !h.paused && h.form == widget.form.id)
+        .where((h) => !h.paused && h.aims(widget.form.id))
         .firstOrNull;
     if (hunt == null) return null;
     final theme = Theme.of(context);

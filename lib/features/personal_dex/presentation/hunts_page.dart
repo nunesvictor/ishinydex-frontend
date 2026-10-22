@@ -1382,7 +1382,7 @@ class HuntTile extends ConsumerWidget {
   Widget? _huntAction(BuildContext context, WidgetRef ref, FormRef? form) {
     if (form == null) return null;
     final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
-    if (hunts.any((h) => !h.paused && h.form == form.id)) {
+    if (hunts.any((h) => !h.paused && h.aims(form.id))) {
       return IconButton(
         tooltip: context.l10n.huntInProgress,
         onPressed: onShowActive,

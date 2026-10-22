@@ -965,5 +965,16 @@
   "huntsDoneGameHint": "The original trainer's (OT) game",
   "filterMethodValue": "Method: {names}",
   "@filterMethodValue": {"placeholders": {"names": {"type": "String", "example": "Soft reset"}}},
-  "noCaptureDate": "no capture date"
+  "noCaptureDate": "no capture date",
+  "huntTarget": "Hunt",
+  "huntTargetHint": "Hunting {target} to get {goal}: the games and methods are {target}'s.",
+  "@huntTargetHint": {"placeholders": {"target": {"type": "String", "example": "Type: Null"}, "goal": {"type": "String", "example": "Silvally"}}},
+  "huntCurrentFormQuestion": "What form is it in now?",
+  "huntCurrentFormHint": "The specimen is added in this form, with the hunt record.",
+  "huntGoal": "for {goal}",
+  "huntedAs": "hunted as {form}",
+  "huntedFormLabel": "Hunted form",
+  "huntedFormHint": "Only when it evolved after the hunt.",
+  "@huntGoal": {"placeholders": {"goal": {"type": "String", "example": "Silvally"}}},
+  "@huntedAs": {"placeholders": {"form": {"type": "String", "example": "Poipole"}}}
 }

@@ -32,6 +32,10 @@ HuntShareData? huntShareDataOf(
         ? null
         : context.catalogText(method.label, method.labels),
     ot: ot,
+    huntedAs: switch (specimen.hunt?.huntedForm) {
+      final id? => ref.watch(formRefOfProvider)(id)?.displayName,
+      null => null,
+    },
   );
 }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/hunt_share_sheet.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
@@ -55,6 +56,11 @@ class HuntRecordCard extends ConsumerWidget {
       if (start != null) context.l10n.huntStartDate(format(start)),
       if (end != null) context.l10n.huntCaptureDate(format(end)),
     ].join(' · ');
+    // Caçado como a pré-evolução (#315).
+    final hunted = switch (hunt.huntedForm) {
+      final id? => ref.watch(formRefOfProvider)(id),
+      null => null,
+    };
     final post = hunt.postUrl;
     final actions = [
       if (specimen case final specimen?
@@ -100,6 +106,23 @@ class HuntRecordCard extends ConsumerWidget {
                         ),
                         if (headline.isNotEmpty)
                           Text(headline, style: theme.textTheme.bodyLarge),
+                        if (hunted != null)
+                          Row(
+                            key: const ValueKey('hunted-as'),
+                            spacing: 6,
+                            children: [
+                              PokemonSprite(
+                                url: hunted.spriteFor(shiny: true),
+                                size: 22,
+                              ),
+                              Flexible(
+                                child: Text(
+                                  context.l10n.huntedAs(hunted.displayName),
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
                         if (odds.isNotEmpty)
                           Text(odds, style: theme.textTheme.bodyMedium),
                         if (dates.isNotEmpty)

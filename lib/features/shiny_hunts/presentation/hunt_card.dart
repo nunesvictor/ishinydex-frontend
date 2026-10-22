@@ -9,6 +9,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
@@ -42,19 +43,87 @@ Future<void> runHuntAction(
 /// salvar, a caçada sai da lista (o formulário a apaga) e a folha oferece o
 /// card para compartilhar (#243).
 Future<void> finishHunt(BuildContext context, ShinyHunt hunt) async {
+  // Caçada de uma pré-evolução (#315): em que forma ele está agora?
+  var form = hunt.formRef!;
+  if (hunt.goalRef case final goal?) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final before = container.read(preEvolutionsProvider)(goal.id);
+    final forms = [...before.skipWhile((f) => f.id != form.id), goal];
+    final picked = await showDialog<FormRef>(
+      context: context,
+      builder: (_) => _CurrentFormDialog(forms: forms),
+    );
+    if (picked == null || !context.mounted) return;
+    form = picked;
+  }
   final saved = await Navigator.of(context).push(
     MaterialPageRoute<Specimen>(
-      builder: (_) => SpecimenFormPage(
-        form: hunt.formRef!,
-        fromHunt: hunt,
-        depositAfterSave: false,
-      ),
+      builder: (_) =>
+          SpecimenFormPage(form: form, fromHunt: hunt, depositAfterSave: false),
     ),
   );
   if (saved == null || HuntShareData.of(saved) == null || !context.mounted) {
     return;
   }
   await showHuntShareSheet(context, saved, found: true);
+}
+
+/// "Em que forma ele está agora?" (#315): da forma caçada ao objetivo; o
+/// objetivo vem marcado.
+class _CurrentFormDialog extends StatefulWidget {
+  const _CurrentFormDialog({required this.forms});
+
+  final List<FormRef> forms;
+
+  @override
+  State<_CurrentFormDialog> createState() => _CurrentFormDialogState();
+}
+
+class _CurrentFormDialogState extends State<_CurrentFormDialog> {
+  late FormRef _picked = widget.forms.last;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(context.l10n.huntCurrentFormQuestion),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(context.l10n.huntCurrentFormHint),
+        RadioGroup<int>(
+          groupValue: _picked.id,
+          onChanged: (id) => setState(
+            () => _picked = widget.forms.firstWhere((f) => f.id == id),
+          ),
+          child: Column(
+            children: [
+              for (final f in widget.forms)
+                RadioListTile(
+                  key: ValueKey('current-form-${f.id}'),
+                  value: f.id,
+                  contentPadding: EdgeInsets.zero,
+                  secondary: PokemonSprite(
+                    url: f.spriteFor(shiny: true),
+                    size: 40,
+                  ),
+                  title: Text(f.displayName),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: Text(context.l10n.cancel),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.of(context).pop(_picked),
+        child: Text(context.l10n.continueAction),
+      ),
+    ],
+  );
 }
 
 /// Um cartão de caçada (#164): sprite, jogo e método, desde quando, e a
@@ -355,6 +424,15 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                           const ShinyIcon(size: 14),
                         ],
                       ),
+                      // Caçada de uma pré-evolução (#315): o objetivo.
+                      if (hunt.goalRef case final goal?)
+                        Text(
+                          '↳ ${context.l10n.huntGoal(goal.displayName)}',
+                          key: const ValueKey('hunt-goal'),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
                       Row(
                         spacing: 6,
                         children: [

@@ -17,6 +17,11 @@ abstract class ShinyHunt with _$ShinyHunt {
     required int form,
     FormRef? formRef,
 
+    /// O objetivo, quando a caçada é de uma pré-evolução (#315): caça-se o
+    /// Type: Null para ter o Silvally. `null` = a própria [form].
+    int? goal,
+    FormRef? goalRef,
+
     /// Pausada: a pessoa desistiu por ora; a contagem fica guardada.
     @Default(false) bool paused,
 
@@ -58,6 +63,10 @@ abstract class ShinyHunt with _$ShinyHunt {
   const ShinyHunt._();
 
   bool get running => runningSince != null;
+
+  /// A caçada é de [formId], ou de uma pré-evolução com ele de objetivo
+  /// (#315).
+  bool aims(int formId) => form == formId || goal == formId;
 
   bool get timed => unit == 'hours';
 

@@ -388,6 +388,8 @@ class FakeBackend
         {
           'id': h.id,
           'form': h.form,
+          // A pré-evolução (#315): só quando há.
+          'goal': ?h.goal,
           'paused': h.paused,
           'save': h.save,
           'method': h.method,
@@ -448,6 +450,7 @@ class FakeBackend
               'odds': ?h.odds,
               'multiple': ?h.multiple,
               'bestChain': ?h.bestChain,
+              'huntedForm': ?h.huntedForm,
             },
         },
       ...?_orphans['specimens'],
@@ -559,10 +562,13 @@ class FakeBackend
         continue;
       }
       final id = h['id'] as int;
+      final goal = _forms[h['goal']];
       _hunts[id] = ShinyHunt(
         id: id,
         form: form.id,
         formRef: _formRef(form),
+        goal: goal?.id,
+        goalRef: goal == null ? null : _formRef(goal),
         paused: h['paused'] as bool,
         save: _saves.containsKey(h['save']) ? h['save'] as int : null,
         method: h['method'] as String?,
@@ -627,6 +633,10 @@ class FakeBackend
             odds: (h['odds'] as num?)?.toDouble(),
             multiple: (h['multiple'] as num?)?.toDouble(),
             bestChain: h['bestChain'] as int?,
+            huntedForm: switch (h['huntedForm']) {
+              final int f when _forms.containsKey(f) => f,
+              _ => null,
+            },
           ),
           _ => null,
         },
@@ -2544,6 +2554,33 @@ class FakeBackend
     return count;
   }
 
+  /// [to] evolui, direta ou indiretamente, de [from].
+  bool _evolvesInto(int from, int to) {
+    var current = _evolvesFrom[to];
+    while (current != null && current != from) {
+      current = _evolvesFrom[current];
+    }
+    return current != null;
+  }
+
+  /// As pré-evoluções de [formId], da mais básica à anterior (#315): o
+  /// Charmander e o Charmeleon do Charizard. Vazio sem pré-evolução.
+  List<FormRef> preEvolutionsOf(int formId) {
+    final result = <FormRef>[];
+    var current = _evolvesFrom[formId];
+    while (current != null) {
+      if (_forms[current] case final form?) result.insert(0, _formRef(form));
+      current = _evolvesFrom[current];
+    }
+    return result;
+  }
+
+  /// A forma [formId] do catálogo; `null` se não existir.
+  FormRef? formRefOf(int formId) => switch (_forms[formId]) {
+    final form? => _formRef(form),
+    null => null,
+  };
+
   /// Como `POST /specimens/{id}/evolve/`: só evolução (direta ou não); a
   /// habilidade vai para a do mesmo slot e o espécime sai do slot.
   @override
@@ -2551,11 +2588,7 @@ class FakeBackend
     await _delay();
     final specimen = _specimens[specimenId];
     if (specimen == null) throw const NotFoundFailure();
-    var current = _evolvesFrom[formId];
-    while (current != null && current != specimen.form) {
-      current = _evolvesFrom[current];
-    }
-    if (current == null || !_forms.containsKey(formId)) {
+    if (!_evolvesInto(specimen.form, formId) || !_forms.containsKey(formId)) {
       throw const ValidationFailure({
         'form': [Problem.notAnEvolution()],
       });
@@ -2823,8 +2856,16 @@ class FakeBackend
         errors['huntPostUrl'] = [const Problem.invalidLink()];
       }
     }
+    // A forma caçada (#315): uma pré-evolução do espécime; a própria, nada.
+    final hunted = hunt.huntedForm == draft.form ? null : hunt.huntedForm;
+    if (hunted != null && !_evolvesInto(hunted, draft.form)) {
+      errors['huntHuntedForm'] = [const Problem.notAnEvolution()];
+    }
     if (errors.isNotEmpty) throw ValidationFailure(errors);
-    return hunt.copyWith(postUrl: url == null || url.isEmpty ? null : url);
+    return hunt.copyWith(
+      postUrl: url == null || url.isEmpty ? null : url,
+      huntedForm: hunted,
+    );
   }
 
   void _validateAbility(FormDetail form, String? ability) {
@@ -2921,8 +2962,20 @@ class FakeBackend
         'runningSince': [Problem.timerRunning()],
       });
     }
+    // O objetivo é uma evolução da forma caçada (#315); igual a ela, nada.
+    final goal = hunt.goal == hunt.form ? null : hunt.goal;
+    if (goal != null && !_evolvesInto(hunt.form, goal)) {
+      throw const ValidationFailure({
+        'goal': [Problem.notAnEvolution()],
+      });
+    }
     final id = hunt.id == 0 ? _newId(_hunts.keys) : hunt.id;
-    final saved = hunt.copyWith(id: id, formRef: _formRef(form));
+    final saved = hunt.copyWith(
+      id: id,
+      formRef: _formRef(form),
+      goal: goal,
+      goalRef: goal == null ? null : _formRef(_forms[goal]!),
+    );
     _hunts[id] = saved;
     return saved;
   }

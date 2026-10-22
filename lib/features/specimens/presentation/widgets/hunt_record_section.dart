@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
@@ -21,6 +23,7 @@ class HuntRecordSection extends StatefulWidget {
     this.capturedAt,
     this.errorFor,
     this.today,
+    this.forms = const [],
     super.key,
   });
 
@@ -40,6 +43,10 @@ class HuntRecordSection extends StatefulWidget {
 
   /// Hoje (nos testes, fixo).
   final DateTime? today;
+
+  /// As pré-evoluções e a própria forma, nessa ordem (#315). Com mais de
+  /// uma, o campo "Forma caçada": a do espécime é o padrão.
+  final List<FormRef> forms;
 
   @override
   State<HuntRecordSection> createState() => _HuntRecordSectionState();
@@ -139,6 +146,46 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
     ].join(' · ');
   }
 
+  /// "Forma caçada" (#315): o Naganadel caçado como Poipole.
+  Widget _huntedForm(ThemeData theme, HuntRecord hunt) {
+    final own = widget.forms.last.id;
+    final current = hunt.huntedForm ?? own;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
+        children: [
+          Text(context.l10n.huntedFormLabel, style: theme.textTheme.labelLarge),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final f in widget.forms)
+                ChoiceChip(
+                  key: ValueKey('field-hunted-form-${f.id}'),
+                  avatar: PokemonSprite(
+                    url: f.spriteFor(shiny: true),
+                    size: 24,
+                  ),
+                  label: Text(f.displayName),
+                  selected: f.id == current,
+                  onSelected: (_) => widget.onChanged(
+                    hunt.copyWith(huntedForm: f.id == own ? null : f.id),
+                  ),
+                ),
+            ],
+          ),
+          Text(
+            widget.errorFor?.call('huntHuntedForm') ??
+                context.l10n.huntedFormHint,
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -166,6 +213,7 @@ class _HuntRecordSectionState extends State<HuntRecordSection> {
         // Respiro no topo: o rótulo do primeiro campo flutua acima da borda.
         childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         children: [
+          if (widget.forms.length > 1) _huntedForm(theme, hunt),
           if (widget.methods.isNotEmpty || hunt.method != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),

@@ -793,5 +793,13 @@
   "huntsDoneNothing": "Nenhuma caçada com estes filtros.",
   "huntsDoneGameHint": "Jogo do treinador original (OT)",
   "filterMethodValue": "Método: {names}",
-  "noCaptureDate": "sem data de captura"
+  "noCaptureDate": "sem data de captura",
+  "huntTarget": "Caçar",
+  "huntTargetHint": "Caçando {target} para ter {goal}: os jogos e os métodos são os de {target}.",
+  "huntCurrentFormQuestion": "Em que forma ele está agora?",
+  "huntCurrentFormHint": "O espécime é cadastrado nessa forma, com o registro da caçada.",
+  "huntGoal": "para {goal}",
+  "huntedAs": "caçado como {form}",
+  "huntedFormLabel": "Forma caçada",
+  "huntedFormHint": "Só quando ele evoluiu depois da caçada."
 }

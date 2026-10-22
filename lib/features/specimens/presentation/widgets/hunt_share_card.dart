@@ -41,12 +41,18 @@ class HuntShareData {
     this.bestChain,
     this.trainerName,
     this.trainerId,
+    this.huntedAs,
   });
 
   /// Os dados de um espécime shiny com registro da caçada; `null` se faltar
   /// algum (não é shiny, não tem forma ou registro). [method] é o nome do
   /// método já no idioma da tela, e [ot], o treinador original.
-  static HuntShareData? of(Specimen specimen, {String? method, Trainer? ot}) {
+  static HuntShareData? of(
+    Specimen specimen, {
+    String? method,
+    Trainer? ot,
+    String? huntedAs,
+  }) {
     final form = specimen.formRef;
     final hunt = specimen.hunt;
     if (!specimen.isShiny || form == null || hunt == null) return null;
@@ -65,6 +71,7 @@ class HuntShareData {
       bestChain: hunt.bestChain,
       trainerName: ot?.name,
       trainerId: ot?.trainerId,
+      huntedAs: huntedAs,
     );
   }
 
@@ -93,6 +100,9 @@ class HuntShareData {
   final String? trainerName;
   final String? trainerId;
 
+  /// O nome da forma caçada, quando é outra (#315): "caçado como Poipole".
+  final String? huntedAs;
+
   List<Object?> get _fields => [
     name,
     dexNumber,
@@ -108,6 +118,7 @@ class HuntShareData {
     bestChain,
     trainerName,
     trainerId,
+    huntedAs,
   ];
 
   // Igualdade por valor: a folha gera a imagem de novo quando os dados
@@ -169,6 +180,7 @@ class HuntShareCard extends StatelessWidget {
     ];
     final detail = [
       ?data.method,
+      if (data.huntedAs case final form?) l10n.huntedAs(form),
       if (data.bestChain case final best?) l10n.longestChain(best),
       if (data.multiple case final m?) l10n.foundAtOdds(decimal.format(m)),
     ].join(' · ');

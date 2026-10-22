@@ -172,22 +172,40 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
     );
   }
 
+  /// Caçar pela pré-evolução (#315): a forma caçada passa a ser [target], e
+  /// a da folha fica como o objetivo. Trocar zera o save, o método e os
+  /// modificadores, que dependem da forma.
+  void _setTarget(FormRef target) => setState(
+    () => _hunt = _hunt.copyWith(
+      form: target.id,
+      goal: target.id == widget.form.id ? null : widget.form.id,
+      save: null,
+      method: null,
+      modifiers: const {},
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final huntable = ref.watch(huntableInProvider);
+    // A própria forma e as pré-evoluções, só ao começar (#315).
+    final chain = widget.editing == null
+        ? [...ref.watch(preEvolutionsProvider)(widget.form.id), widget.form]
+        : [widget.form];
+    final target =
+        chain.where((f) => f.id == _hunt.form).firstOrNull ?? widget.form;
     // Só os saves de jogos onde a forma pode ser caçada (o já escolhido
     // fica, ao editar).
     final allSaves = ref.watch(savesProvider).value;
     final saves = [
       for (final s in allSaves ?? const <Save>[])
-        if (s.id == _hunt.save || huntable(widget.form.id, s.trainer.version))
-          s,
+        if (s.id == _hunt.save || huntable(target.id, s.trainer.version)) s,
     ];
     final save = saves.where((s) => s.id == _hunt.save).firstOrNull;
     final methodsFor = ref.watch(shinyMethodsProvider);
     // Só pelo HOME, por ovo (#314): os métodos de ovo.
-    final methods = methodsFor(save?.trainer.version, formId: widget.form.id);
+    final methods = methodsFor(save?.trainer.version, formId: target.id);
     final method = methodsFor(null)
         .where((m) => m.id == _hunt.method)
         .firstOrNull;
@@ -215,12 +233,40 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: PokemonSprite(
-                url: widget.form.spriteFor(shiny: true),
+                url: target.spriteFor(shiny: true),
                 size: 48,
               ),
-              title: Text(widget.form.displayName),
-              subtitle: Text(widget.form.dexNumber),
+              title: Text(target.displayName),
+              subtitle: Text(target.dexNumber),
             ),
+            if (chain.length > 1) ...[
+              Text(context.l10n.huntTarget, style: theme.textTheme.labelLarge),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final f in chain)
+                    ChoiceChip(
+                      key: ValueKey('hunt-target-${f.id}'),
+                      avatar: PokemonSprite(
+                        url: f.spriteFor(shiny: true),
+                        size: 24,
+                      ),
+                      label: Text(f.displayName),
+                      selected: f.id == target.id,
+                      onSelected: (_) => _setTarget(f),
+                    ),
+                ],
+              ),
+              if (target.id != widget.form.id)
+                Text(
+                  context.l10n.huntTargetHint(
+                    target.displayName,
+                    widget.form.displayName,
+                  ),
+                  style: theme.textTheme.bodySmall,
+                ),
+            ],
             // Sem nenhum save (#246): a caçada vale do mesmo jeito; o save
             // só traz os métodos e as odds do jogo.
             if (allSaves != null && allSaves.isEmpty)

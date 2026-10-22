@@ -92,6 +92,10 @@ abstract class HuntRecord with _$HuntRecord {
     double? odds,
     double? multiple,
     int? bestChain,
+
+    /// A forma caçada, quando é outra (#315): o Naganadel caçado como
+    /// Poipole. `null` = a do espécime.
+    int? huntedForm,
   }) = _HuntRecord;
 
   const HuntRecord._();
