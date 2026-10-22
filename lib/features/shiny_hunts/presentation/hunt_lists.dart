@@ -35,13 +35,18 @@ class HuntCards extends ConsumerWidget {
     final theme = Theme.of(context);
     return switch (ref.watch(shinyHuntsProvider)) {
       AsyncData(value: final all) => () {
-        // A que está com o cronômetro rodando vai para o topo.
+        // A que está com o cronômetro rodando vai para o topo; depois, a
+        // última retomada (#279).
+        final resumed = paused ? null : ref.watch(resumedHuntProvider);
+        int rank(ShinyHunt h) => h.running
+            ? 0
+            : h.id == resumed?.id
+            ? 1
+            : 2;
         final hunts = [
           for (final h in all)
-            if (h.paused == paused && h.running) h,
-          for (final h in all)
-            if (h.paused == paused && !h.running) h,
-        ];
+            if (h.paused == paused) h,
+        ]..sort((a, b) => rank(a).compareTo(rank(b)));
         final running = paused
             ? null
             : hunts.where((h) => h.running).firstOrNull;
@@ -102,11 +107,19 @@ class HuntCards extends ConsumerWidget {
                           for (var j = i; j < i + columns; j++)
                             Expanded(
                               child: j < hunts.length
-                                  ? HuntCard(
-                                      hunt: hunts[j],
-                                      locked:
-                                          running != null &&
-                                          running.id != hunts[j].id,
+                                  ? _Highlight(
+                                      key: ValueKey(
+                                        hunts[j].id == resumed?.id
+                                            ? resumed
+                                            : hunts[j].id,
+                                      ),
+                                      on: hunts[j].id == resumed?.id,
+                                      child: HuntCard(
+                                        hunt: hunts[j],
+                                        locked:
+                                            running != null &&
+                                            running.id != hunts[j].id,
+                                      ),
                                     )
                                   : const SizedBox.shrink(),
                             ),
@@ -125,6 +138,36 @@ class HuntCards extends ConsumerWidget {
       ),
       _ => const LoadingView(),
     };
+  }
+}
+
+/// O destaque do cartão retomado (#279): um contorno na cor principal que
+/// some em 2 s. A chave muda a cada retomada, e o destaque recomeça.
+class _Highlight extends StatelessWidget {
+  const _Highlight({required this.on, required this.child, super.key});
+
+  final bool on;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!on) return child;
+    final color = Theme.of(context).colorScheme.primary;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 1, end: 0),
+      duration: const Duration(seconds: 2),
+      curve: Curves.easeIn,
+      child: child,
+      builder: (context, t, child) => DecoratedBox(
+        key: const ValueKey('hunt-resumed-highlight'),
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: t), width: 3),
+        ),
+        child: child,
+      ),
+    );
   }
 }
 

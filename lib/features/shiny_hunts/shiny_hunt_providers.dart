@@ -53,6 +53,22 @@ final Provider<HuntOdds? Function(ShinyHunt)> huntOddsProvider =
       };
     });
 
+/// A última caçada retomada e quando (#279). A tela de Caçadas vai para a
+/// aba Ativas, com o cartão dela no topo e um destaque breve; o instante
+/// distingue retomar a mesma caçada duas vezes.
+typedef ResumedHunt = ({int id, DateTime at});
+
+final resumedHuntProvider = NotifierProvider<ResumedHuntNotifier, ResumedHunt?>(
+  ResumedHuntNotifier.new,
+);
+
+class ResumedHuntNotifier extends Notifier<ResumedHunt?> {
+  @override
+  ResumedHunt? build() => null;
+
+  void mark(int id, DateTime at) => state = (id: id, at: at);
+}
+
 final shinyHuntActionsProvider = Provider<ShinyHuntActions>(
   ShinyHuntActions.new,
 );
@@ -116,8 +132,12 @@ class ShinyHuntActions {
   Future<ShinyHunt> pause(ShinyHunt hunt) =>
       save(hunt.stopped(_now).copyWith(paused: true, pausedAt: _today));
 
-  Future<ShinyHunt> resume(ShinyHunt hunt) =>
-      save(hunt.copyWith(paused: false, pausedAt: null));
+  /// Retomar: volta para Ativas, e a tela vai atrás dela (#279).
+  Future<ShinyHunt> resume(ShinyHunt hunt) async {
+    final saved = await save(hunt.copyWith(paused: false, pausedAt: null));
+    _ref.read(resumedHuntProvider.notifier).mark(saved.id, _now);
+    return saved;
+  }
 
   Future<void> delete(int huntId) async {
     await _ref.read(shinyHuntRepositoryProvider).deleteShinyHunt(huntId);

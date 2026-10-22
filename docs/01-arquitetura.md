@@ -355,6 +355,19 @@ sem criar nenhum. A aba **Faltam** precisa de um shiny dex:
 - tocar num item empilha o dex dentro da própria aba (`/hunts/dex/{id}`),
   para o voltar retornar à lista com os filtros.
 
+As abas ficam na ordem **Ativas · Faltam · Pausadas** (#279). Sem o
+`&tab=active`, a tela abre em Ativas quando há caçada em andamento e, sem
+nenhuma, em Faltam. Começar uma caçada no Faltam e retomar uma pausada levam
+a Ativas. Na retomada, o `resumedHuntProvider` põe o cartão no topo, com um
+contorno que some em 2 s.
+
+O seletor é um `TabBar` com um `TabBarView`, e deslizar troca a aba (#272).
+Cada aba fica viva (`AutomaticKeepAliveClientMixin`), então os filtros, a
+busca e a rolagem continuam ao voltar. O `HuntsTabBar` mede o texto de cada
+aba, com o número num selo, e divide a sobra entre elas. Quando nem assim
+cabe, por exemplo com texto aumentado, a fileira rola para o lado. Com
+"reduzir movimento", tocar numa aba troca sem animação.
+
 O Faltam lista o que ainda falta caçar no dex, na ordem das boxes. Dois grupos de filtros no
 [`HuntQuery`](../lib/features/personal_dex/domain/models.dart):
 

@@ -152,7 +152,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   return HuntsPage(
                     key: ValueKey((dexId, active)),
                     dexId: dexId,
-                    initialTab: active ? HuntsTab.active : HuntsTab.missing,
+                    initialTab: active ? HuntsTab.active : null,
                   );
                 },
                 routes: [GoRoute(path: 'dex/:dexId', builder: _dexPage)],
