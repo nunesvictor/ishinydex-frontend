@@ -170,6 +170,10 @@ seguem o mesmo padrão, para as ações não empilharem botões:
     não aparece na versão (exclusiva da outra) e um cadeado no canto quando
     há shiny lock. Tocar no ícone mostra tudo por extenso, que também é o
     rótulo do leitor de tela. Uma legenda de uma linha fica embaixo.
+    Um jogo que só aceita a forma pelo HOME, por ovo (`homeEggs` do
+    catálogo, #314: o Phione no Scarlet/Violet), entra na lista sem entrada
+    de pokédex e com "Pelo HOME, por ovo". Nele, a forma conta como caçável,
+    mas só pelos métodos de ovo (`Catalog.shinyMethodsFor(formId:)`).
     Entre "Pokédex dos jogos" e a grade de dados, **Tipos em batalha**
     (`TypeMatchupsCard`, #230; posição da #274, pelo `beforeFacts` do
     `SpeciesInfo`): as fraquezas pelos tipos da forma (4×, 2×, ½×, ¼×,

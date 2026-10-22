@@ -115,10 +115,13 @@ final nextHomeCutoffProvider = Provider<DateTime?>((ref) {
 /// Os métodos de shiny do jogo do OT (`Catalog.shinyMethodsFor`); sem o
 /// catálogo, nenhum.
 final shinyMethodsProvider =
-    Provider<List<ShinyMethod> Function(String? version, {bool fromGo})>((ref) {
+    Provider<
+      List<ShinyMethod> Function(String? version, {bool fromGo, int? formId})
+    >((ref) {
       final catalog = ref.watch(fakeBackendProvider).catalog;
-      return (version, {fromGo = false}) =>
-          catalog?.shinyMethodsFor(version, fromGo: fromGo) ?? const [];
+      return (version, {fromGo = false, formId}) =>
+          catalog?.shinyMethodsFor(version, fromGo: fromGo, formId: formId) ??
+          const [];
     });
 
 /// Abre um link externo (o post da caçada) numa aba nova.

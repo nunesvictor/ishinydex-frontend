@@ -137,7 +137,9 @@ void main() {
       ),
       fakeBackendProvider.overrideWithValue(backend),
       clockProvider.overrideWithValue(() => _now),
-      shinyMethodsProvider.overrideWithValue((_, {fromGo = false}) => _methods),
+      shinyMethodsProvider.overrideWithValue(
+        (_, {fromGo = false, formId}) => _methods,
+      ),
       huntableInProvider.overrideWithValue((_, _) => true),
       oddsRuleProvider.overrideWithValue(
         // FRLG: sem regra para o Encontro aleatório.

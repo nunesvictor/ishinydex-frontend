@@ -32,6 +32,7 @@ class Catalog {
     required this._gameFormIds,
     required this._gameLocks,
     required this._alphaForms,
+    required this._homeEggs,
     required this.shinyMethods,
     required this.shinyOdds,
     required this._formEvolutions,
@@ -247,6 +248,13 @@ class Catalog {
         return result;
       }(),
       // Catálogo antigo, sem a chave: nenhuma forma alfa (#280).
+      // Catálogo antigo, sem a chave: nenhuma (#314).
+      homeEggs: {
+        for (final g in _objects(json['homeEggs'] ?? const <Object>[]))
+          g['versionGroup'] as String: {
+            for (final id in g['forms'] as List) id as int,
+          },
+      },
       alphaForms: {
         for (final g in _objects(json['alphaForms'] ?? const <Object>[]))
           g['versionGroup'] as String: {
@@ -352,14 +360,31 @@ class Catalog {
 
   /// Os métodos do jogo [version] do OT: sem OT, ou num jogo sem métodos
   /// curados, todos; vindo do GO ([fromGo]), nenhum.
-  List<ShinyMethod> shinyMethodsFor(String? version, {bool fromGo = false}) {
+  List<ShinyMethod> shinyMethodsFor(
+    String? version, {
+    bool fromGo = false,
+    int? formId,
+  }) {
     if (fromGo) return const [];
     final mine = [
       for (final m in shinyMethods)
         if (m.versions.contains(version)) m,
     ];
-    return mine.isEmpty ? shinyMethods : mine;
+    final all = mine.isEmpty ? shinyMethods : mine;
+    // Só pelo HOME, por ovo (#314): os métodos que contam ovos.
+    if (formId != null && onlyByEgg(formId, version)) {
+      return [
+        for (final m in all)
+          if (m.units.contains('eggs')) m,
+      ];
+    }
+    return all;
   }
+
+  /// O jogo [version] só aceita a forma pelo HOME, e ela só se caça lá por
+  /// ovo (o Phione no Scarlet/Violet, #314).
+  bool onlyByEgg(int formId, String? version) =>
+      _homeEggs[_groupOfVersion[version]]?.contains(formId) ?? false;
 
   /// Maior `schemaVersion` que este app sabe ler.
   static const schemaVersion = 1;
@@ -409,6 +434,10 @@ class Catalog {
   /// Versões em que cada forma não pode ser shiny.
   /// Grupo de versões → formas que podem ser alfa nele.
   final Map<String, Set<int>> _alphaForms;
+
+  /// Grupo de versões → formas que ele aceita pelo HOME, fora das pokédex,
+  /// e que só se caçam por ovo.
+  final Map<String, Set<int>> _homeEggs;
 
   final Map<int, Set<String>> _gameLocks;
 
@@ -557,7 +586,12 @@ class Catalog {
         );
       }
     }
-    final groups = entries.keys.toList()
+    // Os jogos que só a aceitam pelo HOME, por ovo (#314): sem entrada.
+    final byEgg = {
+      for (final MapEntry(key: group, value: forms) in _homeEggs.entries)
+        if (forms.contains(formId) && !entries.containsKey(group)) group,
+    };
+    final groups = [...entries.keys, ...byEgg]
       ..sort((a, b) => (_groupOrder[a] ?? 0).compareTo(_groupOrder[b] ?? 0));
     final exclusive = _exclusives[formId] ?? const <String>{};
     List<String> exclusiveTo(List<String> versions) {
@@ -570,7 +604,8 @@ class Catalog {
         GamePokedex(
           versionGroup: group,
           versions: _homeVersions[group] ?? const [],
-          entries: entries[group]!,
+          entries: entries[group] ?? const [],
+          viaHomeEgg: byEgg.contains(group),
           exclusiveTo: exclusiveTo(_homeVersions[group] ?? const []),
           shinyLockedIn: [
             for (final v in _homeVersions[group] ?? const <String>[])

@@ -301,17 +301,26 @@ class _Pokedexes extends ConsumerWidget {
                           game.versions.map(versionLabel).join(' / '),
                           style: theme.textTheme.bodyLarge,
                         ),
-                        Text(
-                          game.entries
-                              .map(
-                                (e) => context.l10n.pokedexEntry(
-                                  e,
-                                  context.catalogText(e.label, e.labels),
-                                ),
-                              )
-                              .join(' · '),
-                          style: theme.textTheme.bodySmall,
-                        ),
+                        // Fora das pokédex, pelo HOME (#314): explica.
+                        if (game.viaHomeEgg)
+                          Text(
+                            context.l10n.pokedexViaHomeEgg,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontStyle: FontStyle.italic,
+                            ),
+                          )
+                        else
+                          Text(
+                            game.entries
+                                .map(
+                                  (e) => context.l10n.pokedexEntry(
+                                    e,
+                                    context.catalogText(e.label, e.labels),
+                                  ),
+                                )
+                                .join(' · '),
+                            style: theme.textTheme.bodySmall,
+                          ),
                       ],
                     ),
                   ),

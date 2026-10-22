@@ -300,6 +300,10 @@ abstract class GamePokedex with _$GamePokedex {
     /// As das [versions] em que a forma não pode ser shiny (o Solgaleo em
     /// Scarlet, #313).
     @Default(<String>[]) List<String> shinyLockedIn,
+
+    /// O jogo aceita a forma pelo HOME, fora das pokédex dele, e ela só se
+    /// caça por ovo (o Phione no Scarlet/Violet, #314). Sem [entries].
+    @Default(false) bool viaHomeEgg,
   }) = _GamePokedex;
 
   factory GamePokedex.fromJson(Map<String, dynamic> json) =>

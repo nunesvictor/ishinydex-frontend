@@ -76,7 +76,7 @@ void main() {
           fakeBackendProvider.overrideWithValue(backend),
           clockProvider.overrideWithValue(() => _now),
           shinyMethodsProvider.overrideWithValue(
-            (_, {fromGo = false}) => _methods,
+            (_, {fromGo = false, formId}) => _methods,
           ),
         ],
       );

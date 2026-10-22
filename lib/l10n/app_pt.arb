@@ -496,6 +496,7 @@
   "pokedexLegendNoSave": "sem save",
   "pokedexLegendAbsent": "não aparece",
   "pokedexLegendLocked": "shiny lock",
+  "pokedexViaHomeEgg": "Pelo HOME, por ovo",
   "pokedexNoGuarantee": "Estar na pokédex não garante que dá para capturar: pode ser só por evolução, troca ou evento.",
   "genderless": "Sem gênero",
   "maleOnly": "Só macho",

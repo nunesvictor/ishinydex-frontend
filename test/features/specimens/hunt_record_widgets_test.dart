@@ -258,7 +258,7 @@ void main() {
       overrides: [
         fakeBackendProvider.overrideWithValue(backend),
         shinyMethodsProvider.overrideWithValue(
-          (_, {fromGo = false}) => const [_sr],
+          (_, {fromGo = false, formId}) => const [_sr],
         ),
         openLinkProvider.overrideWithValue(opened.add),
       ],
@@ -299,7 +299,7 @@ void main() {
         overrides: [
           fakeBackendProvider.overrideWithValue(FakeBackend()),
           shinyMethodsProvider.overrideWithValue(
-            (_, {fromGo = false}) => const [_sparkling],
+            (_, {fromGo = false, formId}) => const [_sparkling],
           ),
         ],
         size: const Size(500, 1400),

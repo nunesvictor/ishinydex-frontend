@@ -95,7 +95,9 @@ void main() {
       ),
       fakeBackendProvider.overrideWithValue(backend),
       clockProvider.overrideWithValue(() => _now),
-      shinyMethodsProvider.overrideWithValue((_, {fromGo = false}) => _methods),
+      shinyMethodsProvider.overrideWithValue(
+        (_, {fromGo = false, formId}) => _methods,
+      ),
       // Nenhuma forma pode ser caçada em Sword.
       huntableInProvider.overrideWithValue((_, version) => version != 'sword'),
     ],

@@ -366,7 +366,11 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       // A resposta "Sim" troca o registro: a seção recomeça com ele.
       key: ValueKey('hunt-section-$_finishing'),
       value: _draft.hunt,
-      methods: methods(version, fromGo: _draft.isFromGo),
+      methods: methods(
+        version,
+        fromGo: _draft.isFromGo,
+        formId: widget.form.id,
+      ),
       allMethods: methods(null),
       game: version == null ? null : versionLabel(version),
       capturedAt: _draft.capturedAt,
