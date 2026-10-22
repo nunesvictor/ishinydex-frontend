@@ -164,6 +164,12 @@ seguem o mesmo padrão, para as ações não empilharem botões:
     [form_sheet.dart](../lib/features/personal_dex/presentation/widgets/form_sheet.dart)),
     um bottom sheet só de leitura com as mesmas abas; tocar em outra forma
     troca a ficha, sem empilhar sheets, e a aba aberta continua.
+    Na **Pokédex dos jogos** (#322), cada linha traz o jogo e a entrada na
+    pokédex, e o estado de cada versão fica no ícone (`PokedexGameIcon`):
+    colorido com save, cinza sem save, um contorno tracejado quando a forma
+    não aparece na versão (exclusiva da outra) e um cadeado no canto quando
+    há shiny lock. Tocar no ícone mostra tudo por extenso, que também é o
+    rótulo do leitor de tela. Uma legenda de uma linha fica embaixo.
     Entre "Pokédex dos jogos" e a grade de dados, **Tipos em batalha**
     (`TypeMatchupsCard`, #230; posição da #274, pelo `beforeFacts` do
     `SpeciesInfo`): as fraquezas pelos tipos da forma (4×, 2×, ½×, ¼×,

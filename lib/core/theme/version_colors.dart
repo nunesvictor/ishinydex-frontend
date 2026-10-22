@@ -68,11 +68,3 @@ VersionTone? versionTone(String version, Brightness brightness) {
       ? (background: tone(0.45, 0.26), foreground: tone(0.80, 0.87))
       : (background: tone(0.70, 0.89), foreground: tone(0.80, 0.24));
 }
-
-/// As cores de [version] no tema em volta de [context]: as da versão, ou as
-/// neutras do tema ([neutral]) se ela não tiver cor de marca.
-VersionTone versionToneOf(
-  BuildContext context,
-  String version, {
-  required VersionTone neutral,
-}) => versionTone(version, Theme.of(context).brightness) ?? neutral;

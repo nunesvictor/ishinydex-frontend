@@ -6,7 +6,6 @@ import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
-import 'package:ishinydex/core/widgets/version_tag.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -219,9 +218,11 @@ class SpeciesInfo extends ConsumerWidget {
   ];
 }
 
-/// Os jogos em cuja pokédex a espécie está, com cada pokédex e o número. Os
-/// ícones ficam sempre coloridos (o cinza é das caçadas); os jogos em que o
-/// usuário tem save vêm primeiro, com fundo e um selo.
+/// Os jogos em cuja pokédex a espécie está, com cada pokédex e o número
+/// (#322). O estado de cada versão fica no próprio ícone: colorido, você tem
+/// save; cinza, não tem; um contorno tracejado, a forma não aparece nela
+/// (exclusiva da outra); e um cadeado no canto, shiny lock. Tocar no ícone
+/// explica por extenso. Os jogos com save vêm primeiro, com fundo.
 class _Pokedexes extends ConsumerWidget {
   const _Pokedexes(this.games);
 
@@ -245,6 +246,10 @@ class _Pokedexes extends ConsumerWidget {
       ...games.where((g) => mine(g).isNotEmpty),
       ...games.where((g) => mine(g).isEmpty),
     ];
+    // Um pouco maiores que os 22 de antes: agora carregam o estado. Com o
+    // texto aumentado, crescem até 15%.
+    final size =
+        26 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.15);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 4,
@@ -258,19 +263,32 @@ class _Pokedexes extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               child: Row(
                 spacing: 12,
                 children: [
                   // Largura de dois ícones: os nomes ficam alinhados. Um jogo
                   // só (Legends: Arceus, Z-A) fica no meio dessa largura.
                   SizedBox(
-                    width: 47,
+                    width: size * 2 + 4,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      spacing: 3,
+                      spacing: 4,
                       children: [
-                        for (final version in game.versions) GameIcon(version),
+                        for (final version in game.versions)
+                          PokedexGameIcon(
+                            version,
+                            size: size,
+                            present:
+                                game.exclusiveTo.isEmpty ||
+                                game.exclusiveTo.contains(version),
+                            exclusive: game.exclusiveTo.contains(version),
+                            locked: game.shinyLockedIn.contains(version),
+                            owned: owned.contains(version),
+                            ring: mine(game).isEmpty
+                                ? theme.colorScheme.surface
+                                : theme.colorScheme.surfaceContainerHigh,
+                          ),
                       ],
                     ),
                   ),
@@ -279,39 +297,10 @@ class _Pokedexes extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: 2,
                       children: [
-                        Wrap(
-                          spacing: 6,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              game.versions.map(versionLabel).join(' / '),
-                              style: theme.textTheme.bodyLarge,
-                            ),
-                            // "exclusivo Scarlet", como a comunidade diz
-                            // ("Scarlet exclusive"), na cor da versão (#203).
-                            for (final version in game.exclusiveTo)
-                              VersionTag(
-                                context.l10n.exclusiveTo(versionLabel(version)),
-                                version: version,
-                              ),
-                            // O shiny lock do jogo (#313), com a explicação
-                            // ao tocar.
-                            if (game.shinyLockedIn.isNotEmpty)
-                              _ShinyLockTag(game.shinyLockedIn),
-                          ],
+                        Text(
+                          game.versions.map(versionLabel).join(' / '),
+                          style: theme.textTheme.bodyLarge,
                         ),
-                        if (mine(game) case final versions
-                            when versions.isNotEmpty)
-                          // "Seu: Violet": com um jogo só, na cor dele.
-                          VersionTag(
-                            context.l10n.yourGames(
-                              versions.length,
-                              versions.map(versionLabel).join(', '),
-                            ),
-                            version: versions.length == 1
-                                ? versions.single
-                                : null,
-                          ),
                         Text(
                           game.entries
                               .map(
@@ -330,8 +319,198 @@ class _Pokedexes extends ConsumerWidget {
               ),
             ),
           ),
+        _Legend(version: ordered.first.versions.first),
         Text(context.l10n.pokedexNoGuarantee, style: theme.textTheme.bodySmall),
       ],
+    );
+  }
+}
+
+/// O ícone de uma versão na Pokédex dos jogos (#322): colorido com save,
+/// cinza sem; um contorno tracejado quando a forma não aparece nela; o
+/// cadeado no canto com shiny lock. Tocar mostra tudo por extenso, que é
+/// também o rótulo do leitor de tela.
+class PokedexGameIcon extends StatelessWidget {
+  const PokedexGameIcon(
+    this.version, {
+    required this.present,
+    required this.owned,
+    this.exclusive = false,
+    this.locked = false,
+    this.size = 26,
+    this.ring,
+    super.key,
+  });
+
+  final String version;
+  final double size;
+
+  /// A forma aparece nesta versão (não é exclusiva da outra).
+  final bool present;
+  final bool exclusive;
+  final bool locked;
+  final bool owned;
+
+  /// A cor em volta do cadeado: a do fundo da linha.
+  final Color? ring;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final description = [
+      versionLabel(version),
+      if (!present)
+        l10n.pokedexIconAbsent
+      else if (exclusive)
+        l10n.pokedexIconExclusive,
+      if (present && locked) l10n.pokedexIconLocked,
+      if (owned) l10n.pokedexIconOwned else l10n.pokedexIconNoSave,
+    ].join(' · ');
+    return Tooltip(
+      message: description,
+      triggerMode: TooltipTriggerMode.tap,
+      excludeFromSemantics: true,
+      child: Semantics(
+        label: description,
+        excludeSemantics: true,
+        child: SizedBox.square(
+          dimension: size,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              if (present)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(size * 0.27),
+                  child: GameIcon(version, size: size, muted: !owned),
+                )
+              else
+                CustomPaint(
+                  key: const ValueKey('pokedex-icon-absent'),
+                  size: Size.square(size),
+                  painter: _DashedBox(scheme.outline, size * 0.27),
+                ),
+              if (present && locked)
+                Positioned(
+                  key: const ValueKey('pokedex-icon-lock'),
+                  right: -5,
+                  bottom: -5,
+                  child: LockBadge(color: scheme.error, ring: ring),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// O cadeado vermelho do shiny lock, num círculo (#322).
+class LockBadge extends StatelessWidget {
+  const LockBadge({required this.color, this.ring, this.size = 15, super.key});
+
+  final Color color;
+  final Color? ring;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: color,
+      shape: BoxShape.circle,
+      border: ring == null ? null : Border.all(color: ring!, width: 2),
+    ),
+    child: Icon(Icons.lock, size: size * 0.55, color: Colors.white),
+  );
+}
+
+/// Um quadrado de cantos redondos com o contorno tracejado.
+class _DashedBox extends CustomPainter {
+  _DashedBox(this.color, this.radius);
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          (Offset.zero & size).deflate(0.75),
+          Radius.circular(radius),
+        ),
+      );
+    for (final metric in path.computeMetrics()) {
+      for (var d = 0.0; d < metric.length; d += 6) {
+        canvas.drawPath(metric.extractPath(d, d + 3.5), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBox old) =>
+      old.color != color || old.radius != radius;
+}
+
+/// A legenda de uma linha dos ícones (#322), com o primeiro jogo da lista.
+class _Legend extends StatelessWidget {
+  const _Legend({required this.version});
+
+  final String version;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall;
+    Widget item(Widget icon, String text) => Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 5,
+      children: [
+        icon,
+        Text(text, style: style),
+      ],
+    );
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Wrap(
+          spacing: 14,
+          runSpacing: 6,
+          children: [
+            item(
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: GameIcon(version, size: 16),
+              ),
+              context.l10n.pokedexLegendOwned,
+            ),
+            item(
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: GameIcon(version, size: 16, muted: true),
+              ),
+              context.l10n.pokedexLegendNoSave,
+            ),
+            item(
+              CustomPaint(
+                size: const Size.square(16),
+                painter: _DashedBox(theme.colorScheme.outline, 4),
+              ),
+              context.l10n.pokedexLegendAbsent,
+            ),
+            item(
+              LockBadge(color: theme.colorScheme.error, size: 13),
+              context.l10n.pokedexLegendLocked,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -351,32 +530,3 @@ String genderRatio(AppLocalizations l10n, int rate) => switch (rate) {
 /// 50.0 → "50".
 String decimal(AppLocalizations l10n, num value) =>
     NumberFormat('0.###', l10n.localeName).format(value);
-
-/// "Shiny lock em Scarlet": a forma não pode ser shiny nessas versões do
-/// jogo. Tocar explica.
-class _ShinyLockTag extends StatelessWidget {
-  const _ShinyLockTag(this.versions);
-
-  final List<String> versions;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = theme.colorScheme.error;
-    return Tooltip(
-      message: context.l10n.shinyLockedInHint,
-      triggerMode: TooltipTriggerMode.tap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 2,
-        children: [
-          Icon(Icons.lock, size: 14, color: color),
-          Text(
-            context.l10n.shinyLockedIn(versions.map(versionLabel).join(' / ')),
-            style: theme.textTheme.labelSmall?.copyWith(color: color),
-          ),
-        ],
-      ),
-    );
-  }
-}
