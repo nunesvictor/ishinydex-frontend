@@ -778,5 +778,14 @@
   "pickInCalendar": "Escolher no calendário",
   "searchFormByName": "Buscar forma pelo nome",
   "typeTwoLetters": "Digite ao menos 2 letras do nome.",
-  "noFormFound": "Nenhuma forma encontrada."
+  "noFormFound": "Nenhuma forma encontrada.",
+  "huntsTabDone": "Concluídas",
+  "huntsDoneCount": "{count, plural, =1{1 caçada} other{{count} caçadas}}",
+  "huntsDoneCountIn": "{count, plural, =1{1 caçada em {games}} other{{count} caçadas em {games}}}",
+  "huntsDoneEmptyTitle": "Nenhuma caçada concluída ainda",
+  "huntsDoneEmptyBody": "Ao tocar em Encontrei! numa caçada, ou registrar a caçada direto no espécime, ela aparece aqui.",
+  "huntsDoneNothing": "Nenhuma caçada com estes filtros.",
+  "huntsDoneGameHint": "Jogo do treinador original (OT)",
+  "filterMethodValue": "Método: {names}",
+  "noCaptureDate": "sem data de captura"
 }

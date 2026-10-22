@@ -355,11 +355,20 @@ sem criar nenhum. A aba **Faltam** precisa de um shiny dex:
 - tocar num item empilha o dex dentro da própria aba (`/hunts/dex/{id}`),
   para o voltar retornar à lista com os filtros.
 
-As abas ficam na ordem **Ativas · Faltam · Pausadas** (#279). Sem o
+As abas ficam na ordem **Ativas · Faltam · Pausadas · Concluídas** (#279, #297). Sem o
 `&tab=active`, a tela abre em Ativas quando há caçada em andamento e, sem
 nenhuma, em Faltam. Começar uma caçada no Faltam e retomar uma pausada levam
 a Ativas. Na retomada, o `resumedHuntProvider` põe o cartão no topo, com um
 contorno que some em 2 s.
+
+A aba **Concluídas** (#297, `completed_hunts.dart`) é o histórico das
+caçadas: os espécimes com registro de caçada (`SpecimenQuery.huntsOnly`),
+dos capturados mais recentes aos mais antigos, com os sem data no fim. Ela
+não tem registro próprio, porque lê os espécimes. O `completedHuntsProvider`
+traz todas, sem filtro, e serve ao número da aba e às opções dos filtros.
+Jogo usa a mesma folha das Faltam (`showGamePicker`), com os jogos do OT
+(`otVersions`). Método aceita vários (`huntMethods`). Tocar num item abre o
+espécime, e o botão à direita abre o card da caçada.
 
 O seletor é um `TabBar` com um `TabBarView`, e deslizar troca a aba (#272).
 Cada aba fica viva (`AutomaticKeepAliveClientMixin`), então os filtros, a

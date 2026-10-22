@@ -950,5 +950,17 @@
   "pickInCalendar": "Pick in the calendar",
   "searchFormByName": "Search form by name",
   "typeTwoLetters": "Type at least 2 letters of the name.",
-  "noFormFound": "No form found."
+  "noFormFound": "No form found.",
+  "huntsTabDone": "Done",
+  "huntsDoneCount": "{count, plural, =1{1 hunt} other{{count} hunts}}",
+  "@huntsDoneCount": {"placeholders": {"count": {"type": "int", "example": "104"}}},
+  "huntsDoneCountIn": "{count, plural, =1{1 hunt in {games}} other{{count} hunts in {games}}}",
+  "@huntsDoneCountIn": {"placeholders": {"count": {"type": "int", "example": "36"}, "games": {"type": "String", "example": "Sword"}}},
+  "huntsDoneEmptyTitle": "No finished hunts yet",
+  "huntsDoneEmptyBody": "When you tap Found it! on a hunt, or add the hunt record to a specimen, it shows up here.",
+  "huntsDoneNothing": "No hunts with these filters.",
+  "huntsDoneGameHint": "The original trainer's (OT) game",
+  "filterMethodValue": "Method: {names}",
+  "@filterMethodValue": {"placeholders": {"names": {"type": "String", "example": "Soft reset"}}},
+  "noCaptureDate": "no capture date"
 }
