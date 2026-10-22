@@ -462,6 +462,25 @@ abstract class Hunt with _$Hunt {
   );
 }
 
+/// O estado de cada slot no mapa da box do Faltam (#282).
+enum HuntCell {
+  /// Falta e está na lista.
+  listed,
+
+  /// Falta, mas fica fora dos filtros.
+  hidden,
+
+  /// Já tem.
+  done,
+
+  /// Slot sem forma do dex.
+  empty,
+}
+
+/// Uma box do Faltam (#282): quantos itens dela estão na lista e o mapa dos
+/// 30 slots, linha a linha.
+typedef HuntBox = ({BoxRef box, int count, List<HuntCell> cells});
+
 /// Filtros da lista de caçadas.
 ///
 /// Dois grupos: os **motivos** ([reasons], somados com OU), sempre à vista na

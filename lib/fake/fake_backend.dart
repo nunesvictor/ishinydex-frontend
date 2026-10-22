@@ -125,6 +125,10 @@ class _SlotRecord {
   int? specimenId;
 }
 
+/// Um slot do dex na busca do Faltam: a caçada, se passa nos filtros, e se
+/// ainda falta (#282).
+typedef _HuntRow = ({_SlotRecord slot, bool missing, Hunt? hunt});
+
 /// As formas de um dex novo e onde começa cada seção (ver o `_layoutFor` do
 /// `FakeBackend`).
 typedef DexLayout = ({List<FormDetail> forms, Set<int> starts});
@@ -1847,6 +1851,50 @@ class FakeBackend
     required int pageSize,
   }) async {
     await _delay();
+    final hunts = [for (final row in _huntRows(dexId, query)) ?row.hunt];
+    final start = (page - 1) * pageSize;
+    if (page < 1 || (start >= hunts.length && page > 1)) {
+      throw const NotFoundFailure();
+    }
+    final end = start + pageSize;
+    return Paginated(
+      count: hunts.length,
+      next: end < hunts.length ? 'page=${page + 1}' : null,
+      results: hunts.sublist(start, end.clamp(0, hunts.length)),
+    );
+  }
+
+  @override
+  Future<List<HuntBox>> fetchHuntBoxes(int dexId, HuntQuery query) async {
+    await _delay();
+    final byBox = <BoxRef, List<_HuntRow>>{};
+    for (final row in _huntRows(dexId, query)) {
+      byBox.putIfAbsent(row.slot.box, () => []).add(row);
+    }
+    return [
+      for (final MapEntry(key: box, value: rows) in byBox.entries)
+        if (rows.any((r) => r.hunt != null))
+          (
+            box: box,
+            count: rows.where((r) => r.hunt != null).length,
+            cells: [
+              for (var index = 0; index < 30; index++)
+                switch (rows
+                    .where((r) => r.slot.row * 6 + r.slot.col == index)
+                    .firstOrNull) {
+                  null => HuntCell.empty,
+                  _HuntRow(hunt: _?) => HuntCell.listed,
+                  _HuntRow(:final missing) when missing => HuntCell.hidden,
+                  _ => HuntCell.done,
+                },
+            ],
+          ),
+    ];
+  }
+
+  /// Os slots do dex na ordem das boxes, cada um com a caçada (quando passa
+  /// nos filtros) e se ainda falta, para o mapa da box (#282).
+  List<_HuntRow> _huntRows(int dexId, HuntQuery query) {
     final dex = _dexes[dexId];
     if (dex == null) throw const NotFoundFailure();
     if (!dex.isShinyDex) {
@@ -1863,61 +1911,61 @@ class FakeBackend
           in (catalog?.homeCutoffs ?? const <String, DateTime>{}).entries)
         if (today.isBefore(until)) version,
     };
-    final hunts = <Hunt>[];
-    for (final slot in _slots.values) {
-      final formId = slot.formId;
-      if (slot.dexId != dexId || formId == null) continue;
-      final form = _forms[formId]!;
-      final lock = _lockOf(formId);
-      final reasons = _huntReasons(slot, query.acceptedBalls);
-      final category = _categories[formId] ?? SpeciesCategory.regular;
-      // Sem "incluir shiny locks", some o jogo em que a forma é travada.
-      final versions = [
-        for (final v in _huntableVersions(formId))
-          if (query.includeLocked || !_lockedVersions(formId).contains(v)) v,
-      ];
-      final matches =
-          reasons.any(query.reasons.contains) &&
-          (query.situation.param == null ||
-              query.situation.param == (slot.specimenId != null)) &&
-          (query.includeLocked || lock != ShinyLockType.unobtainable) &&
-          (query.generations.isEmpty ||
-              query.generations.contains(_generationOf(form))) &&
-          (query.types.isEmpty ||
-              form.types.any((t) => query.types.contains(t.type))) &&
-          (query.categories.isEmpty || query.categories.contains(category)) &&
-          (query.versions.isEmpty || query.versions.any(versions.contains)) &&
-          switch (query.homeCutoff) {
-            HomeCutoffFilter.all => true,
-            HomeCutoffFilter.only =>
-              versions.isNotEmpty && versions.every(closing.contains),
-            HomeCutoffFilter.also => versions.any(closing.contains),
-          } &&
-          (search.isEmpty ||
-              (number == null
-                  ? form.name.contains(slugSearch(search))
-                  : _hasNumber(form, number)));
-      if (matches) {
-        hunts.add(
-          Hunt(
-            slot: _toSlot(slot),
-            reasons: reasons,
-            shinyLock: lock,
-            versions: versions,
-          ),
-        );
-      }
-    }
-    final start = (page - 1) * pageSize;
-    if (page < 1 || (start >= hunts.length && page > 1)) {
-      throw const NotFoundFailure();
-    }
-    final end = start + pageSize;
-    return Paginated(
-      count: hunts.length,
-      next: end < hunts.length ? 'page=${page + 1}' : null,
-      results: hunts.sublist(start, end.clamp(0, hunts.length)),
-    );
+    final slots = [
+      for (final slot in _slots.values)
+        if (slot.dexId == dexId && slot.formId != null) slot,
+    ]..sort(_slotOrder);
+    return [
+      for (final slot in slots)
+        () {
+          final formId = slot.formId!;
+          final form = _forms[formId]!;
+          final lock = _lockOf(formId);
+          final reasons = _huntReasons(slot, query.acceptedBalls);
+          final category = _categories[formId] ?? SpeciesCategory.regular;
+          // Sem "incluir shiny locks", some o jogo em que a forma é travada.
+          final versions = [
+            for (final v in _huntableVersions(formId))
+              if (query.includeLocked || !_lockedVersions(formId).contains(v))
+                v,
+          ];
+          final matches =
+              reasons.any(query.reasons.contains) &&
+              (query.situation.param == null ||
+                  query.situation.param == (slot.specimenId != null)) &&
+              (query.includeLocked || lock != ShinyLockType.unobtainable) &&
+              (query.generations.isEmpty ||
+                  query.generations.contains(_generationOf(form))) &&
+              (query.types.isEmpty ||
+                  form.types.any((t) => query.types.contains(t.type))) &&
+              (query.categories.isEmpty ||
+                  query.categories.contains(category)) &&
+              (query.versions.isEmpty ||
+                  query.versions.any(versions.contains)) &&
+              switch (query.homeCutoff) {
+                HomeCutoffFilter.all => true,
+                HomeCutoffFilter.only =>
+                  versions.isNotEmpty && versions.every(closing.contains),
+                HomeCutoffFilter.also => versions.any(closing.contains),
+              } &&
+              (search.isEmpty ||
+                  (number == null
+                      ? form.name.contains(slugSearch(search))
+                      : _hasNumber(form, number)));
+          return (
+            slot: slot,
+            missing: reasons.isNotEmpty,
+            hunt: matches
+                ? Hunt(
+                    slot: _toSlot(slot),
+                    reasons: reasons,
+                    shinyLock: lock,
+                    versions: versions,
+                  )
+                : null,
+          );
+        }(),
+    ];
   }
 
   /// Versões em que a forma pode ser caçada (do catálogo; nenhuma sem ele),

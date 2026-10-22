@@ -100,6 +100,17 @@ final FutureProviderFamily<Paginated<Hunt>, HuntPageKey> huntPageProvider =
           ),
     );
 
+typedef HuntBoxesKey = ({int dexId, HuntQuery query});
+
+/// As boxes da lista de caçadas (#282): os cabeçalhos com o mapa e a
+/// contagem de cada uma.
+final FutureProviderFamily<List<HuntBox>, HuntBoxesKey> huntBoxesProvider =
+    FutureProvider.autoDispose.family<List<HuntBox>, HuntBoxesKey>(
+      (ref, key) => ref
+          .watch(personalDexRepositoryProvider)
+          .fetchHuntBoxes(key.dexId, key.query),
+    );
+
 typedef FormSlotsKey = ({int dexId, String formIds});
 
 /// Slots de um dex com estas formas (`formIds` da chave: ids por

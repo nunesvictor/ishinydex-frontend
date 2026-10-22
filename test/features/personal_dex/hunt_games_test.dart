@@ -27,7 +27,13 @@ Future<void> _openHunts(WidgetTester tester, {required Size size}) async {
   final backend = FakeBackend.fromCatalog(catalog);
   final dexId = backend.addDex(name: 'Caça', isShinyDex: true);
   backend.addBox(dexId: dexId, name: 'Caça 1', formIds: catalog.defaultDex);
-  await pumpFullApp(tester, size: size, backend: backend);
+  // No celular, uma tela alta: com o cabeçalho da box e os itens de duas
+  // linhas (#282), as 9 formas não cabem em 800 px.
+  await pumpFullApp(
+    tester,
+    size: size == compactSize ? Size(size.width, 1200) : size,
+    backend: backend,
+  );
   ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
       .read(routerProvider)
       .go(Routes.hunts(dexId: dexId));
@@ -39,7 +45,7 @@ Future<void> _openHunts(WidgetTester tester, {required Size size}) async {
 List<String> _icons(WidgetTester tester, String name) => [
   for (final icon in tester.widgetList<GameIcon>(
     find.descendant(
-      of: find.ancestor(of: find.text(name), matching: find.byType(ListTile)),
+      of: find.ancestor(of: find.text(name), matching: find.byType(HuntTile)),
       matching: find.byType(GameIcon),
     ),
   ))
@@ -114,7 +120,7 @@ void main() {
       final games = find.descendant(
         of: find.ancestor(
           of: find.text('Espeon'),
-          matching: find.byType(ListTile),
+          matching: find.byType(HuntTile),
         ),
         matching: find.byTooltip('Ver todos os jogos'),
       );
@@ -272,42 +278,56 @@ void main() {
     expect(find.byType(GameIcon), findsNothing);
   });
 
-  testWidgets('até 3 ícones sobrepostos, só dos seus saves; "+N" dos seus', (
+  testWidgets('até 6 ícones lado a lado, só dos seus saves; "+N" dos seus', (
     tester,
   ) async {
+    const versions = [
+      'sword',
+      'shield',
+      'brilliant-diamond',
+      'shining-pearl',
+      'legends-arceus',
+      'scarlet',
+      'violet',
+      'x',
+      'y',
+    ];
     await pumpWidgetApp(
       tester,
-      const Scaffold(
+      Scaffold(
         body: HuntGames(
-          versions: [
-            'sword',
-            'shield',
-            'brilliant-diamond',
-            'legends-arceus',
-            'scarlet',
-            'violet',
-          ],
-          owned: {'sword', 'brilliant-diamond', 'scarlet', 'violet'},
+          versions: versions,
+          // Legends: Arceus sem save.
+          owned: {...versions}..remove('legends-arceus'),
         ),
       ),
     );
 
     final icons = tester.widgetList<GameIcon>(find.byType(GameIcon));
     expect(
-      [for (final i in icons) '${i.muted ? '~' : ''}${i.version}'],
-      ['sword', 'brilliant-diamond', 'scarlet'],
+      [for (final i in icons) i.version],
+      [
+        'sword',
+        'shield',
+        'brilliant-diamond',
+        'shining-pearl',
+        'scarlet',
+        'violet',
+      ],
     );
-    // Cada um anda 14 px: os 8 px restantes ficam por baixo do seguinte.
+    // Lado a lado (#282): 22 px de ícone e 4 de espaço, sem sobrepor.
     final lefts = [
       for (final i in icons) tester.getTopLeft(find.byWidget(i)).dx,
     ];
-    expect([lefts[1] - lefts[0], lefts[2] - lefts[1]], [14, 14]);
-    // Shield e Legends: Arceus (sem save) não contam.
-    expect(find.text('+1'), findsOneWidget);
-    expect(find.bySemanticsLabel('mais 1 jogo'), findsOneWidget);
+    expect(
+      [for (var k = 1; k < 6; k++) lefts[k] - lefts[k - 1]],
+      [26, 26, 26, 26, 26],
+    );
+    expect(find.text('+2'), findsOneWidget);
+    expect(find.bySemanticsLabel('mais 2 jogos'), findsOneWidget);
   });
 
-  testWidgets('até 3 saves seus: todos aparecem, sem "+N"', (tester) async {
+  testWidgets('até 6 saves seus: todos aparecem, sem "+N"', (tester) async {
     await pumpWidgetApp(
       tester,
       const Scaffold(

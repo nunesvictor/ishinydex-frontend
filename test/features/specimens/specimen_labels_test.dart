@@ -20,6 +20,13 @@ void main() {
     expect(en.awayFor(DateTime(2026, 9, 13), today: day), '1 day ago');
   });
 
+  test('choiceOf: a opção, o valor formatado ou nada', () {
+    const choices = [Choice(value: 'eng', label: 'English')];
+    expect(pt.choiceOf(choices, 'eng'), 'English');
+    expect(pt.choiceOf(choices, 'dream-ball'), 'Dream Ball');
+    expect(pt.choiceOf(null, ''), isNull);
+  });
+
   test('todas as unidades, ordens e status têm texto', () {
     for (final unit in [
       'encounters',

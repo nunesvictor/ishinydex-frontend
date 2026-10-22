@@ -106,6 +106,10 @@ class _FlakyRepository implements PersonalDexRepository {
   }) => inner.fetchHunts(dexId, query, page: page, pageSize: pageSize);
 
   @override
+  Future<List<HuntBox>> fetchHuntBoxes(int dexId, HuntQuery query) =>
+      inner.fetchHuntBoxes(dexId, query);
+
+  @override
   Future<Slot> fetchSlot(int slotId) => inner.fetchSlot(slotId);
 
   @override

@@ -378,14 +378,21 @@ O Faltam lista o que ainda falta caçar no dex, na ordem das boxes. Dois grupos 
   mítico, Ultra Beast, bebê, comum), geração, tipo (qualquer um) e "incluir
   shiny impossível".
 
-Cada item segue o estilo do inventário: o título é o mesmo
-`SpecimenHeadline` (pokébola, nome/apelido, ♂️/♀️, ✨, alfa, 📱) com o
-espécime que está no slot, ou só o nome da forma se o slot está vazio; o
-sprite é o shiny da forma (o que se procura). O subtítulo, numa linha só,
-traz "#0402 · HOME 12 · L1 C3 · motivo" (a espécie entra antes do nº quando
-o título mostra um apelido). "Do GO" não aparece no texto porque o 📱 do
-título já diz isso. Para isso o resumo do espécime no slot
-(`SpecimenSummary`) traz `gender` e `is_from_go`.
+A lista é agrupada pela box do dex (#282). O `fetchHuntBoxes` devolve as
+boxes com itens no filtro, na mesma ordem da lista paginada, com a contagem e
+o mapa dos 30 slots (`HuntCell`: na lista, fora do filtro, já tem, vazio).
+Cada box vira um `SliverMainAxisGroup` com um `SliverPersistentHeader` preso
+(o `HuntBoxHeader`: o mapa, o nome, "N faltam" e "Abrir box") e um
+`SliverList` dos itens dela. Os itens continuam observando só a sua página do
+`huntPageProvider`, pelo índice na lista inteira.
+
+O item (`HuntTile`) é da **forma**, sem texto de subtítulo. Na 1ª linha vai o
+nome, com até duas linhas, e os motivos fora do padrão como ícone (outra
+pokébola, não shiny, shiny lock). "Faltando" e "Do GO" não aparecem. Na 2ª
+linha, onde caçar: os jogos dos seus saves lado a lado (`HuntGames`, até 6 e
+depois "+N"), um divisor e a etiqueta do HOME, que desce quando não cabe. O
+sprite é o shiny da forma (o que se procura). A partir de 600 px, tudo fica
+numa linha.
 
 Por que dentro de `personal_dex` e não numa feature própria: a lista é uma
 visão do dex, e o `SlotActions` (depositar, editar, libertar) precisa
