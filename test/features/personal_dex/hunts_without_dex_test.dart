@@ -78,7 +78,7 @@ void main() {
       expect(find.text('O que falta caçar?'), findsOneWidget);
 
       // Ativas vazia: a dica sem dex.
-      await _tap(tester, find.text('Ativas (0)'));
+      await _tap(tester, huntsTab('Ativas', '0'));
       expect(
         find.textContaining('Vale qualquer forma, com ou sem dex.'),
         findsOneWidget,
@@ -97,7 +97,7 @@ void main() {
       expect(find.byKey(const ValueKey('field-hunt-save')), findsNothing);
       await _tap(tester, find.text('Começar'));
       expect((await backend.fetchShinyHunts()).single.form, 2);
-      expect(find.text('Ativas (1)'), findsOneWidget);
+      expect(huntsTab('Ativas', '1'), findsOneWidget);
     });
   }
 
@@ -141,7 +141,10 @@ void main() {
 
     // Sem escolha: o primeiro shiny dex.
     expect(find.text('Shiny Living Dex'), findsOneWidget);
-    await _tap(tester, find.byKey(const ValueKey('hunts-dex-picker')));
+    // Sem o ensureVisible do _tap: ele alinharia o botão à esquerda também
+    // no PageView das abas, e a página sairia do lugar.
+    await tester.tap(find.byKey(const ValueKey('hunts-dex-picker')));
+    await tester.pumpAndSettle();
     await _tap(tester, find.text('Segundo').last);
     expect(_location(tester), Routes.hunts(dexId: second));
     expect(await storage.readHunts(), second);
@@ -213,7 +216,7 @@ void main() {
     expect(find.text("What's left to hunt?"), findsOneWidget);
     expect(find.text('Create shiny dex'), findsOneWidget);
     expect(find.text("Hunts in Active don't depend on it."), findsOneWidget);
-    await _tap(tester, find.text('Active (0)'));
+    await _tap(tester, huntsTab('Active', '0'));
     expect(find.textContaining('with or without a dex'), findsOneWidget);
     await _tap(tester, find.text('Start hunt'));
     await tester.enterText(find.byType(TextField).last, 'ivysaur');

@@ -146,3 +146,9 @@ Future<void> tapMoreAction(WidgetTester tester, String label) async {
   await tester.tap(find.widgetWithText(MenuItemButton, label));
   await tester.pumpAndSettle();
 }
+
+/// A aba das Caçadas com o nome e o número do selo (#272).
+Finder huntsTab(String label, String count) => find.ancestor(
+  of: find.text(count),
+  matching: find.ancestor(of: find.text(label), matching: find.byType(Tab)),
+);

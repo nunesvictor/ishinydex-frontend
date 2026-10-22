@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/version_colors.dart';
@@ -43,25 +45,33 @@ import 'package:ishinydex/features/specimens/specimen_providers.dart';
 /// Tocar num item empilha o dex naquela box, com o slot aberto: o voltar
 /// retorna para cá, com os filtros intactos.
 class HuntsPage extends ConsumerStatefulWidget {
-  const HuntsPage({this.dexId, this.initialTab = HuntsTab.missing, super.key});
+  const HuntsPage({this.dexId, this.initialTab, super.key});
 
   /// O shiny dex do Faltam, pedido por um atalho; sem ele, o último
   /// escolhido aqui (ou o primeiro shiny dex).
   final int? dexId;
-  final HuntsTab initialTab;
+
+  /// A aba pedida por um atalho (`&tab=active`). Sem ela, Ativas quando há
+  /// caçada em andamento; senão, Faltam (#279).
+  final HuntsTab? initialTab;
 
   @override
   ConsumerState<HuntsPage> createState() => _HuntsPageState();
 }
 
-/// As abas de Caçadas: o que falta, as caçadas em andamento e as pausadas
-/// (#164).
-enum HuntsTab { missing, active, paused }
+/// As abas de Caçadas, na ordem do seletor (#279): as caçadas em andamento,
+/// o que falta e as pausadas.
+enum HuntsTab { active, missing, paused }
 
-class _HuntsPageState extends ConsumerState<HuntsPage> {
+class _HuntsPageState extends ConsumerState<HuntsPage>
+    with SingleTickerProviderStateMixin {
   HuntQuery _query = const HuntQuery();
-  late HuntsTab _tab = widget.initialTab;
+  TabController? _controller;
   Timer? _debounce;
+
+  /// A aba inicial já foi decidida (pelo atalho, pelas caçadas carregadas
+  /// ou por um toque do usuário).
+  bool _tabDecided = false;
 
   /// O shiny dex escolhido da última vez (`null` sem nenhum), e se já foi
   /// lido do aparelho.
@@ -87,11 +97,46 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
             }
           }),
     );
+    // Retomar uma pausada leva a Ativas (#279).
+    ref.listenManual(resumedHuntProvider, (_, resumed) {
+      if (resumed != null) _controller?.animateTo(HuntsTab.active.index);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Criado aqui, e não no initState, para ler o "reduzir movimento": com
+    // ele, tocar numa aba troca sem animação.
+    if (_controller != null) return;
+    final asked = widget.initialTab;
+    final hunts = ref.read(shinyHuntsProvider).value;
+    final tab = asked ?? (hunts == null ? null : _startTab(hunts));
+    _tabDecided = tab != null;
+    _controller = TabController(
+      length: HuntsTab.values.length,
+      initialIndex: (tab ?? HuntsTab.missing).index,
+      animationDuration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : null,
+      vsync: this,
+    )..addListener(_onTabChanged);
+  }
+
+  /// Sem atalho: Ativas quando há caçada em andamento; senão, Faltam.
+  static HuntsTab _startTab(List<ShinyHunt> hunts) =>
+      hunts.any((h) => !h.paused) ? HuntsTab.active : HuntsTab.missing;
+
+  void _onTabChanged() {
+    _tabDecided = true;
+    // O botão "Começar caçada" segue a aba.
+    setState(() {});
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -124,76 +169,79 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
     return shiny.where((d) => d.id == _stored).firstOrNull ?? shiny.first;
   }
 
-  /// "Faltam (n)" com o total da lista (o mesmo do "n para caçar"); só
-  /// "Faltam" enquanto carrega ou sem shiny dex (#277).
-  String _missingLabel(BuildContext context) {
+  /// O total do Faltam (o mesmo do "n para caçar"); `null` enquanto carrega
+  /// ou sem shiny dex (#277).
+  int? _missingCount() {
     final dex = _missingDex;
-    final count = dex == null
+    return dex == null
         ? null
         : ref
               .watch(huntPageProvider((dexId: dex.id, query: _query, page: 1)))
               .value
               ?.count;
-    return count == null
-        ? context.l10n.huntsTabMissing
-        : context.l10n.huntsTabMissingCount(count);
   }
 
   @override
   Widget build(BuildContext context) {
-    final hunts = ref.watch(shinyHuntsProvider).value ?? const <ShinyHunt>[];
+    final controller = _controller!;
+    final loaded = ref.watch(shinyHuntsProvider).value;
+    // Sem atalho, a aba inicial espera as caçadas (no aparelho, chegam
+    // quase na hora) e só muda se o usuário ainda não trocou de aba.
+    if (!_tabDecided && loaded != null) {
+      _tabDecided = true;
+      controller.index = _startTab(loaded).index;
+    }
+    final hunts = loaded ?? const <ShinyHunt>[];
     final active = hunts.where((h) => !h.paused).length;
-    final tabs = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-      child: SegmentedButton<HuntsTab>(
-        key: const ValueKey('hunts-tabs'),
-        showSelectedIcon: false,
-        segments: [
-          ButtonSegment(
-            value: HuntsTab.missing,
-            label: Text(_missingLabel(context)),
-          ),
-          ButtonSegment(
-            value: HuntsTab.active,
-            label: Text(context.l10n.huntsTabActive(active)),
-          ),
-          ButtonSegment(
-            value: HuntsTab.paused,
-            label: Text(context.l10n.huntsTabPaused(hunts.length - active)),
-          ),
-        ],
-        selected: {_tab},
-        onSelectionChanged: (v) => setState(() => _tab = v.single),
-      ),
-    );
+    final tab = HuntsTab.values[controller.index];
+    // Sem shiny dex, não há Faltam de onde começar.
+    final hasDex = _shinyDexes?.isNotEmpty ?? true;
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.huntsTitle)),
-      floatingActionButton: _tab == HuntsTab.active
+      floatingActionButton: tab == HuntsTab.active
           ? const StartHuntButton()
           : null,
-      body: Center(
-        // No PC, uma lista de 1.400 px de largura só espalharia o texto; os
-        // cartões das caçadas, em grade, usam mais.
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: _tab == HuntsTab.missing ? 720 : 1100,
-          ),
-          child: Column(
-            children: [
-              tabs,
-              if (_tab == HuntsTab.missing)
-                ..._missing(context)
-              else
-                Expanded(
-                  child: HuntCards(
-                    paused: _tab == HuntsTab.paused,
-                    // Sem shiny dex, não há Faltam de onde começar.
-                    hasDex: _shinyDexes?.isNotEmpty ?? true,
+      body: Column(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: HuntsTabBar(
+                controller: controller,
+                tabs: [
+                  (label: context.l10n.huntsTabActive, count: active),
+                  (label: context.l10n.huntsTabMissing, count: _missingCount()),
+                  (
+                    label: context.l10n.huntsTabPaused,
+                    count: hunts.length - active,
                   ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: TabBarView(
+              controller: controller,
+              children: [
+                // No PC, uma lista de 1.400 px de largura só espalharia o
+                // texto; os cartões das caçadas, em grade, usam mais.
+                _TabPage(
+                  maxWidth: 1100,
+                  child: HuntCards(paused: false, hasDex: hasDex),
+                ),
+                _TabPage(
+                  maxWidth: 720,
+                  child: Column(children: _missing(context)),
+                ),
+                _TabPage(
+                  maxWidth: 1100,
+                  child: HuntCards(paused: true, hasDex: hasDex),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -228,7 +276,7 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
         child: HuntList(
           dexId: dex.id,
           query: _query,
-          onShowActive: () => setState(() => _tab = HuntsTab.active),
+          onShowActive: () => _controller!.animateTo(HuntsTab.active.index),
           onTap: (hunt) => context.push(
             Routes.huntsDex(
               dex.id,
@@ -247,6 +295,172 @@ class _HuntsPageState extends ConsumerState<HuntsPage> {
         ),
       ),
     ];
+  }
+}
+
+/// Uma aba das Caçadas: centrada, com a largura máxima dela, e mantida viva
+/// ao deslizar para as outras (filtros, busca e rolagem continuam).
+class _TabPage extends StatefulWidget {
+  const _TabPage({required this.maxWidth, required this.child});
+
+  final double maxWidth;
+  final Widget child;
+
+  @override
+  State<_TabPage> createState() => _TabPageState();
+}
+
+class _TabPageState extends State<_TabPage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: widget.maxWidth),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Uma aba do seletor: o nome e o número do selo (`null`, sem selo).
+typedef HuntsTabLabel = ({String label, int? count});
+
+/// O seletor das abas das Caçadas (#272): um traço embaixo da aba marcada,
+/// cada aba na largura do próprio texto, com o número num selo. A sobra se
+/// divide entre as abas; quando nem assim cabe (texto aumentado), a fileira
+/// rola para o lado em vez de cortar.
+class HuntsTabBar extends StatelessWidget {
+  const HuntsTabBar({required this.controller, required this.tabs, super.key});
+
+  final TabController controller;
+  final List<HuntsTabLabel> tabs;
+
+  /// O espaço de cada lado do conteúdo da aba e entre o nome e o selo.
+  static const _padding = 16.0;
+  static const _gap = 6.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    final number = NumberFormat.decimalPattern(context.l10n.localeName);
+    final labelStyle = theme.textTheme.titleSmall!;
+    final badgeStyle = theme.textTheme.labelMedium!.copyWith(
+      fontWeight: FontWeight.w700,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    final badgeHeight = scaler.scale(18);
+    double measure(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    final counts = [
+      for (final t in tabs)
+        if (t.count case final count?) number.format(count) else null,
+    ];
+    final natural = [
+      for (final (i, t) in tabs.indexed)
+        _padding * 2 +
+            measure(t.label, labelStyle) +
+            switch (counts[i]) {
+              final count? =>
+                _gap + math.max(badgeHeight, measure(count, badgeStyle) + 12),
+              null => 0,
+            },
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final total = natural.fold<double>(0, (a, b) => a + b);
+        final extra = math.max(
+          0,
+          ((constraints.maxWidth - total) / tabs.length).floorToDouble(),
+        );
+        return ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) => TabBar(
+            key: const ValueKey('hunts-tabs'),
+            controller: controller,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            padding: EdgeInsets.zero,
+            labelPadding: EdgeInsets.zero,
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelStyle: labelStyle,
+            unselectedLabelStyle: labelStyle,
+            tabs: [
+              for (final (i, t) in tabs.indexed)
+                Tab(
+                  child: SizedBox(
+                    width: natural[i] + extra,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      spacing: _gap,
+                      children: [
+                        Text(t.label, maxLines: 1, softWrap: false),
+                        if (counts[i] case final count?)
+                          _CountBadge(
+                            count: count,
+                            selected: controller.index == i,
+                            height: badgeHeight,
+                            style: badgeStyle,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// O número da aba (#272): na cor principal na aba marcada; nas outras,
+/// discreto.
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({
+    required this.count,
+    required this.selected,
+    required this.height,
+    required this.style,
+  });
+
+  final String count;
+  final bool selected;
+  final double height;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      height: height,
+      constraints: BoxConstraints(minWidth: height),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: selected ? scheme.primary : scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(height / 2),
+      ),
+      child: Text(
+        count,
+        style: style.copyWith(
+          color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
+        ),
+      ),
+    );
   }
 }
 

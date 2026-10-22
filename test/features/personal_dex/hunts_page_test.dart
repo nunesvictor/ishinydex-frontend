@@ -93,9 +93,9 @@ void main() {
       expect(find.text('Hunts'), findsWidgets);
       expect(find.text('19 to hunt'), findsOneWidget);
       expect(find.text('#0003 · HOME 1 · R1 C3 · Missing'), findsOneWidget);
-      expect(find.text('Active (0)'), findsOneWidget);
+      expect(huntsTab('Active', '0'), findsOneWidget);
       // A aba com o mesmo total da lista (#277).
-      expect(find.text('Missing (19)'), findsOneWidget);
+      expect(huntsTab('Missing', '19'), findsOneWidget);
       expect(find.text('Status'), findsOneWidget);
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
@@ -109,7 +109,7 @@ void main() {
 
       // Semente: 19 formas sem espécime no shiny dex.
       expect(find.text('19 para caçar'), findsOneWidget);
-      expect(find.text('Faltam (19)'), findsOneWidget);
+      expect(huntsTab('Faltam', '19'), findsOneWidget);
       expect(find.text('Venusaur'), findsOneWidget);
       // Nº da dex, posição na box e motivo.
       expect(find.text('#0003 · HOME 1 · L1 C3 · Faltando'), findsOneWidget);
@@ -189,7 +189,7 @@ void main() {
     await _tapReason(tester, 'Shiny do GO');
     expect(find.text('25 para caçar'), findsOneWidget);
     // O número da aba acompanha os filtros (#277).
-    expect(find.text('Faltam (25)'), findsOneWidget);
+    expect(huntsTab('Faltam', '25'), findsOneWidget);
     expect(_chip('Motivos: sem shiny e shiny do GO'), findsOneWidget);
     await _tapReason(tester, 'Sem shiny');
     expect(find.text('6 para caçar'), findsOneWidget);
@@ -358,7 +358,7 @@ void main() {
         ..addForm(id: 1218, name: 'rattata-alola');
       await pump(tester, hunts: backend);
       await tester.pumpAndSettle();
-      expect(find.text('Ativas (0)'), findsOne);
+      expect(huntsTab('Ativas', '0'), findsOne);
       // Desistir na folha: fica em Faltam.
       await tester.tap(find.byTooltip('Começar caçada'));
       await tester.pumpAndSettle();
@@ -371,13 +371,13 @@ void main() {
       await tester.tap(find.text('Começar'));
       await tester.pumpAndSettle();
       // Começou: vai para Ativas.
-      expect(find.text('Ativas (1)'), findsOne);
+      expect(huntsTab('Ativas', '1'), findsOne);
       expect(find.byType(HuntCards), findsOne);
       expect(find.byType(StartHuntButton), findsOne);
-      await tester.tap(find.text('Pausadas (0)'));
+      await tester.tap(huntsTab('Pausadas', '0'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Nenhuma caçada pausada'), findsOne);
-      await tester.tap(find.text('Faltam (1)'));
+      await tester.tap(huntsTab('Faltam', '1'));
       await tester.pumpAndSettle();
       // O selo no lugar do botão leva a Ativas.
       expect(find.byKey(const ValueKey('hunt-badge')), findsOne);
@@ -393,6 +393,10 @@ void main() {
       );
       await tester.pumpWidget(const SizedBox());
       await pump(tester, hunts: backend);
+      await tester.pumpAndSettle();
+      // Com caçada em andamento, a tela abre em Ativas (#279).
+      expect(find.byType(HuntCards), findsOne);
+      await tester.tap(find.text('Faltam'));
       await tester.pumpAndSettle();
       final start = find.widgetWithIcon(IconButton, Icons.track_changes);
       expect(tester.widget<IconButton>(start).onPressed, isNull);
