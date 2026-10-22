@@ -498,6 +498,8 @@
   "huntsTabMissing": "Faltam",
   "huntsTabActive": "Ativas",
   "huntsTabPaused": "Pausadas",
+  "huntBoxMissing": "{count, plural, =1{1 falta} other{{count} faltam}}",
+  "openBox": "Abrir box",
   "huntsTitle": "Caçadas",
   "swipeNextBox": "Próxima box",
   "swipePreviousBox": "Box anterior",

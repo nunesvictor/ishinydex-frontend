@@ -6,9 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
-import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
-import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -92,7 +90,8 @@ void main() {
       await _go(tester, Routes.hunts(dexId: 1));
       expect(find.text('Hunts'), findsWidgets);
       expect(find.text('19 to hunt'), findsOneWidget);
-      expect(find.text('#0003 · HOME 1 · R1 C3 · Missing'), findsOneWidget);
+      // Agrupado por box (#282), com o cabeçalho de cada uma.
+      expect(find.text('Open box'), findsWidgets);
       expect(huntsTab('Active', '0'), findsOneWidget);
       // A aba com o mesmo total da lista (#277).
       expect(huntsTab('Missing', '19'), findsOneWidget);
@@ -111,8 +110,10 @@ void main() {
       expect(find.text('19 para caçar'), findsOneWidget);
       expect(huntsTab('Faltam', '19'), findsOneWidget);
       expect(find.text('Venusaur'), findsOneWidget);
-      // Nº da dex, posição na box e motivo.
-      expect(find.text('#0003 · HOME 1 · L1 C3 · Faltando'), findsOneWidget);
+      // Sem subtítulo (#282): o nº da dex, a posição e "Faltando" saíram; a
+      // box vai para o cabeçalho.
+      expect(find.textContaining('#0003'), findsNothing);
+      expect(find.byType(HuntBoxHeader), findsWidgets);
 
       await tester.tap(find.text('Venusaur'));
       await tester.pumpAndSettle();
@@ -194,10 +195,10 @@ void main() {
     await _tapReason(tester, 'Sem shiny');
     expect(find.text('6 para caçar'), findsOneWidget);
     expect(_chip('Motivos: shiny do GO'), findsOneWidget);
-    // O GO aparece como a marca de origem no título, como no inventário.
+    // "Do GO" não vira ícone: o item mostra a forma, não o espécime (#282).
     expect(
       find.descendant(of: find.byType(HuntTile), matching: find.byType(GoIcon)),
-      findsWidgets,
+      findsNothing,
     );
     // Único motivo marcado: não dá para desmarcar.
     await _tapReason(tester, 'Shiny do GO');
@@ -218,7 +219,7 @@ void main() {
     await tester.pumpAndSettle();
     // GO (6) + shinies em Dream Ball (20), com 3 nos dois.
     expect(find.text('23 para caçar'), findsOneWidget);
-    expect(find.textContaining('Outra pokébola'), findsWidgets);
+    expect(find.byTooltip('Outra pokébola'), findsWidgets);
     await tester.tap(_motivos);
     await tester.pumpAndSettle();
     expect(find.text('Pokébola fora de: Poké Ball'), findsOneWidget);
@@ -327,14 +328,28 @@ void main() {
       'shiny_lock': null,
     });
 
-    void answer(int page, Future<Paginated<Hunt>> Function() result) => when(
-      () => repository.fetchHunts(
-        any(),
-        any(),
-        page: page,
-        pageSize: any(named: 'pageSize'),
-      ),
-    ).thenAnswer((_) => result());
+    /// A página [page]; a 1ª também dá a box única, com o total dela.
+    void answer(int page, Future<Paginated<Hunt>> Function() result) {
+      when(
+        () => repository.fetchHunts(
+          any(),
+          any(),
+          page: page,
+          pageSize: any(named: 'pageSize'),
+        ),
+      ).thenAnswer((_) => result());
+      if (page == 1) {
+        when(() => repository.fetchHuntBoxes(any(), any())).thenAnswer(
+          (_) async => [
+            (
+              box: const BoxRef(id: 1, name: 'HOME 1', position: 1),
+              count: (await result()).count,
+              cells: List.filled(30, HuntCell.listed),
+            ),
+          ],
+        );
+      }
+    }
 
     Future<void> pump(WidgetTester tester, {FakeBackend? hunts}) =>
         pumpWidgetApp(
@@ -434,30 +449,15 @@ void main() {
 
       Finder inTile(Finder finder) =>
           find.descendant(of: find.byType(HuntTile), matching: finder);
-      expect(inTile(find.text('Vovó')), findsOneWidget);
-      expect(inTile(find.text(femaleEmoji)), findsOneWidget);
+      // O item é da forma (#282): sem apelido, pokébola, gênero nem marcas.
+      expect(inTile(find.text('Rattata Alola')), findsOneWidget);
+      expect(inTile(find.text('Vovó')), findsNothing);
       for (final icon in [ShinyIcon, AlphaIcon, GoIcon]) {
-        expect(inTile(find.byType(icon)), findsOneWidget);
+        expect(inTile(find.byType(icon)), findsNothing);
       }
-      expect(
-        inTile(
-          find.byWidgetPredicate(
-            (w) =>
-                w is PokemonSprite &&
-                w.url == 'http://x/dream-ball.png' &&
-                w.semanticLabel == 'Dream Ball',
-          ),
-        ),
-        findsOneWidget,
-      );
-      // Com apelido, a espécie vai para a linha de baixo; "Do GO" não
-      // repete o emoji do título.
-      expect(
-        inTile(
-          find.text('Rattata Alola · #10193 · HOME 1 · L4 C2 · Outra pokébola'),
-        ),
-        findsOneWidget,
-      );
+      // Os motivos fora do padrão viram ícone; o GO, não.
+      expect(inTile(find.byTooltip('Outra pokébola')), findsOneWidget);
+      expect(inTile(find.textContaining('#10193')), findsNothing);
     });
 
     testWidgets('Faltam: etiqueta do HOME só quando todos os jogos têm corte', (
@@ -548,6 +548,28 @@ void main() {
       expect(find.text('1 para caçar'), findsOneWidget);
     });
 
+    testWidgets('erro nas boxes tem "Tentar novamente"', (tester) async {
+      answer(1, () async => Paginated(count: 1, results: [hunt(1)]));
+      var fail = true;
+      when(() => repository.fetchHuntBoxes(any(), any())).thenAnswer((_) async {
+        if (fail) throw const DataFailure(Problem.invalidData());
+        return [
+          (
+            box: const BoxRef(id: 1, name: 'HOME 1', position: 1),
+            count: 1,
+            cells: List.filled(30, HuntCell.listed),
+          ),
+        ];
+      });
+      await pump(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('1 para caçar'), findsOneWidget);
+      fail = false;
+      await tester.tap(find.text('Tentar novamente'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HuntTile), findsOneWidget);
+    });
+
     testWidgets('páginas seguintes: carregando, erro, encolheu e refresh', (
       tester,
     ) async {
@@ -579,11 +601,11 @@ void main() {
       await pump(tester);
       await tester.pumpAndSettle();
       // Motivo pokébola sem espécime e slot sem forma.
-      expect(find.textContaining('Outra pokébola'), findsWidgets);
+      expect(find.byTooltip('Outra pokébola'), findsWidgets);
       // Com espécime, o "sem shiny" diz que ele não é shiny.
-      expect(find.textContaining('Não shiny'), findsOneWidget);
+      expect(find.byTooltip('Não shiny'), findsOneWidget);
 
-      await tester.drag(find.byType(ListView), const Offset(0, -3000));
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
       await tester.pump();
       expect(find.byType(LinearProgressIndicator), findsWidgets);
       second.completeError(const DataFailure(Problem.invalidData()));
@@ -598,9 +620,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('hunt-99')), findsOneWidget);
 
-      await tester.fling(find.byType(ListView), const Offset(0, 3000), 3000);
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 3000),
+        3000,
+      );
       await tester.pumpAndSettle();
-      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 400),
+        1000,
+      );
       await tester.pumpAndSettle();
       verify(
         () => repository.fetchHunts(

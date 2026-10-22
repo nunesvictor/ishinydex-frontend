@@ -103,4 +103,8 @@ abstract interface class PersonalDexRepository {
     required int page,
     required int pageSize,
   });
+
+  /// As boxes com itens na lista de caçadas (#282), na mesma ordem: a
+  /// contagem de cada uma e o mapa dos slots, para os cabeçalhos.
+  Future<List<HuntBox>> fetchHuntBoxes(int dexId, HuntQuery query);
 }

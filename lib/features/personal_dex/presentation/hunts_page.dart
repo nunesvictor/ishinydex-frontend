@@ -33,7 +33,6 @@ import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/game_picker.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
-import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Aba Caçadas (#246): o que ainda falta em shiny num shiny dex, e as
@@ -277,6 +276,8 @@ class _HuntsPageState extends ConsumerState<HuntsPage>
           dexId: dex.id,
           query: _query,
           onShowActive: () => _controller!.animateTo(HuntsTab.active.index),
+          onOpenBox: (box) =>
+              context.push(Routes.huntsDex(dex.id, boxId: box.id)),
           onTap: (hunt) => context.push(
             Routes.huntsDex(
               dex.id,
@@ -865,14 +866,17 @@ String _gameNames(AppLocalizations l10n, List<String> versions) =>
 /// O motivo em minúscula, no meio da frase ("Motivos: sem shiny").
 String _lower(String text) => text.replaceRange(0, 1, text[0].toLowerCase());
 
-/// Lista paginada: o total vem da 1ª página e cada item observa só a página
-/// em que está, carregada quando aparece na tela.
+/// Lista paginada, agrupada pela box do dex (#282): um cabeçalho por box,
+/// preso no topo ao rolar, com o mapa dos slots. O total vem da 1ª página, e
+/// cada item observa só a página em que está, carregada quando aparece na
+/// tela.
 class HuntList extends ConsumerWidget {
   const HuntList({
     required this.dexId,
     required this.query,
     required this.onTap,
     this.onTapGames,
+    this.onOpenBox,
     this.onShowActive,
     super.key,
   });
@@ -884,12 +888,16 @@ class HuntList extends ConsumerWidget {
   /// Os ícones de jogo de um item (#276): abrem o slot na aba Espécie.
   final ValueChanged<Hunt>? onTapGames;
 
+  /// "Abrir box" do cabeçalho: a box no PersonalDex.
+  final ValueChanged<BoxRef>? onOpenBox;
+
   /// O selo da caçada de um item, e começar uma caçada, levam à aba Ativas.
   final VoidCallback? onShowActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final firstPage = huntPageProvider((dexId: dexId, query: query, page: 1));
+    final boxes = huntBoxesProvider((dexId: dexId, query: query));
     return switch (ref.watch(firstPage)) {
       AsyncData(value: final page) when page.count == 0 => EmptyView(
         message: context.l10n.nothingToHunt,
@@ -910,23 +918,22 @@ class HuntList extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: RefreshIndicator.adaptive(
-              onRefresh: () {
-                ref.invalidate(huntPageProvider);
-                return ref.read(firstPage.future);
-              },
-              child: ListView.builder(
-                itemCount: page.count,
-                itemBuilder: (context, i) => _HuntItem(
-                  dexId: dexId,
-                  query: query,
-                  index: i,
-                  onTap: onTap,
-                  onTapGames: onTapGames,
-                  onShowActive: onShowActive,
-                ),
+            child: switch (ref.watch(boxes)) {
+              AsyncData(value: final list) => RefreshIndicator.adaptive(
+                onRefresh: () {
+                  ref
+                    ..invalidate(huntPageProvider)
+                    ..invalidate(huntBoxesProvider);
+                  return ref.read(firstPage.future);
+                },
+                child: CustomScrollView(slivers: _slivers(context, list)),
               ),
-            ),
+              AsyncError(:final error) => ErrorView(
+                error: error,
+                onRetry: () => ref.invalidate(boxes),
+              ),
+              _ => const LoadingView(),
+            },
           ),
         ],
       ),
@@ -936,6 +943,192 @@ class HuntList extends ConsumerWidget {
       ),
       _ => const LoadingView(),
     };
+  }
+
+  /// Um grupo por box: o cabeçalho preso e os itens dela, que seguem a
+  /// ordem da lista paginada.
+  List<Widget> _slivers(BuildContext context, List<HuntBox> boxes) {
+    final extent = HuntBoxHeader.extentFor(context);
+    var offset = 0;
+    return [
+      for (final box in boxes)
+        () {
+          final first = offset;
+          offset += box.count;
+          return SliverMainAxisGroup(
+            key: ValueKey('hunt-box-${box.box.id}'),
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _BoxHeaderDelegate(
+                  box: box,
+                  extent: extent,
+                  onOpen: switch (onOpenBox) {
+                    final open? => () => open(box.box),
+                    null => null,
+                  },
+                ),
+              ),
+              SliverList.builder(
+                itemCount: box.count,
+                itemBuilder: (context, i) => _HuntItem(
+                  dexId: dexId,
+                  query: query,
+                  index: first + i,
+                  onTap: onTap,
+                  onTapGames: onTapGames,
+                  onShowActive: onShowActive,
+                ),
+              ),
+            ],
+          );
+        }(),
+      const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+    ];
+  }
+}
+
+class _BoxHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _BoxHeaderDelegate({required this.box, required this.extent, this.onOpen});
+
+  final HuntBox box;
+  final double extent;
+  final VoidCallback? onOpen;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => SizedBox.expand(
+    // A altura reservada, não a do conteúdo: o sliver preso exige as duas
+    // iguais.
+    child: HuntBoxHeader(box: box, onOpen: onOpen, raised: overlapsContent),
+  );
+
+  @override
+  bool shouldRebuild(_BoxHeaderDelegate old) =>
+      old.box != box || old.extent != extent || old.onOpen != onOpen;
+}
+
+/// O cabeçalho de uma box do Faltam (#282): o mapa dos 30 slots, o nome, quantos
+/// faltam na lista e "Abrir box". Preso no topo, ganha uma sombra.
+class HuntBoxHeader extends StatelessWidget {
+  const HuntBoxHeader({
+    required this.box,
+    this.onOpen,
+    this.raised = false,
+    super.key,
+  });
+
+  final HuntBox box;
+  final VoidCallback? onOpen;
+  final bool raised;
+
+  /// A altura: 52 px, e mais com o texto aumentado.
+  static double extentFor(BuildContext context) =>
+      math.max(52, MediaQuery.textScalerOf(context).scale(20) + 32);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainer,
+      elevation: raised ? 2 : 0,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 4),
+        child: Row(
+          spacing: 12,
+          children: [
+            HuntBoxMap(cells: box.cells),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: box.box.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const TextSpan(text: '  '),
+                    TextSpan(
+                      text: context.l10n.huntBoxMissing(box.count),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (onOpen != null)
+              TextButton.icon(
+                onPressed: onOpen,
+                iconAlignment: IconAlignment.end,
+                icon: const Icon(Icons.chevron_right),
+                label: Text(context.l10n.openBox),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// O mapa de uma box (#282): 6 × 5 quadradinhos, cheios na cor principal o
+/// que falta e está na lista, só o contorno o que falta fora dos filtros, e
+/// discretos o que já tem.
+class HuntBoxMap extends StatelessWidget {
+  const HuntBoxMap({required this.cells, super.key});
+
+  final List<HuntCell> cells;
+
+  static const _cell = 5.0;
+  static const _gap = 1.5;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ExcludeSemantics(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: _gap,
+        children: [
+          for (var row = 0; row < 5; row++)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: _gap,
+              children: [
+                for (var col = 0; col < 6; col++)
+                  Container(
+                    width: _cell,
+                    height: _cell,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(1),
+                      color: switch (cells[row * 6 + col]) {
+                        HuntCell.listed => scheme.primary,
+                        HuntCell.done => scheme.outlineVariant,
+                        HuntCell.hidden || HuntCell.empty => null,
+                      },
+                      border: cells[row * 6 + col] == HuntCell.hidden
+                          ? Border.all(color: scheme.outline)
+                          : null,
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -991,10 +1184,10 @@ class _HuntItem extends ConsumerWidget {
   }
 }
 
-/// Uma caçada, no estilo do item do inventário: sprite shiny da forma (o que
-/// se procura) e, no título, o espécime que está no slot como o inventário o
-/// mostra (pokébola, nome, gênero, ✨, alfa, GO). Slot vazio: só o nome da
-/// forma. Um cadeado indica shiny lock.
+/// Um item do Faltam (#282): a forma, sem texto de subtítulo. Na 1ª linha,
+/// o nome (até duas linhas) e os motivos fora do padrão como ícone (outra
+/// pokébola, não shiny, shiny lock); na 2ª, onde caçar: os jogos dos seus
+/// saves e a etiqueta do HOME. À direita, só a ação. No PC, tudo numa linha.
 class HuntTile extends ConsumerWidget {
   const HuntTile({
     required this.hunt,
@@ -1011,84 +1204,119 @@ class HuntTile extends ConsumerWidget {
   final VoidCallback? onTapGames;
   final VoidCallback? onShowActive;
 
+  /// A partir desta largura, o item fica numa linha só.
+  static const wideFrom = 600.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final options =
-        ref.watch(specimenOptionsProvider).value ?? const SpecimenOptions();
-    final slot = hunt.slot;
-    final form = slot.form;
-    final specimen = slot.specimen;
-    final lock = hunt.shinyLock;
-    final hasNickname = specimen?.nickname?.isNotEmpty ?? false;
-    // "Do GO" não entra: o emoji do GO já está no título.
-    final reasons = [
-      for (final reason in hunt.reasons)
-        ?switch (reason) {
-          HuntReason.noShiny =>
-            specimen == null
-                ? context.l10n.reasonMissing
-                : context.l10n.notShiny,
-          HuntReason.fromGo => null,
-          HuntReason.pokeball => context.l10n.reasonOtherBall,
-        },
-    ];
-    return ListTile(
-      key: ValueKey('hunt-${slot.id}'),
-      leading: PokemonSprite(url: form?.spriteFor(shiny: true), size: 48),
-      title: Row(
-        spacing: 4,
-        children: [
-          Flexible(
-            child: SpecimenHeadline(
-              name: specimen?.displayName ?? form?.displayName ?? '',
-              pokeballSpriteUrl: specimen?.pokeballSpriteUrl,
-              pokeballLabel: context.l10n.choiceOf(
-                options.pokeball,
-                specimen?.pokeball,
+    final theme = Theme.of(context);
+    final form = hunt.slot.form;
+    final name = Text(
+      form?.displayName ?? '',
+      style: theme.textTheme.bodyLarge,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+    final title = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 6,
+      children: [
+        Flexible(child: name),
+        ..._reasonIcons(context, theme),
+      ],
+    );
+    final home = hunt.versions.isEmpty ? null : _homeTag(ref);
+    final games = hunt.versions.isEmpty ? null : _games(context, ref);
+    final action = _huntAction(context, ref, form);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= wideFrom;
+        return InkWell(
+          key: ValueKey('hunt-${hunt.slot.id}'),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: wide ? 56 : 72),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+              child: Row(
+                spacing: 12,
+                children: [
+                  PokemonSprite(
+                    url: form?.spriteFor(shiny: true),
+                    size: wide ? 40 : 48,
+                  ),
+                  if (wide) ...[
+                    Expanded(child: title),
+                    ?games,
+                    ?home,
+                  ] else
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: 6,
+                        children: [
+                          title,
+                          // Num celular estreito, a etiqueta desce em vez de
+                          // transbordar.
+                          if (games != null || home != null)
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              runSpacing: 4,
+                              children: [
+                                ?games,
+                                if (games != null && home != null)
+                                  const SizedBox(
+                                    height: 16,
+                                    child: VerticalDivider(width: 9),
+                                  ),
+                                ?home,
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ?action,
+                ],
               ),
-              gender: specimen?.gender,
-              isShiny: specimen?.isShiny ?? false,
-              isAlpha: specimen?.isAlpha ?? false,
-              isFromGo: specimen?.isFromGo ?? false,
             ),
           ),
-          if (lock != null)
-            Tooltip(
-              message: context.l10n.shinyLockType(lock),
-              child: const Icon(Icons.lock_outline, size: 16),
-            ),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hunt.versions.isNotEmpty) ...[
-            ?_homeTag(ref),
-            _games(context, ref),
-          ],
-          ?_huntAction(context, ref, form),
-        ],
-      ),
-      // Uma linha só (espaço no celular): a espécie (só se o título mostra
-      // um apelido), nº da dex, posição na box e motivos.
-      subtitle: Text(
-        [
-          if (hasNickname) ?form?.displayName,
-          ?form?.dexNumber,
-          context.l10n.slotShort(slot.box.name, slot.row + 1, slot.col + 1),
-          ...reasons,
-        ].join(' · '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      onTap: onTap,
+        );
+      },
     );
   }
 
-  /// Os ícones de jogo; com [onTapGames], um alvo de toque próprio (com a
-  /// altura do item), que leva à lista completa na aba Espécie (#276).
-  Widget _games(BuildContext context, WidgetRef ref) {
-    final games = HuntGames(versions: hunt.versions, owned: _owned(ref));
+  /// Os motivos que fogem do padrão, como ícone: "Faltando" e "Do GO" não
+  /// aparecem (o primeiro é o normal numa lista do que falta).
+  List<Widget> _reasonIcons(BuildContext context, ThemeData theme) {
+    final color = theme.colorScheme.onSurfaceVariant;
+    final lock = hunt.shinyLock;
+    Widget icon(String message, Widget child) => Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Tooltip(message: message, child: child),
+    );
+    return [
+      if (hunt.reasons.contains(HuntReason.pokeball))
+        icon(
+          context.l10n.reasonOtherBall,
+          Icon(Icons.catching_pokemon, size: 16, color: color),
+        ),
+      if (hunt.reasons.contains(HuntReason.noShiny) &&
+          hunt.slot.specimen != null)
+        icon(context.l10n.notShiny, const NoShinyIcon(size: 16)),
+      if (lock != null)
+        icon(
+          context.l10n.shinyLockType(lock),
+          Icon(Icons.lock_outline, size: 16, color: color),
+        ),
+    ];
+  }
+
+  /// Os ícones de jogo, ou nada sem save em que caçar; com [onTapGames], um
+  /// alvo de toque próprio, que leva à lista completa na aba Espécie (#276).
+  Widget? _games(BuildContext context, WidgetRef ref) {
+    final owned = _owned(ref);
+    if (!hunt.versions.any(owned.contains)) return null;
+    final games = HuntGames(versions: hunt.versions, owned: owned);
     final open = onTapGames;
     if (open == null) return games;
     return Tooltip(
@@ -1097,10 +1325,7 @@ class HuntTile extends ConsumerWidget {
         key: ValueKey('hunt-games-${hunt.slot.id}'),
         onTap: open,
         borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
-          child: games,
-        ),
+        child: games,
       ),
     );
   }
@@ -1154,16 +1379,15 @@ class HuntTile extends ConsumerWidget {
   }
 }
 
-/// Onde caçar, em até [max] ícones de jogo sobrepostos: só os jogos em que o
-/// usuário tem save; o resto deles vira "+N". Os outros jogos ficam no "Na
-/// pokédex de" do detalhe da espécie (#202). Sobrepostos, os ícones ocupam
-/// pouca largura e o subtítulo do item continua legível no celular (#188).
-/// Sem ícone: nenhum save serve para caçar a forma.
+/// Onde caçar (#282): os ícones dos jogos em que o usuário tem save, lado a
+/// lado, até [max]; o resto vira "+N". Os outros jogos ficam na Pokédex dos
+/// jogos do detalhe da espécie (#202). Sem ícone: nenhum save serve para
+/// caçar a forma.
 class HuntGames extends StatelessWidget {
   const HuntGames({
     required this.versions,
     required this.owned,
-    this.max = 3,
+    this.max = 6,
     super.key,
   });
 
@@ -1173,55 +1397,29 @@ class HuntGames extends StatelessWidget {
   final Set<String> owned;
   final int max;
 
-  /// O tamanho padrão do [GameIcon].
-  static const _size = 22.0;
-
-  /// Quanto cada ícone anda para a direita: 8 px ficam por baixo do próximo.
-  static const _step = 14.0;
-
   @override
   Widget build(BuildContext context) {
     final mine = [...versions.where(owned.contains)];
     if (mine.isEmpty) return const SizedBox.shrink();
     final shown = mine.take(max).toList();
     final rest = mine.length - shown.length;
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 4,
       children: [
-        SizedBox(
-          width: _size + _step * (shown.length - 1),
-          height: _size,
-          // O Stack pinta na ordem da lista: cada ícone fica por cima do
-          // anterior, separado dele por um contorno da cor do fundo.
-          child: Stack(
-            children: [
-              for (final (i, version) in shown.indexed)
-                Positioned(
-                  left: _step * i,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: [
-                        BoxShadow(color: colors.surface, spreadRadius: 2),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: GameIcon(version),
-                    ),
-                  ),
-                ),
-            ],
+        for (final version in shown)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: GameIcon(version),
           ),
-        ),
         if (rest > 0)
           Text(
             '+$rest',
             semanticsLabel: context.l10n.moreGames(rest),
-            style: Theme.of(context).textTheme.labelMedium
-                ?.copyWith(color: colors.outline),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
           ),
       ],
     );
