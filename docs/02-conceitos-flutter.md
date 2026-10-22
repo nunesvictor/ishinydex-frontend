@@ -522,6 +522,14 @@ logo abaixo da grade, que é o próprio campo: o toque é nele, e o teclado abre
 Quando um campo precisa de teclado imediato no iPhone, ele deve estar na tela
 antes do toque.
 
+O número do cartão da caçada segue a mesma regra (#281). Ele é sempre um
+`TextField`, que em repouso não tem borda e mostra "1.234 encontros". Ao ganhar
+o foco, um listener do `FocusNode` troca o texto pelo número cru, todo
+selecionado, e a unidade vai para o `suffixText`. Ao perder o foco, o mesmo
+listener grava. Assim, Enter, o "OK" do teclado do iPhone e o toque fora
+(`onTapOutside`) passam pelo mesmo caminho. O Esc entra por um
+`CallbackShortcuts`: ele marca o cancelamento antes de tirar o foco.
+
 **Animações implícitas.** Widgets `Animated*` (`AnimatedPositioned`,
 `AnimatedContainer`, `AnimatedAlign`, `AnimatedOpacity`, `AnimatedSwitcher`)
 animam sozinhos quando um valor muda num `setState`: basta passar o valor

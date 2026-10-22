@@ -81,6 +81,17 @@ class _HuntCardState extends ConsumerState<HuntCard> {
   int _repeats = 0;
   int _pending = 0;
 
+  /// A contagem editada no lugar (#281): o número do cartão é o próprio
+  /// campo. Tocar nele o seleciona; Enter, o "OK" do iPhone ou tocar fora
+  /// gravam; Esc cancela.
+  final _count = TextEditingController();
+  late final _countFocus = FocusNode()..addListener(_onCountFocus);
+  bool _cancelled = false;
+
+  /// A gravação do valor digitado, enquanto não chega a caçada nova: o +1
+  /// tocado logo depois espera por ela e soma em cima.
+  Future<ShinyHunt>? _committing;
+
   /// Os primeiros passos vão devagar; depois, acelera.
   static const _slowRepeats = 4;
   static const _slow = Duration(milliseconds: 400);
@@ -99,6 +110,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
     if (old.hunt.count != widget.hunt.count && _repeat?.isActive != true) {
       _pending = 0;
     }
+    if (old.hunt != widget.hunt) _committing = null;
     _syncTick();
   }
 
@@ -119,6 +131,8 @@ class _HuntCardState extends ConsumerState<HuntCard> {
   void dispose() {
     _tick?.cancel();
     _repeat?.cancel();
+    _count.dispose();
+    _countFocus.dispose();
     super.dispose();
   }
 
@@ -147,10 +161,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
     final delta = _pending;
     if (delta == 0) return;
     unawaited(
-      runHuntAction(
-        context,
-        () => _actions.add(widget.hunt, delta),
-      ).whenComplete(() {
+      runHuntAction(context, () => _add(delta)).whenComplete(() {
         if (mounted) setState(() => _pending = 0);
       }),
     );
@@ -170,14 +181,38 @@ class _HuntCardState extends ConsumerState<HuntCard> {
   void _run(Future<void> Function() action) =>
       unawaited(runHuntAction(context, action));
 
-  Future<void> _typeCount() async {
-    final typed = await showDialog<int>(
-      context: context,
-      builder: (_) => _CountDialog(widget.hunt.count),
-    );
-    if (typed != null) {
-      _run(() => _actions.setCount(widget.hunt, typed));
+  /// Soma [delta] na caçada; com um valor digitado sendo gravado, em cima
+  /// dele.
+  Future<void> _add(int delta) async {
+    final base = await (_committing ?? Future.value(widget.hunt));
+    await _actions.add(base, delta);
+  }
+
+  /// Ganhou o foco: o número cru, todo selecionado, para digitar por cima.
+  /// Perdeu: grava o que foi digitado, salvo com Esc, vazio ou igual.
+  void _onCountFocus() {
+    final hunt = widget.hunt;
+    if (_countFocus.hasFocus) {
+      _cancelled = false;
+      final text = '${hunt.count}';
+      _count.value = TextEditingValue(
+        text: text,
+        selection: TextSelection(baseOffset: 0, extentOffset: text.length),
+      );
+    } else {
+      final typed = int.tryParse(_count.text);
+      if (!_cancelled && typed != null && typed != hunt.count) {
+        final saving = _actions.setCount(hunt, typed);
+        _committing = saving;
+        _run(() => saving);
+      }
     }
+    setState(() {});
+  }
+
+  void _cancelCount() {
+    _cancelled = true;
+    _countFocus.unfocus();
   }
 
   /// Corrige o tempo de uma caçada em horas (#205): o valor digitado
@@ -222,6 +257,43 @@ class _HuntCardState extends ConsumerState<HuntCard> {
       ),
     );
     if (ok ?? false) _run(() => _actions.delete(widget.hunt.id));
+  }
+
+  /// O número do cartão (#281). Em repouso, igual ao de antes ("1.234
+  /// encontros"); tocado, vira o campo, com o número cru selecionado e a
+  /// unidade no fim. O toque cai no próprio campo, e por isso o Safari do
+  /// iPhone abre o teclado numérico, o que não fazia no diálogo.
+  Widget _countField(ThemeData theme, String countText, bool enabled) {
+    final editing = _countFocus.hasFocus;
+    if (!editing && _count.text != countText) {
+      _count.value = TextEditingValue(text: countText);
+    }
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): _cancelCount,
+      },
+      child: TextField(
+        key: const ValueKey('hunt-count'),
+        controller: _count,
+        focusNode: _countFocus,
+        enabled: enabled,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.titleLarge?.copyWith(
+          color: enabled ? theme.colorScheme.primary : null,
+        ),
+        keyboardType: TextInputType.number,
+        textInputAction: TextInputAction.done,
+        inputFormatters: editing
+            ? [FilteringTextInputFormatter.digitsOnly]
+            : const [],
+        onTapOutside: (_) => _countFocus.unfocus(),
+        decoration: InputDecoration(
+          isDense: true,
+          border: editing ? const UnderlineInputBorder() : InputBorder.none,
+          suffixText: editing ? context.l10n.huntUnit(widget.hunt.unit) : null,
+        ),
+      ),
+    );
   }
 
   @override
@@ -467,20 +539,12 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                       message: context.l10n.huntMinusOne,
                       triggerMode: TooltipTriggerMode.manual,
                       child: IconButton.outlined(
-                        onPressed: enabled
-                            ? () => _run(() => _actions.add(hunt, -1))
-                            : null,
+                        onPressed: enabled ? () => _run(() => _add(-1)) : null,
                         icon: const Icon(Icons.remove),
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: TextButton(
-                      key: const ValueKey('hunt-count'),
-                      onPressed: enabled ? _typeCount : null,
-                      child: Text(countText, style: theme.textTheme.titleLarge),
-                    ),
-                  ),
+                  Expanded(child: _countField(theme, countText, enabled)),
                   SizedBox(
                     width: 112,
                     height: 64,
@@ -488,9 +552,7 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                       1,
                       enabled: enabled,
                       child: FilledButton.icon(
-                        onPressed: enabled
-                            ? () => _run(() => _actions.add(hunt, 1))
-                            : null,
+                        onPressed: enabled ? () => _run(() => _add(1)) : null,
                         icon: const Icon(Icons.add),
                         label: const Text('1'),
                       ),
@@ -505,49 +567,6 @@ class _HuntCardState extends ConsumerState<HuntCard> {
   }
 }
 
-/// Digitar a contagem (tocar no número).
-class _CountDialog extends StatefulWidget {
-  const _CountDialog(this.count);
-
-  final int count;
-
-  @override
-  State<_CountDialog> createState() => _CountDialogState();
-}
-
-class _CountDialogState extends State<_CountDialog> {
-  late final _controller = TextEditingController(text: '${widget.count}');
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(context.l10n.huntCountTitle),
-    content: TextField(
-      key: const ValueKey('hunt-count-input'),
-      controller: _controller,
-      autofocus: true,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: Text(context.l10n.cancel),
-      ),
-      FilledButton(
-        onPressed: () =>
-            Navigator.of(context).pop(int.tryParse(_controller.text)),
-        child: Text(context.l10n.ok),
-      ),
-    ],
-  );
-}
-
 /// Horas e minutos de uma caçada em horas (#205).
 class _DurationDialog extends StatefulWidget {
   const _DurationDialog(this.elapsed);
@@ -559,7 +578,16 @@ class _DurationDialog extends StatefulWidget {
 }
 
 class _DurationDialogState extends State<_DurationDialog> {
-  late final _hours = TextEditingController(text: '${widget.elapsed.inHours}');
+  /// As horas já selecionadas, para digitar por cima (#281).
+  late final _hours = TextEditingController.fromValue(
+    TextEditingValue(
+      text: '${widget.elapsed.inHours}',
+      selection: TextSelection(
+        baseOffset: 0,
+        extentOffset: '${widget.elapsed.inHours}'.length,
+      ),
+    ),
+  );
   late final _minutes = TextEditingController(
     text: '${widget.elapsed.inMinutes % 60}',
   );
@@ -570,6 +598,13 @@ class _DurationDialogState extends State<_DurationDialog> {
     _minutes.dispose();
     super.dispose();
   }
+
+  void _confirm() => Navigator.of(context).pop(
+    Duration(
+      hours: int.tryParse(_hours.text) ?? 0,
+      minutes: int.tryParse(_minutes.text) ?? 0,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => AlertDialog(
@@ -585,6 +620,7 @@ class _DurationDialogState extends State<_DurationDialog> {
             controller: _hours,
             autofocus: true,
             keyboardType: TextInputType.number,
+            onSubmitted: (_) => _confirm(),
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(labelText: context.l10n.hoursLabel),
           ),
@@ -595,6 +631,7 @@ class _DurationDialogState extends State<_DurationDialog> {
             key: const ValueKey('hunt-minutes-input'),
             controller: _minutes,
             keyboardType: TextInputType.number,
+            onSubmitted: (_) => _confirm(),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(2),
@@ -609,15 +646,7 @@ class _DurationDialogState extends State<_DurationDialog> {
         onPressed: () => Navigator.of(context).pop(),
         child: Text(context.l10n.cancel),
       ),
-      FilledButton(
-        onPressed: () => Navigator.of(context).pop(
-          Duration(
-            hours: int.tryParse(_hours.text) ?? 0,
-            minutes: int.tryParse(_minutes.text) ?? 0,
-          ),
-        ),
-        child: Text(context.l10n.ok),
-      ),
+      FilledButton(onPressed: _confirm, child: Text(context.l10n.ok)),
     ],
   );
 }
