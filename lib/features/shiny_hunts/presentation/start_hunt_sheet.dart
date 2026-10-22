@@ -186,7 +186,8 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
     ];
     final save = saves.where((s) => s.id == _hunt.save).firstOrNull;
     final methodsFor = ref.watch(shinyMethodsProvider);
-    final methods = methodsFor(save?.trainer.version);
+    // Só pelo HOME, por ovo (#314): os métodos de ovo.
+    final methods = methodsFor(save?.trainer.version, formId: widget.form.id);
     final method = methodsFor(null)
         .where((m) => m.id == _hunt.method)
         .firstOrNull;
