@@ -2,9 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/theme/version_colors.dart';
-import 'package:ishinydex/core/widgets/version_tag.dart';
 
 import '../../helpers/contrast.dart';
 
@@ -49,57 +47,5 @@ void main() {
       lessThan(violet.foreground.computeLuminance()),
     );
     expect(versionTone('champions', Brightness.light), isNull);
-  });
-
-  group('VersionTag', () {
-    Future<TextStyle?> styleOf(
-      WidgetTester tester,
-      Widget tag, {
-      ThemeData? theme,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: theme ?? AppTheme.light(),
-          home: Center(child: tag),
-        ),
-      );
-      // Trocar o tema anima (AnimatedTheme): espera terminar.
-      await tester.pumpAndSettle();
-      return tester.widget<Text>(find.byType(Text)).style;
-    }
-
-    Color background(WidgetTester tester) =>
-        (tester.widget<DecoratedBox>(find.byType(DecoratedBox).last).decoration
-                as BoxDecoration)
-            .color!;
-
-    testWidgets('na cor da versão, nos dois temas', (tester) async {
-      final light = await styleOf(
-        tester,
-        const VersionTag('exclusivo Scarlet', version: 'scarlet'),
-      );
-      final tone = versionTone('scarlet', Brightness.light)!;
-      expect(light!.color, tone.foreground);
-      expect(background(tester), tone.background);
-
-      final dark = await styleOf(
-        tester,
-        const VersionTag('Seu: Violet', version: 'violet'),
-        theme: AppTheme.dark(),
-      );
-      expect(dark!.color, versionTone('violet', Brightness.dark)!.foreground);
-    });
-
-    testWidgets('sem versão ou sem cor de marca: neutra', (tester) async {
-      final scheme = AppTheme.light().colorScheme;
-      for (final tag in [
-        const VersionTag('Seus: Scarlet, Violet'),
-        const VersionTag('Seu: Champions', version: 'champions'),
-      ]) {
-        final style = await styleOf(tester, tag);
-        expect(style!.color, scheme.onSurfaceVariant);
-        expect(background(tester), scheme.surfaceContainerHighest);
-      }
-    });
   });
 }

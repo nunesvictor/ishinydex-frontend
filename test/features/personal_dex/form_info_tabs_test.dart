@@ -317,17 +317,47 @@ void main() {
       double y(String text) => tester.getTopLeft(find.text(text)).dy;
       expect(y('Pokédex dos jogos'), lessThan(y('quadro de tipos')));
       expect(y('quadro de tipos'), lessThan(y('Taxa de captura')));
-      expect(find.text('Seu: Sword'), findsOneWidget);
-      expect(find.text('Seus: Scarlet, Violet'), findsOneWidget);
-      // O shiny lock só no jogo travado, com a explicação ao tocar.
-      expect(find.text('Shiny lock em Scarlet'), findsOneWidget);
-      expect(find.byIcon(Icons.lock), findsOneWidget);
-      await tester.tap(find.text('Shiny lock em Scarlet'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Esta forma não pode ser shiny neste jogo.'),
-        findsOneWidget,
+      // O estado vai no ícone (#322): colorido com save, cinza sem.
+      PokedexGameIcon icon(String version) => tester.widget(
+        find.byWidgetPredicate(
+          (w) => w is PokedexGameIcon && w.version == version,
+        ),
       );
+      expect(icon('sword').owned, isTrue);
+      expect(icon('shield').owned, isFalse);
+      expect(
+        tester
+            .widgetList<GameIcon>(
+              find.descendant(
+                of: find.byType(PokedexGameIcon),
+                matching: find.byType(GameIcon),
+              ),
+            )
+            .where((g) => g.muted)
+            .map((g) => g.version)
+            .toSet(),
+        {'brilliant-diamond', 'shining-pearl', 'shield'},
+      );
+      // O cadeado só no Scarlet travado; tocar explica tudo.
+      expect(find.byKey(const ValueKey('pokedex-icon-lock')), findsOneWidget);
+      expect(find.text('Seu: Sword'), findsNothing);
+      await tester.tap(
+        find.byWidgetPredicate(
+          (w) => w is PokedexGameIcon && w.version == 'scarlet',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Scarlet · shiny lock · você tem save'), findsOneWidget);
+      expect(find.bySemanticsLabel('Shield · sem save'), findsOneWidget);
+      // A legenda dos ícones.
+      for (final text in [
+        'tem save',
+        'sem save',
+        'não aparece',
+        'shiny lock',
+      ]) {
+        expect(find.text(text), findsOneWidget, reason: text);
+      }
       expect(
         find.text('Galar nº 383 · Tundra Coroada nº 139 (DLC)'),
         findsOneWidget,
@@ -376,14 +406,28 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // Save só da outra versão: a etiqueta, sem o destaque do save.
+      // Save só da outra versão: o Violet vira o contorno tracejado, e a
+      // linha fica sem o fundo do save.
       await pumpWith([save(1, 'violet')]);
-      expect(find.text('exclusivo Scarlet'), findsOneWidget);
-      expect(find.textContaining('Seu'), findsNothing);
+      expect(find.text('exclusivo Scarlet'), findsNothing);
+      expect(find.byKey(const ValueKey('pokedex-icon-absent')), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Violet · não aparece nesta versão · você tem save',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Scarlet · exclusivo · sem save'),
+        findsOneWidget,
+      );
 
       await tester.pumpWidget(const SizedBox());
       await pumpWith([save(1, 'violet'), save(2, 'scarlet')]);
-      expect(find.text('Seu: Scarlet'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Scarlet · exclusivo · você tem save'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('na pokédex de: um jogo só fica no meio da largura de dois', (
@@ -414,11 +458,11 @@ void main() {
 
       double centerX(Finder f) => tester.getCenter(f).dx;
       final single = find.byWidgetPredicate(
-        (w) => w is GameIcon && w.version == 'legends-arceus',
+        (w) => w is PokedexGameIcon && w.version == 'legends-arceus',
       );
       final pair = [
         for (final v in ['scarlet', 'violet'])
-          find.byWidgetPredicate((w) => w is GameIcon && w.version == v),
+          find.byWidgetPredicate((w) => w is PokedexGameIcon && w.version == v),
       ];
       // O ícone sozinho fica no centro do par, e os nomes seguem alinhados.
       expect(
