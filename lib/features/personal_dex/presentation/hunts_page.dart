@@ -708,6 +708,18 @@ class _Filters extends ConsumerWidget {
               leading: const NoShinyIcon(size: 18),
             ),
           ),
+          // Com um catálogo antigo, sem a lista dos alfas, o motivo some.
+          if (ref.watch(knowsAlphasProvider) || _isOn(HuntReason.noAlpha))
+            CheckboxMenuButton(
+              value: _isOn(HuntReason.noAlpha),
+              closeOnActivate: false,
+              onChanged: _check(_toggler(HuntReason.noAlpha)),
+              child: MenuOptionText(
+                context.l10n.huntReason(HuntReason.noAlpha),
+                context.l10n.reasonNoAlphaHint,
+                leading: const AlphaIcon(size: 18, semanticLabel: null),
+              ),
+            ),
           CheckboxMenuButton(
             value: _isOn(HuntReason.fromGo),
             closeOnActivate: false,
@@ -1303,6 +1315,11 @@ class HuntTile extends ConsumerWidget {
       if (hunt.reasons.contains(HuntReason.noShiny) &&
           hunt.slot.specimen != null)
         icon(context.l10n.notShiny, const NoShinyIcon(size: 16)),
+      if (hunt.reasons.contains(HuntReason.noAlpha))
+        icon(
+          context.l10n.huntReason(HuntReason.noAlpha),
+          const AlphaIcon(size: 16, semanticLabel: null),
+        ),
       if (lock != null)
         icon(
           context.l10n.shinyLockType(lock),
@@ -1436,6 +1453,7 @@ Widget? _situationIcon(HuntSituation situation) => switch (situation) {
 /// O ícone de cada motivo (#219), os mesmos do menu.
 Widget _reasonIcon(HuntReason reason) => switch (reason) {
   HuntReason.noShiny => const NoShinyIcon(size: 18),
+  HuntReason.noAlpha => const AlphaIcon(size: 18, semanticLabel: null),
   HuntReason.fromGo => const GoIcon(size: 18, semanticLabel: null),
   HuntReason.pokeball => const Icon(Icons.catching_pokemon),
 };

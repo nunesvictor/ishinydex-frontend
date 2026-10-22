@@ -15,6 +15,7 @@ extension DexLabels on AppLocalizations {
 
   String huntReason(HuntReason reason) => switch (reason) {
     HuntReason.noShiny => huntReasonNoShiny,
+    HuntReason.noAlpha => huntReasonNoAlpha,
     HuntReason.fromGo => huntReasonFromGo,
     HuntReason.pokeball => huntReasonPokeball,
   };

@@ -31,6 +31,7 @@ class Catalog {
     required this._exclusives,
     required this._gameFormIds,
     required this._gameLocks,
+    required this._alphaForms,
     required this.shinyMethods,
     required this.shinyOdds,
     required this._formEvolutions,
@@ -245,6 +246,13 @@ class Catalog {
         }
         return result;
       }(),
+      // Catálogo antigo, sem a chave: nenhuma forma alfa (#280).
+      alphaForms: {
+        for (final g in _objects(json['alphaForms'] ?? const <Object>[]))
+          g['versionGroup'] as String: {
+            for (final id in g['forms'] as List) id as int,
+          },
+      },
       shinyMethods: [
         for (final m in _objects(json['shinyMethods'] ?? const <Object>[]))
           ShinyMethod(
@@ -399,6 +407,9 @@ class Catalog {
   final Map<String, Set<int>> _gameFormIds;
 
   /// Versões em que cada forma não pode ser shiny.
+  /// Grupo de versões → formas que podem ser alfa nele.
+  final Map<String, Set<int>> _alphaForms;
+
   final Map<int, Set<String>> _gameLocks;
 
   /// Grupo → espécies com forma regional listadas nele.
@@ -620,6 +631,16 @@ class Catalog {
       (_versionIndex[a] ?? versions.length).compareTo(
         _versionIndex[b] ?? versions.length,
       );
+
+  /// O catálogo diz quais formas podem ser alfa (#280); um antigo, não.
+  bool get hasAlphaForms => _alphaForms.isNotEmpty;
+
+  /// Versões em que a forma pode aparecer como alfa (Legends: Arceus e
+  /// Legends: Z-A), na ordem da série.
+  List<String> alphaVersions(int formId) => [
+    for (final v in versions)
+      if (_alphaForms[v.versionGroup]?.contains(formId) ?? false) v.name,
+  ];
 
   /// Versões em que a forma não pode ser shiny (Solgaleo em Scarlet).
   Set<String> lockedVersions(int formId) =>

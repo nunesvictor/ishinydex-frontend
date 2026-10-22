@@ -19,6 +19,11 @@ final knowsGamesProvider = Provider<bool>(
   (ref) => ref.watch(fakeBackendProvider).catalog?.hasPokedexes ?? false,
 );
 
+/// O catálogo diz quais formas podem ser alfa: o motivo "Sem alfa" (#280).
+final knowsAlphasProvider = Provider<bool>(
+  (ref) => ref.watch(fakeBackendProvider).catalog?.hasAlphaForms ?? false,
+);
+
 final lastDexStorageProvider = Provider<LastDexStorage>(
   (ref) => PrefsLastDexStorage(),
 );
