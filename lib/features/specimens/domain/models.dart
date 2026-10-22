@@ -597,6 +597,12 @@ abstract class SpecimenQuery with _$SpecimenQuery {
     /// Chip Jogo (#201), "Podem ir para": dá para mandar o espécime a um
     /// save de algum destes jogos. As duas listas juntas valem "e".
     @Default(<String>[]) List<String> fitVersions,
+
+    /// Só os espécimes com registro da caçada: a aba Concluídas (#297).
+    @Default(false) bool huntsOnly,
+
+    /// O método do registro da caçada é um destes (ids do catálogo).
+    @Default(<String>[]) List<String> huntMethods,
   }) = _SpecimenQuery;
 
   const SpecimenQuery._();
@@ -680,6 +686,8 @@ abstract class SpecimenQuery with _$SpecimenQuery {
       if (ordering != SpecimenOrdering.box) 'ordering': ordering.param,
       if (ids.isNotEmpty) 'id': join(ids),
       if (location.isNotEmpty) 'location': location,
+      if (huntsOnly) 'has_hunt': true,
+      if (huntMethods.isNotEmpty) 'hunt_method': join(huntMethods),
     };
   }
 }

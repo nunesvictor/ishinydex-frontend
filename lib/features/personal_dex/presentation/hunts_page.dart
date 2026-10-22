@@ -24,6 +24,7 @@ import 'package:ishinydex/features/personal_dex/presentation/dex_list_page.dart'
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/completed_hunts.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
@@ -59,8 +60,8 @@ class HuntsPage extends ConsumerStatefulWidget {
 }
 
 /// As abas de Caçadas, na ordem do seletor (#279): as caçadas em andamento,
-/// o que falta e as pausadas.
-enum HuntsTab { active, missing, paused }
+/// o que falta, as pausadas e as concluídas (#297).
+enum HuntsTab { active, missing, paused, done }
 
 class _HuntsPageState extends ConsumerState<HuntsPage>
     with SingleTickerProviderStateMixin {
@@ -214,6 +215,10 @@ class _HuntsPageState extends ConsumerState<HuntsPage>
                     label: context.l10n.huntsTabPaused,
                     count: hunts.length - active,
                   ),
+                  (
+                    label: context.l10n.huntsTabDone,
+                    count: ref.watch(completedHuntsProvider).value?.length,
+                  ),
                 ],
               ),
             ),
@@ -237,6 +242,7 @@ class _HuntsPageState extends ConsumerState<HuntsPage>
                   maxWidth: 1100,
                   child: HuntCards(paused: true, hasDex: hasDex),
                 ),
+                const _TabPage(maxWidth: 720, child: CompletedHunts()),
               ],
             ),
           ),

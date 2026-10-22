@@ -168,11 +168,15 @@ void main() {
         tester,
         await _backend(active: 1),
         // Nos testes, a fonte (Ahem) é bem mais larga que a do app.
-        size: const Size(600, 800),
+        size: const Size(900, 800),
         locale: english,
       );
       expect(huntsTab('Active', '1'), findsOne);
-      expect(right(tester, 'Paused'), closeTo(600, 3));
+      // A Concluídas (#297) é a última, e a fileira vai até a borda.
+      expect(
+        right(tester, 'Done'),
+        closeTo(tester.getRect(find.byType(TabBar)).right, 3),
+      );
       expect(tester.takeException(), isNull);
     });
 

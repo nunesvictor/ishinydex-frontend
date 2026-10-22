@@ -2706,6 +2706,8 @@ class FakeBackend
             query.otVersions.contains(_trainers[s.ot]?.version)) &&
         (query.fitVersions.isEmpty ||
             query.fitVersions.any((version) => _canGoTo(s, version))) &&
+        (!query.huntsOnly || s.hunt != null) &&
+        inList(query.huntMethods, s.hunt?.method) &&
         (query.capturedAfter == null ||
             (captured != null && !captured.isBefore(query.capturedAfter!))) &&
         (query.capturedBefore == null ||
