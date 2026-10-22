@@ -160,6 +160,15 @@ void main() {
     matching: finder,
   );
 
+  /// Digita a contagem no próprio número do cartão (#281) e confirma.
+  Future<void> typeCount(WidgetTester tester, int id, String text) async {
+    final field = inCard(id, find.byKey(const ValueKey('hunt-count')));
+    await tap(tester, field);
+    await tester.enterText(field, text);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+  }
+
   Future<ShinyHunt> hunt(int id) async =>
       (await backend.fetchShinyHunts()).firstWhere((h) => h.id == id);
 
@@ -285,15 +294,7 @@ void main() {
           .onPressed,
       isNull,
     );
-    await tap(
-      tester,
-      inCard(chain.id, find.byKey(const ValueKey('hunt-count'))),
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('hunt-count-input')),
-      '50',
-    );
-    await tap(tester, find.text('OK'));
+    await typeCount(tester, chain.id, '50');
     expect(
       inCard(chain.id, find.textContaining('(estimativa: contagem digitada)')),
       findsOne,
@@ -317,12 +318,7 @@ void main() {
     );
     await tap(tester, inCard(none.id, find.widgetWithText(FilledButton, '1')));
     expect((await hunt(none.id)).count, 6);
-    await tap(
-      tester,
-      inCard(none.id, find.byKey(const ValueKey('hunt-count'))),
-    );
-    await tester.enterText(find.byKey(const ValueKey('hunt-count-input')), '9');
-    await tap(tester, find.text('OK'));
+    await typeCount(tester, none.id, '9');
     expect((await hunt(none.id)).count, 9);
 
     // Encontrei!: o registro leva as odds do fim.

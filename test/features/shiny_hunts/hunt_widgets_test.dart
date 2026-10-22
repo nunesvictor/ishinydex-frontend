@@ -1,7 +1,6 @@
-import 'dart:typed_data';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -113,6 +112,15 @@ void main() {
     matching: finder,
   );
 
+  /// Digita a contagem no próprio número do cartão (#281) e confirma.
+  Future<void> typeCount(WidgetTester tester, int id, String text) async {
+    final field = inCard(id, find.byKey(const ValueKey('hunt-count')));
+    await tap(tester, field);
+    await tester.enterText(field, text);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+  }
+
   Future<ShinyHunt> hunt(int id) async =>
       (await backend.fetchShinyHunts()).firstWhere((h) => h.id == id);
 
@@ -161,21 +169,48 @@ void main() {
       inCard(counter.id, find.byTooltip('Menos um (segure para repetir)')),
     );
     expect((await hunt(counter.id)).count, 10);
-    await tap(
-      tester,
-      inCard(counter.id, find.byKey(const ValueKey('hunt-count'))),
+    // A contagem editada no lugar (#281): tocar seleciona o número cru.
+    final count = inCard(counter.id, find.byKey(const ValueKey('hunt-count')));
+    expect(inCard(counter.id, find.text('10 encontros')), findsOne);
+    await tap(tester, count);
+    final editing = tester.widget<TextField>(count).controller!.value;
+    expect(editing.text, '10');
+    expect(
+      editing.selection,
+      const TextSelection(baseOffset: 0, extentOffset: 2),
     );
-    await tester.enterText(
-      find.byKey(const ValueKey('hunt-count-input')),
-      '25',
-    );
-    await tap(tester, find.text('OK'));
+    expect(find.text('encontros'), findsOne);
+    // Enter (ou o "OK" do iPhone) grava.
+    await tester.enterText(count, '25');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
     expect((await hunt(counter.id)).count, 25);
-    await tap(
-      tester,
-      inCard(counter.id, find.byKey(const ValueKey('hunt-count'))),
-    );
-    await tap(tester, find.text('Cancelar'));
+    expect(inCard(counter.id, find.text('25 encontros')), findsOne);
+    // Esc cancela.
+    await tap(tester, count);
+    await tester.enterText(count, '99');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect((await hunt(counter.id)).count, 25);
+    expect(inCard(counter.id, find.text('25 encontros')), findsOne);
+    // Vazio volta ao anterior.
+    await tap(tester, count);
+    await tester.enterText(count, '');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect((await hunt(counter.id)).count, 25);
+    // Tocar fora grava.
+    await tap(tester, count);
+    await tester.enterText(count, '30');
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    expect((await hunt(counter.id)).count, 30);
+    // O +1 com o campo aberto grava o digitado e soma em cima.
+    await tap(tester, count);
+    await tester.enterText(count, '40');
+    await tap(tester, plus);
+    expect((await hunt(counter.id)).count, 41);
+    await typeCount(tester, counter.id, '25');
     expect((await hunt(counter.id)).count, 25);
 
     // Segurar +1 repete e acelera; grava uma vez só, ao soltar (#209).
@@ -188,12 +223,7 @@ void main() {
     await tester.pumpAndSettle();
     expect((await hunt(counter.id)).count, 29);
     // Segurar −1 para no 0.
-    await tap(
-      tester,
-      inCard(counter.id, find.byKey(const ValueKey('hunt-count'))),
-    );
-    await tester.enterText(find.byKey(const ValueKey('hunt-count-input')), '1');
-    await tap(tester, find.text('OK'));
+    await typeCount(tester, counter.id, '1');
     gesture = await tester.startGesture(
       tester.getCenter(inCard(counter.id, find.byIcon(Icons.remove))),
     );
@@ -214,14 +244,33 @@ void main() {
       tester,
       inCard(timed.id, find.byKey(const ValueKey('hunt-time'))),
     );
-    await tester.enterText(find.byKey(const ValueKey('hunt-hours-input')), '2');
+    // As horas abrem selecionadas, e o Enter confirma (#281).
+    final hours = find.byKey(const ValueKey('hunt-hours-input'));
+    expect(
+      tester.widget<TextField>(hours).controller!.selection,
+      const TextSelection(baseOffset: 0, extentOffset: 1),
+    );
     await tester.enterText(
       find.byKey(const ValueKey('hunt-minutes-input')),
       '15',
     );
-    await tap(tester, find.text('OK'));
+    await tester.enterText(hours, '2');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
     expect((await hunt(timed.id)).accumulatedSeconds, 8100);
     expect(find.text('2 h 15 min'), findsOne);
+    // O Enter nos minutos também confirma.
+    await tap(
+      tester,
+      inCard(timed.id, find.byKey(const ValueKey('hunt-time'))),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('hunt-minutes-input')),
+      '30',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect((await hunt(timed.id)).accumulatedSeconds, 9000);
 
     await tap(tester, inCard(timed.id, find.text('Iniciar')));
     // Rodando, o tempo não abre o diálogo.
