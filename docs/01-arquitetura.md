@@ -372,8 +372,14 @@ O Faltam lista o que ainda falta caçar no dex, na ordem das boxes. Dois grupos 
 [`HuntQuery`](../lib/features/personal_dex/domain/models.dart):
 
 - **Motivos** (somados com OU), sempre à vista em chips: sem shiny (vazio ou
-  espécime não shiny), shiny do GO e pokébola fora das escolhidas. O último
-  motivo marcado não pode sair, porque sem motivo a lista fica vazia.
+  espécime não shiny), sem alfa, shiny do GO e pokébola fora das escolhidas.
+  O último motivo marcado não pode sair, porque sem motivo a lista fica vazia.
+- **Sem alfa** (#280): a forma pode ser alfa em algum jogo (`alphaForms` do
+  catálogo, `Catalog.alphaVersions`) e o slot não tem um espécime alfa. Vem
+  desligado e, assim, um shiny que não é alfa conta como completo. Num item que
+  entra só por ele, onde caçar são os jogos com alfa. Com o filtro Jogo, só
+  conta o jogo em que a forma pode ser alfa. Sem a chave no catálogo, o
+  motivo some do menu.
 - **Escopo** (combinado com E), na folha "Filtros": categoria (lendário,
   mítico, Ultra Beast, bebê, comum), geração, tipo (qualquer um) e "incluir
   shiny impossível".

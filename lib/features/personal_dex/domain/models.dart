@@ -343,6 +343,9 @@ abstract class GenerationProgress with _$GenerationProgress {
 /// Por que um slot está na lista de caçadas; [param] é o valor da API.
 enum HuntReason {
   noShiny('no_shiny'),
+
+  /// A forma pode ser alfa e o slot não tem um alfa (#280).
+  noAlpha('no_alpha'),
   fromGo('from_go'),
   pokeball('pokeball');
 

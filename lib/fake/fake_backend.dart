@@ -1921,16 +1921,28 @@ class FakeBackend
           final formId = slot.formId!;
           final form = _forms[formId]!;
           final lock = _lockOf(formId);
-          final reasons = _huntReasons(slot, query.acceptedBalls);
+          final all = _huntReasons(slot, query.acceptedBalls);
+          // O "Sem alfa" só conta ligado (#280): desligado, um shiny que não
+          // é alfa já está completo.
+          final reasons = [
+            for (final r in all)
+              if (r != HuntReason.noAlpha || query.reasons.contains(r)) r,
+          ];
+          final selected = reasons.where(query.reasons.contains).toList();
           final category = _categories[formId] ?? SpeciesCategory.regular;
           // Sem "incluir shiny locks", some o jogo em que a forma é travada.
+          bool unlocked(String v) =>
+              query.includeLocked || !_lockedVersions(formId).contains(v);
+          // Só pelo alfa, onde caçar são os jogos em que ele aparece.
           final versions = [
-            for (final v in _huntableVersions(formId))
-              if (query.includeLocked || !_lockedVersions(formId).contains(v))
-                v,
+            for (final v
+                in selected.every((r) => r == HuntReason.noAlpha)
+                    ? _alphaVersions(formId)
+                    : _huntableVersions(formId))
+              if (unlocked(v)) v,
           ];
           final matches =
-              reasons.any(query.reasons.contains) &&
+              selected.isNotEmpty &&
               (query.situation.param == null ||
                   query.situation.param == (slot.specimenId != null)) &&
               (query.includeLocked || lock != ShinyLockType.unobtainable) &&
@@ -1980,14 +1992,27 @@ class FakeBackend
   Set<String> _lockedVersions(int formId) =>
       catalog?.lockedVersions(formId) ?? const <String>{};
 
+  /// Versões em que a forma pode ser alfa (#280); nenhuma sem catálogo.
+  List<String> _alphaVersions(int formId) =>
+      catalog?.alphaVersions(formId) ?? const [];
+
   /// Motivos de caçada do slot; `pokeball` só com bolas aceitas, e bola não
-  /// informada não conta.
+  /// informada não conta; `noAlpha` quando a forma pode ser alfa e o slot
+  /// não tem um.
   List<HuntReason> _huntReasons(_SlotRecord slot, List<String> acceptedBalls) {
     final id = slot.specimenId;
     final specimen = id == null ? null : _specimens[id];
-    if (specimen == null || !specimen.isShiny) return [HuntReason.noShiny];
+    final noAlpha = [
+      if (_alphaVersions(slot.formId!).isNotEmpty &&
+          !(specimen?.isAlpha ?? false))
+        HuntReason.noAlpha,
+    ];
+    if (specimen == null || !specimen.isShiny) {
+      return [HuntReason.noShiny, ...noAlpha];
+    }
     final ball = specimen.pokeball;
     return [
+      ...noAlpha,
       if (specimen.isFromGo) HuntReason.fromGo,
       if (acceptedBalls.isNotEmpty &&
           ball != null &&
