@@ -10,6 +10,9 @@
 //   servidor (sem o cache HTTP), com o cache de reserva.
 // - Sprites (raw do PokeAPI/sprites, com CORS): cache primeiro, num cache
 //   que sobrevive às versões do app.
+// - Fontes dos caracteres que a Roboto não tem (✓, ♂, ♀...), que o Flutter
+//   baixa do fonts.gstatic.com: idem, noutro cache (#337). Sem elas, o
+//   caractere vira um quadrado vazio offline.
 // - Nunca passa pelo cache: o que não é GET (o Dropbox, por exemplo).
 'use strict';
 
@@ -19,6 +22,8 @@ const VERSION = '__BUILD_VERSION__';
 const APP_CACHE = `ishinydex-app-${VERSION}`;
 const SPRITES_CACHE = 'ishinydex-sprites';
 const SPRITES_HOST = 'raw.githubusercontent.com';
+const FONTS_CACHE = 'ishinydex-fonts';
+const FONTS_HOST = 'fonts.gstatic.com';
 
 self.addEventListener('install', (event) => {
   // O essencial para abrir offline já na primeira vez. Sem skipWaiting():
@@ -70,6 +75,10 @@ self.addEventListener('fetch', (event) => {
 
   if (url.host === SPRITES_HOST) {
     event.respondWith(cacheFirst(SPRITES_CACHE, request));
+    return;
+  }
+  if (url.host === FONTS_HOST) {
+    event.respondWith(cacheFirst(FONTS_CACHE, request));
     return;
   }
   if (url.origin !== self.location.origin) return;

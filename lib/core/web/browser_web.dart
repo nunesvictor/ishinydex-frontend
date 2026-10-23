@@ -79,6 +79,24 @@ void onAppUpdateReady(void Function() onReady) {
   );
 }
 
+/// Termina quando o service worker (`web/sw.js`) controla a página: só daí
+/// em diante o que ela baixa vai para o cache offline (#337). Na primeira
+/// abertura, ele assume depois do primeiro quadro; sem service worker
+/// (navegador sem suporte), termina logo.
+Future<void> offlineCacheReady() {
+  if (!web.window.navigator.has('serviceWorker')) return Future.value();
+  final sw = web.window.navigator.serviceWorker;
+  if (sw.controller != null) return Future.value();
+  final done = Completer<void>();
+  sw.addEventListener(
+    'controllerchange',
+    ((web.Event _) {
+      if (!done.isCompleted) done.complete();
+    }).toJS,
+  );
+  return done.future;
+}
+
 /// Recarrega a página: abre a versão nova do app.
 void reloadPage() => web.window.location.reload();
 
