@@ -1,9 +1,13 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/app.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
+import 'package:ishinydex/core/web/offline_warmup.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/presentation/boot_failure_app.dart';
 
@@ -32,4 +36,6 @@ Future<void> main() async {
       child: const IShinyDexApp(),
     ),
   );
+  // Guarda para usar offline o que o app só baixa quando usa (#337).
+  if (kIsWeb) unawaited(warmUpOffline());
 }

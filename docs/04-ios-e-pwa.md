@@ -66,6 +66,9 @@ guarda cada arquivo do app na primeira vez que ele é usado, sem lista fixa:
   `catalog/catalog.json`): **rede primeiro**, com o cache de reserva, então
   uma versão nova chega assim que há internet;
 - sprites: cache primeiro, num cache próprio que sobrevive às versões;
+- fontes do `fonts.gstatic.com`: idem, noutro cache (#337). O Flutter as
+  baixa quando um texto usa um caractere que a Roboto não tem (✓, ♂, ♀);
+  sem elas, offline, o caractere vira um quadrado vazio;
 - `/api/`, `/admin/` e o que não é GET nunca passam pelo cache.
 
 O cache tem a versão do build no nome (`__BUILD_VERSION__`, trocado no build
@@ -73,6 +76,13 @@ como no `flutter_bootstrap.js`); ao ativar uma versão nova, fica também a
 anterior, para o app abrir offline mesmo logo depois de uma atualização.
 Depois de um uso online, o app abre e funciona **sem internet**, porque os
 dados já estão no aparelho.
+
+"Na primeira vez que é usado" deixava buracos: uma marca de origem ou uma
+fonte só usada numa tela que ainda não tinha sido aberta naquela versão
+faltava offline. Por isso, uns segundos depois de abrir, o app
+(`lib/core/web/offline_warmup.dart`) carrega todos os assets da versão
+(cerca de 900 KB) e mede, fora da tela, um texto com esses caracteres. Com
+internet, tudo isso passa pelo service worker e fica guardado.
 
 ### O que funciona e o que não funciona sem HTTPS
 
