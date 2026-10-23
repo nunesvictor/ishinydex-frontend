@@ -209,7 +209,14 @@ class FakeBackend
         formIds: lock.forms.where(catalog.hasForm).toList(),
       );
     }
-    return backend.._seedUserData(catalog.defaultDex);
+    // O Living Dex de exemplo pelo atalho, com a receita: sem ela, o dex
+    // seria comparado com o padrão inteiro e sairia desatualizado (#335).
+    const living = DexRecipe(alternateForms: false);
+    return backend.._seedUserData(
+      catalog.defaultDex,
+      living: [for (final f in backend._layoutFor(living).forms) f.id],
+      livingRecipe: living,
+    );
   }
 
   /// Backend local (modo local) com o [catalog]: formas, opções e shiny
@@ -246,8 +253,14 @@ class FakeBackend
   }
 
   /// Treinadores, saves, um shiny dex com todas as [forms] (30 por box), um
-  /// living dex com as 30 primeiras, espécimes e três boxes livres.
-  void _seedUserData(List<int> forms) {
+  /// living dex com as formas de [living] (sem ela, as 30 primeiras), feito
+  /// pela [livingRecipe], espécimes e três boxes livres.
+  void _seedUserData(
+    List<int> forms, {
+    List<int>? living,
+    DexRecipe? livingRecipe,
+  }) {
+    final livingForms = living ?? forms.sublist(0, 30.clamp(0, forms.length));
     addTrainer(name: 'Ash', trainerId: '123456', version: 'scarlet');
     addTrainer(name: 'Ash', trainerId: '654321');
     // Outras origens, para a demonstração mostrar várias marcas.
@@ -263,11 +276,14 @@ class FakeBackend
         formIds: forms.sublist(i, (i + 30).clamp(0, forms.length)),
       );
     }
-    addBox(
-      dexId: livingDex,
-      name: 'HOME ${++box}',
-      formIds: forms.sublist(0, 30.clamp(0, forms.length)),
-    );
+    _dexes[livingDex] = _dexes[livingDex]!.copyWith(recipe: livingRecipe);
+    for (var i = 0; i < livingForms.length; i += 30) {
+      addBox(
+        dexId: livingDex,
+        name: 'HOME ${++box}',
+        formIds: livingForms.sublist(i, (i + 30).clamp(0, livingForms.length)),
+      );
+    }
     for (final slot in _slots.values) {
       final formId = slot.formId;
       if (formId == null) continue;
@@ -303,7 +319,7 @@ class FakeBackend
     final scarlet = addSave(trainerId: 1, label: 'Switch');
     addSave(trainerId: 4);
     final away = _slots.values.firstWhere(
-      (s) => s.dexId == livingDex && s.formId == forms[1],
+      (s) => s.dexId == livingDex && s.formId == livingForms[1],
     );
     moveTo(away.specimenId!, scarlet, since: DateTime(2026, 3, 12));
     // Boxes livres: dá para criar um dex novo na demonstração.

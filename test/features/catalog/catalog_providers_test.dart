@@ -6,6 +6,7 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -144,6 +145,15 @@ void main() {
         [for (final f in await backend.searchForms('3')) f.name],
         ['venusaur', 'venusaur-mega'],
       );
+    });
+
+    test('os dex de exemplo não saem desatualizados (#335)', () async {
+      final dexes = await backend.fetchDexes();
+      for (final dex in dexes) {
+        expect(await backend.previewDexUpdate(dex.id), isNull);
+      }
+      // O Living Dex pelo atalho, com a receita guardada.
+      expect(dexes.last.recipe?.preset, DexPreset.living);
     });
 
     test('dex padrão inteiro no shiny dex, mais um living dex', () async {
