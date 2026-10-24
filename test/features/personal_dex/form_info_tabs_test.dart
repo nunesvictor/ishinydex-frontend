@@ -130,7 +130,7 @@ void main() {
       decreased: 'attack',
     );
 
-    testWidgets('aumentado em vermelho com ↑, diminuído em azul com ↓', (
+    testWidgets('o hexágono marca ↑ e ↓; ao lado, só o nome (#338)', (
       tester,
     ) async {
       await pumpWidgetApp(
@@ -147,6 +147,38 @@ void main() {
           ),
         ),
         findsOneWidget,
+      );
+      // Sem "Natureza" e sem as setas, que repetiriam as do gráfico; o
+      // leitor de tela ainda ouve "Natureza Modest".
+      expect(find.text('Modest'), findsOneWidget);
+      expect(find.textContaining('↑'), findsNothing);
+      expect(find.textContaining('Natureza'), findsNothing);
+      expect(find.bySemanticsLabel('Natureza Modest'), findsOneWidget);
+
+      // Outra natureza: o painter se redesenha.
+      await pumpWidgetApp(
+        tester,
+        const Center(
+          child: BaseStatsChart(
+            stats: stats,
+            nature: Choice(
+              value: 'adamant',
+              label: 'Adamant',
+              increased: 'attack',
+              decreased: 'special-attack',
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Adamant'), findsOneWidget);
+    });
+
+    testWidgets('sem hexágono, o efeito continua por extenso e colorido', (
+      tester,
+    ) async {
+      await pumpWidgetApp(
+        tester,
+        const BaseStatsChart(stats: [], nature: modest),
       );
       final caption = tester.widget<RichText>(
         find.descendant(
@@ -169,23 +201,6 @@ void main() {
           spans.firstWhere((s) => s.text?.contains(text) ?? false).style?.color;
       expect(colorOf('↑'), BaseStatsChart.increasedColor(Brightness.light));
       expect(colorOf('↓'), BaseStatsChart.decreasedColor(Brightness.light));
-
-      // Outra natureza: o painter se redesenha.
-      await pumpWidgetApp(
-        tester,
-        const Center(
-          child: BaseStatsChart(
-            stats: stats,
-            nature: Choice(
-              value: 'adamant',
-              label: 'Adamant',
-              increased: 'attack',
-              decreased: 'special-attack',
-            ),
-          ),
-        ),
-      );
-      expect(find.textContaining('Natureza Adamant'), findsOneWidget);
     });
 
     testWidgets('natureza neutra não pinta nada', (tester) async {
@@ -198,8 +213,10 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('Natureza Hardy (neutra)'), findsOneWidget);
-      expect(find.bySemanticsLabel(RegExp('natureza')), findsNothing);
+      // O gráfico não marca nada: o "(neutra)" fica.
+      expect(find.text('Hardy (neutra)'), findsOneWidget);
+      expect(find.bySemanticsLabel('Natureza Hardy (neutra)'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('pela natureza')), findsNothing);
     });
 
     test('no tema escuro, cores mais claras', () {
