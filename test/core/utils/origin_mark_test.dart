@@ -54,4 +54,11 @@ void main() {
     expect(versionLabel('firered'), 'FireRed');
     expect(versionLabel('leafgreen'), 'LeafGreen');
   });
+
+  test('nome completo do jogo, como na capa (#356)', () {
+    expect(versionFullName('legends-arceus'), 'Pokémon Legends: Arceus');
+    expect(versionFullName('firered'), 'Pokémon FireRed');
+    expect(versionFullName('lets-go-pikachu'), "Pokémon: Let's Go, Pikachu!");
+    expect(versionFullName('lets-go-eevee'), "Pokémon: Let's Go, Eevee!");
+  });
 }

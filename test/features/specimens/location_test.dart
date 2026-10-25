@@ -239,14 +239,11 @@ void main() {
         await _go(tester, Routes.saves);
         expect(find.text('Recebem do HOME'), findsOneWidget);
         expect(find.text('Só enviam para o HOME'), findsOneWidget);
-        expect(find.text('Red (1996) · FireRed'), findsOneWidget);
+        expect(find.text('Red (1996)'), findsOneWidget);
         expect(find.text('Só envia para o HOME'), findsOneWidget);
         double top(String text) => tester.getTopLeft(find.text(text)).dy;
-        expect(top('Scarlet · Switch'), lessThan(top('Só enviam para o HOME')));
-        expect(
-          top('Só enviam para o HOME'),
-          lessThan(top('FireRed · Red (1996)')),
-        );
+        expect(top('Pokémon Scarlet'), lessThan(top('Só enviam para o HOME')));
+        expect(top('Só enviam para o HOME'), lessThan(top('Pokémon FireRed')));
       });
     }
 
@@ -373,8 +370,8 @@ void main() {
       final backend = await pumpFullApp(tester, size: compactSize);
       await _go(tester, Routes.settings);
       await _tap(tester, find.text('Meus saves'));
-      expect(find.text('Scarlet · Switch'), findsOneWidget);
-      expect(find.text('Legends: Z-A · Ash (222222)'), findsOneWidget);
+      expect(find.text('Switch · Ash (123456)'), findsOneWidget);
+      expect(find.text('Pokémon Legends: Z-A'), findsOneWidget);
 
       // Fechar a folha sem escolher não cria nada.
       await _tap(tester, find.text('Adicionar save'));
@@ -413,7 +410,7 @@ void main() {
       );
 
       // Editar (tela cheia no celular): apelido e Charm; Enter; Cancelar.
-      await _tap(tester, menuOf('Scarlet · Switch'));
+      await _tap(tester, menuOf('Switch · Ash (123456)'));
       await _tap(tester, find.text('Editar'));
       expect(
         find.descendant(
@@ -429,12 +426,12 @@ void main() {
       await tester.enterText(find.byType(TextField), ' OLED ');
       await _tap(tester, find.text('Tenho o Shiny Charm'));
       await _tap(tester, find.text('Salvar'));
-      expect(find.text('Scarlet · OLED'), findsOneWidget);
+      expect(find.text('OLED · Ash (123456)'), findsOneWidget);
       expect(
         (await backend.fetchSaves()).firstWhere((s) => s.id == 1).hasShinyCharm,
         isTrue,
       );
-      await _tap(tester, menuOf('Scarlet · OLED'));
+      await _tap(tester, menuOf('OLED · Ash (123456)'));
       await _tap(tester, find.text('Editar'));
       expect(
         tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
@@ -443,28 +440,28 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Lite');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
-      expect(find.text('Scarlet · Lite'), findsOneWidget);
-      await _tap(tester, menuOf('Scarlet · Lite'));
+      expect(find.text('Lite · Ash (123456)'), findsOneWidget);
+      await _tap(tester, menuOf('Lite · Ash (123456)'));
       await _tap(tester, find.text('Editar'));
       await _tap(tester, find.byTooltip('Cancelar'));
-      expect(find.text('Scarlet · Lite'), findsOneWidget);
+      expect(find.text('Lite · Ash (123456)'), findsOneWidget);
       // O espécime fora do HOME mostra o apelido novo.
       final away = (await backend.fetchSlot(62)).specimen!;
       expect(away.location!.title, 'Scarlet · Lite');
 
       // Remover: com espécime, recusa; sem, some. Cancelar não remove.
-      await _tap(tester, menuOf('Scarlet · Lite'));
+      await _tap(tester, menuOf('Lite · Ash (123456)'));
       await _tap(tester, find.text('Remover'));
       await _tap(tester, find.widgetWithText(TextButton, 'Remover'));
       expect(find.textContaining('ainda tem espécimes'), findsOneWidget);
-      await _tap(tester, menuOf('Legends: Z-A · Ash (222222)'));
+      await _tap(tester, menuOf('Pokémon Legends: Z-A'));
       await _tap(tester, find.text('Remover'));
       await _tap(tester, find.text('Cancelar'));
-      expect(find.text('Legends: Z-A · Ash (222222)'), findsOneWidget);
-      await _tap(tester, menuOf('Legends: Z-A · Ash (222222)'));
+      expect(find.text('Pokémon Legends: Z-A'), findsOneWidget);
+      await _tap(tester, menuOf('Pokémon Legends: Z-A'));
       await _tap(tester, find.text('Remover'));
       await _tap(tester, find.widgetWithText(TextButton, 'Remover'));
-      expect(find.text('Legends: Z-A · Ash (222222)'), findsNothing);
+      expect(find.text('Pokémon Legends: Z-A'), findsNothing);
     });
 
     testWidgets('falhas: lista, treinadores e renomear', (tester) async {
@@ -493,7 +490,7 @@ void main() {
 
       fail = false;
       await _tap(tester, find.text('Tentar novamente'));
-      expect(find.text('Scarlet · Switch'), findsOneWidget);
+      expect(find.text('Switch · Ash (123456)'), findsOneWidget);
       await _tap(tester, find.text('Adicionar save'));
       expect(find.text('Dados inválidos.'), findsOneWidget);
       await _tap(tester, find.byTooltip('Ações do save'));
@@ -519,13 +516,13 @@ void main() {
         matching: find.byTooltip('Ações do save'),
       );
 
-      await _tap(tester, menuOf('FireRed · Red (1996)'));
+      await _tap(tester, menuOf('Pokémon FireRed'));
       await _tap(tester, find.text('Editar'));
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('Tenho o Shiny Charm'), findsNothing);
       await _tap(tester, find.widgetWithText(TextButton, 'Cancelar'));
 
-      await _tap(tester, menuOf('Scarlet · Switch'));
+      await _tap(tester, menuOf('Switch · Ash (123456)'));
       await _tap(tester, find.text('Editar'));
       await _tap(tester, find.text('Tenho o Shiny Charm'));
       await _tap(tester, find.widgetWithText(FilledButton, 'Salvar'));

@@ -134,16 +134,16 @@ class _SaveList extends ConsumerWidget {
       title: Row(
         spacing: 6,
         children: [
-          Flexible(child: Text(save.title)),
+          Flexible(child: Text(save.gameFullName)),
           if (save.hasShinyCharm) const ShinyCharmIcon(),
         ],
       ),
       subtitle: !save.isOneWay
-          ? Text(save.trainer.label)
+          ? Text(save.ownerLine)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(save.trainer.label),
+                Text(save.ownerLine),
                 Row(
                   spacing: 6,
                   children: [

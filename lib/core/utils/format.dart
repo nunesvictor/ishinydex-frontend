@@ -19,6 +19,16 @@ const _versionLabels = {
   'lets-go-eevee': "Let's Go Eevee",
 };
 
+/// O nome completo do jogo, como na capa (`legends-arceus` → "Pokémon
+/// Legends: Arceus"), onde há espaço para ele (Meus saves, #356).
+String versionFullName(String version) =>
+    _versionFullNames[version] ?? 'Pokémon ${versionLabel(version)}';
+
+const _versionFullNames = {
+  'lets-go-pikachu': "Pokémon: Let's Go, Pikachu!",
+  'lets-go-eevee': "Pokémon: Let's Go, Eevee!",
+};
+
 /// Percentual inteiro de [done] sobre [total] (0 quando [total] é 0).
 int percentOf(int done, int total) =>
     total == 0 ? 0 : (done * 100 / total).floor();
