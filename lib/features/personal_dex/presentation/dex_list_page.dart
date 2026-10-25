@@ -113,10 +113,23 @@ class _DexCard extends StatelessWidget {
                   ),
                 ],
               ),
-              Text(
-                dex.missing == 0
-                    ? context.l10n.dexComplete
-                    : context.l10n.dexMissingCount(dex.missing),
+              Text.rich(
+                TextSpan(
+                  text: dex.missing == 0
+                      ? context.l10n.dexComplete
+                      : context.l10n.dexMissingCount(dex.missing),
+                  children: [
+                    // A parte que nunca completa (#341): explica a diferença
+                    // para o "para caçar" da aba Faltam.
+                    if (dex.locked > 0)
+                      TextSpan(
+                        text: ' · ${context.l10n.dexLockedCount(dex.locked)}',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
                 style: theme.textTheme.bodySmall,
               ),
               ProgressBadge(

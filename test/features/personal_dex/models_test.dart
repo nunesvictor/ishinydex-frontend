@@ -131,7 +131,7 @@ void main() {
         types: ['water', 'flying'],
         categories: [SpeciesCategory.legendary, SpeciesCategory.ultraBeast],
         search: ' tapu ',
-        includeLocked: true,
+        shinyLocked: ShinyLockedFilter.only,
         situation: HuntSituation.missing,
         homeCutoff: HomeCutoffFilter.only,
         versions: ['scarlet', 'sword'],
@@ -143,7 +143,7 @@ void main() {
         'type': 'water,flying',
         'category': 'legendary,ultra-beast',
         'search': 'tapu',
-        'include_locked': true,
+        'shiny_locked': 'only',
         'registered': false,
         'home_cutoff': 'only',
         'version': 'scarlet,sword',
@@ -176,7 +176,7 @@ void main() {
       expect(ShinyLockType.fromParam(null), isNull);
       expect(SpeciesCategory.ultraBeast.param, 'ultra-beast');
       expect(_pt.speciesCategory(SpeciesCategory.regular), 'Comum');
-      expect(_pt.shinyLockType(ShinyLockType.unobtainable), 'Shiny impossível');
+      expect(_pt.shinyLockType(ShinyLockType.unobtainable), 'Shiny locked');
     });
   });
 

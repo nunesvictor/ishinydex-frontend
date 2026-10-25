@@ -70,4 +70,27 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('a parte shiny locked de cada geração (#341)', (tester) async {
+    when(() => repository.fetchGenerations(1)).thenAnswer(
+      (_) async => const [
+        GenerationProgress(
+          generation: 'generation-vi',
+          total: 126,
+          registered: 117,
+          locked: 3,
+          firstBox: _box,
+        ),
+        GenerationProgress(
+          generation: 'generation-iv',
+          total: 119,
+          registered: 119,
+          firstBox: _box,
+        ),
+      ],
+    );
+    await pump(tester);
+    expect(find.text('Faltam 9 · 3 shiny locked'), findsOneWidget);
+    expect(find.textContaining('shiny locked'), findsOneWidget);
+  });
 }

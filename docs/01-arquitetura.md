@@ -424,8 +424,15 @@ O Faltam lista o que ainda falta caçar no dex, na ordem das boxes. Dois grupos 
   conta o jogo em que a forma pode ser alfa. Sem a chave no catálogo, o
   motivo some do menu.
 - **Escopo** (combinado com E), na folha "Filtros": categoria (lendário,
-  mítico, Ultra Beast, bebê, comum), geração, tipo (qualquer um) e "incluir
-  shiny impossível".
+  mítico, Ultra Beast, bebê, comum), geração, tipo (qualquer um) e "Shiny
+  locked" (#341), com três opções: Sem (o padrão), Com e Só shiny locked.
+  As formas sem shiny (lock "Shiny locked" ativo) e os jogos em que a forma é
+  travada ficam fora por padrão. "Só shiny locked" mostra o que impede o dex
+  de chegar a 100%: essas linhas dizem qual lock as esconde e não têm
+  "Começar caçada". Quando há alguma escondida, a linha da contagem ganha o
+  atalho "9 shiny locked", que liga esse filtro. A mesma parte aparece na
+  lista de dex e no progresso por geração ("Faltam 123 · 9 shiny locked"), só
+  em shiny dex (`PersonalDex.locked`, `GenerationProgress.locked`).
 
 A lista é agrupada pela box do dex (#282). O `fetchHuntBoxes` devolve as
 boxes com itens no filtro, na mesma ordem da lista paginada, com a contagem e
@@ -516,7 +523,7 @@ feature [`shiny_locks`](../lib/features/shiny_locks/):
   seletor de forma do cadastro de espécime. Os erros da API (nome repetido,
   sem formas) aparecem nos campos, e mexer num campo tira o erro dele.
 - **Depois de salvar ou apagar**, `ShinyLockActions` invalida a lista, as
-  caçadas (o aviso e o "incluir shiny impossível") e o `formDetailProvider`
+  caçadas (o aviso e o filtro "Shiny locked") e o `formDetailProvider`
   (o aviso no painel do slot e no cadastro de espécime). Na API, só os locks
   **ativos** valem; no `FakeBackend`, os avisos das formas também vêm dos
   locks cadastrados (o seed tem um de exemplo, no Pikachu).

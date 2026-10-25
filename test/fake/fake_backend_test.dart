@@ -1319,7 +1319,7 @@ void main() {
       );
     });
 
-    test('shiny lock: impossível só com includeLocked', () async {
+    test('shiny lock: shiny locked só com o filtro', () async {
       final fake = FakeBackend()
         ..addForm(id: 1, name: 'victini', shinyLock: ShinyLockType.unobtainable)
         ..addForm(id: 2, name: 'keldeo', shinyLock: ShinyLockType.distroOnly);
@@ -1335,13 +1335,51 @@ void main() {
       expect(page.results.single.shinyLock, ShinyLockType.distroOnly);
       final all = await fake.fetchHunts(
         dex,
-        const HuntQuery(includeLocked: true),
+        const HuntQuery(shinyLocked: ShinyLockedFilter.included),
         page: 1,
         pageSize: 10,
       );
       expect(all.results.first.shinyLock, ShinyLockType.unobtainable);
       expect((await fake.fetchForm(1)).isShinylocked, true);
     });
+
+    test(
+      'shiny locked (#341): só elas, o nome do lock e as contagens',
+      () async {
+        final fake = FakeBackend()
+          ..addForm(id: 1, name: 'cosmoem')
+          ..addForm(id: 2, name: 'keldeo', shinyLock: ShinyLockType.distroOnly)
+          ..addForm(id: 3, name: 'rowlet')
+          ..addShinyLock(caption: 'Cosmog-Cosmoem', formIds: [1])
+          // Um lock desligado não conta.
+          ..addShinyLock(caption: 'Rowlet', formIds: [3], active: false);
+        final dex = fake.addDex(name: 'Shiny', isShinyDex: true);
+        final living = fake.addDex(name: 'Living');
+        fake
+          ..addBox(dexId: dex, name: 'HOME 1', formIds: [1, 2, 3])
+          ..addBox(dexId: living, name: 'HOME 2', formIds: [1]);
+        final only = await fake.fetchHunts(
+          dex,
+          const HuntQuery(shinyLocked: ShinyLockedFilter.only),
+          page: 1,
+          pageSize: 10,
+        );
+        expect([for (final h in only.results) h.slot.form!.name], ['cosmoem']);
+        expect(only.results.single.shinyLockCaption, 'Cosmog-Cosmoem');
+        final without = await fake.fetchHunts(
+          dex,
+          const HuntQuery(),
+          page: 1,
+          pageSize: 10,
+        );
+        expect(without.count, 2);
+        expect(without.results.every((h) => h.shinyLockCaption == null), true);
+        expect((await fake.fetchDex(dex)).locked, 1);
+        expect((await fake.fetchGenerations(dex)).single.locked, 1);
+        // Fora de um shiny dex, o shiny lock não impede nada.
+        expect((await fake.fetchDex(living)).locked, 0);
+      },
+    );
 
     test('shiny locks: CRUD, validação e efeito nas formas', () async {
       final fake = FakeBackend()

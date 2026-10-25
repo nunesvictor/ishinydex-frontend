@@ -12,10 +12,10 @@ import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filte
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Abre os filtros de escopo das caçadas (fecha no HOME, categoria,
-/// geração, tipo, shiny impossível): bottom sheet no compacto, diálogo nos
+/// geração, tipo, shiny locked): bottom sheet no compacto, diálogo nos
 /// demais. Retorna a consulta nova ao aplicar, ou `null` se o usuário fechou
-/// sem aplicar. Com [dexId], as opções de "Fim do Pokémon Bank" mostram quantas
-/// caçadas dão.
+/// sem aplicar. Com [dexId], as opções de "Fim do Pokémon Bank" e de "Shiny
+/// locked" mostram quantas caçadas dão.
 Future<HuntQuery?> showHuntFilters(
   BuildContext context,
   HuntQuery query, {
@@ -200,12 +200,52 @@ class _HuntFiltersPanelState extends ConsumerState<HuntFiltersPanel> {
                     ),
                 ],
               ),
-              SwitchListTile.adaptive(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                title: Text(context.l10n.includeUnobtainable),
-                subtitle: Text(context.l10n.includeUnobtainableHint),
-                value: _draft.includeLocked,
-                onChanged: (v) => _update(_draft.copyWith(includeLocked: v)),
+              // Três opções, e não uma chave (#341): "Só shiny locked" mostra
+              // o que impede o dex de chegar a 100%.
+              _Section(
+                title: context.l10n.shinyLockedSection,
+                children: [
+                  for (final option in ShinyLockedFilter.values)
+                    ChoiceChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 6,
+                        children: [
+                          // "Without shiny locked" é longo: com letra grande,
+                          // encolhe em vez de transbordar.
+                          Flexible(
+                            child: Text(
+                              shinyLockedLabel(context.l10n, option),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (dexId != null)
+                            HuntCount(
+                              dexId: dexId,
+                              query: _draft.copyWith(shinyLocked: option),
+                            ),
+                        ],
+                      ),
+                      selected: _draft.shinyLocked == option,
+                      onSelected: (_) =>
+                          _update(_draft.copyWith(shinyLocked: option)),
+                    ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: Text(
+                  switch (_draft.shinyLocked) {
+                    ShinyLockedFilter.without =>
+                      context.l10n.shinyLockedWithoutHint,
+                    ShinyLockedFilter.included =>
+                      context.l10n.shinyLockedIncludedHint,
+                    ShinyLockedFilter.only => context.l10n.shinyLockedOnlyHint,
+                  },
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ],
           ),
@@ -284,8 +324,11 @@ class ActiveHuntFilterChips extends ConsumerWidget {
           ),
           q.copyWith(types: const []),
         ),
-      if (q.includeLocked)
-        (context.l10n.withUnobtainable, q.copyWith(includeLocked: false)),
+      if (q.shinyLocked != ShinyLockedFilter.without)
+        (
+          shinyLockedLabel(context.l10n, q.shinyLocked),
+          q.copyWith(shinyLocked: ShinyLockedFilter.without),
+        ),
       if (q.homeCutoff != HomeCutoffFilter.all)
         (
           homeCutoffLabel(context.l10n, q.homeCutoff),
@@ -317,6 +360,14 @@ String homeCutoffLabel(AppLocalizations l10n, HomeCutoffFilter filter) =>
       HomeCutoffFilter.all => l10n.homeCutoffAll,
       HomeCutoffFilter.only => l10n.homeCutoffOnly,
       HomeCutoffFilter.also => l10n.homeCutoffAlso,
+    };
+
+/// O nome da opção de "Shiny locked" (#341), no chip e no filtro aplicado.
+String shinyLockedLabel(AppLocalizations l10n, ShinyLockedFilter filter) =>
+    switch (filter) {
+      ShinyLockedFilter.without => l10n.shinyLockedWithout,
+      ShinyLockedFilter.included => l10n.shinyLockedIncluded,
+      ShinyLockedFilter.only => l10n.shinyLockedOnly,
     };
 
 /// Quantas caçadas a [query] dá (o total da 1ª página), em letra pequena: à

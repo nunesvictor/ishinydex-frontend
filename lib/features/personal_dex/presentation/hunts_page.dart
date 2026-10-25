@@ -282,6 +282,8 @@ class _HuntsPageState extends ConsumerState<HuntsPage>
           dexId: dex.id,
           query: _query,
           onShowActive: () => _controller!.animateTo(HuntsTab.active.index),
+          onShowLocked: () =>
+              _setQuery(_query.copyWith(shinyLocked: ShinyLockedFilter.only)),
           onOpenBox: (box) =>
               context.push(Routes.huntsDex(dex.id, boxId: box.id)),
           onTap: (hunt) => context.push(
@@ -896,12 +898,16 @@ class HuntList extends ConsumerWidget {
     this.onTapGames,
     this.onOpenBox,
     this.onShowActive,
+    this.onShowLocked,
     super.key,
   });
 
   final int dexId;
   final HuntQuery query;
   final ValueChanged<Hunt> onTap;
+
+  /// O atalho "9 shiny locked" (#341): liga o filtro "Só shiny locked".
+  final VoidCallback? onShowLocked;
 
   /// Os ícones de jogo de um item (#276): abrem o slot na aba Espécie.
   final ValueChanged<Hunt>? onTapGames;
@@ -916,25 +922,45 @@ class HuntList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final firstPage = huntPageProvider((dexId: dexId, query: query, page: 1));
     final boxes = huntBoxesProvider((dexId: dexId, query: query));
+    // Com as shiny locked de fora, o atalho para vê-las fica na linha da
+    // contagem; só aparece quando há alguma escondida.
+    final open = onShowLocked;
+    final link = query.shinyLocked == ShinyLockedFilter.without && open != null
+        ? _ShowLocked(dexId: dexId, query: query, onTap: open)
+        : null;
+    Widget header(String? count) => Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, link == null ? 16 : 4, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              count ?? '',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+          ?link,
+        ],
+      ),
+    );
     return switch (ref.watch(firstPage)) {
-      AsyncData(value: final page) when page.count == 0 => EmptyView(
-        message: context.l10n.nothingToHunt,
+      AsyncData(value: final page) when page.count == 0 => Column(
+        children: [
+          if (link != null) header(null),
+          Expanded(child: EmptyView(message: context.l10n.nothingToHunt)),
+        ],
       ),
       AsyncData(value: final page) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text(
-              query.versions.isEmpty
-                  ? context.l10n.toHunt(page.count)
-                  : context.l10n.toHuntIn(
-                      page.count,
-                      _gameNames(context.l10n, query.versions),
-                    ),
-              style: Theme.of(context).textTheme.labelLarge,
+          header(switch (query) {
+            HuntQuery(shinyLocked: ShinyLockedFilter.only) =>
+              context.l10n.dexLockedCount(page.count),
+            HuntQuery(versions: []) => context.l10n.toHunt(page.count),
+            HuntQuery(:final versions) => context.l10n.toHuntIn(
+              page.count,
+              _gameNames(context.l10n, versions),
             ),
-          ),
+          }),
           Expanded(
             child: switch (ref.watch(boxes)) {
               AsyncData(value: final list) => RefreshIndicator.adaptive(
@@ -1202,6 +1228,46 @@ class _HuntItem extends ConsumerWidget {
   }
 }
 
+/// "9 shiny locked ›" (#341): quantas a lista esconde por não terem shiny, e
+/// o atalho para ver só elas. Nada enquanto carrega ou sem nenhuma.
+class _ShowLocked extends ConsumerWidget {
+  const _ShowLocked({
+    required this.dexId,
+    required this.query,
+    required this.onTap,
+  });
+
+  final int dexId;
+  final HuntQuery query;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref
+        .watch(
+          huntPageProvider((
+            dexId: dexId,
+            query: query.copyWith(shinyLocked: ShinyLockedFilter.only),
+            page: 1,
+          )),
+        )
+        .value
+        ?.count;
+    if (count == null || count == 0) return const SizedBox.shrink();
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.lock_outline, size: 16),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(context.l10n.dexLockedCount(count)),
+          const Icon(Icons.chevron_right, size: 18),
+        ],
+      ),
+    );
+  }
+}
+
 /// Um item do Faltam (#282): a forma, sem texto de subtítulo. Na 1ª linha,
 /// o nome (até duas linhas) e os motivos fora do padrão como ícone (outra
 /// pokébola, não shiny, shiny lock); na 2ª, onde caçar: os jogos dos seus
@@ -1243,9 +1309,22 @@ class HuntTile extends ConsumerWidget {
         ..._reasonIcons(context, theme),
       ],
     );
-    final home = hunt.versions.isEmpty ? null : _homeTag(ref);
-    final games = hunt.versions.isEmpty ? null : _games(context, ref);
-    final action = _huntAction(context, ref, form);
+    // Sem shiny (#341), não há o que caçar: no lugar dos jogos e do botão,
+    // o lock que a esconde, para corrigir em Shiny locks se ele estiver
+    // errado.
+    final locked = hunt.shinyLock == ShinyLockType.unobtainable;
+    final rule = switch (hunt.shinyLockCaption) {
+      final caption? when locked => Text(
+        context.l10n.huntLockRule(caption),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      _ => null,
+    };
+    final home = hunt.versions.isEmpty || locked ? null : _homeTag(ref);
+    final games = hunt.versions.isEmpty || locked ? null : _games(context, ref);
+    final action = locked ? null : _huntAction(context, ref, form);
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= wideFrom;
@@ -1265,6 +1344,7 @@ class HuntTile extends ConsumerWidget {
                   ),
                   if (wide) ...[
                     Expanded(child: title),
+                    ?rule,
                     ?games,
                     ?home,
                   ] else
@@ -1274,6 +1354,7 @@ class HuntTile extends ConsumerWidget {
                         spacing: 6,
                         children: [
                           title,
+                          ?rule,
                           // Num celular estreito, a etiqueta desce em vez de
                           // transbordar.
                           if (games != null || home != null)

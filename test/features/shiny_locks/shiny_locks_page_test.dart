@@ -59,7 +59,7 @@ void main() {
     await _tap(tester, find.text('Shiny locks'));
     expect(find.text('1 form'), findsOneWidget);
     expect(find.text('All · 1'), findsOneWidget);
-    await _tap(tester, find.text('Unobtainable · 0'));
+    await _tap(tester, find.text('Shiny locked · 0'));
     expect(find.text('No shiny lock of this type.'), findsOneWidget);
     await _tap(tester, find.text('New shiny lock'));
     await _tap(tester, find.text('Save'));
@@ -80,7 +80,7 @@ void main() {
       expect(find.text('Pikachu de evento'), findsOneWidget);
       expect(find.text('1 forma'), findsOneWidget);
       expect(find.text('Todos · 1'), findsOneWidget);
-      await _tap(tester, find.text('Impossível · 0'));
+      await _tap(tester, find.text('Shiny locked · 0'));
       expect(find.text('Nenhum shiny lock deste tipo.'), findsOneWidget);
       await _tap(tester, find.text('Distribuição · 1'));
       expect(find.text('Pikachu de evento'), findsOneWidget);
@@ -123,14 +123,14 @@ void main() {
       await _tap(tester, find.text('Pikachu de evento'));
       expect(find.text('Editar shiny lock'), findsOneWidget);
       expect(find.textContaining('por distribuição (evento)'), findsOneWidget);
-      await _tap(tester, find.text('Shiny impossível'));
+      await _tap(tester, find.text('Shiny locked'));
       expect(find.textContaining('Não existe shiny'), findsOneWidget);
       await _tap(tester, find.text('Ativo'));
       await _tap(tester, find.text('Salvar'));
       expect(find.text('Shiny lock salvo.'), findsOneWidget);
       // Inativo: esmaecido, com o selo, e sem efeito na forma.
       expect(find.text('Inativo'), findsOneWidget);
-      expect(find.text('Impossível · 2'), findsOneWidget);
+      expect(find.text('Shiny locked · 2'), findsOneWidget);
       expect((await backend.fetchForm(25)).isShinylocked, false);
 
       // Nome repetido: o erro da API aparece no campo; fechar não salva.
