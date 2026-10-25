@@ -5,6 +5,7 @@ import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:ishinydex/core/theme/app_theme_mode.dart';
 import 'package:ishinydex/core/widgets/update_notice.dart';
 import 'package:ishinydex/features/sync/presentation/sync_lifecycle.dart';
 
@@ -21,6 +22,8 @@ class IShinyDexApp extends ConsumerWidget {
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light(),
     darkTheme: AppTheme.dark(),
+    // Claro, escuro ou o do aparelho, de Ajustes → Aparência (#273).
+    themeMode: ref.watch(appThemeModeProvider),
     // O idioma escolhido em Ajustes; em "Automático" (`null`), o do
     // aparelho, pelo [resolveLocale]: português vira pt-BR, o resto inglês.
     locale: ref.watch(appLanguageProvider).locale,

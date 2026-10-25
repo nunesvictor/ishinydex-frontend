@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
+import 'package:ishinydex/core/theme/app_theme_mode.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
 
 import '../../helpers/helpers.dart';
 
 void main() {
   languageTests();
+  themeModeTests();
 
   testWidgets('mostra a versão; sem "Servidor" nem "Sair"', (tester) async {
     await pumpWidgetApp(
@@ -95,5 +97,73 @@ void languageTests() {
     await tester.pumpAndSettle();
     expect(find.text('Automatic (English)'), findsOneWidget);
     expect(await storage.read(), AppLanguage.system);
+  });
+}
+
+void themeModeTests() {
+  Brightness brightness(WidgetTester tester) =>
+      Theme.of(tester.element(find.byType(Scaffold).first)).brightness;
+
+  testWidgets('Preferências → Aparência: Automático segue o aparelho', (
+    tester,
+  ) async {
+    await pumpWidgetApp(tester, const SettingsPage());
+    expect(find.text('Aparência'), findsOneWidget);
+    // O aparelho dos testes está no claro.
+    expect(find.text('Automático (Claro)'), findsOneWidget);
+  });
+
+  testWidgets('celular: a folha troca para Escuro na hora e guarda (#273)', (
+    tester,
+  ) async {
+    final storage = InMemoryThemeModeStorage();
+    await pumpFullApp(tester, size: compactSize, themeModeStorage: storage);
+    await openSettings(tester);
+    expect(brightness(tester), Brightness.light);
+    await tester.tap(find.text('Aparência'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.text('Segue o tema do aparelho (Claro)'), findsOneWidget);
+    expect(find.textContaining('barra de status'), findsOneWidget);
+    await tester.tap(find.text('Escuro'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(brightness(tester), Brightness.dark);
+    expect(find.text('Escuro'), findsOneWidget);
+    expect(await storage.read(), ThemeMode.dark);
+  });
+
+  testWidgets('PC: diálogo; Cancel não muda; Claro e depois Automático', (
+    tester,
+  ) async {
+    final storage = InMemoryThemeModeStorage(ThemeMode.dark);
+    await pumpFullApp(
+      tester,
+      language: AppLanguage.en,
+      themeModeStorage: storage,
+      overrides: [initialThemeModeProvider.overrideWithValue(ThemeMode.dark)],
+    );
+    await openSettings(tester);
+    expect(brightness(tester), Brightness.dark);
+    expect(find.text('Dark'), findsOneWidget);
+    await tester.tap(find.text('Appearance'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(await storage.read(), ThemeMode.dark);
+
+    await tester.tap(find.text('Appearance'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Light'));
+    await tester.pumpAndSettle();
+    expect(brightness(tester), Brightness.light);
+    expect(find.text('Light'), findsOneWidget);
+    await tester.tap(find.text('Appearance'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Automatic'));
+    await tester.pumpAndSettle();
+    expect(find.text('Automatic (Light)'), findsOneWidget);
+    expect(await storage.read(), ThemeMode.system);
   });
 }

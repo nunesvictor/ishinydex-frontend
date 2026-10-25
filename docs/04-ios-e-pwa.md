@@ -47,7 +47,13 @@ do sistema. O iOS pinta a barra com o `theme-color` da página
 contrasta. O `index.html` traz um `theme-color` por modo (a cor do AppBar de
 cada tema, conferida em `test/web_index_test.dart`), e o app atualiza a cor ao
 trocar de modo com ele aberto (`Title` no `builder` de
-[app.dart](../lib/app.dart)). Depois de mudar o `index.html`, remova e
+[app.dart](../lib/app.dart)). Com Claro ou Escuro escolhido em Ajustes →
+Aparência (#273), um script no `<head>` lê a escolha (`flutter.app_theme` no
+`localStorage`) antes do app carregar, marca o `<html>` com `data-theme` e
+põe a cor desse tema nas duas metas `theme-color`; o fundo e o splash seguem
+o mesmo atributo. Trocar o tema com o app aberto muda o app na hora, mas a
+barra só acompanha na próxima abertura (o WebKit não repinta, ver #290), e a
+folha de Aparência avisa. Depois de mudar o `index.html`, remova e
 recrie o atalho se a barra não mudar: o iOS guarda parte da configuração na
 hora em que o atalho é criado.
 
