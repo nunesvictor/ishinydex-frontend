@@ -1659,27 +1659,42 @@ class FakeBackend
     return _dexWithCounts(dexId);
   }
 
-  /// Como a API: slots com forma agrupados pela geração, na ordem da
-  /// primeira box. No fake, a geração sai do número da Pokédex nacional.
+  /// Como a API: slots com forma agrupados pela geração da forma (#343),
+  /// na ordem da box de cada geração. O Raticate de Alola conta na geração
+  /// VII, e não impede a I de chegar a 100%. A box de uma geração é a da
+  /// primeira espécie dela: num dex na ordem nacional, o Raticate de Alola
+  /// fica na HOME 1, e a geração VII ainda leva à box do Rowlet. Sem
+  /// nenhuma espécie da geração (um dex só de regionais), vale a primeira
+  /// forma dela.
   @override
   Future<List<GenerationProgress>> fetchGenerations(int dexId) async {
     await _delay();
+    final slots = [
+      for (final slot in _slots.values)
+        if (slot.dexId == dexId && slot.formId != null) slot,
+    ];
     final byGeneration = <String, List<_SlotRecord>>{};
-    for (final slot in _slots.values) {
-      final formId = slot.formId;
-      if (slot.dexId != dexId || formId == null) continue;
-      final generation = _generationOf(_forms[formId]!);
+    final anchor = <String, int>{};
+    for (final (i, slot) in slots.indexed) {
+      final form = _forms[slot.formId]!;
+      final generation = _formGenerationOf(form);
       byGeneration.putIfAbsent(generation, () => []).add(slot);
+      anchor.putIfAbsent(_generationOf(form), () => i);
     }
+    int anchorOf(String generation) =>
+        anchor[generation] ?? slots.indexOf(byGeneration[generation]!.first);
+    final generations = byGeneration.keys.toList()
+      ..sort((a, b) => anchorOf(a).compareTo(anchorOf(b)));
     return [
-      for (final MapEntry(key: generation, value: slots)
-          in byGeneration.entries)
+      for (final generation in generations)
         GenerationProgress(
           generation: generation,
-          total: slots.length,
-          registered: slots.where(_countsForProgress).length,
-          away: slots.where(_isAway).length,
-          firstBox: slots.first.box,
+          total: byGeneration[generation]!.length,
+          registered: byGeneration[generation]!
+              .where(_countsForProgress)
+              .length,
+          away: byGeneration[generation]!.where(_isAway).length,
+          firstBox: slots[anchorOf(generation)].box,
         ),
     ];
   }
@@ -1973,7 +1988,7 @@ class FakeBackend
                   query.situation.param == (slot.specimenId != null)) &&
               (query.includeLocked || lock != ShinyLockType.unobtainable) &&
               (query.generations.isEmpty ||
-                  query.generations.contains(_generationOf(form))) &&
+                  query.generations.contains(_formGenerationOf(form))) &&
               (query.types.isEmpty ||
                   form.types.any((t) => query.types.contains(t.type))) &&
               (query.categories.isEmpty ||
@@ -2735,7 +2750,7 @@ class FakeBackend
             query.ots.contains(s.ot) ||
             (query.withoutOt && s.ot == null)) &&
         query.types.every(formTypes.contains) &&
-        inList(query.generations, _generationOf(form)) &&
+        inList(query.generations, _formGenerationOf(form)) &&
         inList(
           query.categories,
           _categories[s.form] ?? SpeciesCategory.regular,
@@ -2833,8 +2848,14 @@ class FakeBackend
   static const _generationEnds = [151, 251, 386, 493, 649, 721, 809, 905];
   static const _romans = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii'];
 
-  /// A geração pelo número nacional: o `pokeapiId` das formas alternativas
-  /// passa de 10000 e cairia sempre na geração 9 (#324).
+  /// A geração em que a forma estreou (#343), pelo grupo de versões dela no
+  /// catálogo: o Raticate de Alola é da VII, o Ponyta de Galar, da VIII. Sem
+  /// catálogo (o seed), ou com uma forma que ele não conhece, a da espécie.
+  String _formGenerationOf(FormDetail form) =>
+      catalog?.formGeneration(form.id) ?? _generationOf(form);
+
+  /// A geração da espécie, pelo número nacional: o `pokeapiId` das formas
+  /// alternativas passa de 10000 e cairia sempre na geração 9 (#324).
   static String _generationOf(FormDetail form) {
     final dexNumber = form.nationalNumber ?? form.pokeapiId;
     for (final (i, end) in _generationEnds.indexed) {
