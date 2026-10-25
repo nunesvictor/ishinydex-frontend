@@ -538,7 +538,7 @@ O enum do tipo é o `ShinyLockType`, o mesmo das caçadas (`Hunt.shinyLock`).
 A terceira aba lista **todos** os espécimes, depositados ou não:
 
 - **Cabeçalho compacto** (`SpecimenHeadline`, como no Pokémon HOME):
-  pokébola, nome/apelido e selos (♂️/♀️, ✨, ícone de alfa do HOME, 📱)
+  pokébola, nome/apelido e selos (gênero com `GenderIcon`, shiny, alfa e GO)
   numa linha.
   É o título de cada item da lista (o subtítulo é "Espécie · #0402", com o
   nº da dex nacional) e o nome nos detalhes do espécime e do slot, no lugar

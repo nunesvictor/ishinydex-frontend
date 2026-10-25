@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
-import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -135,7 +134,8 @@ void main() {
         await pumpDetail(tester, size: size);
         // Habilidade destacada na lista da forma; gênero no cabeçalho;
         // natureza no cartão de status. Nos campos, só o que é do espécime.
-        expect(find.textContaining('✓ Overgrow'), findsOneWidget);
+        expect(find.textContaining(' Overgrow'), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsOneWidget);
         expect(find.text('Habilidade'), findsNothing);
         expect(find.text('Natureza'), findsNothing);
         expect(find.text('Gênero'), findsNothing);
@@ -154,7 +154,7 @@ void main() {
         expect(find.text('Bulbasaur'), findsOneWidget);
         expect(find.byType(ShinyIcon), findsOneWidget);
         expect(find.byType(GoIcon), findsOneWidget);
-        expect(find.text(maleEmoji), findsOneWidget);
+        expect(find.byIcon(Icons.male), findsOneWidget);
         expect(
           tester.getCenter(find.byType(ShinyIcon)).dy,
           moreOrLessEquals(

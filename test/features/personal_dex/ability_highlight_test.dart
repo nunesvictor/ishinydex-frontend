@@ -50,11 +50,10 @@ void main() {
       tester,
     ) async {
       await pump(tester, highlight: 'chlorophyll', size: size);
-      expect(
-        find.text('Habilidades: Overgrow · ✓ Chlorophyll (oculta)'),
-        findsOneWidget,
-      );
-      final span = spanWith(tester, '✓ Chlorophyll (oculta)')!;
+      // O ✓ é um ícone do app (#349), antes do nome.
+      expect(find.textContaining('Overgrow · '), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      final span = spanWith(tester, ' Chlorophyll (oculta)')!;
       expect(span.style!.fontWeight, FontWeight.bold);
       expect(spanWith(tester, 'Overgrow')!.style, isNull);
     });
