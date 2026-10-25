@@ -1402,7 +1402,9 @@ class HuntTile extends ConsumerWidget {
       if (hunt.reasons.contains(HuntReason.noShiny) &&
           hunt.slot.specimen != null)
         icon(context.l10n.notShiny, const NoShinyIcon(size: 16)),
-      if (hunt.reasons.contains(HuntReason.noAlpha))
+      // Num alfa que não é shiny, falta só o shiny (#348).
+      if (hunt.reasons.contains(HuntReason.noAlpha) &&
+          !(hunt.slot.specimen?.isAlpha ?? false))
         icon(
           context.l10n.huntReason(HuntReason.noAlpha),
           const AlphaIcon(size: 16, semanticLabel: null),

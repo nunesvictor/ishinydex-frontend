@@ -80,7 +80,7 @@ void main() {
     expect(en.generation(null), 'Other forms');
     expect(
       [for (final r in HuntReason.values) en.huntReason(r)],
-      ['No shiny', 'No alpha', 'Shiny from GO', 'Poké Ball'],
+      ['No shiny', 'No shiny alpha', 'Shiny from GO', 'Poké Ball'],
     );
     expect([
       for (final s in HuntSituation.values) en.huntSituationHint(s),

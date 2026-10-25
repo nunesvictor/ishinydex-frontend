@@ -11,7 +11,7 @@ import 'package:ishinydex/features/personal_dex/presentation/hunts_page.dart';
 import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';
 
-// O motivo "Sem alfa" nas Caçadas (#280). Na fixture, Sword/Shield faz o
+// O motivo "Sem shiny alfa" nas Caçadas (#280, #348). Na fixture, Sword/Shield faz o
 // papel dos jogos com alfa: Eevee, Vaporeon e Espeon podem ser alfa lá.
 
 Catalog _catalog({bool alphas = true}) => Catalog.fromJson({
@@ -87,23 +87,26 @@ void main() {
       ]);
     });
 
-    test('só "Sem alfa": quem pode ser alfa e não tem um', () async {
-      final (backend, dexId) = await _backend();
-      const query = HuntQuery(reasons: [HuntReason.noAlpha]);
-      final hunts = await _hunts(backend, dexId, query);
-      expect(_names(hunts), ['eevee', 'vaporeon']);
-      // Só pelo alfa, onde caçar são os jogos com alfa.
-      expect(hunts.first.versions.toSet(), {'sword', 'shield'});
-      expect(hunts.first.reasons, [HuntReason.noAlpha]);
-      final boxes = await backend.fetchHuntBoxes(dexId, query);
-      // O Bulbasaur falta, mas fora do filtro; o Espeon alfa está completo.
-      expect(boxes.single.cells.take(4), [
-        HuntCell.hidden,
-        HuntCell.listed,
-        HuntCell.listed,
-        HuntCell.done,
-      ]);
-    });
+    test(
+      'só "Sem shiny alfa": quem pode ser alfa e não tem um shiny alfa',
+      () async {
+        final (backend, dexId) = await _backend();
+        const query = HuntQuery(reasons: [HuntReason.noAlpha]);
+        final hunts = await _hunts(backend, dexId, query);
+        expect(_names(hunts), ['eevee', 'vaporeon']);
+        // Só pelo alfa, onde caçar são os jogos com alfa.
+        expect(hunts.first.versions.toSet(), {'sword', 'shield'});
+        expect(hunts.first.reasons, [HuntReason.noAlpha]);
+        final boxes = await backend.fetchHuntBoxes(dexId, query);
+        // O Bulbasaur falta, mas fora do filtro; o Espeon alfa está completo.
+        expect(boxes.single.cells.take(4), [
+          HuntCell.hidden,
+          HuntCell.listed,
+          HuntCell.listed,
+          HuntCell.done,
+        ]);
+      },
+    );
 
     test('com "Sem shiny" junto, os jogos são todos', () async {
       final (backend, dexId) = await _backend();
@@ -115,6 +118,25 @@ void main() {
       final vaporeon = hunts.firstWhere((h) => h.slot.form?.name == 'vaporeon');
       expect(vaporeon.reasons, [HuntReason.noShiny, HuntReason.noAlpha]);
       expect(vaporeon.versions, containsAll(['violet', 'sword']));
+    });
+
+    test('um alfa que não é shiny também entra (#348)', () async {
+      final (backend, dexId) = await _backend();
+      final slots = await backend.fetchSlots(
+        dexId: dexId,
+        boxId: (await backend.fetchBoxes(dexId)).single.id,
+      );
+      await backend.deposit(
+        slotId: slots.firstWhere((s) => s.form?.id == 134).id,
+        specimenId: backend.addSpecimen(formId: 134, isAlpha: true),
+      );
+      final hunts = await _hunts(
+        backend,
+        dexId,
+        const HuntQuery(reasons: [HuntReason.noAlpha]),
+      );
+      expect(_names(hunts), ['eevee', 'vaporeon']);
+      expect(hunts.last.reasons, [HuntReason.noShiny, HuntReason.noAlpha]);
     });
 
     test('com o filtro Jogo, só quem pode ser alfa naquele jogo', () async {
@@ -157,15 +179,19 @@ void main() {
   for (final size in [compactSize, expandedSize]) {
     final px = '${size.width.toInt()}px';
 
-    testWidgets('ligar "Sem alfa" no menu e o α no item ($px)', (tester) async {
+    testWidgets('ligar "Sem shiny alfa" no menu e o α no item ($px)', (
+      tester,
+    ) async {
       final (backend, dexId) = await _backend();
       await pumpFullApp(tester, size: size, backend: backend);
       await open(tester, backend, dexId);
       expect(
-        find.text('Pode ser alfa em algum jogo, e o slot não tem um alfa'),
+        find.text(
+          'Pode ser alfa em algum jogo, e o slot não tem um shiny alfa',
+        ),
         findsOne,
       );
-      await tester.tap(find.text('Sem alfa'));
+      await tester.tap(find.text('Sem shiny alfa'));
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
@@ -175,11 +201,41 @@ void main() {
         matching: find.byType(HuntTile),
       );
       expect(
-        find.descendant(of: eevee, matching: find.byTooltip('Sem alfa')),
+        find.descendant(of: eevee, matching: find.byTooltip('Sem shiny alfa')),
         findsOne,
       );
     });
   }
+
+  testWidgets('no alfa que não é shiny, só o ✦̸ (#348)', (tester) async {
+    final (backend, dexId) = await _backend();
+    final slots = await backend.fetchSlots(
+      dexId: dexId,
+      boxId: (await backend.fetchBoxes(dexId)).single.id,
+    );
+    await backend.deposit(
+      slotId: slots.firstWhere((s) => s.form?.id == 134).id,
+      specimenId: backend.addSpecimen(formId: 134, isAlpha: true),
+    );
+    await pumpFullApp(tester, size: compactSize, backend: backend);
+    await open(tester, backend, dexId);
+    await tester.tap(find.text('Sem shiny alfa'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    final vaporeon = find.ancestor(
+      of: find.text('Vaporeon'),
+      matching: find.byType(HuntTile),
+    );
+    expect(
+      find.descendant(of: vaporeon, matching: find.byTooltip('Não shiny')),
+      findsOne,
+    );
+    expect(
+      find.descendant(of: vaporeon, matching: find.byTooltip('Sem shiny alfa')),
+      findsNothing,
+    );
+  });
 
   testWidgets('em inglês', (tester) async {
     final (backend, dexId) = await _backend();
@@ -194,9 +250,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('No alpha'), findsOne);
+    expect(find.text('No shiny alpha'), findsOne);
     expect(
-      find.text('Can be alpha in some game, and the slot has no alpha'),
+      find.text('Can be alpha in some game, and the slot has no shiny alpha'),
       findsOne,
     );
   });
@@ -206,6 +262,6 @@ void main() {
     await pumpFullApp(tester, backend: backend);
     await open(tester, backend, dexId);
     expect(find.text('Sem shiny'), findsWidgets);
-    expect(find.text('Sem alfa'), findsNothing);
+    expect(find.text('Sem shiny alfa'), findsNothing);
   });
 }
