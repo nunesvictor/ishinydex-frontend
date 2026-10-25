@@ -213,10 +213,24 @@ void main() {
           ),
         ),
       );
-      // O gráfico não marca nada: o "(neutra)" fica.
-      expect(find.text('Hardy (neutra)'), findsOneWidget);
-      expect(find.bySemanticsLabel('Natureza Hardy (neutra)'), findsOneWidget);
+      // Sem nada marcado, o gráfico já diz que ela é neutra (#350).
+      expect(find.text('Hardy'), findsOneWidget);
+      expect(find.textContaining('neutra'), findsNothing);
+      expect(find.bySemanticsLabel('Natureza Hardy'), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('pela natureza')), findsNothing);
+    });
+
+    testWidgets('sem hexágono, a neutra continua dizendo que é neutra', (
+      tester,
+    ) async {
+      await pumpWidgetApp(
+        tester,
+        const BaseStatsChart(
+          stats: [],
+          nature: Choice(value: 'hardy', label: 'Hardy'),
+        ),
+      );
+      expect(find.text('Natureza Hardy (neutra)'), findsOneWidget);
     });
 
     test('no tema escuro, cores mais claras', () {
