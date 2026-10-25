@@ -54,16 +54,22 @@ void main() {
   test('os caracteres fora da Roboto que o app escreve', () {
     // Mede o texto sem erro (fora do navegador, não baixa nada).
     warmUpFallbackFonts();
+    for (final glyph in ['↑', '↓', '→', '−']) {
+      expect(fallbackGlyphs, contains(glyph));
+    }
+    // O gênero, o ✓ e o ↳ viraram ícones do app (#349).
     final source = [
       File('lib/core/utils/format.dart').readAsStringSync(),
       File('lib/features/personal_dex/presentation/widgets/form_details.dart')
           .readAsStringSync(),
       File('lib/features/shiny_hunts/presentation/hunt_card.dart')
           .readAsStringSync(),
+      File('lib/features/specimens/presentation/widgets/specimen_headline.dart')
+          .readAsStringSync(),
     ].join();
     for (final glyph in ['✓', '♂️', '♀️', '↳']) {
-      expect(source, contains(glyph));
-      expect(fallbackGlyphs, contains(glyph));
+      expect(source, isNot(contains("'$glyph")));
+      expect(fallbackGlyphs, isNot(contains(glyph)));
     }
   });
 

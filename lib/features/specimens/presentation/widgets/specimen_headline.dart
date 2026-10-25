@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:ishinydex/core/l10n/l10n.dart';
-import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/widgets/gender_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 
-/// Uma linha no estilo do HOME: pokébola, nome (ou apelido) e os selos em
-/// emoji (gênero, shiny, GO) e o ícone de alfa do HOME. Substitui os chips de Shiny, Alfa e
+/// Uma linha no estilo do HOME: pokébola, nome (ou apelido) e os selos:
+/// gênero (ícone do app, #349), shiny, alfa e GO. Substitui os chips de Shiny, Alfa e
 /// pokébola, que ocupavam uma linha inteira no celular.
 ///
 /// Recebe valores soltos (e não um `Specimen`) porque o detalhe do slot só
@@ -43,11 +42,8 @@ class SpecimenHeadline extends StatelessWidget {
   Widget build(BuildContext context) {
     final textStyle = DefaultTextStyle.of(context).style.merge(style);
     final ballSize = (textStyle.fontSize ?? 14) * 1.3;
-    Widget emoji(String text, String label) =>
-        Text(text, style: style, semanticsLabel: label);
     final badges = [
-      if (gender == 'male') emoji(maleEmoji, context.l10n.genderMale),
-      if (gender == 'female') emoji(femaleEmoji, context.l10n.genderFemale),
+      ?GenderIcon.of(gender, size: ballSize),
       if (isShiny) ShinyIcon(size: ballSize),
       if (isAlpha) AlphaIcon(size: ballSize),
       if (isFromGo) GoIcon(size: ballSize),

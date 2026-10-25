@@ -5,12 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/web/browser.dart' as browser;
 
-/// Os caracteres que o app escreve e que a Roboto não tem (#337). No
+/// Os caracteres que o app escreve e que a Roboto pode não ter (#337). No
 /// navegador, o Flutter baixa a fonte deles do `fonts.gstatic.com` só quando
 /// um texto os usa; sem internet nessa hora, viram um quadrado vazio. O
-/// emoji de gênero (com o seletor de emoji) vem de outra fonte que o
-/// símbolo sozinho, por isso os dois.
-const fallbackGlyphs = '✓ ♂ ♀ ♂️ ♀️ ↳ ↑ ↓ → −';
+/// gênero, o ✓ da habilidade e o ↳ do objetivo viraram ícones do app (#349)
+/// e saíram daqui.
+const fallbackGlyphs = '↑ ↓ → −';
 
 /// Quanto esperar depois do primeiro quadro: os downloads do boot primeiro.
 const warmUpDelay = Duration(seconds: 5);

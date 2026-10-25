@@ -5,6 +5,7 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
+import 'package:ishinydex/core/widgets/gender_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
@@ -182,7 +183,7 @@ class SpeciesInfo extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(label, style: theme.textTheme.labelSmall),
-                              Text(
+                              Text.rich(
                                 value,
                                 style: theme.textTheme.labelLarge,
                                 maxLines: 2,
@@ -201,20 +202,24 @@ class SpeciesInfo extends ConsumerWidget {
     );
   }
 
-  List<(String, String)> _facts(AppLocalizations l10n) => [
+  List<(String, InlineSpan)> _facts(AppLocalizations l10n) => [
     if (form.genderRate case final rate?)
       (l10n.factGender, genderRatio(l10n, rate)),
-    if (form.captureRate case final rate?) (l10n.factCatchRate, '$rate'),
-    if (form.hatchCounter case final cycles?) (l10n.factEggCycles, '$cycles'),
+    if (form.captureRate case final rate?)
+      (l10n.factCatchRate, TextSpan(text: '$rate')),
+    if (form.hatchCounter case final cycles?)
+      (l10n.factEggCycles, TextSpan(text: '$cycles')),
     if (form.debutVersions.isNotEmpty)
       (
         l10n.factDebut,
-        joinLabels(l10n, [...form.debutVersions.map(prettifyName)]),
+        TextSpan(
+          text: joinLabels(l10n, [...form.debutVersions.map(prettifyName)]),
+        ),
       ),
     if (form.height case final height?)
-      (l10n.factHeight, '${decimal(l10n, height / 10)} m'),
+      (l10n.factHeight, TextSpan(text: '${decimal(l10n, height / 10)} m')),
     if (form.weight case final weight?)
-      (l10n.factWeight, '${decimal(l10n, weight / 10)} kg'),
+      (l10n.factWeight, TextSpan(text: '${decimal(l10n, weight / 10)} kg')),
   ];
 }
 
@@ -525,14 +530,26 @@ class _Legend extends StatelessWidget {
 }
 
 /// Proporção de gênero a partir do `gender_rate` (oitavos de fêmea; -1 =
-/// sem gênero): "♂ 87,5% · ♀ 12,5%", "Só macho", "Só fêmea".
-String genderRatio(AppLocalizations l10n, int rate) => switch (rate) {
-  < 0 => l10n.genderless,
-  0 => l10n.maleOnly,
-  >= 8 => l10n.femaleOnly,
-  _ =>
-    '♂ ${decimal(l10n, (8 - rate) * 12.5)}% · '
-        '♀ ${decimal(l10n, rate * 12.5)}%',
+/// sem gênero): "♂ 87,5% · ♀ 12,5%", com os ícones do app (#349), "Só
+/// macho", "Só fêmea".
+InlineSpan genderRatio(AppLocalizations l10n, int rate) => switch (rate) {
+  < 0 => TextSpan(text: l10n.genderless),
+  0 => TextSpan(text: l10n.maleOnly),
+  >= 8 => TextSpan(text: l10n.femaleOnly),
+  _ => TextSpan(
+    children: [
+      const WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: GenderIcon('male', size: 16),
+      ),
+      TextSpan(text: '${decimal(l10n, (8 - rate) * 12.5)}% · '),
+      const WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: GenderIcon('female', size: 16),
+      ),
+      TextSpan(text: '${decimal(l10n, rate * 12.5)}%'),
+    ],
+  ),
 };
 
 /// Número no formato do idioma, sem ",0": 1.7 → "1,7" (en: "1.7");

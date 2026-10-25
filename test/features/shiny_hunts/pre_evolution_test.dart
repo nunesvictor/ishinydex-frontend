@@ -180,7 +180,8 @@ void main() {
     );
     await pump(tester, const Scaffold(body: HuntCards(paused: false)));
     await tester.pumpAndSettle();
-    expect(find.text('↳ para Charizard'), findsOne);
+    expect(find.text('para Charizard'), findsOne);
+    expect(find.byIcon(Icons.subdirectory_arrow_right), findsOne);
 
     Future<void> found() async {
       await tester.tap(find.byTooltip('Mais ações'));

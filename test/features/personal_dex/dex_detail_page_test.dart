@@ -364,10 +364,9 @@ void main() {
       await openShinyDex(tester);
       await tester.tap(slot(1));
       await tester.pumpAndSettle();
-      expect(
-        find.text('Habilidades: Run Away · ✓ Keen Eye (oculta)'),
-        findsOneWidget,
-      );
+      // O ✓ é um ícone do app (#349).
+      expect(find.textContaining('Keen Eye (oculta)'), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
     });
 
     testWidgets('editar espécime pelo formulário', (tester) async {

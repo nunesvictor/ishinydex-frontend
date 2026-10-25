@@ -426,12 +426,24 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                       ),
                       // Caçada de uma pré-evolução (#315): o objetivo.
                       if (hunt.goalRef case final goal?)
-                        Text(
-                          '↳ ${context.l10n.huntGoal(goal.displayName)}',
-                          key: const ValueKey('hunt-goal'),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
+                        Row(
+                          spacing: 2,
+                          children: [
+                            Icon(
+                              Icons.subdirectory_arrow_right,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                            Flexible(
+                              child: Text(
+                                context.l10n.huntGoal(goal.displayName),
+                                key: const ValueKey('hunt-goal'),
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       Row(
                         spacing: 6,

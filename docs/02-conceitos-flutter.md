@@ -605,6 +605,16 @@ emojis: `ShinyIcon`, `AlphaIcon` e `GoIcon`
 um `MarkIcon` com `Image.asset` e `errorBuilder`: se a imagem não carregar,
 aparece o emoji de reserva (✨, 💢, 📱).
 
+O gênero segue a mesma ideia com um ícone do Material, e não com uma
+imagem (#349): o `GenderIcon`
+([gender_icon.dart](../lib/core/widgets/gender_icon.dart)) é um `Icon` com
+`Icons.male` ou `Icons.female`, em azul ou vermelho. A fonte de ícones do
+Material vai junto com o app, então o símbolo aparece igual em todo
+aparelho e sem internet. Antes era o emoji ♂️/♀️, que o navegador baixa de
+uma fonte de emoji e cada sistema desenha de um jeito. Dentro de um texto
+(a proporção de gênero, o ✓ da habilidade), o ícone entra como
+`WidgetSpan`, que põe um widget no meio de um `Text.rich`.
+
 As marcas de origem são **glifos brancos** com fundo transparente. O
 `OriginMarkIcon` ([origin_mark_chip.dart](../lib/core/widgets/origin_mark_chip.dart))
 passa `color` + `colorBlendMode: BlendMode.srcIn`: a imagem vira uma

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -78,7 +77,7 @@ void main() {
       await pump(tester, slotWith(id), size: size);
 
       expect(find.bySemanticsLabel('Macho'), findsOneWidget);
-      expect(find.text(maleEmoji), findsOneWidget);
+      expect(find.byIcon(Icons.male), findsOneWidget);
       // Label vindo de /specimens/options/, no cartão de status (o chip
       // solto da natureza saiu).
       expect(find.text('Adamant'), findsOneWidget);
@@ -89,7 +88,7 @@ void main() {
       expect(find.byType(GoIcon), findsNothing);
       // O ícone fica na mesma linha do nome.
       expect(
-        tester.getCenter(find.text(maleEmoji)).dy,
+        tester.getCenter(find.byIcon(Icons.male)).dy,
         moreOrLessEquals(tester.getCenter(find.text('Bulba')).dy, epsilon: 2),
       );
     });
@@ -104,7 +103,7 @@ void main() {
       await pump(tester, slotWith(id, formId: 2), size: size);
 
       expect(find.bySemanticsLabel('Fêmea'), findsOneWidget);
-      expect(find.text(femaleEmoji), findsOneWidget);
+      expect(find.byIcon(Icons.female), findsOneWidget);
       // Fora das opções não se sabe o que a natureza muda: não aparece.
       expect(find.textContaining('Jolly'), findsNothing);
       expect(find.text('GO'), findsNothing);
@@ -164,8 +163,8 @@ void main() {
     await pump(tester, slotWith(id, formId: 3));
 
     expect(find.text('Registrado'), findsOneWidget);
-    expect(find.text(maleEmoji), findsNothing);
-    expect(find.text(femaleEmoji), findsNothing);
+    expect(find.byIcon(Icons.male), findsNothing);
+    expect(find.byIcon(Icons.female), findsNothing);
     expect(find.textContaining('Natureza'), findsNothing);
   });
 

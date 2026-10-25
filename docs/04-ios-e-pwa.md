@@ -67,8 +67,10 @@ guarda cada arquivo do app na primeira vez que ele é usado, sem lista fixa:
   uma versão nova chega assim que há internet;
 - sprites: cache primeiro, num cache próprio que sobrevive às versões;
 - fontes do `fonts.gstatic.com`: idem, noutro cache (#337). O Flutter as
-  baixa quando um texto usa um caractere que a Roboto não tem (✓, ♂, ♀);
-  sem elas, offline, o caractere vira um quadrado vazio;
+  baixa quando um texto usa um caractere que a Roboto não tem; sem elas,
+  offline, o caractere vira um quadrado vazio. Por isso o gênero, o ✓ da
+  habilidade e o ↳ do objetivo da caçada são ícones do app (#349), e não
+  texto;
 - `/api/`, `/admin/` e o que não é GET nunca passam pelo cache.
 
 O cache tem a versão do build no nome (`__BUILD_VERSION__`, trocado no build

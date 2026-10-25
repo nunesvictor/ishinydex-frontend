@@ -120,12 +120,22 @@ class _Details extends StatelessWidget {
                 TextSpan(text: context.l10n.abilitiesLabel),
                 for (final (i, a) in abilities.indexed) ...[
                   if (i > 0) const TextSpan(text: ' · '),
-                  if (a.ability == highlightAbility)
+                  if (a.ability == highlightAbility) ...[
+                    // O ícone vem com o app (#349); o ✓ era de uma fonte
+                    // baixada.
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Icon(
+                        Icons.check,
+                        size: (theme.textTheme.bodySmall?.fontSize ?? 12) * 1.3,
+                        color: highlight.color,
+                      ),
+                    ),
                     TextSpan(
-                      text: '✓ ${_abilityName(context, a)}',
+                      text: ' ${_abilityName(context, a)}',
                       style: highlight,
-                    )
-                  else
+                    ),
+                  ] else
                     TextSpan(text: _abilityName(context, a)),
                 ],
               ],
