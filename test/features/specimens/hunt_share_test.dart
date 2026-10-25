@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/web/browser_stub.dart' as stub;
@@ -202,6 +202,95 @@ void main() {
         red.shouldRepaint(const SparklePainter(color: Colors.red, dot: false)),
         isTrue,
       );
+    });
+
+    group('nome longo (#342)', () {
+      // A Roboto de verdade, a do card: a fonte dos testes tem letras
+      // quadradas e mediria outra coisa.
+      setUpAll(() async {
+        final loader = FontLoader('Roboto');
+        for (final weight in ['Regular', 'Bold']) {
+          loader.addFont(rootBundle.load('assets/fonts/Roboto-$weight.ttf'));
+        }
+        await loader.load();
+      });
+
+      HuntShareData named(String name) => HuntShareData(
+        name: name,
+        dexNumber: '#0869',
+        spriteUrl: null,
+        version: 'sword',
+        capturedAt: DateTime(2026, 10, 24),
+        method: 'Masuda',
+        count: 412,
+        unit: 'eggs',
+        odds: 512,
+        startedAt: DateTime(2026, 10, 15),
+        huntedAs: 'Milcery',
+      );
+
+      ({double size, int lines, bool cut}) nameOf(
+        WidgetTester tester,
+        String name,
+      ) {
+        final paragraph = tester.renderObject<RenderParagraph>(find.text(name));
+        final size = paragraph.text.style!.fontSize!;
+        final lineHeight = size * 1.15;
+        return (
+          size: size,
+          lines: (paragraph.size.height / lineHeight).round(),
+          cut: paragraph.didExceedMaxLines,
+        );
+      }
+
+      for (final locale in [portuguese, english]) {
+        testWidgets('o pior nome do catálogo em 2 linhas, sem reticências '
+            '(${locale.languageCode})', (tester) async {
+          const worst = 'Alcremie Vanilla Cream Strawberry Sweet';
+          await pump(tester, named(worst), locale: locale);
+          expect(tester.takeException(), isNull);
+          final name = nameOf(tester, worst);
+          expect(name.cut, isFalse);
+          expect(name.lines, 2);
+          // Na Roboto, as 39 letras cabem em 2 linhas sem encolher.
+          expect(name.size, 32);
+          expect(
+            tester.getSize(find.byType(HuntShareCard)),
+            HuntShareCard.size,
+          );
+        });
+      }
+
+      testWidgets('nem em 2 linhas a 32: a fonte desce até caber', (
+        tester,
+      ) async {
+        const longer = 'Alcremie Caramel Swirl Strawberry Sweet Gigantamax';
+        await pump(tester, named(longer));
+        expect(tester.takeException(), isNull);
+        final name = nameOf(tester, longer);
+        expect(name.cut, isFalse);
+        expect(name.lines, 2);
+        expect(name.size, lessThan(32));
+        expect(name.size, greaterThan(20));
+      });
+
+      testWidgets('nome curto: 32, numa linha', (tester) async {
+        await pump(tester, named('Alcremie'));
+        final name = nameOf(tester, 'Alcremie');
+        expect(name.size, 32);
+        expect(name.lines, 1);
+      });
+
+      testWidgets('sem espaço e enorme: o mínimo, com reticências', (
+        tester,
+      ) async {
+        final huge = 'W' * 80;
+        await pump(tester, named(huge));
+        expect(tester.takeException(), isNull);
+        final name = nameOf(tester, huge);
+        expect(name.size, 20);
+        expect(name.cut, isTrue);
+      });
     });
 
     testWidgets('em inglês', (tester) async {
