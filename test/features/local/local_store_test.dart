@@ -147,6 +147,82 @@ void main() {
     },
   );
 
+  group('shiny locks repetidos (#357)', () {
+    Map<String, dynamic> lock(
+      int id,
+      String updatedAt, {
+      String caption = 'Calyrex',
+      List<int> forms = const [898, 10362],
+      bool active = true,
+    }) => {
+      'id': id,
+      'caption': caption,
+      'description': '',
+      'lockType': 'unobtainable',
+      'active': active,
+      'forms': forms,
+      'updatedAt': updatedAt,
+    };
+
+    Map<String, dynamic> file(List<Map<String, dynamic>> locks) => {
+      'kind': LocalStore.kind,
+      'schemaVersion': LocalStore.schemaVersion,
+      'catalog': 'c',
+      'savedAt': '2026-10-01T00:00:00.000Z',
+      'records': {'shinyLocks': locks},
+      'deleted': <String, dynamic>{},
+    };
+
+    test('fica o mudado por último; as cópias viram exclusão', () async {
+      storage.data = jsonEncode(
+        file([
+          lock(5, '2026-10-06T00:00:00.000Z'),
+          // Desativado depois: é a cópia que vale.
+          lock(9, '2026-10-16T00:00:00.000Z', active: false),
+          lock(2, '2026-10-15T00:00:00.000Z', forms: [10362, 898]),
+          // Outras formas: outro lock, mesmo com o mesmo nome.
+          lock(7, '2026-10-01T00:00:00.000Z', forms: [898]),
+        ]),
+      );
+      final records = await store.load();
+      expect([for (final l in records['shinyLocks']!) l['id']], [9, 7]);
+      expect(records['shinyLocks']!.first['active'], false);
+
+      await store.save(records, catalog: 'c');
+      expect(
+        [for (final l in savedRecords('shinyLocks')) (l as Map)['id']],
+        [9, 7],
+      );
+      expect((saved()['deleted'] as Map)['shinyLocks'], {
+        '5': '2026-10-03T12:00:00.000Z',
+        '2': '2026-10-03T12:00:00.000Z',
+      });
+    });
+
+    test('no empate de datas, fica o de menor id', () async {
+      storage.data = jsonEncode(
+        file([
+          lock(8, '2026-10-06T00:00:00.000Z'),
+          lock(3, '2026-10-06T00:00:00.000Z'),
+          lock(6, '2026-10-06T00:00:00.000Z'),
+        ]),
+      );
+      final records = await store.load();
+      expect([for (final l in records['shinyLocks']!) l['id']], [3]);
+    });
+
+    test('sem repetidos, nada muda', () async {
+      storage.data = jsonEncode(
+        file([
+          lock(1, '2026-10-06T00:00:00.000Z'),
+          lock(2, '2026-10-06T00:00:00.000Z', caption: 'Zarude'),
+        ]),
+      );
+      expect((await store.load())['shinyLocks'], hasLength(2));
+      expect(store.deleted, isEmpty);
+    });
+  });
+
   test('outro arquivo ou formato mais novo: DataFailure', () async {
     storage.data = jsonEncode({'kind': 'outra-coisa'});
     expect(store.load, throwsA(isA<DataFailure>()));

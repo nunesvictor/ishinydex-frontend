@@ -236,9 +236,11 @@ class FakeBackend
       }
     }
     if (records.isEmpty) {
-      // Aparelho novo: os shiny locks padrão do catálogo.
+      // Aparelho novo: os shiny locks padrão do catálogo, com id fixo para
+      // juntar dois aparelhos não duplicar os locks (#357).
       for (final lock in catalog.shinyLocks) {
         backend.addShinyLock(
+          id: catalogLockId(lock.caption),
           caption: lock.caption,
           description: lock.description,
           lockType: lock.lockType,
@@ -699,6 +701,19 @@ class FakeBackend
   static const _twoTo32 = 4294967296;
   static const _twoTo21 = 2097152;
 
+  /// Id fixo do shiny lock padrão de nome [caption] (#357): o mesmo em todo
+  /// aparelho e versão, então não pode mudar. Dois hashes do nome, no
+  /// intervalo do [_newId]; as contas cabem nos inteiros exatos do JS.
+  static int catalogLockId(String caption) {
+    var high = 7;
+    var low = 11;
+    for (final unit in caption.codeUnits) {
+      high = (high * 31 + unit) % 2147483647;
+      low = (low * 131 + unit) % 2097143;
+    }
+    return high * _twoTo21 + low + 1;
+  }
+
   int _newId(Iterable<int> used) {
     if (!randomIds) return used.fold(0, max) + 1;
     final taken = used.toSet();
@@ -871,15 +886,16 @@ class FakeBackend
 
   // ---- Seed helpers ----
 
-  /// Cadastra um shiny lock; retorna o id.
+  /// Cadastra um shiny lock ([id] fixo, ou um novo); retorna o id.
   int addShinyLock({
     required String caption,
     required List<int> formIds,
     ShinyLockType lockType = ShinyLockType.unobtainable,
     String? description,
     bool active = true,
+    int? id,
   }) {
-    final id = _newId(_shinyLocks.keys);
+    id ??= _newId(_shinyLocks.keys);
     _shinyLocks[id] = ShinyLock(
       id: id,
       caption: caption,

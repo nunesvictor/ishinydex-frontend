@@ -97,7 +97,49 @@ class LocalStore {
         in (file['deleted'] as Map<String, dynamic>).entries) {
       deleted[type] = {...(ids as Map<String, dynamic>).cast<String, String>()};
     }
+    _dropDuplicateShinyLocks(records);
     return records;
+  }
+
+  /// Shiny locks repetidos viram um só (frontend#357): cada aparelho novo
+  /// criava os locks padrão com ids próprios, e juntar os dados no sync
+  /// somava as cópias. Iguais = mesmo nome, tipo e formas; fica o mudado
+  /// por último (no empate, o de menor id, para todo aparelho escolher o
+  /// mesmo) e os outros viram exclusão, que o sync leva adiante.
+  void _dropDuplicateShinyLocks(Records records) {
+    final locks = records['shinyLocks'];
+    if (locks == null) return;
+    final stamps = _stamps['shinyLocks']!;
+    final best = <String, Map<String, dynamic>>{};
+    for (final lock in locks) {
+      final key = jsonEncode([
+        lock['caption'],
+        lock['lockType'],
+        [...(lock['forms'] as List).cast<int>()]..sort(),
+      ]);
+      final kept = best[key];
+      if (kept == null || _ranksAbove(lock, kept, stamps)) best[key] = lock;
+    }
+    if (best.length == locks.length) return;
+    final now = _now().toUtc().toIso8601String();
+    final keep = best.values.toSet();
+    for (final lock in locks.where((l) => !keep.contains(l))) {
+      final id = lock['id'] as int;
+      stamps.remove(id);
+      (deleted['shinyLocks'] ??= {})['$id'] = now;
+    }
+    locks.retainWhere(keep.contains);
+  }
+
+  static bool _ranksAbove(
+    Map<String, dynamic> a,
+    Map<String, dynamic> b,
+    Map<int, ({String json, String updatedAt})> stamps,
+  ) {
+    final ida = a['id'] as int;
+    final idb = b['id'] as int;
+    final byDate = stamps[ida]!.updatedAt.compareTo(stamps[idb]!.updatedAt);
+    return byDate > 0 || (byDate == 0 && ida < idb);
   }
 
   /// O arquivo com os [records] atuais, carimbando o que mudou desde o
