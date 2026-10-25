@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 
 part 'models.freezed.dart';
@@ -21,7 +22,14 @@ abstract class Specimen with _$Specimen {
     String? nature,
     @Default(false) bool isAlpha,
     @Default(false) bool isShiny,
+
+    /// Marca do GO, calculada pelo backend a partir da marca de origem.
     @Default(false) bool isFromGo,
+
+    /// A marca escolhida quando o OT não basta (#360): com OT sem jogo
+    /// (presentes do HOME, eventos), qualquer marca; com OT do Let's Go,
+    /// `go` = veio pelo GO Park. `null` = a marca do jogo do OT.
+    String? markChoice,
     DateTime? capturedAt,
     String? pokeball,
     String? pokeballSpriteUrl,
@@ -122,7 +130,9 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     String? nature,
     @Default(false) bool isAlpha,
     @Default(false) bool isShiny,
-    @Default(false) bool isFromGo,
+
+    /// Ver [Specimen.markChoice].
+    String? markChoice,
     DateTime? capturedAt,
     String? pokeball,
     String? observation,
@@ -142,7 +152,7 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     nature: specimen.nature,
     isAlpha: specimen.isAlpha,
     isShiny: specimen.isShiny,
-    isFromGo: specimen.isFromGo,
+    markChoice: specimen.markChoice,
     capturedAt: specimen.capturedAt,
     pokeball: specimen.pokeball,
     observation: specimen.observation,
@@ -162,7 +172,7 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     if (_filled(nature)) 'nature': nature,
     'is_alpha': isAlpha,
     'is_shiny': isShiny,
-    'is_from_go': isFromGo,
+    if (_filled(markChoice)) 'mark_choice': markChoice,
     if (capturedAt != null) 'captured_at': _dateFormat.format(capturedAt!),
     if (_filled(pokeball)) 'pokeball': pokeball,
     if (_filled(observation)) 'observation': observation,
@@ -181,7 +191,7 @@ abstract class SpecimenDraft with _$SpecimenDraft {
     'nature': _orNull(nature),
     'is_alpha': isAlpha,
     'is_shiny': isShiny,
-    'is_from_go': isFromGo,
+    'mark_choice': _orNull(markChoice),
     'captured_at': capturedAt == null ? null : _dateFormat.format(capturedAt!),
     'pokeball': _orNull(pokeball),
     'observation': _orNull(observation),
@@ -425,8 +435,9 @@ abstract class Save with _$Save {
 
   /// Jogos que só enviam Pokémon para o HOME (só de ida): o save serve
   /// para caçar e para o OT, mas nunca é destino de transferência. FRLG do
-  /// Switch manda direto; a Gen VI e VII (3DS), pelo Pokémon Bank.
-  static const oneWayVersions = {
+  /// Switch manda direto; a Gen VI e VII (3DS), pelo Pokémon Bank; o GO
+  /// (#360), direto (e para o Let's Go pelo GO Park).
+  static const oneWayVersions = <String>{
     'firered',
     'leafgreen',
     'x',
@@ -437,6 +448,7 @@ abstract class Save with _$Save {
     'moon',
     'ultra-sun',
     'ultra-moon',
+    goVersion,
   };
 
   /// Jogos cujos treinadores podem virar save: os que recebem do HOME e os
@@ -446,8 +458,9 @@ abstract class Save with _$Save {
     ...oneWayVersions,
   };
 
-  /// Jogos sem Shiny Charm: o FRLG é da Gen III, anterior ao Charm.
-  static const _noCharmVersions = {'firered', 'leafgreen'};
+  /// Jogos sem Shiny Charm: o FRLG é da Gen III, anterior ao Charm; o GO
+  /// não tem o item.
+  static const _noCharmVersions = <String>{'firered', 'leafgreen', goVersion};
 
   /// O jogo do save tem o Shiny Charm.
   bool get canHaveShinyCharm =>
@@ -758,7 +771,7 @@ abstract class SpecimenChanges with _$SpecimenChanges {
     @Default(Keep<DateTime>()) FieldEdit<DateTime> capturedAt,
     @Default(Keep<bool>()) FieldEdit<bool> isShiny,
     @Default(Keep<bool>()) FieldEdit<bool> isAlpha,
-    @Default(Keep<bool>()) FieldEdit<bool> isFromGo,
+    @Default(Keep<String>()) FieldEdit<String> markChoice,
   }) = _SpecimenChanges;
 
   const SpecimenChanges._();
@@ -786,7 +799,7 @@ abstract class SpecimenChanges with _$SpecimenChanges {
     ('captured_at', capturedAt),
     ('is_shiny', isShiny),
     ('is_alpha', isAlpha),
-    ('is_from_go', isFromGo),
+    ('mark_choice', markChoice),
   ];
 }
 

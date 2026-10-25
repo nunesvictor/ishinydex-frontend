@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
@@ -451,6 +452,7 @@ class FakeBackend
           'isAlpha': s.isAlpha,
           'isShiny': s.isShiny,
           'isFromGo': s.isFromGo,
+          'markChoice': ?s.markChoice,
           'capturedAt': _date(s.capturedAt),
           'pokeball': s.pokeball,
           'observation': s.observation,
@@ -508,7 +510,8 @@ class FakeBackend
     _restore(records);
   }
 
-  void _restore(Map<String, List<Map<String, dynamic>>> records) {
+  void _restore(Map<String, List<Map<String, dynamic>>> saved) {
+    final records = migrateGoRecords(saved);
     List<Map<String, dynamic>> of(String type) => records[type] ?? const [];
     DateTime? date(Object? value) =>
         value == null ? null : DateTime.parse(value as String);
@@ -632,7 +635,7 @@ class FakeBackend
         nature: s['nature'] as String?,
         isAlpha: s['isAlpha'] as bool,
         isShiny: s['isShiny'] as bool,
-        isFromGo: s['isFromGo'] as bool,
+        markChoice: s['markChoice'] as String?,
         capturedAt: date(s['capturedAt']),
         pokeball: pokeball,
         pokeballSpriteUrl: _ballSprite(pokeball),
@@ -702,12 +705,16 @@ class FakeBackend
   static const _twoTo21 = 2097152;
 
   /// Id fixo do shiny lock padrão de nome [caption] (#357): o mesmo em todo
-  /// aparelho e versão, então não pode mudar. Dois hashes do nome, no
-  /// intervalo do [_newId]; as contas cabem nos inteiros exatos do JS.
-  static int catalogLockId(String caption) {
+  /// aparelho e versão, então não pode mudar.
+  static int catalogLockId(String caption) => stableId(caption);
+
+  /// Id fixo derivado de [key]: o mesmo em todo aparelho e versão. Dois
+  /// hashes do texto, no intervalo do [_newId]; as contas cabem nos
+  /// inteiros exatos do JS.
+  static int stableId(String key) {
     var high = 7;
     var low = 11;
-    for (final unit in caption.codeUnits) {
+    for (final unit in key.codeUnits) {
       high = (high * 31 + unit) % 2147483647;
       low = (low * 131 + unit) % 2097143;
     }
@@ -756,6 +763,8 @@ class FakeBackend
   List<GameVersion> get versions => catalog?.versions ?? gameVersions;
 
   static const gameVersions = [
+    // O GO (#360), como o catálogo publica: sem grupo de versão.
+    GameVersion(name: goVersion, versionGroup: goVersion, generation: ''),
     GameVersion(
       name: 'red',
       versionGroup: 'red-blue',
@@ -1088,7 +1097,7 @@ class FakeBackend
       nature: nature,
       isShiny: isShiny,
       isAlpha: isAlpha,
-      isFromGo: isFromGo,
+      markChoice: isFromGo ? OriginMark.go.slug : null,
       pokeball: pokeball,
       pokeballSpriteUrl: _ballSprite(pokeball),
       ot: ot,
@@ -2133,7 +2142,7 @@ class FakeBackend
       nature: draft.nature,
       isAlpha: draft.isAlpha,
       isShiny: draft.isShiny,
-      isFromGo: draft.isFromGo,
+      markChoice: draft.markChoice,
       capturedAt: draft.capturedAt,
       pokeball: draft.pokeball,
       pokeballSpriteUrl: _ballSprite(draft.pokeball),
@@ -2252,7 +2261,7 @@ class FakeBackend
       // O registro da caçada só existe em shiny.
       hunt: (pick(c.isShiny, s.isShiny) ?? s.isShiny) ? s.hunt : null,
       isAlpha: pick(c.isAlpha, s.isAlpha) ?? s.isAlpha,
-      isFromGo: pick(c.isFromGo, s.isFromGo) ?? s.isFromGo,
+      markChoice: pick(c.markChoice, s.markChoice),
     );
     return changed.withOrigin(_originMarkOf, switch (c.ot) {
       Keep() => s.originVersion,
@@ -2295,7 +2304,7 @@ class FakeBackend
       nature: draft.nature,
       isAlpha: draft.isAlpha,
       isShiny: draft.isShiny,
-      isFromGo: draft.isFromGo,
+      markChoice: draft.markChoice,
       capturedAt: draft.capturedAt,
       pokeball: draft.pokeball,
       pokeballSpriteUrl: _ballSprite(draft.pokeball),
@@ -3149,6 +3158,8 @@ class FakeBackend
   /// Marca de origem do jogo: a do catálogo, ou a tabela do seed.
   String? _originMarkOf(String? version) => catalog != null
       ? catalog!.originMarkOf(version)
+      : version == goVersion
+      ? OriginMark.go.slug
       : _originMarkByVersionGroup[versionGroups[version]];
 }
 
@@ -3192,11 +3203,79 @@ const _originMarkByVersionGroup = {
 };
 
 extension on Specimen {
-  /// Com o jogo de origem [version] e a marca calculada como no backend:
-  /// GO tem prioridade; senão, a marca do grupo da versão; senão nenhuma.
-  Specimen withOrigin(String? Function(String?) markOf, String? version) =>
-      copyWith(
-        originVersion: version,
-        originMark: isFromGo ? 'go' : markOf(version),
-      );
+  /// Com o jogo de origem [version] (o do OT) e a marca (#360): o GO
+  /// escolhido tem prioridade (GO Park, ou dados antigos); com OT de um
+  /// jogo, a marca dele; com OT sem jogo, a escolhida ([markChoice]).
+  Specimen withOrigin(String? Function(String?) markOf, String? version) {
+    final mark = markChoice == OriginMark.go.slug
+        ? markChoice
+        : version != null
+        ? markOf(version)
+        : markChoice;
+    return copyWith(
+      originVersion: version,
+      originMark: mark,
+      isFromGo: mark == OriginMark.go.slug,
+    );
+  }
+}
+
+/// Os dados de antes da #360, quando "veio do GO" era um switch
+/// (`isFromGo`), passam para o GO como jogo. Roda ao carregar, ao importar
+/// e ao sincronizar, e dá o mesmo resultado em todo aparelho:
+///
+/// - Treinador sem jogo cujos espécimes são todos do GO: vira do GO.
+/// - Treinador sem jogo com espécimes do GO e outros (o GO e os presentes
+///   do HOME dão o mesmo TID): ganha um gêmeo do GO, de id fixo
+///   ([FakeBackend.stableId]), com os espécimes do GO.
+/// - Os outros espécimes do GO (OT do Let's Go pelo GO Park, OT de outro
+///   jogo ou sem OT) guardam a escolha `go` ([Specimen.markChoice]).
+///
+/// Quem já tem a escolha, ou OT do GO, fica como está.
+Map<String, List<Map<String, dynamic>>> migrateGoRecords(
+  Map<String, List<Map<String, dynamic>>> records,
+) {
+  final specimens = <Map<String, dynamic>>[
+    for (final s in records['specimens'] ?? const <Map<String, dynamic>>[])
+      {...s},
+  ];
+  final trainers = <Map<String, dynamic>>[
+    for (final t in records['trainers'] ?? const <Map<String, dynamic>>[])
+      {...t},
+  ];
+  final trainerById = {for (final t in trainers) t['id'] as int: t};
+  bool pending(Map<String, dynamic> s) =>
+      s['isFromGo'] == true &&
+      s['markChoice'] == null &&
+      trainerById[s['ot']]?['version'] != goVersion;
+  if (!specimens.any(pending)) return records;
+  // Treinador sem jogo → os espécimes dele (para saber se são todos do GO).
+  final byTrainer = <int, List<Map<String, dynamic>>>{};
+  for (final s in specimens) {
+    if (s['ot'] case final int ot) (byTrainer[ot] ??= []).add(s);
+  }
+  for (final s in specimens.where(pending)) {
+    final trainer = trainerById[s['ot']];
+    if (trainer == null || trainer['version'] != null) {
+      s['markChoice'] = OriginMark.go.slug;
+      continue;
+    }
+    final mine = byTrainer[trainer['id']]!;
+    if (mine.every((other) => other['isFromGo'] == true)) {
+      trainer['version'] = goVersion;
+      continue;
+    }
+    final twinId = FakeBackend.stableId('go-twin:${trainer['id']}');
+    trainerById.putIfAbsent(twinId, () {
+      final twin = <String, dynamic>{
+        ...trainer,
+        'id': twinId,
+        'version': goVersion,
+      };
+      trainers.add(twin);
+      return twin;
+    });
+    s['ot'] = twinId;
+  }
+  return {...records, 'trainers': trainers, 'specimens': specimens};
 }

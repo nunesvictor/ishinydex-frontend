@@ -31,9 +31,11 @@ class LocalStore {
   /// leria o arquivo, descartaria o campo ao regravar e, pelo sync, apagaria
   /// o registro; com o 2 ele recusa o arquivo. O 3 trouxe o Shiny Charm do
   /// save e as odds das caçadas (v2.9.0), pelo mesmo motivo. O 4 trouxe a
-  /// receita do dex (de onde ele nasceu, #34), também pelo mesmo motivo. Os
-  /// anteriores são lidos sem migração.
-  static const schemaVersion = 4;
+  /// receita do dex (de onde ele nasceu, #34), também pelo mesmo motivo. O 5
+  /// trouxe a marca de origem escolhida do espécime (#360), pelo mesmo
+  /// motivo. Os anteriores são lidos; o "veio do GO" de antes do 5 passa
+  /// para o GO como jogo ao carregar (`migrateGoRecords`).
+  static const schemaVersion = 5;
   static const kind = 'ishinydex-data';
 
   final LocalDataStorage storage;

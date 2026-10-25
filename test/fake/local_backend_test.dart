@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -200,4 +201,112 @@ void main() {
       expect(backend.addDex(name: 'C'), 3);
     },
   );
+
+  group('GO como jogo (#360)', () {
+    Map<String, dynamic> trainer(int id, String? version) => {
+      'id': id,
+      'name': 'Victor',
+      'trainerId': '993505',
+      'version': version,
+    };
+    Map<String, dynamic> specimen(int id, int? ot, {bool go = true}) => {
+      'id': id,
+      'ot': ot,
+      'isFromGo': go,
+    };
+
+    test('migra o "veio do GO" de antes para o GO como jogo', () {
+      final records = {
+        'trainers': [
+          trainer(10, null), // só GO: vira do GO
+          trainer(11, null), // GO e um presente do HOME: ganha um gêmeo
+          trainer(1, 'lets-go-pikachu'), // GO Park
+          trainer(2, 'scarlet'),
+          trainer(3, goVersion), // já é do GO
+        ],
+        'specimens': [
+          specimen(100, 10),
+          specimen(101, 11),
+          specimen(102, 11, go: false), // a Magearna
+          specimen(103, 1),
+          specimen(104, 2),
+          specimen(105, null),
+          specimen(106, 3),
+          specimen(107, 2, go: false),
+        ],
+      };
+      final migrated = migrateGoRecords(records);
+      final trainers = {for (final t in migrated['trainers']!) t['id']: t};
+      final specimens = {for (final s in migrated['specimens']!) s['id']: s};
+      final twin = FakeBackend.stableId('go-twin:11');
+
+      expect(trainers[10]!['version'], goVersion);
+      expect(trainers[11]!['version'], isNull);
+      expect(trainers[twin], {
+        'id': twin,
+        'name': 'Victor',
+        'trainerId': '993505',
+        'version': goVersion,
+      });
+      expect(specimens[100]!['ot'], 10);
+      expect(specimens[101]!['ot'], twin);
+      expect(specimens[102]!['ot'], 11);
+      for (final id in [103, 104, 105]) {
+        expect(specimens[id]!['markChoice'], 'go', reason: '$id');
+      }
+      expect(specimens[106]!['markChoice'], isNull);
+      expect(specimens[107]!.containsKey('markChoice'), isFalse);
+      // O original não muda (a migração trabalha numa cópia).
+      expect(records['trainers']!.first['version'], isNull);
+
+      // De novo: nada a fazer, o mesmo resultado.
+      expect(migrateGoRecords(migrated), same(migrated));
+      // Em outro aparelho, o mesmo gêmeo.
+      expect({
+        for (final t in migrateGoRecords(records)['trainers']!) t['id'],
+      }, trainers.keys.toSet());
+    });
+
+    test('a marca: a do jogo do OT, a escolhida sem jogo, o GO Park', () async {
+      final backend = FakeBackend.local(catalog);
+      final scarlet = (await backend.createTrainer(
+        name: 'Ash',
+        trainerId: '1',
+        version: 'scarlet',
+      )).id;
+      final noGame = (await backend.createTrainer(
+        name: 'HOME',
+        trainerId: '2',
+      )).id;
+      Future<Specimen> make(int? ot, String? choice) => backend.create(
+        SpecimenDraft(form: 1, ability: '', ot: ot, markChoice: choice),
+      );
+      final fromGame = await make(scarlet, 'hisui');
+      expect((fromGame.originMark, fromGame.isFromGo), ('paldea', false));
+      final gift = await make(noGame, 'hisui');
+      expect((gift.originMark, gift.markChoice), ('hisui', 'hisui'));
+      final none = await make(noGame, null);
+      expect(none.originMark, isNull);
+      final go = await make(scarlet, 'go');
+      expect((go.originMark, go.isFromGo), ('go', true));
+    });
+
+    test('OT do GO dá a marca do GO, com ou sem catálogo', () async {
+      expect(catalog.originMarkOf(goVersion), 'go');
+      for (final backend in [
+        FakeBackend.local(catalog),
+        FakeBackend.seeded(),
+      ]) {
+        final ot = (await backend.createTrainer(
+          name: 'Victor',
+          trainerId: '993505',
+          version: goVersion,
+        )).id;
+        final specimen = await backend.create(
+          SpecimenDraft(form: 1, ability: '', ot: ot),
+        );
+        expect((specimen.originMark, specimen.isFromGo), ('go', true));
+      }
+    });
+  });
 }

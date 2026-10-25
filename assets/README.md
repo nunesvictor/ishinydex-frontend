@@ -51,6 +51,7 @@ O `champions.png` (o Pokémon que visita o Pokémon Champions, #174) não é mar
 | `moon.png` | `HOME_Moon_icon.png` (3DS, só de ida pelo Pokémon Bank) |
 | `ultra-sun.png` | `HOME_Ultra_Sun_icon.png` (3DS, só de ida pelo Pokémon Bank) |
 | `ultra-moon.png` | `HOME_Ultra_Moon_icon.png` (3DS, só de ida pelo Pokémon Bank) |
+| `pokemon-go.png` | Feito aqui a partir da marca do GO (`origin_marks/go.png`), pintada de azul: a categoria não tem um ícone do GO (#360) |
 
 Usados por `GameIcon` (`lib/core/widgets/game_icon.dart`), que mostra a sigla do jogo se o asset faltar.
 

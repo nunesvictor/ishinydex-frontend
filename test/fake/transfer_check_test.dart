@@ -60,13 +60,13 @@ void main() {
     );
     final save = await backend.createSave(trainerId: lgpe);
     final goPark = await backend.create(
-      SpecimenDraft(form: 1, ability: 'run-away', ot: lgpe, isFromGo: true),
+      SpecimenDraft(form: 1, ability: 'run-away', ot: lgpe, markChoice: 'go'),
     );
     final goSword = await backend.create(
-      SpecimenDraft(form: 1, ability: 'run-away', ot: sword, isFromGo: true),
+      SpecimenDraft(form: 1, ability: 'run-away', ot: sword, markChoice: 'go'),
     );
     final goNoOt = await backend.create(
-      const SpecimenDraft(form: 1, ability: 'run-away', isFromGo: true),
+      const SpecimenDraft(form: 1, ability: 'run-away', markChoice: 'go'),
     );
     expect(goPark.originMark, 'go');
 
@@ -145,7 +145,7 @@ void main() {
     final save = await backend.createSave(trainerId: bd);
     Future<int> make(int form, {bool go = false}) async =>
         (await backend.create(
-          SpecimenDraft(form: form, ability: '', isFromGo: go),
+          SpecimenDraft(form: form, ability: '', markChoice: go ? 'go' : null),
         )).id;
     final spinda = await make(9001);
     final kyurem = await make(9002);

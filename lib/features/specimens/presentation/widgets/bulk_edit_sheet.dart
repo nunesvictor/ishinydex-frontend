@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
@@ -11,6 +12,12 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+
+/// As marcas de origem para escolher (#360), como no formulário.
+final List<Choice> markChoices = [
+  for (final mark in OriginMark.values)
+    Choice(value: mark.slug, label: mark.label),
+];
 
 /// Abre a edição em lote de [count] espécimes: bottom sheet no compacto,
 /// diálogo nos demais. Devolve as alterações ao tocar em "Revisar", ou
@@ -200,11 +207,18 @@ class _BulkEditPanelState extends ConsumerState<BulkEditPanel> {
                 edit: _changes.isAlpha,
                 onChanged: (edit) => _update(_changes.copyWith(isAlpha: edit)),
               ),
-              _FlagRow(
-                icon: const GoIcon(semanticLabel: null),
-                label: 'GO',
-                edit: _changes.isFromGo,
-                onChanged: (edit) => _update(_changes.copyWith(isFromGo: edit)),
+              // A marca escolhida só vale para OT sem jogo (e o GO, para o
+              // GO Park); nos outros, o backend fica com a do jogo (#360).
+              _EditTile(
+                title: context.l10n.originMarkField,
+                value: labels.choice(_changes.markChoice, markChoices),
+                onTap: () => _pick(
+                  context.l10n.originMarkField,
+                  markChoices,
+                  _changes.markChoice,
+                  canRemove: true,
+                  apply: (edit) => _changes.copyWith(markChoice: edit),
+                ),
               ),
             ],
           ),
@@ -361,7 +375,11 @@ class BulkLabels {
       _l10n.changeLine(_l10n.factGender, choice(c.gender, options.gender)),
     if (c.isShiny is SetTo) _l10n.changeLine(_l10n.markShiny, flag(c.isShiny)),
     if (c.isAlpha is SetTo) _l10n.changeLine(_l10n.markAlpha, flag(c.isAlpha)),
-    if (c.isFromGo is SetTo) _l10n.changeLine('GO', flag(c.isFromGo)),
+    if (c.markChoice is SetTo)
+      _l10n.changeLine(
+        _l10n.originMarkField,
+        choice(c.markChoice, markChoices),
+      ),
   ];
 }
 
