@@ -27,6 +27,7 @@ class Catalog {
     required this._originMarks,
     required this._spriteBase,
     required this._groupOrder,
+    required this._groupGenerations,
     required this._pokedexes,
     required this._exclusives,
     required this._gameFormIds,
@@ -204,6 +205,7 @@ class Catalog {
       },
       spriteBase: base,
       groupOrder: groupOrder,
+      groupGenerations: {for (final g in groups) g.name: g.generation},
       // Catálogos antigos não têm as pokédex nem os exclusivos.
       pokedexes: [
         for (final p in _objects(json['pokedexes'] ?? const <Object>[]))
@@ -420,6 +422,9 @@ class Catalog {
 
   /// Ordem de lançamento de cada grupo de versões.
   final Map<String, int> _groupOrder;
+
+  /// Geração de cada grupo de versões (`generation-vii`...).
+  final Map<String, String> _groupGenerations;
 
   /// As pokédex dos jogos que recebem do HOME (vazio em catálogo antigo).
   final List<_Pokedex> _pokedexes;
@@ -976,6 +981,12 @@ class Catalog {
 
   /// Geração da espécie da forma (`generation-i`...).
   String? generation(int formId) => _speciesOf(_forms[formId]!)?.generation;
+
+  /// Geração em que a forma estreou, pelo grupo de versões dela (#343): o
+  /// Raticate de Alola é da geração VII, embora o Raticate seja da I.
+  /// `null` se a forma ou o grupo não estiverem no catálogo.
+  String? formGeneration(int formId) =>
+      _groupGenerations[_forms[formId]?.versionGroup];
 
   /// Categoria da espécie, como nos filtros do backend (a primeira que
   /// vale): lendário, mítico, Ultra Beast (habilidade Beast Boost), bebê ou

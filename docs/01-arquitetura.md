@@ -345,9 +345,20 @@ filtro da visualização e ganha fundo quando está ativo.
 "Progresso por geração", no menu ⋮ do dex, abre o
 [`GenerationProgressView`](../lib/features/personal_dex/presentation/widgets/generation_progress.dart)
 (`GET /personal-dexes/{id}/generations/`): uma linha por geração com
-registrados/total e "Faltam N". Tocar numa geração leva à primeira box dela. O
+registrados/total e "Faltam N". O
 `generationsProvider` é invalidado junto com as outras contagens em
 `SlotActions`.
+
+A geração de cada slot é a da **forma**, e não a da espécie (#343): o
+Raticate de Alola conta na geração VII, porque estreou no Sun/Moon. O
+catálogo diz isso pelo grupo de versões da forma (`versionGroup` →
+`versionGroups[].generation`, em `Catalog.formGeneration`). Sem catálogo,
+vale a geração da espécie, pelo número nacional. A mesma regra vale no filtro
+Geração da aba Faltam e no do inventário. Assim, uma forma regional que falta
+não impede a geração da espécie de chegar a 100%. Tocar numa geração leva à
+box da primeira **espécie** dela: num dex na ordem nacional, o Raticate de
+Alola fica na HOME 1, mas a geração VII leva à box do Rowlet. Num dex sem
+nenhuma espécie da geração, leva à box da primeira forma dela.
 
 ## Caçadas
 
