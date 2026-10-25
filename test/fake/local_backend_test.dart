@@ -24,6 +24,27 @@ void main() {
     );
   });
 
+  test('locks padrão: o mesmo id em todo aparelho (#357)', () async {
+    final one = await FakeBackend.local(catalog).fetchShinyLocks();
+    final two = await FakeBackend.local(catalog).fetchShinyLocks();
+    expect([for (final l in one) l.id], [for (final l in two) l.id]);
+    expect(one.single.id, FakeBackend.catalogLockId('Mewtwo de evento'));
+  });
+
+  test('catalogLockId: fixo, positivo e exato no JS', () {
+    // O id não pode mudar entre versões: aparelhos com o app antigo e o
+    // novo precisam chegar ao mesmo número.
+    expect(FakeBackend.catalogLockId('Calyrex'), 3205413972734430);
+    for (final caption in ['', 'a', 'Calyrex', 'Cosmog-Cosmoem' * 20]) {
+      final id = FakeBackend.catalogLockId(caption);
+      expect(id, inInclusiveRange(1, 9007199254740991));
+    }
+    expect(
+      FakeBackend.catalogLockId('Calyrex'),
+      isNot(FakeBackend.catalogLockId('Calyrex Ice')),
+    );
+  });
+
   test(
     'dex novo do zero: cria as boxes, com o dex padrão do catálogo',
     () async {
