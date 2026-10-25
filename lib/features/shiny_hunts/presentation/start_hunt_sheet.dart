@@ -6,6 +6,7 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/shiny_charm_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
@@ -285,6 +286,12 @@ class _HuntSheetState extends ConsumerState<HuntSheet> {
                           : s.title,
                     ),
                 ],
+                trailingOf: (choice) =>
+                    saves.any(
+                      (s) => '${s.id}' == choice.value && s.hasShinyCharm,
+                    )
+                    ? const ShinyCharmIcon(size: 18)
+                    : null,
                 onChanged: (v) => setState(
                   () => _hunt = _hunt.copyWith(
                     save: int.tryParse(v ?? ''),

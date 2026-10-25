@@ -9,6 +9,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/shiny_charm_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
@@ -464,6 +465,8 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (save?.hasShinyCharm ?? false)
+                            const ShinyCharmIcon(size: 16),
                           // O corte do HOME (#222): a caçada segue igual.
                           if (ref.watch(homeCutoffProvider)(
                                 save?.trainer.version,
