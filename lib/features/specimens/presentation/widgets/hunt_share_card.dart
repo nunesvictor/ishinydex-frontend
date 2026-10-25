@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
@@ -249,16 +249,7 @@ class HuntShareCard extends StatelessWidget {
                 Column(
                   spacing: 3,
                   children: [
-                    Text(
-                      data.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    _CardName(data.name),
                     Text(subtitle, textAlign: TextAlign.center, style: muted),
                   ],
                 ),
@@ -436,4 +427,68 @@ class SparklePainter extends CustomPainter {
   @override
   bool shouldRepaint(SparklePainter old) =>
       old.color != color || old.dot != dot;
+}
+
+/// O nome no card (#342): até 2 linhas, quebrando entre as palavras, e a
+/// fonte desce de 32 até caber. As formas de Alcremie chegam a 39 letras
+/// ("Alcremie Vanilla Cream Strawberry Sweet") e, numa linha a 32, cortavam
+/// com reticências. Mede com o `TextPainter` em vez de um `FittedBox`, que
+/// encolheria tudo numa linha só e deixaria o nome miúdo.
+class _CardName extends StatelessWidget {
+  const _CardName(this.name);
+
+  final String name;
+
+  static const maxSize = 32.0;
+  static const minSize = 20.0;
+
+  /// A maior fonte, de [maxSize] a [minSize], em que [name] cabe em 2
+  /// linhas na largura [width].
+  static double sizeFor(
+    String name,
+    TextStyle style,
+    double width,
+    TextScaler scaler,
+    TextDirection direction,
+  ) {
+    for (var size = maxSize; size > minSize; size--) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: name,
+          style: style.copyWith(fontSize: size),
+        ),
+        textDirection: direction,
+        textScaler: scaler,
+        maxLines: 2,
+      )..layout(maxWidth: width);
+      final fits = !painter.didExceedMaxLines;
+      painter.dispose();
+      if (fits) return size;
+    }
+    return minSize;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = DefaultTextStyle.of(context).style
+        .merge(const TextStyle(fontWeight: FontWeight.w700, height: 1.15));
+    return LayoutBuilder(
+      builder: (context, constraints) => Text(
+        name,
+        textAlign: TextAlign.center,
+        maxLines: 2,
+        // Só um nome sem espaço e enorme (um apelido) chega aqui.
+        overflow: TextOverflow.ellipsis,
+        style: style.copyWith(
+          fontSize: sizeFor(
+            name,
+            style,
+            constraints.maxWidth,
+            MediaQuery.textScalerOf(context),
+            Directionality.of(context),
+          ),
+        ),
+      ),
+    );
+  }
 }
