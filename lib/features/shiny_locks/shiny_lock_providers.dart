@@ -21,8 +21,10 @@ final shinyLockActionsProvider = Provider<ShinyLockActions>(
 );
 
 /// Criar, editar e apagar shiny locks, recarregando o que depende deles: a
-/// lista, as caçadas (o aviso de shiny lock e o "incluir impossíveis") e o
-/// detalhe das formas (o aviso no painel do slot e no cadastro de espécime).
+/// lista, as caçadas (o aviso de shiny lock e o "incluir impossíveis"), o
+/// detalhe das formas (o aviso no painel do slot e no cadastro de espécime)
+/// e as contagens de shiny locked do dex: a lista, o dex aberto e o
+/// progresso por geração (#359).
 class ShinyLockActions {
   ShinyLockActions(this._ref);
 
@@ -50,5 +52,8 @@ class ShinyLockActions {
   void _changed() => _ref
     ..invalidate(shinyLocksProvider)
     ..invalidate(huntPageProvider)
-    ..invalidate(formDetailProvider);
+    ..invalidate(formDetailProvider)
+    ..invalidate(dexListProvider)
+    ..invalidate(dexProvider)
+    ..invalidate(generationsProvider);
 }
