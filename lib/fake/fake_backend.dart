@@ -1973,7 +1973,7 @@ class FakeBackend
           final form = _forms[formId]!;
           final lock = _lockOf(formId);
           final all = _huntReasons(slot, query.acceptedBalls);
-          // O "Sem alfa" só conta ligado (#280): desligado, um shiny que não
+          // O "Sem shiny alfa" só conta ligado (#280): desligado, um shiny que não
           // é alfa já está completo.
           final reasons = [
             for (final r in all)
@@ -2057,13 +2057,14 @@ class FakeBackend
 
   /// Motivos de caçada do slot; `pokeball` só com bolas aceitas, e bola não
   /// informada não conta; `noAlpha` quando a forma pode ser alfa e o slot
-  /// não tem um.
+  /// não tem um shiny alfa.
   List<HuntReason> _huntReasons(_SlotRecord slot, List<String> acceptedBalls) {
     final id = slot.specimenId;
     final specimen = id == null ? null : _specimens[id];
     final noAlpha = [
+      // Sem shiny alfa (#348): um alfa que não é shiny também não serve.
       if (_alphaVersions(slot.formId!).isNotEmpty &&
-          !(specimen?.isAlpha ?? false))
+          !(specimen != null && specimen.isAlpha && specimen.isShiny))
         HuntReason.noAlpha,
     ];
     if (specimen == null || !specimen.isShiny) {
