@@ -102,11 +102,13 @@ void main() {
       await tapInSheet(tester, find.widgetWithText(ChoiceChip, 'Fêmea'));
       await tapInSheet(tester, flag('Shiny', 'Não'));
       await tapInSheet(tester, flag('Alfa', 'Sim'));
-      await tapInSheet(tester, flag('GO', 'Sim'));
-      await tapInSheet(tester, flag('GO', ptText.keepAction));
+      // A marca de origem escolhida (#360).
+      await tapInSheet(tester, find.text('Marca de origem'));
+      await tester.tap(find.text('PLA'));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Revisar 8 alterações'), findsOneWidget);
-      await tester.tap(find.text('Revisar 8 alterações'));
+      expect(find.text('Revisar 9 alterações'), findsOneWidget);
+      await tester.tap(find.text('Revisar 9 alterações'));
       await tester.pumpAndSettle();
       final changes = results.single!;
       final now = DateTime.now();
@@ -121,6 +123,7 @@ void main() {
           gender: const SetTo('female'),
           isShiny: const SetTo(false),
           isAlpha: const SetTo(true),
+          markChoice: const SetTo('hisui'),
         ),
       );
     });
@@ -322,7 +325,7 @@ void main() {
                 gender: const SetTo('genderless'),
                 isShiny: const SetTo(true),
                 isAlpha: const SetTo(false),
-                isFromGo: const SetTo(true),
+                markChoice: const SetTo('go'),
               ),
             ),
             labels.ot(const SetTo(99)),
@@ -344,7 +347,7 @@ void main() {
       'Gênero → Sem gênero',
       'Shiny → Sim',
       'Alfa → Não',
-      'GO → Sim',
+      'Marca de origem → GO',
       '#99',
       ptText.keepAction,
       ptText.keepAction,

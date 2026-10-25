@@ -220,6 +220,11 @@ Map<String, dynamic> catalogJson({int schemaVersion = 1}) => {
   ],
   'versions': [
     {
+      'name': 'pokemon-go',
+      'versionGroup': 'pokemon-go',
+      'receivesFromHome': false,
+    },
+    {
       'name': 'scarlet',
       'versionGroup': 'scarlet-violet',
       'receivesFromHome': true,

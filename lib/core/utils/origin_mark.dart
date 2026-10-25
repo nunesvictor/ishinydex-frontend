@@ -1,3 +1,11 @@
+/// O Pokémon GO como jogo (#360): a versão que o catálogo publica para ele.
+/// Um OT do GO dá a marca do GO, como qualquer jogo dá a sua.
+const goVersion = 'pokemon-go';
+
+/// Os Let's Go: um Pokémon com OT deles pode ter a marca do GO, quando veio
+/// do GO pelo GO Park (leva o TID do Let's Go, mas a marca do GO).
+const letsGoVersions = {'lets-go-pikachu', 'lets-go-eevee'};
+
 /// Marca de origem (origin mark) do Pokémon HOME: o símbolo do jogo em que o
 /// espécime foi obtido. A regra (qual jogo tem qual marca, GO com prioridade)
 /// fica no backend, que manda o [slug] em `Specimen.originMark`; aqui é só a
@@ -74,6 +82,7 @@ enum OriginMark {
     'legends-arceus' => hisui,
     'scarlet' || 'violet' => paldea,
     'legends-za' => lumiose,
+    goVersion => go,
     _ => null,
   };
 }

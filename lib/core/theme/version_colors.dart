@@ -43,6 +43,7 @@ const versionColors = <String, Color>{
   'violet': Color(0xFF7A3FC6),
   'legends-za': Color(0xFF3FA96B),
   'go': Color(0xFF2A9FD8),
+  'pokemon-go': Color(0xFF2A9FD8),
 };
 
 /// O fundo e o texto de uma etiqueta ou chip de uma versão.

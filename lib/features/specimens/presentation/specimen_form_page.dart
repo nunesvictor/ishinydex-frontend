@@ -4,8 +4,10 @@ import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
+import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
@@ -282,9 +284,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                       for (final t in _trainers)
                         Choice(value: '${t.id}', label: t.label),
                     ],
-                    onChanged: (v) => _draft = _draft.copyWith(
-                      ot: v == null ? null : int.parse(v),
-                    ),
+                    onChanged: (v) => _setOt(v == null ? null : int.parse(v)),
                   ),
                 ),
                 Padding(
@@ -297,6 +297,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                 ),
               ],
             ),
+            ?_originMark(),
             ?_originWarning(),
             _captureDate(),
             SwitchListTile.adaptive(
@@ -316,14 +317,6 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               value: _draft.isAlpha,
               onChanged: (v) =>
                   setState(() => _draft = _draft.copyWith(isAlpha: v)),
-            ),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              secondary: const GoIcon(size: 24, semanticLabel: null),
-              title: Text(context.l10n.fromPokemonGo),
-              value: _draft.isFromGo,
-              onChanged: (v) =>
-                  setState(() => _draft = _draft.copyWith(isFromGo: v)),
             ),
             TextField(
               controller: _observation,
@@ -355,10 +348,120 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
   }
 
   /// Versão do jogo do OT escolhido.
-  String? get _otVersion => [
+  String? get _otVersion => _versionOf(_draft.ot);
+
+  String? _versionOf(int? ot) => [
     for (final t in _trainers)
-      if (t.id == _draft.ot) t.version,
+      if (t.id == ot) t.version,
   ].firstOrNull;
+
+  /// A marca é a do GO: OT do GO, GO Park ou a escolhida (#360).
+  bool get _isGo =>
+      _otVersion == goVersion || _draft.markChoice == OriginMark.go.slug;
+
+  /// Troca o OT e só mantém a marca escolhida que ainda vale: com OT sem
+  /// jogo, qualquer uma; com OT do Let's Go, o GO Park; senão, a do jogo.
+  void _setOt(int? ot) {
+    final version = _versionOf(ot);
+    final choice = _draft.markChoice;
+    _draft = _draft.copyWith(
+      ot: ot,
+      markChoice: switch (version) {
+        null => choice,
+        final v when letsGoVersions.contains(v) =>
+          choice == OriginMark.go.slug ? choice : null,
+        _ => null,
+      },
+    );
+  }
+
+  /// A marca de origem (#360). Com OT sem jogo (presentes do HOME,
+  /// eventos), escolher; com OT do Let's Go, o switch do GO Park; com OT de
+  /// outro jogo, só a linha com a marca dele, para conferir.
+  Widget? _originMark() {
+    final theme = Theme.of(context);
+    final hintStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final version = _otVersion;
+    if (version == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 4,
+          children: [
+            ChoiceSelect(
+              key: const ValueKey('field-mark-choice'),
+              label: context.l10n.originMarkField,
+              value: _draft.markChoice,
+              choices: [
+                for (final mark in OriginMark.values)
+                  Choice(value: mark.slug, label: mark.label),
+              ],
+              leadingOf: (choice) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: OriginMarkIcon(OriginMark.fromSlug(choice.value)!),
+              ),
+              errorText: context.fieldError(_validation, 'mark_choice'),
+              onChanged: (v) =>
+                  setState(() => _draft = _draft.copyWith(markChoice: v)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(context.l10n.originMarkChoiceHint, style: hintStyle),
+            ),
+          ],
+        ),
+      );
+    }
+    final goPark = letsGoVersions.contains(version);
+    final viaPark = goPark && _draft.markChoice == OriginMark.go.slug;
+    final mark = viaPark ? OriginMark.go : OriginMark.fromVersion(version);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (mark != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Row(
+              spacing: 6,
+              children: [
+                IconTheme.merge(
+                  data: IconThemeData(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  child: ExcludeSemantics(
+                    child: OriginMarkIcon(mark, size: 16),
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    viaPark
+                        ? context.l10n.originMarkGoPark
+                        : context.l10n.originMarkFromOt(mark.label),
+                    style: hintStyle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (goPark)
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            secondary: const GoIcon(size: 24, semanticLabel: null),
+            title: Text(context.l10n.goParkTitle),
+            subtitle: Text(context.l10n.goParkSubtitle),
+            value: viaPark,
+            onChanged: (v) => setState(
+              () => _draft = _draft.copyWith(
+                markChoice: v ? OriginMark.go.slug : null,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   /// O registro da caçada (#163), só com Shiny ligado. Desligar não apaga o
   /// que foi preenchido, mas ele não é salvo (o backend descarta).
@@ -370,11 +473,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       // A resposta "Sim" troca o registro: a seção recomeça com ele.
       key: ValueKey('hunt-section-$_finishing'),
       value: _draft.hunt,
-      methods: methods(
-        version,
-        fromGo: _draft.isFromGo,
-        formId: widget.form.id,
-      ),
+      methods: methods(version, fromGo: _isGo, formId: widget.form.id),
       allMethods: methods(null),
       forms: [
         ...ref.watch(preEvolutionsProvider)(widget.form.id),
@@ -534,7 +633,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     if (created == null || !mounted) return;
     setState(() {
       _trainers.add(created);
-      _draft = _draft.copyWith(ot: created.id);
+      _setOt(created.id);
     });
   }
 

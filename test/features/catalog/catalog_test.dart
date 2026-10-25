@@ -201,8 +201,17 @@ void main() {
     expect(options.gender, hasLength(3));
     expect(options.generation.single.label, 'Geração I');
 
+    // O GO (#360), sem grupo de versão, vem antes de tudo.
     expect(
       catalog.versions.first,
+      const GameVersion(
+        name: goVersion,
+        versionGroup: goVersion,
+        generation: '',
+      ),
+    );
+    expect(
+      catalog.versions[1],
       const GameVersion(
         name: 'red',
         versionGroup: 'red-blue',

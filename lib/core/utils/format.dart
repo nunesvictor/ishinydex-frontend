@@ -17,6 +17,7 @@ const _versionLabels = {
   'legends-za': 'Legends: Z-A',
   'lets-go-pikachu': "Let's Go Pikachu",
   'lets-go-eevee': "Let's Go Eevee",
+  'pokemon-go': 'Pokémon GO',
 };
 
 /// O nome completo do jogo, como na capa (`legends-arceus` → "Pokémon
@@ -27,6 +28,7 @@ String versionFullName(String version) =>
 const _versionFullNames = {
   'lets-go-pikachu': "Pokémon: Let's Go, Pikachu!",
   'lets-go-eevee': "Pokémon: Let's Go, Eevee!",
+  'pokemon-go': 'Pokémon GO',
 };
 
 /// Percentual inteiro de [done] sobre [total] (0 quando [total] é 0).

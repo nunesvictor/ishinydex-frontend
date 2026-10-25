@@ -53,7 +53,6 @@ void main() {
       'form': 3,
       'is_alpha': false,
       'is_shiny': false,
-      'is_from_go': false,
     });
     expect(
       SpecimenDraft(
@@ -65,7 +64,7 @@ void main() {
         nature: 'adamant',
         isAlpha: true,
         isShiny: true,
-        isFromGo: true,
+        markChoice: 'go',
         capturedAt: DateTime(2024, 1, 5, 13),
         pokeball: 'poke-ball',
         observation: 'obs',
@@ -80,7 +79,7 @@ void main() {
         'nature': 'adamant',
         'is_alpha': true,
         'is_shiny': true,
-        'is_from_go': true,
+        'mark_choice': 'go',
         'captured_at': '2024-01-05',
         'pokeball': 'poke-ball',
         'observation': 'obs',
@@ -103,7 +102,7 @@ void main() {
       'nature': 'naughty',
       'is_alpha': false,
       'is_shiny': true,
-      'is_from_go': false,
+      'mark_choice': null,
       'captured_at': '2024-09-23',
       'pokeball': null,
       'observation': null,

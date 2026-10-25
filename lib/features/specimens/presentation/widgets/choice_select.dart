@@ -24,6 +24,7 @@ class ChoiceSelect extends StatelessWidget {
     required this.onChanged,
     this.errorText,
     this.trailingOf,
+    this.leadingOf,
     super.key,
   });
 
@@ -38,6 +39,10 @@ class ChoiceSelect extends StatelessWidget {
 
   /// Um ícone à direita de cada opção, como o Shiny Charm do save (#317).
   final Widget? Function(Choice choice)? trailingOf;
+
+  /// Um ícone à esquerda de cada opção e do campo, como a marca de origem
+  /// (#360); no lugar do sprite.
+  final Widget? Function(Choice choice)? leadingOf;
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +61,20 @@ class ChoiceSelect extends StatelessWidget {
       enableFilter: desktop,
       filterCallback: desktop ? _filter : null,
       searchCallback: _search,
-      leadingIcon: withSprites ? _sprite(selected?.spriteUrl) : null,
+      leadingIcon: withSprites
+          ? _sprite(selected?.spriteUrl)
+          : selected == null
+          ? null
+          : leadingOf?.call(selected),
       dropdownMenuEntries: [
         const DropdownMenuEntry(value: _none, label: '—'),
         for (final c in choices)
           DropdownMenuEntry(
             value: c.value,
             label: c.label,
-            leadingIcon: withSprites ? _sprite(c.spriteUrl) : null,
+            leadingIcon: withSprites
+                ? _sprite(c.spriteUrl)
+                : leadingOf?.call(c),
             trailingIcon: trailingOf?.call(c),
           ),
       ],

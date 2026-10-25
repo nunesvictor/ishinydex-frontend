@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
@@ -619,13 +620,16 @@ void main() {
       expect((await backend.fetchSpecimen(created.id)).originMark, 'paldea');
       await backend.bulkUpdate(
         ids: [created.id],
-        changes: const SpecimenChanges(isFromGo: SetTo(true)),
+        changes: const SpecimenChanges(markChoice: SetTo('go')),
       );
       final go = await backend.fetchSpecimen(created.id);
       expect((go.originVersion, go.originMark), ('scarlet', 'go'));
       await backend.bulkUpdate(
         ids: [created.id],
-        changes: const SpecimenChanges(ot: SetTo(null), isFromGo: SetTo(false)),
+        changes: const SpecimenChanges(
+          ot: SetTo(null),
+          markChoice: SetTo(null),
+        ),
       );
       final none = await backend.fetchSpecimen(created.id);
       expect((none.originVersion, none.originMark), (null, null));
@@ -665,7 +669,7 @@ void main() {
             capturedAt: SetTo(DateTime(2026, 5, 5)),
             isShiny: const SetTo(false),
             isAlpha: const SetTo(true),
-            isFromGo: const SetTo(true),
+            markChoice: const SetTo('go'),
           ),
         );
         expect(updated, 3);
@@ -1089,7 +1093,11 @@ void main() {
   });
 
   test('createTrainer segue as regras do backend e fetchVersions', () async {
-    expect((await backend.fetchVersions()).first.name, 'red');
+    // O GO (#360) primeiro, depois a ordem de lançamento.
+    expect(
+      [for (final v in (await backend.fetchVersions()).take(2)) v.name],
+      [goVersion, 'red'],
+    );
     expect(
       backend.createTrainer(name: ' ', trainerId: ''),
       throwsA(

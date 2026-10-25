@@ -2,13 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/local/data/local_data_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../fixtures/catalog_fixture.dart';
@@ -134,7 +134,10 @@ void main() {
       expect(detail.debutVersions, ['red', 'blue']);
       expect((await backend.fetchForm(150)).isDistroOnly, true);
       expect((await backend.fetchOptions()).nature.first.value, 'modest');
-      expect((await backend.fetchVersions()).first.name, 'red');
+      expect(
+        [for (final v in (await backend.fetchVersions()).take(2)) v.name],
+        [goVersion, 'red'],
+      );
       expect(
         (await backend.fetchShinyLocks()).single.caption,
         'Mewtwo de evento',

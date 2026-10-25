@@ -1,4 +1,5 @@
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/catalog/domain/catalog_labels.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
@@ -1004,9 +1005,13 @@ class Catalog {
     return SpeciesCategory.regular;
   }
 
-  /// Marca de origem de um jogo (`null` se o jogo não tiver marca).
-  String? originMarkOf(String? version) =>
-      version == null ? null : _originMarks[version];
+  /// Marca de origem de um jogo (`null` se o jogo não tiver marca). O GO
+  /// não tem grupo de versão no catálogo (#360): a marca dele vem daqui.
+  String? originMarkOf(String? version) => version == goVersion
+      ? OriginMark.go.slug
+      : version == null
+      ? null
+      : _originMarks[version];
 }
 
 /// Lista de objetos JSON.

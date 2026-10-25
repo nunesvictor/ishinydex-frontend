@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
+import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
@@ -85,6 +87,69 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('marca de origem pelo OT: GO, GO Park, jogo e sem jogo (#360)', (
+    tester,
+  ) async {
+    when(repository.fetchTrainers).thenAnswer(
+      (_) async => const [
+        Trainer(id: 12, name: 'Ash', trainerId: '123456'),
+        Trainer(id: 20, name: 'Go', trainerId: '1', version: goVersion),
+        Trainer(
+          id: 21,
+          name: 'Lgp',
+          trainerId: '2',
+          version: 'lets-go-pikachu',
+        ),
+        Trainer(id: 22, name: 'Sc', trainerId: '3', version: 'scarlet'),
+      ],
+    );
+    when(() => repository.create(any()))
+        .thenAnswer((invocation) async => const Specimen(id: 1, form: 1));
+    await pumpForm(tester, size: const Size(400, 2400));
+    await tester.pumpAndSettle();
+    final field = find.byKey(const ValueKey('field-mark-choice'));
+    final goPark = find.text('Veio do GO pelo GO Park');
+    // Sem OT: escolher a marca.
+    expect(field, findsOneWidget);
+
+    await choose(tester, 'ot', 'Go (1) · Pokémon GO');
+    expect(find.text('Marca de origem: GO, do jogo do OT'), findsOneWidget);
+    expect(field, findsNothing);
+    expect(goPark, findsNothing);
+
+    await choose(tester, 'ot', "Lgp (2) · Let's Go Pikachu");
+    expect(find.text('Marca de origem: LGPE, do jogo do OT'), findsOneWidget);
+    await tester.tap(goPark);
+    await tester.pumpAndSettle();
+    expect(find.text('Marca de origem: GO (GO Park)'), findsOneWidget);
+
+    // Outro jogo: a marca dele, sem o GO Park; a escolha some.
+    await choose(tester, 'ot', 'Sc (3) · Scarlet');
+    expect(find.text('Marca de origem: SV, do jogo do OT'), findsOneWidget);
+    expect(goPark, findsNothing);
+    await choose(tester, 'ot', "Lgp (2) · Let's Go Pikachu");
+    expect(
+      tester
+          .widget<SwitchListTile>(
+            find.widgetWithText(SwitchListTile, 'Veio do GO pelo GO Park'),
+          )
+          .value,
+      isFalse,
+    );
+    await tester.tap(goPark);
+    await tester.pumpAndSettle();
+    // Sem jogo: a escolha (o GO do GO Park) fica.
+    await choose(tester, 'ot', 'Ash (123456)');
+    expect(field, findsOneWidget);
+
+    await tester.tap(find.text('Salvar e depositar'));
+    await tester.pumpAndSettle();
+    final draft =
+        verify(() => repository.create(captureAny())).captured.single
+            as SpecimenDraft;
+    expect((draft.ot, draft.markChoice), (12, 'go'));
+  });
+
   testWidgets('OT de um jogo em cuja pokédex ele não está: só avisa', (
     tester,
   ) async {
@@ -129,7 +194,9 @@ void main() {
     expect(find.text('New Bulbasaur'), findsOneWidget);
     expect(find.text('Nickname'), findsOneWidget);
     expect(find.text('Original trainer (OT)'), findsOneWidget);
-    expect(find.text('Came from Pokémon GO'), findsOneWidget);
+    // OT sem jogo: a marca de origem para escolher (#360).
+    expect(find.text('Origin mark'), findsOneWidget);
+    expect(find.textContaining('The OT has no game'), findsOneWidget);
     expect(find.text('Hunt record'), findsOneWidget);
     expect(find.text('Optional: method, count, start and post'), findsOne);
     expect(find.text('Save and deposit'), findsOneWidget);
@@ -144,12 +211,10 @@ void main() {
     );
     final results = await pumpForm(tester);
     await tester.pumpAndSettle();
-    // Shiny e Pokémon GO com os emojis do admin, alfa com o ícone do HOME,
-    // cada um no seu switch.
+    // Shiny e alfa com os ícones do HOME, cada um no seu switch.
     for (final (icon, title) in [
       (find.byType(ShinyIcon), 'Shiny'),
       (find.byType(AlphaIcon), 'Alfa'),
-      (find.byType(GoIcon), 'Veio do Pokémon GO'),
     ]) {
       expect(
         find.descendant(
@@ -169,9 +234,10 @@ void main() {
     await choose(tester, 'ot', 'Ash (123456)');
     await choose(tester, 'ot', '—');
     await choose(tester, 'ot', 'Ash (123456)');
+    // OT sem jogo: a marca é escolhida (#360).
+    await choose(tester, 'mark-choice', 'GBA');
     await tester.tap(find.text('Shiny'));
     await tester.tap(find.text('Alfa'));
-    await tester.tap(find.text('Veio do Pokémon GO'));
     await tester.pump();
     await tester.enterText(find.byType(TextField).last, 'obs');
 
@@ -197,7 +263,7 @@ void main() {
     expect(draft.ot, 12);
     expect(draft.isShiny, false);
     expect(draft.isAlpha, true);
-    expect(draft.isFromGo, true);
+    expect(draft.markChoice, 'gba');
     expect(draft.capturedAt, isNotNull);
     expect(draft.observation, 'obs');
     expect(results.single!.id, 99);
@@ -367,6 +433,7 @@ void main() {
       ...specimenJson,
       'nickname': 'Bulba',
       'observation': 'obs antiga',
+      'mark_choice': 'go',
     });
 
     for (final size in [compactSize, expandedSize]) {
@@ -389,7 +456,8 @@ void main() {
         await tester.drag(find.byType(ListView), const Offset(0, -3000));
         await tester.pumpAndSettle();
         expect(find.text('obs antiga'), findsOneWidget);
-        expect(find.byType(GoIcon), findsOneWidget);
+        // OT fora da lista (sem jogo): a marca escolhida, com o ícone.
+        expect(find.byType(OriginMarkIcon), findsWidgets);
         await tester.tap(find.text('Salvar'));
         await tester.pumpAndSettle();
 
@@ -400,6 +468,7 @@ void main() {
         expect(draft.form, 1);
         expect(draft.ability, 'overgrow');
         expect(draft.ot, 7);
+        expect(draft.markChoice, 'go');
         verifyNever(() => repository.create(any()));
         expect(results.single!.nickname, 'Saura');
       });
