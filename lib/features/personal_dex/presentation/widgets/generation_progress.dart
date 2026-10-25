@@ -69,10 +69,25 @@ class GenerationProgressView extends ConsumerWidget {
                     Expanded(
                       child: Text(context.l10n.generation(gen.generation)),
                     ),
-                    Text(
-                      gen.missing == 0
-                          ? context.l10n.generationComplete
-                          : context.l10n.dexMissingCount(gen.missing),
+                    Text.rich(
+                      TextSpan(
+                        text: gen.missing == 0
+                            ? context.l10n.generationComplete
+                            : context.l10n.dexMissingCount(gen.missing),
+                        children: [
+                          if (gen.locked > 0)
+                            TextSpan(
+                              text:
+                                  ' · '
+                                  '${context.l10n.dexLockedCount(gen.locked)}',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

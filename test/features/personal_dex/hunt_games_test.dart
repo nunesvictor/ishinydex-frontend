@@ -241,7 +241,7 @@ void main() {
 
     expect(await versions(const HuntQuery()), isNot(contains('scarlet')));
     expect(
-      await versions(const HuntQuery(includeLocked: true)),
+      await versions(const HuntQuery(shinyLocked: ShinyLockedFilter.included)),
       contains('scarlet'),
     );
     expect(

@@ -280,6 +280,11 @@ abstract class PersonalDex with _$PersonalDex {
 
     /// Dos [registered], quantos estão num save (fora do HOME).
     @Default(0) int away,
+
+    /// Dos que faltam, quantos são shiny locked (#341): num shiny dex, os
+    /// slots sem shiny de uma forma que não tem shiny. Fica fora da aba
+    /// Faltam por padrão.
+    @Default(0) int locked,
     @Default(false) bool isShinyDex,
     @Default(false) bool forceNewBox,
 
@@ -333,6 +338,9 @@ abstract class GenerationProgress with _$GenerationProgress {
     required int registered,
     required BoxRef firstBox,
     @Default(0) int away,
+
+    /// Dos que faltam, quantos são shiny locked (#341).
+    @Default(0) int locked,
   }) = _GenerationProgress;
 
   const GenerationProgress._();
@@ -390,6 +398,24 @@ enum HomeCutoffFilter {
   final String? param;
 }
 
+/// As formas shiny locked na aba Faltam (#341): as que não têm shiny (lock
+/// "Shiny locked" ativo) e os jogos em que a forma é travada.
+enum ShinyLockedFilter {
+  /// Fora da lista: o padrão, porque não há o que caçar.
+  without,
+
+  /// Junto com as outras.
+  included(param: 'include'),
+
+  /// Só elas: o que impede o dex de chegar a 100%.
+  only(param: 'only');
+
+  ShinyLockedFilter({this.param});
+
+  /// Valor de `shiny_locked` na API; `null` é o padrão.
+  final String? param;
+}
+
 /// Categoria da espécie, nos filtros das caçadas e do inventário.
 enum SpeciesCategory {
   legendary('legendary'),
@@ -408,7 +434,8 @@ enum ShinyLockType {
   /// Ainda dá para conseguir, por distribuição (evento).
   distroOnly('distro-only'),
 
-  /// Impossível de obter shiny; só aparece com "incluir impossíveis".
+  /// Sem shiny ("Shiny locked"); nas caçadas, só com "Com shiny locked" ou
+  /// "Só shiny locked" (#341).
   unobtainable('unobtainable');
 
   ShinyLockType(this.param);
@@ -447,6 +474,10 @@ abstract class Hunt with _$Hunt {
     required List<HuntReason> reasons,
     ShinyLockType? shinyLock,
 
+    /// O nome do lock que deixa a forma sem shiny ("Cosmog-Cosmoem"), para a
+    /// linha dizer por que ela não tem o que caçar (#341).
+    String? shinyLockCaption,
+
     /// Versões (das que recebem do HOME) em que a forma pode ser caçada:
     /// está numa pokédex do jogo e não é exclusiva da outra versão. Vazio
     /// sem o catálogo.
@@ -462,6 +493,7 @@ abstract class Hunt with _$Hunt {
         ?HuntReason.fromParam(value as String),
     ],
     shinyLock: ShinyLockType.fromParam(json['shiny_lock'] as String?),
+    shinyLockCaption: json['shiny_lock_caption'] as String?,
   );
 }
 
@@ -501,7 +533,7 @@ abstract class HuntQuery with _$HuntQuery {
     @Default(<String>[]) List<String> types,
     @Default(<SpeciesCategory>[]) List<SpeciesCategory> categories,
     @Default('') String search,
-    @Default(false) bool includeLocked,
+    @Default(ShinyLockedFilter.without) ShinyLockedFilter shinyLocked,
     @Default(HuntSituation.all) HuntSituation situation,
     @Default(HomeCutoffFilter.all) HomeCutoffFilter homeCutoff,
 
@@ -517,7 +549,7 @@ abstract class HuntQuery with _$HuntQuery {
     generations.isNotEmpty,
     types.isNotEmpty,
     categories.isNotEmpty,
-    includeLocked,
+    shinyLocked != ShinyLockedFilter.without,
     homeCutoff != HomeCutoffFilter.all,
   ].where((active) => active).length;
 
@@ -543,7 +575,7 @@ abstract class HuntQuery with _$HuntQuery {
       if (categories.isNotEmpty)
         'category': join(categories.map((c) => c.param)),
       if (search.isNotEmpty) 'search': search,
-      if (includeLocked) 'include_locked': true,
+      'shiny_locked': ?shinyLocked.param,
       'registered': ?situation.param,
       'home_cutoff': ?homeCutoff.param,
       if (versions.isNotEmpty) 'version': join(versions),

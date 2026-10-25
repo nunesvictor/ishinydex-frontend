@@ -98,7 +98,7 @@ void main() {
       expect(find.text('Status'), findsOneWidget);
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
-      expect(find.text('Include unobtainable shiny'), findsOneWidget);
+      expect(find.text('Without shiny locked'), findsOneWidget);
       expect(find.text('Show results'), findsOneWidget);
     });
 
@@ -138,7 +138,7 @@ void main() {
       await tester.tap(_chip('Lendário'));
       await tester.tap(_chip('I'));
       await tester.tap(_chip('Fogo'));
-      await tester.tap(find.text('Incluir shiny impossível'));
+      await tester.tap(find.text('Com shiny locked'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mostrar resultados'));
       await tester.pumpAndSettle();
@@ -149,7 +149,7 @@ void main() {
         'Lendário',
         'Geração I',
         'Fogo',
-        'Com shiny impossível',
+        'Com shiny locked',
       ]) {
         expect(find.widgetWithText(InputChip, label), findsOneWidget);
       }

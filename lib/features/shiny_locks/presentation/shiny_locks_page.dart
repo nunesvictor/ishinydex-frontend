@@ -181,7 +181,7 @@ class _ShinyLockTile extends StatelessWidget {
   }
 }
 
-/// Ícone do tipo num círculo colorido: cadeado (shiny impossível) ou presente
+/// Ícone do tipo num círculo colorido: cadeado (shiny locked) ou presente
 /// (só por distribuição).
 class ShinyLockTypeAvatar extends StatelessWidget {
   const ShinyLockTypeAvatar(this.type, {super.key});
@@ -211,7 +211,7 @@ class ShinyLockTypeAvatar extends StatelessWidget {
 
 /// Ícone e rótulo curto (chips) de cada tipo, usados nas duas telas.
 extension ShinyLockTypeUi on ShinyLockType {
-  /// Ordem nas telas: o caso mais comum (impossível) primeiro.
+  /// Ordem nas telas: o caso mais comum (shiny locked) primeiro.
   static const List<ShinyLockType> ordered = [
     ShinyLockType.unobtainable,
     ShinyLockType.distroOnly,

@@ -899,7 +899,16 @@ class FakeBackend
         ),
       );
 
-  /// Lock ativo da forma; "impossível" vence "só por distribuição".
+  /// O nome do primeiro lock ativo que deixa a forma sem shiny (#341).
+  String? _unobtainableCaption(int formId) => [
+    for (final lock in _shinyLocks.values)
+      if (lock.active &&
+          lock.lockType == ShinyLockType.unobtainable &&
+          lock.forms.any((f) => f.id == formId))
+        lock.caption,
+  ].firstOrNull;
+
+  /// Lock ativo da forma; "shiny locked" vence "só por distribuição".
   ShinyLockType? _lockOf(int formId) {
     final types = {
       for (final lock in _shinyLocks.values)
@@ -1694,6 +1703,7 @@ class FakeBackend
               .where(_countsForProgress)
               .length,
           away: byGeneration[generation]!.where(_isAway).length,
+          locked: byGeneration[generation]!.where(_isLocked).length,
           firstBox: slots[anchorOf(generation)].box,
         ),
     ];
@@ -1881,7 +1891,7 @@ class FakeBackend
   }
 
   /// Como a API: só shiny dex (senão 400); motivos somados (OU), escopo
-  /// combinado (E), tipos "qualquer um", shiny impossível fora por padrão,
+  /// combinado (E), tipos "qualquer um", shiny locked fora por padrão,
   /// situação (vazio ou com espécime) só com `registered`;
   /// cada item traz todos os seus motivos. Página fora do intervalo → 404.
   @override
@@ -1971,9 +1981,10 @@ class FakeBackend
           ];
           final selected = reasons.where(query.reasons.contains).toList();
           final category = _categories[formId] ?? SpeciesCategory.regular;
-          // Sem "incluir shiny locks", some o jogo em que a forma é travada.
+          // Sem shiny locked, some o jogo em que a forma é travada.
+          final withLocked = query.shinyLocked != ShinyLockedFilter.without;
           bool unlocked(String v) =>
-              query.includeLocked || !_lockedVersions(formId).contains(v);
+              withLocked || !_lockedVersions(formId).contains(v);
           // Só pelo alfa, onde caçar são os jogos em que ele aparece.
           final versions = [
             for (final v
@@ -1986,7 +1997,11 @@ class FakeBackend
               selected.isNotEmpty &&
               (query.situation.param == null ||
                   query.situation.param == (slot.specimenId != null)) &&
-              (query.includeLocked || lock != ShinyLockType.unobtainable) &&
+              switch (query.shinyLocked) {
+                ShinyLockedFilter.without => lock != ShinyLockType.unobtainable,
+                ShinyLockedFilter.included => true,
+                ShinyLockedFilter.only => lock == ShinyLockType.unobtainable,
+              } &&
               (query.generations.isEmpty ||
                   query.generations.contains(_formGenerationOf(form))) &&
               (query.types.isEmpty ||
@@ -2013,6 +2028,9 @@ class FakeBackend
                     slot: _toSlot(slot),
                     reasons: reasons,
                     shinyLock: lock,
+                    shinyLockCaption: lock == ShinyLockType.unobtainable
+                        ? _unobtainableCaption(formId)
+                        : null,
                     versions: versions,
                   )
                 : null,
@@ -2697,8 +2715,15 @@ class FakeBackend
       total: slots.length,
       registered: slots.where(_countsForProgress).length,
       away: slots.where(_isAway).length,
+      locked: slots.where(_isLocked).length,
     );
   }
+
+  /// Falta num shiny dex e a forma não tem shiny (#341): nunca completa.
+  bool _isLocked(_SlotRecord slot) =>
+      _dexes[slot.dexId]!.isShinyDex &&
+      !_countsForProgress(slot) &&
+      _lockOf(slot.formId!) == ShinyLockType.unobtainable;
 
   /// Conta no progresso, mas o espécime está num save.
   bool _isAway(_SlotRecord slot) =>
