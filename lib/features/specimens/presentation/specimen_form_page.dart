@@ -310,14 +310,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             ?_huntQuestion(),
             ?_huntRecord(),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              secondary: const AlphaIcon(size: 24, semanticLabel: null),
-              title: Text(context.l10n.markAlpha),
-              value: _draft.isAlpha,
-              onChanged: (v) =>
-                  setState(() => _draft = _draft.copyWith(isAlpha: v)),
-            ),
+            ?_alpha(),
             TextField(
               controller: _observation,
               minLines: 2,
@@ -329,7 +322,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _saving ? null : _submit,
+              onPressed: _saving || _alphaBlocked ? null : _submit,
               child: _saving
                   ? const SizedBox.square(
                       dimension: 20,
@@ -355,9 +348,43 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       if (t.id == ot) t.version,
   ].firstOrNull;
 
+  /// A marca de origem que o espécime vai ter, como o backend a calcula
+  /// (#360): o GO escolhido; senão, a do jogo do OT; sem jogo, a escolhida.
+  String? get _mark {
+    final version = _otVersion;
+    if (_draft.markChoice == OriginMark.go.slug) return OriginMark.go.slug;
+    if (version != null) return OriginMark.fromVersion(version)?.slug;
+    return _draft.markChoice;
+  }
+
   /// A marca é a do GO: OT do GO, GO Park ou a escolhida (#360).
-  bool get _isGo =>
-      _otVersion == goVersion || _draft.markChoice == OriginMark.go.slug;
+  bool get _isGo => _mark == OriginMark.go.slug;
+
+  /// A forma pode ser alfa com esta marca (#362).
+  bool get _alphaAllowed =>
+      ref.watch(alphaAllowedProvider)(widget.form.id, _mark);
+
+  /// Alfa ligado sem poder ser (ex.: o OT mudou): salvar fica bloqueado.
+  bool get _alphaBlocked => _draft.isAlpha && !_alphaAllowed;
+
+  /// O switch "Alfa" (#362): só quando a marca e a forma permitem; ligado
+  /// sem poder, fica com o erro (não desliga sozinho).
+  Widget? _alpha() {
+    if (!_alphaAllowed && !_draft.isAlpha) return null;
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      secondary: const AlphaIcon(size: 24, semanticLabel: null),
+      title: Text(context.l10n.markAlpha),
+      subtitle: _alphaBlocked
+          ? Text(
+              context.l10n.problemAlphaNotAllowed,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            )
+          : null,
+      value: _draft.isAlpha,
+      onChanged: (v) => setState(() => _draft = _draft.copyWith(isAlpha: v)),
+    );
+  }
 
   /// Troca o OT e só mantém a marca escolhida que ainda vale: com OT sem
   /// jogo, qualquer uma; com OT do Let's Go, o GO Park; senão, a do jogo.

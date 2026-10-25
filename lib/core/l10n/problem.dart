@@ -40,6 +40,9 @@ sealed class Problem with _$Problem {
       SpecimensNotFoundProblem;
   const factory Problem.invalidForm() = InvalidFormProblem;
   const factory Problem.formUnchangeable() = FormUnchangeableProblem;
+
+  /// Alfa só com marca de Hisui ou Lumiose e forma que pode ser alfa (#362).
+  const factory Problem.alphaNotAllowed() = AlphaNotAllowedProblem;
   const factory Problem.notAnEvolution() = NotAnEvolutionProblem;
   const factory Problem.invalidAbility() = InvalidAbilityProblem;
 

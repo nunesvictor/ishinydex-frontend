@@ -124,6 +124,18 @@ final shinyMethodsProvider =
           const [];
     });
 
+/// Se a forma pode ser alfa com a marca de origem (#362); sem um catálogo
+/// que diga quais formas podem ser alfa, sem restrição.
+final alphaAllowedProvider = Provider<bool Function(int formId, String? mark)>((
+  ref,
+) {
+  final catalog = ref.watch(fakeBackendProvider).catalog;
+  return (formId, mark) =>
+      catalog == null ||
+      !catalog.hasAlphaForms ||
+      catalog.canBeAlpha(formId, mark);
+});
+
 /// As pré-evoluções de uma forma, da mais básica à anterior (#315).
 final preEvolutionsProvider = Provider<List<FormRef> Function(int formId)>(
   (ref) => ref.watch(fakeBackendProvider).preEvolutionsOf,

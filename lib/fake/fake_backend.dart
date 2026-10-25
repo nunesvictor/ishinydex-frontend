@@ -2150,6 +2150,7 @@ class FakeBackend
       ot: draft.ot,
       hunt: hunt,
     ).withOrigin(_originMarkOf, _otVersion(draft.ot));
+    _validateAlpha(specimen);
     _specimens[id] = specimen;
     return specimen;
   }
@@ -2263,10 +2264,32 @@ class FakeBackend
       isAlpha: pick(c.isAlpha, s.isAlpha) ?? s.isAlpha,
       markChoice: pick(c.markChoice, s.markChoice),
     );
-    return changed.withOrigin(_originMarkOf, switch (c.ot) {
+    final result = changed.withOrigin(_originMarkOf, switch (c.ot) {
       Keep() => s.originVersion,
       SetTo(:final value) => _otVersion(value),
     });
+    // O lote não marca alfa quem não pode ser (#362).
+    if (c.isAlpha case SetTo(value: true)
+        when !_alphaAllowed(result.form, result.originMark)) {
+      return result.copyWith(isAlpha: s.isAlpha);
+    }
+    return result;
+  }
+
+  /// Alfa só com marca de Hisui ou Lumiose e forma que pode ser alfa
+  /// (#362); sem um catálogo que diga quais formas, sem restrição.
+  bool _alphaAllowed(int formId, String? mark) =>
+      catalog == null ||
+      !catalog!.hasAlphaForms ||
+      catalog!.canBeAlpha(formId, mark);
+
+  void _validateAlpha(Specimen specimen) {
+    if (specimen.isAlpha &&
+        !_alphaAllowed(specimen.form, specimen.originMark)) {
+      throw const ValidationFailure({
+        'is_alpha': [Problem.alphaNotAllowed()],
+      });
+    }
   }
 
   @override
@@ -2317,6 +2340,7 @@ class FakeBackend
     final updated = draft.ot == specimen.ot
         ? edited.withOrigin(_originMarkOf, specimen.originVersion)
         : edited.withOrigin(_originMarkOf, _otVersion(draft.ot));
+    _validateAlpha(updated);
     _specimens[specimenId] = updated;
     return updated;
   }

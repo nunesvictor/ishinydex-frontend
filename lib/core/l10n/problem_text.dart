@@ -33,6 +33,7 @@ extension ProblemText on AppLocalizations {
     HuntCountNotPositiveProblem() => problemHuntCountNotPositive,
     HuntUnitNotOfMethodProblem() => problemHuntUnitNotOfMethod,
     HuntStartAfterCaptureProblem() => problemHuntStartAfterCapture,
+    AlphaNotAllowedProblem() => problemAlphaNotAllowed,
     InvalidLinkProblem() => problemInvalidLink,
     NegativeCountProblem() => problemNegativeCount,
     InvalidChainProblem() => problemInvalidChain,

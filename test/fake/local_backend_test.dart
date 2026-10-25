@@ -1,11 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 import '../fixtures/catalog_fixture.dart';
 
@@ -307,6 +310,110 @@ void main() {
         );
         expect((specimen.originMark, specimen.isFromGo), ('go', true));
       }
+    });
+  });
+
+  group('alfa pela marca de origem (#362)', () {
+    // O fixture com o Legends: Arceus, em que o Bulbasaur (1) pode ser alfa.
+    final json = catalogJson();
+    json['versionGroups'] = [
+      ...json['versionGroups'] as List,
+      {
+        'name': 'legends-arceus',
+        'generation': 'generation-viii',
+        'order': 30,
+        'versions': ['legends-arceus'],
+        'originMark': 'hisui',
+      },
+    ];
+    json['versions'] = [
+      ...json['versions'] as List,
+      {
+        'name': 'legends-arceus',
+        'versionGroup': 'legends-arceus',
+        'receivesFromHome': true,
+      },
+    ];
+    json['alphaForms'] = [
+      {
+        'versionGroup': 'legends-arceus',
+        'forms': [1],
+      },
+    ];
+    final withAlphas = Catalog.fromJson(
+      json,
+      spriteBase: Env.defaultSpritesBaseUrl,
+    );
+
+    test('Catalog.canBeAlpha: a marca do jogo e a forma', () {
+      expect(withAlphas.canBeAlpha(1, 'hisui'), isTrue);
+      expect(withAlphas.canBeAlpha(1, 'paldea'), isFalse);
+      expect(withAlphas.canBeAlpha(2, 'hisui'), isFalse);
+      expect(withAlphas.canBeAlpha(1, null), isFalse);
+    });
+
+    test('criar, editar e o lote', () async {
+      final backend = FakeBackend.local(withAlphas);
+      Future<int> trainer(String version) async => (await backend.createTrainer(
+        name: 'Ash',
+        trainerId: version,
+        version: version,
+      )).id;
+      final pla = await trainer('legends-arceus');
+      final scarlet = await trainer('scarlet');
+      final alpha = await backend.create(
+        SpecimenDraft(form: 1, ability: '', ot: pla, isAlpha: true),
+      );
+      expect((alpha.isAlpha, alpha.originMark), (true, 'hisui'));
+      expect(
+        backend.create(
+          SpecimenDraft(form: 1, ability: '', ot: scarlet, isAlpha: true),
+        ),
+        throwsA(
+          isA<ValidationFailure>().having(
+            (f) => f.errorsFor('is_alpha'),
+            'is_alpha',
+            [const Problem.alphaNotAllowed()],
+          ),
+        ),
+      );
+      // Trocar o OT de um alfa para um jogo sem alfa: recusado.
+      expect(
+        backend.update(
+          alpha.id,
+          SpecimenDraft.fromSpecimen(alpha).copyWith(ot: scarlet),
+        ),
+        throwsA(isA<ValidationFailure>()),
+      );
+      // O lote só marca alfa quem pode ser.
+      final plain = await backend.create(
+        SpecimenDraft(form: 1, ability: '', ot: scarlet),
+      );
+      final other = await backend.create(
+        SpecimenDraft(form: 1, ability: '', ot: pla),
+      );
+      await backend.bulkUpdate(
+        ids: [plain.id, other.id],
+        changes: const SpecimenChanges(isAlpha: SetTo(true)),
+      );
+      expect((await backend.fetchSpecimen(plain.id)).isAlpha, isFalse);
+      expect((await backend.fetchSpecimen(other.id)).isAlpha, isTrue);
+    });
+
+    test('alphaAllowedProvider: com o catálogo, a regra; sem, livre', () {
+      final withCatalog = ProviderContainer(
+        overrides: [
+          fakeBackendProvider.overrideWithValue(FakeBackend.local(withAlphas)),
+        ],
+      );
+      addTearDown(withCatalog.dispose);
+      expect(withCatalog.read(alphaAllowedProvider)(1, 'hisui'), isTrue);
+      expect(withCatalog.read(alphaAllowedProvider)(1, 'paldea'), isFalse);
+      final seeded = ProviderContainer(
+        overrides: [fakeBackendProvider.overrideWithValue(FakeBackend())],
+      );
+      addTearDown(seeded.dispose);
+      expect(seeded.read(alphaAllowedProvider)(1, 'paldea'), isTrue);
     });
   });
 }
