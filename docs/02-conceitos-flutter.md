@@ -581,7 +581,10 @@ Flutter quando redesenhar; aqui é sempre, porque o desenho é barato. Para o
 leitor de tela, o desenho fica dentro de um `Semantics` com os valores em
 texto. Com um espécime registrado, a natureza dele pinta o stat aumentado de
 vermelho (↑) e o diminuído de azul (↓), como nos jogos; os nomes dos stats
-vêm das opções de natureza da API (`increased`/`decreased`).
+vêm das opções de natureza da API (`increased`/`decreased`). Como o desenho já
+mostra o efeito, a legenda ao lado diz só o nome (#338); para o leitor de
+tela, um `Semantics` com `excludeSemantics` troca o texto visível por
+"Natureza Modest", que diz o que aquele nome é.
 
 ### Imagens do próprio app: assets
 

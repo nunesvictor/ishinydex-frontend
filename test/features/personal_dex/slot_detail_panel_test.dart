@@ -81,7 +81,7 @@ void main() {
       expect(find.text(maleEmoji), findsOneWidget);
       // Label vindo de /specimens/options/, no cartão de status (o chip
       // solto da natureza saiu).
-      expect(find.textContaining('Natureza Adamant'), findsOneWidget);
+      expect(find.text('Adamant'), findsOneWidget);
       expect(find.byTooltip('Natureza'), findsNothing);
       // Marca de origem do GO (ícone + nome), no lugar do antigo 📱.
       expect(find.text('GO'), findsOneWidget);

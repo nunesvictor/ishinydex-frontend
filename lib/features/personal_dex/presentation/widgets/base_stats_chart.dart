@@ -148,6 +148,8 @@ class BaseStatsChart extends StatelessWidget {
           upColor: upColor,
           downColor: downColor,
           textAlign: align,
+          // O hexágono já marca o que sobe e o que desce (#338).
+          withEffect: false,
         ),
       Text.rich(
         TextSpan(
@@ -308,7 +310,10 @@ class _HexagonPainter extends CustomPainter {
   bool shouldRepaint(_HexagonPainter old) => true;
 }
 
-/// "Natureza Modest  ↑ Atq. Esp.  ↓ Ataque"; nas neutras, "(neutra)".
+/// "Natureza Modest  ↑ Atq. Esp.  ↓ Ataque"; nas neutras, "(neutra)". Ao
+/// lado do hexágono ([withEffect] falso), só "**Modest**" (#338): as setas
+/// repetiriam as do gráfico, e a palavra "Natureza" sobra. O leitor de tela
+/// continua ouvindo "Natureza Modest".
 class _NatureCaption extends StatelessWidget {
   const _NatureCaption({
     required this.nature,
@@ -316,6 +321,7 @@ class _NatureCaption extends StatelessWidget {
     required this.upColor,
     required this.downColor,
     this.textAlign = TextAlign.center,
+    this.withEffect = true,
   });
 
   final TextAlign textAlign;
@@ -323,41 +329,54 @@ class _NatureCaption extends StatelessWidget {
   final Map<String, FormStat> byName;
   final Color upColor;
   final Color downColor;
+  final bool withEffect;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final up = nature.increased;
     final down = nature.decreased;
+    final name = context.catalogText(nature.label, nature.labels);
+    final neutral = up == null && down == null;
     TextStyle colored(Color color) =>
         TextStyle(color: color, fontWeight: FontWeight.w500);
-    return Text.rich(
+    final text = Text.rich(
       TextSpan(
         children: [
+          if (withEffect)
+            TextSpan(
+              text: context.l10n.natureLabel,
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
           TextSpan(
-            text: context.l10n.natureLabel,
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          TextSpan(
-            text: context.catalogText(nature.label, nature.labels),
+            text: name,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          if (up != null)
+          if (withEffect && up != null)
             TextSpan(
               text: '   ↑ ${context.l10n.stat(up)}',
               style: colored(upColor),
             ),
-          if (down != null)
+          if (withEffect && down != null)
             TextSpan(
               text: '   ↓ ${context.l10n.stat(down)}',
               style: colored(downColor),
             ),
-          if (up == null && down == null)
-            TextSpan(text: context.l10n.natureNeutral),
+          if (neutral) TextSpan(text: context.l10n.natureNeutral),
         ],
       ),
       style: theme.textTheme.bodyMedium,
       textAlign: textAlign,
+    );
+    if (withEffect) return text;
+    return Semantics(
+      label: [
+        context.l10n.natureLabel,
+        name,
+        if (neutral) context.l10n.natureNeutral,
+      ].join(),
+      excludeSemantics: true,
+      child: text,
     );
   }
 }
