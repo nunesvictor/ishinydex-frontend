@@ -683,6 +683,11 @@ class Catalog {
       if (_alphaForms[v.versionGroup]?.contains(formId) ?? false) v.name,
   ];
 
+  /// A forma pode ser alfa com a marca de origem [mark] (#362): a de um jogo
+  /// em que ela aparece como alfa (Hisui ou Lumiose).
+  bool canBeAlpha(int formId, String? mark) =>
+      mark != null && alphaVersions(formId).any((v) => originMarkOf(v) == mark);
+
   /// Versões em que a forma não pode ser shiny (Solgaleo em Scarlet).
   Set<String> lockedVersions(int formId) =>
       _gameLocks[formId] ?? const <String>{};

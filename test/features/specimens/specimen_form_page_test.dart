@@ -150,6 +150,49 @@ void main() {
     expect((draft.ot, draft.markChoice), (12, 'go'));
   });
 
+  testWidgets('alfa só com a marca e a forma que permitem (#362)', (
+    tester,
+  ) async {
+    await pumpForm(
+      tester,
+      size: const Size(400, 2400),
+      overrides: [
+        alphaAllowedProvider.overrideWithValue(
+          // Na regra real, Hisui e Lumiose; aqui, uma marca do topo da lista.
+          (formId, mark) => mark == 'gba',
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+    final alpha = find.widgetWithText(SwitchListTile, 'Alfa');
+    final error = find.text(
+      'Alfa só em Legends: Arceus e Legends: Z-A, nas formas que podem ser '
+      'alfa.',
+    );
+    FilledButton save() => tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Salvar e depositar'),
+    );
+    // Sem marca: não pode ser alfa, o switch nem aparece.
+    expect(alpha, findsNothing);
+
+    await choose(tester, 'mark-choice', 'GBA');
+    await tester.ensureVisible(alpha);
+    await tester.tap(alpha);
+    await tester.pumpAndSettle();
+    expect(tester.widget<SwitchListTile>(alpha).value, isTrue);
+    expect(error, findsNothing);
+    expect(save().onPressed, isNotNull);
+
+    // Trocou a marca com o alfa ligado: erro e salvar bloqueado.
+    await choose(tester, 'mark-choice', 'XY/ORAS');
+    expect(error, findsOneWidget);
+    expect(save().onPressed, isNull);
+    await tester.tap(alpha);
+    await tester.pumpAndSettle();
+    expect(alpha, findsNothing);
+    expect(save().onPressed, isNotNull);
+  });
+
   testWidgets('OT de um jogo em cuja pokédex ele não está: só avisa', (
     tester,
   ) async {

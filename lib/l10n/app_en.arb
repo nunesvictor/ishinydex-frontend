@@ -61,6 +61,7 @@
   "problemHuntCountNotPositive": "The count must be greater than zero.",
   "problemHuntUnitNotOfMethod": "This unit isn't one of the method's.",
   "problemHuntStartAfterCapture": "The start is after the capture date.",
+  "problemAlphaNotAllowed": "Alpha only in Legends: Arceus and Legends: Z-A, for forms that can be alpha.",
   "problemInvalidLink": "Invalid link (use http:// or https://).",
   "problemNegativeCount": "The count can't be negative.",
   "problemInvalidChain": "Invalid chain.",

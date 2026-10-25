@@ -46,6 +46,7 @@
   "problemHuntCountNotPositive": "A contagem precisa ser maior que zero.",
   "problemHuntUnitNotOfMethod": "Unidade que não é do método.",
   "problemHuntStartAfterCapture": "O início é depois da data de captura.",
+  "problemAlphaNotAllowed": "Alfa só em Legends: Arceus e Legends: Z-A, nas formas que podem ser alfa.",
   "problemInvalidLink": "Link inválido (use http:// ou https://).",
   "problemNegativeCount": "A contagem não pode ser negativa.",
   "problemInvalidChain": "Cadeia inválida.",
