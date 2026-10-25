@@ -5,6 +5,7 @@ import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/confirm_dialog.dart';
+import 'package:ishinydex/core/widgets/shiny_charm_icon.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
@@ -130,7 +131,13 @@ class _SaveList extends ConsumerWidget {
     return ListTile(
       key: ValueKey('save-${save.id}'),
       leading: SaveIcon(save),
-      title: Text(save.title),
+      title: Row(
+        spacing: 6,
+        children: [
+          Flexible(child: Text(save.title)),
+          if (save.hasShinyCharm) const ShinyCharmIcon(),
+        ],
+      ),
       subtitle: !save.isOneWay
           ? Text(save.trainer.label)
           : Column(

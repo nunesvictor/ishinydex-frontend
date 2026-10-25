@@ -473,6 +473,9 @@ Pokémon num save, o espécime tem uma **localização**: `location` (um
   treinador original (nome, TID e versão) marcado como "meu", em
   **Ajustes → Meus saves**
   ([saves_page.dart](../lib/features/specimens/presentation/saves_page.dart)).
+  Com o Shiny Charm marcado, o save mostra o sprite do item ao lado do nome
+  (`ShinyCharmIcon`, #317), também no seletor ao começar uma caçada e na
+  linha do save no cartão.
   Servem OTs de jogos ligados ao HOME (`Save.homeVersions`). O OT continua
   sendo "de onde o Pokémon veio"; o save é "onde ele está".
 - **Save só de ida** (`Save.isOneWay`, jogos em `Save.oneWayVersions`: o

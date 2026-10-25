@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/widgets/shiny_charm_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
@@ -248,6 +249,9 @@ void main() {
         .data!;
     expect(odds(random.id), '1/1366');
     expect(inCard(random.id, find.text('Shiny Charm (do save)')), findsOne);
+    // O ícone do Charm na linha do save (#317): o Scarlet tem, o Sword não.
+    expect(inCard(random.id, find.byType(ShinyCharmIcon)), findsOne);
+    expect(inCard(chain.id, find.byType(ShinyCharmIcon)), findsNothing);
     expect(
       inCard(
         random.id,
@@ -390,6 +394,14 @@ void main() {
     await tap(tester, find.text('Encontro aleatório').last);
     // Save sem o Charm; jogo sem o Charm (FRLG não tem regra: sem prévia).
     await tap(tester, find.byKey(const ValueKey('field-hunt-save')));
+    // No seletor, o Charm ao lado de cada save que o tem (#317).
+    expect(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.byType(ShinyCharmIcon),
+      ),
+      findsOne,
+    );
     await tap(tester, find.textContaining('Sword').last);
     expect(find.text('Shiny Charm: não (marque no save)'), findsOne);
     await tap(tester, find.byKey(const ValueKey('field-hunt-save')));

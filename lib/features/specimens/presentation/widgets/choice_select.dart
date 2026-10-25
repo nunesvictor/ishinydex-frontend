@@ -23,6 +23,7 @@ class ChoiceSelect extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.errorText,
+    this.trailingOf,
     super.key,
   });
 
@@ -34,6 +35,9 @@ class ChoiceSelect extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
   final String? errorText;
+
+  /// Um ícone à direita de cada opção, como o Shiny Charm do save (#317).
+  final Widget? Function(Choice choice)? trailingOf;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +64,7 @@ class ChoiceSelect extends StatelessWidget {
             value: c.value,
             label: c.label,
             leadingIcon: withSprites ? _sprite(c.spriteUrl) : null,
+            trailingIcon: trailingOf?.call(c),
           ),
       ],
       onSelected: (v) => onChanged(v == null || v == _none ? null : v),
