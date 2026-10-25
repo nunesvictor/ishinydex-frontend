@@ -490,6 +490,17 @@ abstract class Save with _$Save {
   String get owner =>
       label.isEmpty ? '${trainer.name} (${trainer.trainerId})' : label;
 
+  /// `"Pokémon Scarlet"`: o nome completo do jogo, a linha de cima de Meus
+  /// saves (#356).
+  String get gameFullName => versionFullName(trainer.version ?? '');
+
+  /// O treinador, com o apelido na frente se houver
+  /// (`"Switch Lite · Ash (123456)"`): a linha de baixo de Meus saves (#356).
+  String get ownerLine {
+    final ot = '${trainer.name} (${trainer.trainerId})';
+    return label.isEmpty ? ot : '$label · $ot';
+  }
+
   /// `"Scarlet · Switch Lite"`, ou com o treinador se não houver apelido:
   /// `"Scarlet · Ash (123456)"`.
   String get title => '$game · $owner';
