@@ -311,9 +311,10 @@ class _HexagonPainter extends CustomPainter {
 }
 
 /// "Natureza Modest  ↑ Atq. Esp.  ↓ Ataque"; nas neutras, "(neutra)". Ao
-/// lado do hexágono ([withEffect] falso), só "**Modest**" (#338): as setas
-/// repetiriam as do gráfico, e a palavra "Natureza" sobra. O leitor de tela
-/// continua ouvindo "Natureza Modest".
+/// lado do hexágono ([withEffect] falso), só "**Modest**" (#338), também nas
+/// neutras (#350): o gráfico já diz o que sobe e o que desce, e, sem nada
+/// marcado, que a natureza é neutra. O leitor de tela continua ouvindo
+/// "Natureza Modest".
 class _NatureCaption extends StatelessWidget {
   const _NatureCaption({
     required this.nature,
@@ -362,7 +363,7 @@ class _NatureCaption extends StatelessWidget {
               text: '   ↓ ${context.l10n.stat(down)}',
               style: colored(downColor),
             ),
-          if (neutral) TextSpan(text: context.l10n.natureNeutral),
+          if (withEffect && neutral) TextSpan(text: context.l10n.natureNeutral),
         ],
       ),
       style: theme.textTheme.bodyMedium,
@@ -370,11 +371,7 @@ class _NatureCaption extends StatelessWidget {
     );
     if (withEffect) return text;
     return Semantics(
-      label: [
-        context.l10n.natureLabel,
-        name,
-        if (neutral) context.l10n.natureNeutral,
-      ].join(),
+      label: '${context.l10n.natureLabel}$name',
       excludeSemantics: true,
       child: text,
     );

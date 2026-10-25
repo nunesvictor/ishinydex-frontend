@@ -153,8 +153,9 @@ seguem o mesmo padrão, para as ações não empilharem botões:
     desenhado com `CustomPainter` (HP no topo e, no sentido horário, Ataque,
     Defesa, Velocidade, Def. Esp. e Atq. Esp.), com escala fixa até 200, o
     total e o EV. A natureza do espécime pinta os stats que muda, e ao lado
-    do hexágono fica só o nome dela (#338), mais "(neutra)" nas que não mudam
-    nada. Sem status, não há hexágono, e o efeito aparece por extenso.
+    do hexágono fica só o nome dela (#338), também nas neutras (#350): sem
+    nada marcado, o gráfico já diz que ela não muda nada. Sem status, não há
+    hexágono, e o efeito aparece por extenso, com "(neutra)" nas neutras.
   - **Espécie**: no topo, `SpeciesInfo`: linha evolutiva e outras formas (Mega,
     Gigantamax, regionais) com sprite, e uma grade com gênero, taxa de
     captura, ciclos de ovo, estreia, altura e peso. No dex, tocar numa forma
