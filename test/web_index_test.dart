@@ -139,6 +139,52 @@ void main() {
     expect(html, contains('registration.update()'));
   });
 
+  test('tema do shell (#273): Claro ou Escuro de Ajustes vencem o aparelho', () {
+    final html = File('web/index.html').readAsStringSync();
+    final light = AppTheme.light().colorScheme;
+    final dark = AppTheme.dark().colorScheme;
+    // A mesma chave do PrefsThemeModeStorage, com o prefixo do
+    // shared_preferences na web.
+    final storage = File('lib/core/theme/app_theme_mode.dart')
+        .readAsStringSync();
+    expect(storage, contains("key = 'app_theme'"));
+    expect(html, contains("localStorage.getItem('flutter.app_theme')"));
+    expect(html, contains('document.documentElement.dataset.theme = saved;'));
+    // As duas metas ficam com a cor do tema escolhido.
+    expect(
+      html,
+      contains(
+        "saved === 'dark' ? '${_hex(dark.surface)}' : '${_hex(light.surface)}'",
+      ),
+    );
+    for (final (name, scheme) in [('light', light), ('dark', dark)]) {
+      final root = ':root[data-theme="$name"]';
+      expect(
+        html,
+        contains('$root body { background-color: ${_hex(scheme.surface)}; }'),
+      );
+      expect(
+        html,
+        contains('$root #splash { color: ${_hex(scheme.onSurface)}; }'),
+      );
+      expect(
+        html,
+        contains(
+          '$root .splash-track { background: ${_hex(scheme.primaryContainer)}; }',
+        ),
+      );
+      expect(
+        html,
+        contains('$root .splash-bar { background: ${_hex(scheme.primary)}; }'),
+      );
+    }
+    // O script vem depois das metas que ele troca.
+    expect(
+      html.indexOf("getItem('flutter.app_theme')"),
+      greaterThan(html.lastIndexOf('<meta name="theme-color"')),
+    );
+  });
+
   group('idioma do shell (#178)', () {
     test('inglês por padrão; português pelo Ajustes ou pelo navegador', () {
       final html = File('web/index.html').readAsStringSync();

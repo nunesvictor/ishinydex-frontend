@@ -6,6 +6,7 @@ import 'package:ishinydex/app.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/core/theme/app_theme_mode.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
@@ -108,6 +109,9 @@ Future<FakeBackend> pumpFullApp(
   /// aparelho dos testes é en-US).
   AppLanguage language = AppLanguage.pt,
   LanguageStorage? languageStorage,
+
+  /// O tema escolhido em Ajustes → Aparência (#273); o do aparelho.
+  ThemeModeStorage? themeModeStorage,
 }) async {
   final fake = backend ?? FakeBackend.seeded();
   await setScreenSize(tester, size);
@@ -123,6 +127,9 @@ Future<FakeBackend> pumpFullApp(
         initialLanguageProvider.overrideWithValue(language),
         languageStorageProvider.overrideWithValue(
           languageStorage ?? InMemoryLanguageStorage(language),
+        ),
+        themeModeStorageProvider.overrideWithValue(
+          themeModeStorage ?? InMemoryThemeModeStorage(),
         ),
         ...overrides,
       ],

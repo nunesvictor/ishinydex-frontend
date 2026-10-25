@@ -6,24 +6,27 @@ import 'package:ishinydex/core/theme/app_theme.dart';
 
 /// O app não abriu (modo local sem catálogo, dados de uma versão mais nova
 /// do app...): explica e deixa tentar de novo, em vez de uma tela branca.
-/// Sai no idioma de Ajustes ([language]), como o app.
+/// Sai no idioma e no tema de Ajustes ([language], [themeMode]), como o app.
 class BootFailureApp extends StatelessWidget {
   const BootFailureApp({
     required this.error,
     required this.onRetry,
     this.language = AppLanguage.system,
+    this.themeMode = ThemeMode.system,
     super.key,
   });
 
   final Object error;
   final VoidCallback onRetry;
   final AppLanguage language;
+  final ThemeMode themeMode;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     theme: AppTheme.light(),
     darkTheme: AppTheme.dark(),
+    themeMode: themeMode,
     locale: language.locale,
     supportedLocales: supportedLocales,
     localeListResolutionCallback: (device, _) => resolveLocale(device),

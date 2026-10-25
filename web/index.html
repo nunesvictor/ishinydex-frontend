@@ -67,6 +67,22 @@
       .splash-slow { color: #CAC4C4; }
       .splash-slow button { background: #FF8A80; color: #5F0010; }
     }
+    /* Tema fixo de Ajustes → Aparência (#273): o script do tema, no fim do
+       head, marca o <html> com data-theme. Estas regras vencem as do
+       prefers-color-scheme (o seletor é mais específico), então o fundo e
+       o splash saem no tema escolhido, e não no do aparelho. */
+    :root[data-theme="light"] body { background-color: #FAFAFA; }
+    :root[data-theme="light"] #splash { color: #1C1B1B; }
+    :root[data-theme="light"] .splash-track { background: #FFDAD6; }
+    :root[data-theme="light"] .splash-bar { background: #C62828; }
+    :root[data-theme="light"] .splash-slow { color: #4A4646; }
+    :root[data-theme="light"] .splash-slow button { background: #C62828; color: #FFFFFF; }
+    :root[data-theme="dark"] body { background-color: #131313; }
+    :root[data-theme="dark"] #splash { color: #E6E1E1; }
+    :root[data-theme="dark"] .splash-track { background: #8C1D18; }
+    :root[data-theme="dark"] .splash-bar { background: #FF8A80; }
+    :root[data-theme="dark"] .splash-slow { color: #CAC4C4; }
+    :root[data-theme="dark"] .splash-slow button { background: #FF8A80; color: #5F0010; }
     @keyframes splash-in { to { opacity: 1; } }
     @keyframes splash-bar {
       from { transform: translateX(-100%); }
@@ -110,6 +126,25 @@
         'Controle do PersonalDex do iShinyDex.';
       document.querySelector('link[rel="manifest"]').href = 'manifest.pt-BR.json';
     }
+  </script>
+  <!-- Tema do shell (#273): com Claro ou Escuro escolhido em Ajustes →
+       Aparência (shared_preferences: "flutter.app_theme"), o <html> ganha
+       data-theme e as duas metas theme-color passam a ter a cor desse tema,
+       para a barra do iPhone não seguir o modo do aparelho. Em Automático,
+       nada muda: valem os media queries. -->
+  <script>
+    (() => {
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem('flutter.app_theme'));
+      } catch (_) {}
+      if (saved !== 'light' && saved !== 'dark') return;
+      document.documentElement.dataset.theme = saved;
+      const color = saved === 'dark' ? '#131313' : '#FAFAFA';
+      for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+        meta.content = color;
+      }
+    })();
   </script>
 </head>
 <body>
