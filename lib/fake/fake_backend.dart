@@ -2244,7 +2244,33 @@ class FakeBackend
     return unique.length;
   }
 
+  @override
+  Future<int> countAlphaBlocked({
+    required List<int> ids,
+    required SpecimenChanges changes,
+  }) async {
+    await _delay();
+    if (changes.isAlpha != const SetTo(true)) return 0;
+    return ids.toSet().where((id) {
+      final s = _specimens[id];
+      if (s == null) return false;
+      final result = _withChanges(s, changes);
+      return !_alphaAllowed(result.form, result.originMark);
+    }).length;
+  }
+
   Specimen _applyChanges(Specimen s, SpecimenChanges c) {
+    final result = _withChanges(s, c);
+    // O lote não marca alfa quem não pode ser (#362).
+    if (c.isAlpha case SetTo(value: true)
+        when !_alphaAllowed(result.form, result.originMark)) {
+      return result.copyWith(isAlpha: s.isAlpha);
+    }
+    return result;
+  }
+
+  /// [s] com as mudanças do lote, a marca de origem já pelo OT novo.
+  Specimen _withChanges(Specimen s, SpecimenChanges c) {
     T? pick<T>(FieldEdit<T> edit, T? current) => switch (edit) {
       Keep() => current,
       SetTo(:final value) => value,
@@ -2264,16 +2290,10 @@ class FakeBackend
       isAlpha: pick(c.isAlpha, s.isAlpha) ?? s.isAlpha,
       markChoice: pick(c.markChoice, s.markChoice),
     );
-    final result = changed.withOrigin(_originMarkOf, switch (c.ot) {
+    return changed.withOrigin(_originMarkOf, switch (c.ot) {
       Keep() => s.originVersion,
       SetTo(:final value) => _otVersion(value),
     });
-    // O lote não marca alfa quem não pode ser (#362).
-    if (c.isAlpha case SetTo(value: true)
-        when !_alphaAllowed(result.form, result.originMark)) {
-      return result.copyWith(isAlpha: s.isAlpha);
-    }
-    return result;
   }
 
   /// Alfa só com marca de Hisui ou Lumiose e forma que pode ser alfa

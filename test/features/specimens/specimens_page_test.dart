@@ -8,6 +8,7 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/bulk_edit_sheet.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -682,6 +683,12 @@ void main() {
       when(() => repository.fetchSpecimenIds(any()))
           .thenThrow(const NotFoundFailure());
       when(
+        () => repository.countAlphaBlocked(
+          ids: any(named: 'ids'),
+          changes: any(named: 'changes'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
         () => repository.bulkUpdate(
           ids: any(named: 'ids'),
           changes: any(named: 'changes'),
@@ -719,6 +726,117 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  testWidgets('alfa no lote: o aviso e a mensagem contam os bloqueados '
+      '(#366)', (tester) async {
+    final repository = MockSpecimenRepository();
+    final specimen = Specimen.fromJson(specimenJson);
+    final fake = FakeBackend.seeded();
+    final ids = [for (var i = 1; i <= 12; i++) i];
+    registerFallbackValue(emptySpecimenQuery);
+    registerFallbackValue(const SpecimenChanges());
+    when(
+      () => repository.fetchSpecimens(
+        any(),
+        page: any(named: 'page'),
+        pageSize: any(named: 'pageSize'),
+      ),
+    ).thenAnswer((_) async => Paginated(count: 12, results: [specimen]));
+    when(repository.fetchOptions).thenAnswer((_) async => fake.options);
+    when(repository.fetchTrainers).thenAnswer((_) async => const []);
+    when(() => repository.fetchSpecimenIds(any())).thenAnswer((_) async => ids);
+    Object blocked = const NotFoundFailure();
+    when(
+      () => repository.countAlphaBlocked(
+        ids: any(named: 'ids'),
+        changes: any(named: 'changes'),
+      ),
+    ).thenAnswer((_) async {
+      if (blocked case final AppFailure failure) throw failure;
+      return blocked as int;
+    });
+    when(
+      () => repository.bulkUpdate(
+        ids: any(named: 'ids'),
+        changes: any(named: 'changes'),
+      ),
+    ).thenAnswer((_) async => 12);
+    await pumpWidgetApp(
+      tester,
+      const SpecimensPage(),
+      overrides: [specimenRepositoryProvider.overrideWithValue(repository)],
+    );
+    await tester.pumpAndSettle();
+    await tester.longPress(specimenTile(specimen.id));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Selecionar todos os resultados'));
+    await tester.pumpAndSettle();
+    expect(find.text('12 selecionados'), findsOneWidget);
+
+    Future<void> review() async {
+      await tester.tap(find.byTooltip('Editar em lote'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Alfa'),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(BulkEditPanel),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      final yes = find.descendant(
+        of: find
+            .ancestor(of: find.text('Alfa'), matching: find.byType(Wrap))
+            .first,
+        matching: find.text('Sim'),
+      );
+      await tester.ensureVisible(yes);
+      await tester.pumpAndSettle();
+      await tester.tap(yes);
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Revisar'));
+      await tester.pumpAndSettle();
+    }
+
+    // A contagem falhou: a mensagem, e a seleção continua.
+    await review();
+    expect(find.text('Não encontrado.'), findsOneWidget);
+    expect(find.text('Alterar 12 espécimes?'), findsNothing);
+
+    // Nenhum pode e o alfa é a única mudança: "Aplicar" desabilitado.
+    blocked = 12;
+    await review();
+    expect(find.textContaining('nada vai mudar'), findsOneWidget);
+    await tester.tap(find.text('Aplicar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    verifyNever(
+      () => repository.bulkUpdate(
+        ids: any(named: 'ids'),
+        changes: any(named: 'changes'),
+      ),
+    );
+
+    // Três de fora: a mensagem conta só os que mudaram.
+    blocked = 3;
+    await review();
+    expect(find.textContaining('3 dos 12 não podem ser alfa'), findsOneWidget);
+    await tester.tap(find.text('Aplicar'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('9 espécimes atualizados; 3 não podem ser alfa.'),
+      findsOneWidget,
+    );
+    verify(
+      () => repository.bulkUpdate(
+        ids: ids,
+        changes: const SpecimenChanges(isAlpha: SetTo(true)),
+      ),
+    ).called(1);
   });
 
   group('libertar em lote', () {

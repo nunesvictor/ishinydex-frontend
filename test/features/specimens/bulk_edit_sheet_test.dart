@@ -246,7 +246,15 @@ void main() {
   });
 
   group('confirmação', () {
-    Future<List<bool>> pumpConfirm(WidgetTester tester, int count) async {
+    Future<List<bool>> pumpConfirm(
+      WidgetTester tester,
+      int count, {
+      List<String> summary = const ['Pokébola → Dive Ball'],
+      int alphaBlocked = 0,
+      bool onlyAlpha = false,
+      Size size = compactSize,
+      Locale locale = portuguese,
+    }) async {
       final results = <bool>[];
       await pumpWidgetApp(
         tester,
@@ -256,12 +264,16 @@ void main() {
               await confirmBulkEdit(
                 context,
                 count: count,
-                summary: const ['Pokébola → Dive Ball'],
+                summary: summary,
+                alphaBlocked: alphaBlocked,
+                onlyAlpha: onlyAlpha,
               ),
             ),
             child: const Text('abrir'),
           ),
         ),
+        size: size,
+        locale: locale,
       );
       await tester.tap(find.text('abrir'));
       await tester.pumpAndSettle();
@@ -289,6 +301,127 @@ void main() {
     testWidgets('singular', (tester) async {
       await pumpConfirm(tester, 1);
       expect(find.text('Alterar 1 espécime?'), findsOneWidget);
+    });
+
+    FilledButton apply(WidgetTester tester) => tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Aplicar'),
+    );
+
+    testWidgets('alguns não podem ser alfa (#366)', (tester) async {
+      await pumpConfirm(tester, 12, alphaBlocked: 3, onlyAlpha: true);
+      expect(
+        find.text(
+          '3 dos 12 não podem ser alfa (marca de origem ou forma) e ficam '
+          'como estão.',
+        ),
+        findsOneWidget,
+      );
+      expect(apply(tester).onPressed, isNotNull);
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      await pumpConfirm(tester, 12, alphaBlocked: 1);
+      expect(
+        find.text(
+          '1 dos 12 não pode ser alfa (marca de origem ou forma) e fica como '
+          'está.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('nenhum pode: só o alfa desabilita "Aplicar"', (tester) async {
+      await pumpConfirm(tester, 41, alphaBlocked: 41, onlyAlpha: true);
+      expect(
+        find.text(
+          'Nenhum dos 41 pode ser alfa (marca de origem ou forma): nada vai '
+          'mudar.',
+        ),
+        findsOneWidget,
+      );
+      expect(apply(tester).onPressed, isNull);
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      await pumpConfirm(tester, 1, alphaBlocked: 1, onlyAlpha: true);
+      expect(
+        find.text(
+          'O espécime não pode ser alfa (marca de origem ou forma): nada vai '
+          'mudar.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('nenhum pode, com outras mudanças: elas valem', (tester) async {
+      final results = await pumpConfirm(tester, 41, alphaBlocked: 41);
+      expect(
+        find.text(
+          'Nenhum dos 41 pode ser alfa (marca de origem ou forma): as outras '
+          'mudanças valem.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+      expect(results, [true]);
+
+      await pumpConfirm(tester, 1, alphaBlocked: 1);
+      expect(
+        find.text(
+          'O espécime não pode ser alfa (marca de origem ou forma): as outras '
+          'mudanças valem.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    // O pior caso real: o backup inteiro, seis mudanças, ~810 sem alfa.
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('pior caso (${size.width.toInt()}px)', (tester) async {
+        final results = await pumpConfirm(
+          tester,
+          1161,
+          size: size,
+          alphaBlocked: 810,
+          summary: const [
+            'Pokébola → Strange Ball',
+            'Natureza → Hardy',
+            'Idioma → Inglês',
+            'Data de captura → 24/10/2023',
+            'Gênero → Fêmea',
+            'Alfa → Sim',
+          ],
+        );
+        expect(
+          find.textContaining('810 dos 1161 não podem ser alfa'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Aplicar'));
+        await tester.pumpAndSettle();
+        expect(results, [true]);
+      });
+    }
+
+    testWidgets('em inglês', (tester) async {
+      await pumpConfirm(tester, 12, alphaBlocked: 3, locale: english);
+      expect(
+        find.text(
+          "3 of the 12 can't be alpha (origin mark or form) and stay as they "
+          'are.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await pumpConfirm(tester, 41, alphaBlocked: 41, locale: english);
+      expect(
+        find.text(
+          'None of the 41 can be alpha (origin mark or form): the other '
+          'changes still apply.',
+        ),
+        findsOneWidget,
+      );
     });
   });
 
