@@ -400,6 +400,49 @@ void main() {
       expect((await backend.fetchSpecimen(other.id)).isAlpha, isTrue);
     });
 
+    test('countAlphaBlocked: quantos o lote não marca alfa (#366)', () async {
+      final backend = FakeBackend.local(withAlphas);
+      Future<int> trainer(String version) async => (await backend.createTrainer(
+        name: 'Ash',
+        trainerId: version,
+        version: version,
+      )).id;
+      final pla = await trainer('legends-arceus');
+      final scarlet = await trainer('scarlet');
+      final ids = [
+        for (final (form, ot) in [(1, scarlet), (1, pla), (2, pla)])
+          (await backend.create(SpecimenDraft(form: form, ability: '', ot: ot)))
+              .id,
+      ];
+      Future<int> blocked(SpecimenChanges changes, [List<int>? only]) =>
+          backend.countAlphaBlocked(ids: only ?? ids, changes: changes);
+      // O do Scarlet (sem marca de Hisui) e a forma 2 (não é alfa).
+      expect(await blocked(const SpecimenChanges(isAlpha: SetTo(true))), 2);
+      // O OT do lote muda a marca antes da conta.
+      expect(
+        await blocked(
+          SpecimenChanges(isAlpha: const SetTo(true), ot: SetTo(pla)),
+        ),
+        1,
+      );
+      expect(
+        await blocked(
+          SpecimenChanges(isAlpha: const SetTo(true), ot: SetTo(scarlet)),
+        ),
+        3,
+      );
+      // Sem marcar alfa, nada bloqueia; id inexistente não conta.
+      expect(await blocked(const SpecimenChanges(isAlpha: SetTo(false))), 0);
+      expect(await blocked(const SpecimenChanges(gender: SetTo('female'))), 0);
+      expect(
+        await blocked(const SpecimenChanges(isAlpha: SetTo(true)), [
+          ids[1],
+          9999,
+        ]),
+        0,
+      );
+    });
+
     test('alphaAllowedProvider: com o catálogo, a regra; sem, livre', () {
       final withCatalog = ProviderContainer(
         overrides: [

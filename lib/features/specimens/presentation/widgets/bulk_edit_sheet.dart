@@ -48,38 +48,86 @@ Future<SpecimenChanges?> showBulkEditSheet(BuildContext context, int count) {
 }
 
 /// Confirmação com o resumo do que vai mudar. `true` = aplicar.
+///
+/// [alphaBlocked] é quantos dos [count] não podem ficar alfa (#366): o
+/// aviso diz antes de aplicar. Se nenhum pode e o alfa é a única mudança
+/// ([onlyAlpha]), nada mudaria, e "Aplicar" fica desabilitado.
 Future<bool> confirmBulkEdit(
   BuildContext context, {
   required int count,
   required List<String> summary,
-}) async =>
-    await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.changeSpecimensQuestion(count)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 4,
-          children: [
-            for (final line in summary) Text('• $line'),
-            const SizedBox(height: 8),
-            Text(context.l10n.cannotUndoShort),
+  int alphaBlocked = 0,
+  bool onlyAlpha = false,
+}) async {
+  final none = alphaBlocked >= count;
+  final warning = alphaBlocked == 0
+      ? null
+      : !none
+      ? context.l10n.bulkAlphaSomeBlocked(alphaBlocked, count)
+      : onlyAlpha
+      ? context.l10n.bulkAlphaNoneNothing(count)
+      : context.l10n.bulkAlphaNoneOthers(count);
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          scrollable: true,
+          title: Text(context.l10n.changeSpecimensQuestion(count)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              for (final line in summary) Text('• $line'),
+              if (warning != null) ...[
+                const SizedBox(height: 8),
+                _AlphaWarning(warning),
+              ],
+              const SizedBox(height: 8),
+              Text(context.l10n.cannotUndoShort),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(context.l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: none && onlyAlpha
+                  ? null
+                  : () => Navigator.of(context).pop(true),
+              child: Text(context.l10n.applyAction),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(context.l10n.cancel),
+      ) ??
+      false;
+}
+
+class _AlphaWarning extends StatelessWidget {
+  const _AlphaWarning(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Card.filled(
+    margin: EdgeInsets.zero,
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(context.l10n.applyAction),
-          ),
+          Expanded(child: Text(text)),
         ],
       ),
-    ) ??
-    false;
+    ),
+  );
+}
 
 /// Formulário do lote. Todo campo começa em "Manter"; só o que mudar vai
 /// para a API.

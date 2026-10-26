@@ -280,20 +280,38 @@ class _SpecimensPageState extends ConsumerState<SpecimensPage> {
       ref.read(specimenOptionsProvider).value ?? const SpecimenOptions(),
       ref.read(trainersProvider).value ?? const <Trainer>[],
     );
+    final ids = [..._checked]..sort();
+    final repository = ref.read(specimenRepositoryProvider);
+    // A seleção pode ter páginas não carregadas: o repositório conta (#366).
+    final int blocked;
+    try {
+      blocked = await repository.countAlphaBlocked(ids: ids, changes: changes);
+    } on AppFailure catch (failure) {
+      if (mounted) _showMessage(context.failureText(failure));
+      return;
+    }
+    if (!mounted) return;
+    final onlyAlpha = changes.count == 1 && blocked > 0;
     final confirmed = await confirmBulkEdit(
       context,
       count: count,
       summary: labels.summary(changes),
+      alphaBlocked: blocked,
+      onlyAlpha: onlyAlpha,
     );
     if (!confirmed || !mounted) return;
     try {
-      final updated = await ref
-          .read(specimenRepositoryProvider)
-          .bulkUpdate(ids: [..._checked]..sort(), changes: changes);
+      final total = await repository.bulkUpdate(ids: ids, changes: changes);
       ref.read(slotActionsProvider).specimensChanged();
       if (!mounted) return;
       _setChecked({});
-      _showMessage(context.l10n.specimensUpdated(updated));
+      // Só com o alfa no lote, os bloqueados não mudam.
+      final updated = onlyAlpha ? total - blocked : total;
+      _showMessage(
+        blocked == 0
+            ? context.l10n.specimensUpdated(updated)
+            : context.l10n.specimensUpdatedAlphaBlocked(updated, blocked),
+      );
     } on GenderConflictFailure catch (failure) {
       if (mounted) await _showGenderConflicts(failure);
     } on AppFailure catch (failure) {

@@ -26,6 +26,14 @@ abstract interface class SpecimenRepository {
     required SpecimenChanges changes,
   });
 
+  /// Quantos dos [ids] o lote [changes] não consegue marcar como alfa
+  /// (marca de origem ou forma, já com o OT do lote; #366). 0 quando o
+  /// lote não marca alfa.
+  Future<int> countAlphaBlocked({
+    required List<int> ids,
+    required SpecimenChanges changes,
+  });
+
   /// Formas cujo nome contém [search] (primeiros resultados).
   Future<List<FormRef>> searchForms(String search);
 
