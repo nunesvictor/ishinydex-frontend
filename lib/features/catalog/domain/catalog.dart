@@ -1,4 +1,5 @@
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/features/catalog/domain/catalog_labels.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -39,6 +40,7 @@ class Catalog {
     required this.shinyOdds,
     required this._formEvolutions,
     required this._withoutEvolution,
+    required this._evolutionEdges,
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
@@ -96,6 +98,64 @@ class Catalog {
         final c => c,
       },
     );
+
+    // Os métodos de evolução (backend#133), com os nomes em inglês dos
+    // itens, golpes e lugares; catálogo antigo, sem a chave: nenhum.
+    final evolution = switch (json['evolutionMethods']) {
+      final Map<String, dynamic> e => e,
+      _ => const <String, dynamic>{},
+    };
+    final evolutionNames = switch (evolution['names']) {
+      final Map<String, dynamic> n => {
+        for (final MapEntry(:key, :value) in n.entries)
+          key: (value as Map<String, dynamic>).cast<String, String>(),
+      },
+      _ => const <String, Map<String, String>>{},
+    };
+    String? named(String kind, Object? slug) => switch (slug) {
+      final String s => evolutionNames[kind]?[s] ?? prettifyName(s),
+      _ => null,
+    };
+    String? species(Object? slug) => slug is String ? prettifyName(slug) : null;
+    EvolutionMethod evolutionMethod(Map<String, dynamic> m) {
+      final group = m['versionGroup'] as String;
+      final item = m['item'] as String?;
+      return EvolutionMethod(
+        versionGroup: group,
+        trigger: m['trigger'] as String,
+        versions: groupByName[group]?.versions ?? const [],
+        isDefault: m['default'] as bool? ?? false,
+        minLevel: m['minLevel'] as int?,
+        item: named('items', item),
+        itemSpriteUrl: item == null ? null : sprite('items/$item.png'),
+        heldItem: named('items', m['heldItem']),
+        knownMove: named('moves', m['knownMove']),
+        knownMoveType: m['knownMoveType'] as String?,
+        usedMove: named('moves', m['usedMove']),
+        minMoveCount: m['minMoveCount'] as int?,
+        location: named('locations', m['location']),
+        nearSpecialRock: m['nearSpecialRock'] as bool?,
+        timeOfDay: m['timeOfDay'] as String?,
+        minHappiness: m['minHappiness'] as int?,
+        minAffection: m['minAffection'] as int?,
+        minBeauty: m['minBeauty'] as int?,
+        gender: m['gender'] as String?,
+        region: m['region'] as String?,
+        relativePhysicalStats: m['relativePhysicalStats'] as int?,
+        allowedNatures: [
+          for (final n in m['allowedNatures'] as List? ?? const []) n as String,
+        ],
+        needsOverworldRain: m['needsOverworldRain'] as bool?,
+        needsMultiplayer: m['needsMultiplayer'] as bool?,
+        turnUpsideDown: m['turnUpsideDown'] as bool?,
+        tradeSpecies: species(m['tradeSpecies']),
+        partySpecies: species(m['partySpecies']),
+        partyType: m['partyType'] as String?,
+        minSteps: m['minSteps'] as int?,
+        minDamageTaken: m['minDamageTaken'] as int?,
+        chance: (m['chance'] as num?)?.toDouble(),
+      );
+    }
 
     List<Choice> choices(String key) => [
       for (final c in _objects((json['choices'] as Map<String, dynamic>)[key]))
@@ -292,6 +352,71 @@ class Catalog {
         },
         _ => const {},
       },
+      evolutionEdges: {
+        for (final e in _objects(evolution['edges'] ?? const <Object>[]))
+          (e['from'] as int, e['to'] as int): EvolutionEdge(
+            fromId: e['from'] as int,
+            toId: e['to'] as int,
+            methods: [
+              for (final m in _objects(e['methods'])) evolutionMethod(m),
+            ],
+            texts: catalogLabels(e['texts']),
+            link: e['link'] as String?,
+          ),
+      },
+    );
+  }
+
+  /// Os métodos de evolução por par de formas (de, para).
+  final Map<(int, int), EvolutionEdge> _evolutionEdges;
+
+  /// As ligações por par de espécies, para quando a linha liga formas sem
+  /// aresta própria (o Linoone comum → Obstagoon; o Spewpa → Vivillon).
+  late final Map<(String?, String?), List<EvolutionEdge>> _edgesBySpecies = () {
+    final result = <(String?, String?), List<EvolutionEdge>>{};
+    for (final edge in _evolutionEdges.values) {
+      final key = (_speciesNameOf(edge.fromId), _speciesNameOf(edge.toId));
+      (result[key] ??= []).add(edge);
+    }
+    return result;
+  }();
+
+  String? _speciesNameOf(int formId) => switch (_forms[formId]) {
+    final form? => _speciesOf(form)?.name,
+    null => null,
+  };
+
+  /// As ligações de uma [chain]: cada forma de um estágio com a forma do
+  /// estágio anterior da qual vem, e os métodos dessa ligação.
+  List<EvolutionEdge> _chainEdges(List<List<FormRef>> chain) => [
+    for (final (i, stage) in chain.indexed)
+      if (i > 0)
+        for (final to in stage) _edgeTo(chain[i - 1], to.id),
+  ];
+
+  /// A ligação que chega em [to] vinda de uma das [previous]: pela aresta
+  /// do par de formas; sem ela, pelo par de espécies (de preferência com a
+  /// mesma forma de destino); sem métodos, se não houver nenhuma.
+  EvolutionEdge _edgeTo(List<FormRef> previous, int to) {
+    for (final from in previous) {
+      if (_evolutionEdges[(from.id, to)] case final edge?) return edge;
+    }
+    final toSpecies = _speciesNameOf(to);
+    final parentSpecies = _species[toSpecies]?.evolvesFrom;
+    final from =
+        previous
+            .where((f) => _speciesNameOf(f.id) == parentSpecies)
+            .firstOrNull ??
+        previous.first;
+    final candidates =
+        _edgesBySpecies[(_speciesNameOf(from.id), toSpecies)] ?? const [];
+    final edge =
+        candidates.where((e) => e.toId == to).firstOrNull ??
+        candidates.where((e) => e.fromId == from.id).firstOrNull ??
+        candidates.firstOrNull;
+    return (edge ?? EvolutionEdge(fromId: from.id, toId: to)).copyWith(
+      fromId: from.id,
+      toId: to,
     );
   }
 
@@ -503,6 +628,11 @@ class Catalog {
     final species = _speciesOf(form);
     final typeSprites = {for (final c in options.type) c.value: c.spriteUrl};
     final ref = formRef(formId);
+    final chain = _curated(formId)
+        ? _formChain(formId)
+        : species == null
+        ? const <List<FormRef>>[]
+        : _evolutionChain(species);
     return FormDetail(
       id: ref.id,
       name: ref.name,
@@ -526,11 +656,8 @@ class Catalog {
         for (final entry in _originMarks.keys)
           if (_groupOfVersion[entry] == form.versionGroup) entry,
       ],
-      evolutionChain: _curated(formId)
-          ? _formChain(formId)
-          : species == null
-          ? const []
-          : _evolutionChain(species),
+      evolutionChain: chain,
+      evolutionEdges: _chainEdges(chain),
       otherForms: [
         if (species != null)
           for (final other in _formsOfSpecies[species.name] ?? const <int>[])

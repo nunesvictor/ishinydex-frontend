@@ -9,6 +9,7 @@ import 'package:ishinydex/core/widgets/gender_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/evolution_line.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -91,43 +92,7 @@ class SpeciesInfo extends ConsumerWidget {
       children: [
         if (form.evolutionChain.isNotEmpty) ...[
           Text(context.l10n.evolutionLine, style: theme.textTheme.titleSmall),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              for (final (i, stage) in form.evolutionChain.indexed) ...[
-                if (i > 0) const Icon(Icons.chevron_right, size: 18),
-                for (final ref in stage)
-                  item(
-                    ref,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        // A forma atual em destaque.
-                        color: ref.id == form.id
-                            ? theme.colorScheme.secondaryContainer
-                            : null,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          PokemonSprite(url: ref.spriteUrl, size: 44),
-                          Text(
-                            ref.displayName,
-                            style: theme.textTheme.labelSmall,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ],
-          ),
+          EvolutionLine(form: form, item: item),
         ],
         if (form.otherForms.isNotEmpty) ...[
           Text(

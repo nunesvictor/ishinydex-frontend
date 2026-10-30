@@ -116,6 +116,193 @@ void main() {
     expect(catalog.formDetail(3).otherForms.single.name, 'venusaur-mega');
   });
 
+  group('métodos de evolução (#368)', () {
+    final json = {
+      ...catalogJson(),
+      'evolutionMethods': {
+        'edges': [
+          {
+            'from': 1,
+            'to': 2,
+            'methods': [
+              {
+                'versionGroup': 'red-blue',
+                'default': true,
+                'trigger': 'level-up',
+                'minLevel': 16,
+              },
+            ],
+          },
+          // O Ivysaur → Venusaur Mega: a linha liga ao Venusaur comum, pelo
+          // par de espécies.
+          {
+            'from': 2,
+            'to': 10033,
+            'methods': [
+              {'versionGroup': 'x-y', 'default': true, 'trigger': 'trade'},
+            ],
+          },
+          {
+            'from': 133,
+            'to': 134,
+            'methods': [
+              {
+                'versionGroup': 'red-blue',
+                'default': true,
+                'trigger': 'use-item',
+                'item': 'water-stone',
+              },
+              {
+                'versionGroup': 'sword-shield',
+                'default': false,
+                'trigger': 'level-up',
+                'heldItem': 'mystic-water',
+                'knownMove': 'water-gun',
+                'knownMoveType': 'water',
+                'usedMove': 'surf',
+                'minMoveCount': 20,
+                'location': 'lake',
+                'nearSpecialRock': true,
+                'timeOfDay': 'night',
+                'minHappiness': 160,
+                'minAffection': 2,
+                'minBeauty': 170,
+                'gender': 'female',
+                'region': 'galar',
+                'relativePhysicalStats': 0,
+                'allowedNatures': ['hardy'],
+                'needsOverworldRain': true,
+                'needsMultiplayer': true,
+                'turnUpsideDown': true,
+                'tradeSpecies': 'shelmet',
+                'partySpecies': 'remoraid',
+                'partyType': 'dark',
+                'minSteps': 1000,
+                'minDamageTaken': 49,
+                'chance': 50,
+              },
+            ],
+            'texts': {'en': 'Splash', 'pt-BR': 'Molhar'},
+            'link': 'https://bulbapedia.bulbagarden.net/wiki/Vaporeon',
+          },
+          // De uma forma que não está no catálogo: ignorada.
+          {'from': 99999, 'to': 2, 'methods': <Object>[]},
+        ],
+        'names': {
+          'items': {'water-stone': 'Water Stone'},
+          'moves': {'water-gun': 'Water Gun'},
+          'locations': <String, String>{},
+        },
+      },
+    };
+    final withMethods = Catalog.fromJson(json, spriteBase: '$_base/');
+
+    test('as ligações da linha, com os métodos de cada uma', () {
+      final bulba = withMethods.formDetail(1).evolutionEdges;
+      expect(bulba, [
+        const EvolutionEdge(
+          fromId: 1,
+          toId: 2,
+          methods: [
+            EvolutionMethod(
+              versionGroup: 'red-blue',
+              versions: ['red', 'blue'],
+              trigger: 'level-up',
+              isDefault: true,
+              minLevel: 16,
+            ),
+          ],
+        ),
+        // Pelo par de espécies, com as formas da linha.
+        const EvolutionEdge(
+          fromId: 2,
+          toId: 3,
+          methods: [
+            EvolutionMethod(
+              versionGroup: 'x-y',
+              versions: ['x', 'y'],
+              trigger: 'trade',
+              isDefault: true,
+            ),
+          ],
+        ),
+      ]);
+      // A mesma linha em qualquer forma dela.
+      expect(withMethods.formDetail(3).evolutionEdges, bulba);
+    });
+
+    test('nomes em inglês, sprite do item, frase e link', () {
+      final edges = withMethods.formDetail(133).evolutionEdges;
+      final vapor = edges.first;
+      expect((vapor.fromId, vapor.toId), (133, 134));
+      expect(vapor.texts, {'en': 'Splash', 'pt-BR': 'Molhar'});
+      expect(vapor.link, 'https://bulbapedia.bulbagarden.net/wiki/Vaporeon');
+      final (stone, other) = (vapor.methods.first, vapor.methods.last);
+      expect(stone.item, 'Water Stone');
+      expect(stone.itemSpriteUrl, '$_base/items/water-stone.png');
+      expect(
+        other,
+        const EvolutionMethod(
+          versionGroup: 'sword-shield',
+          versions: ['sword', 'shield'],
+          trigger: 'level-up',
+          // Sem nome no catálogo: pelo slug.
+          heldItem: 'Mystic Water',
+          knownMove: 'Water Gun',
+          knownMoveType: 'water',
+          usedMove: 'Surf',
+          minMoveCount: 20,
+          location: 'Lake',
+          nearSpecialRock: true,
+          timeOfDay: 'night',
+          minHappiness: 160,
+          minAffection: 2,
+          minBeauty: 170,
+          gender: 'female',
+          region: 'galar',
+          relativePhysicalStats: 0,
+          allowedNatures: ['hardy'],
+          needsOverworldRain: true,
+          needsMultiplayer: true,
+          turnUpsideDown: true,
+          tradeSpecies: 'Shelmet',
+          partySpecies: 'Remoraid',
+          partyType: 'dark',
+          minSteps: 1000,
+          minDamageTaken: 49,
+          chance: 50,
+        ),
+      );
+      // O Espeon, sem métodos no catálogo: a ligação sem eles.
+      expect(edges.last, const EvolutionEdge(fromId: 133, toId: 196));
+    });
+
+    test('catálogo antigo: as ligações, sem métodos', () {
+      expect(catalog.formDetail(1).evolutionEdges, const [
+        EvolutionEdge(fromId: 1, toId: 2),
+        EvolutionEdge(fromId: 2, toId: 3),
+      ]);
+      expect(catalog.formDetail(150).evolutionEdges, isEmpty);
+    });
+
+    test('a ligação curada sem a espécie de origem: da forma anterior', () {
+      // O Vaporeon de Galar → Espeon (só para o teste): o Espeon vem do
+      // Eevee, que não está na linha.
+      final regional = Catalog.fromJson({
+        ...json,
+        'formEvolutions': {
+          'evolutions': [
+            [10600, 196],
+          ],
+          'withoutEvolution': <int>[],
+        },
+      }, spriteBase: '$_base/');
+      expect(regional.formDetail(196).evolutionEdges, const [
+        EvolutionEdge(fromId: 10600, toId: 196),
+      ]);
+    });
+  });
+
   test('formas regionais: a linha pelas evoluções curadas (#252)', () {
     // Como o Meowth de Galar (que só vira Perrserker) e o Farfetch'd comum
     // (que não vira Sirfetch'd): no catálogo de teste, o Eevee só vira
