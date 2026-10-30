@@ -544,6 +544,25 @@ class Catalog {
   /// O grupo da versão [version] (`scarlet` → `scarlet-violet`).
   String? versionGroupOf(String version) => _groupOfVersion[version];
 
+  /// A forma padrão do Pokémon [pokemonId] (quem aprende um golpe, #369);
+  /// `null` se o catálogo não o tem.
+  FormRef? formOfPokemon(int pokemonId) => switch (_formOfPokemon[pokemonId]) {
+    final id? => formRef(id),
+    null => null,
+  };
+
+  late final Map<int, int> _formOfPokemon = () {
+    final result = <int, int>{};
+    for (final form in _forms.values) {
+      final pokemon = form.pokemon;
+      if (pokemon == null) continue;
+      if (form.isDefault || !result.containsKey(pokemon)) {
+        result[pokemon] = form.id;
+      }
+    }
+    return result;
+  }();
+
   /// Os Pokémon (ids) dos golpes de uma forma, na ordem de preferência: o
   /// dela e o padrão da espécie, para as formas sem golpes próprios na
   /// PokéAPI (as cosméticas).

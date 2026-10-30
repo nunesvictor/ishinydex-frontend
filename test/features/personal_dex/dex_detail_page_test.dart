@@ -8,6 +8,7 @@ import 'package:ishinydex/core/network/paginated.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/moves/presentation/move_search_page.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/domain/personal_dex_repository.dart';
@@ -549,6 +550,22 @@ void main() {
         ..addBox(dexId: dex, name: 'HOME B', formIds: const [152]);
       return backend;
     }
+
+    testWidgets('o menu ⋮ abre a busca de golpes (#369)', (tester) async {
+      await pumpFullApp(tester, backend: twoGenerations());
+      await tester.tap(find.text('Dex'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Mais opções'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Buscar golpes'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MoveSearchPage), findsOneWidget);
+      // A demonstração fixa não tem o arquivo dos golpes.
+      expect(
+        find.text('Os golpes não estão disponíveis neste catálogo'),
+        findsOneWidget,
+      );
+    });
 
     for (final size in [compactSize, expandedSize]) {
       testWidgets('tocar numa geração leva à primeira box dela '
