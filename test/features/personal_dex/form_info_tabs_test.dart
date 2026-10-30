@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
+import 'package:ishinydex/features/moves/presentation/moves_tab.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
@@ -570,6 +571,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BaseStatsChart), findsOneWidget);
     expect(find.text('Status base'), findsOneWidget);
+  });
+
+  testWidgets('a aba Golpes (#36), com o jogo do espécime', (tester) async {
+    await pumpWidgetApp(
+      tester,
+      const SingleChildScrollView(
+        child: FormInfoTabs(formId: 1, gameHint: 'scarlet'),
+      ),
+      overrides: [
+        specimenRepositoryProvider.overrideWithValue(MockSpecimenRepository()),
+      ],
+    );
+    expect(find.text('Golpes'), findsOneWidget);
+
+    await tester.tap(find.text('Golpes'));
+    await tester.pumpAndSettle();
+    final tab = tester.widget<MovesTab>(find.byType(MovesTab));
+    expect((tab.formId, tab.gameHint), (1, 'scarlet'));
+    // Sem catálogo (a demonstração fixa), não há golpes.
+    expect(
+      find.text('Os golpes não estão disponíveis neste catálogo'),
+      findsOneWidget,
+    );
   });
 
   group('FormInfoTabs: cartão de status e campos', () {

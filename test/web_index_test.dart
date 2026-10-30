@@ -118,6 +118,21 @@ void main() {
     expect(sw, contains("if (request.method !== 'GET') return;"));
   });
 
+  test('golpes (#36): cache primeiro, num cache que fica entre versões', () {
+    final sw = File('web/sw.js').readAsStringSync();
+    // O arquivo dos golpes, pelo nome versionado, vai para o próprio cache.
+    expect(sw, contains("const MOVES_CACHE = 'ishinydex-moves';"));
+    expect(sw, contains(r'/\/catalog\/moves-[^/]+\.json$/'));
+    expect(sw, contains('event.respondWith(movesFirst(request));'));
+    final moves = sw.substring(sw.indexOf('async function movesFirst'));
+    expect(moves, contains('const hit = await cache.match(request);'));
+    expect(moves, contains('if (hit) return hit;'));
+    // Guardar o novo apaga os dos catálogos anteriores.
+    expect(moves, contains('k.url !== request.url'));
+    // A limpeza de versões do app só mexe nos caches do app.
+    expect(sw, contains("n.startsWith('ishinydex-app-')"));
+  });
+
   test('worker novo espera o primeiro quadro; aviso de versão nova (#228)', () {
     final html = File('web/index.html').readAsStringSync();
     final sw = File('web/sw.js').readAsStringSync();

@@ -303,6 +303,25 @@ void main() {
     });
   });
 
+  test('golpes (#36): o arquivo, os grupos e os Pokémon da forma', () {
+    expect(catalog.movesFile, isNull);
+    final withMoves = Catalog.fromJson({
+      ...catalogJson(),
+      'movesFile': 'moves-2026.10.03.json',
+    }, spriteBase: _base);
+    expect(withMoves.movesFile, 'moves-2026.10.03.json');
+    expect(catalog.versionsOfGroup('x-y'), ['x', 'y']);
+    expect(catalog.versionsOfGroup('nope'), isEmpty);
+    expect(catalog.versionGroupOrder('x-y'), 15);
+    expect(catalog.versionGroupOrder('nope'), 0);
+    expect(catalog.versionGroupGeneration('scarlet-violet'), 'generation-ix');
+    expect(catalog.versionGroupOf('violet'), 'scarlet-violet');
+    // A forma e, sem golpes próprios, a padrão da espécie.
+    expect(catalog.movesPokemonIds(10033), [10033, 3]);
+    expect(catalog.movesPokemonIds(3), [3]);
+    expect(catalog.movesPokemonIds(999), isEmpty);
+  });
+
   test('formas regionais: a linha pelas evoluções curadas (#252)', () {
     // Como o Meowth de Galar (que só vira Perrserker) e o Farfetch'd comum
     // (que não vira Sirfetch'd): no catálogo de teste, o Eevee só vira
