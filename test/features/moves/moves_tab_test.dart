@@ -5,6 +5,7 @@ import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/moves/moves_providers.dart';
 import 'package:ishinydex/features/moves/presentation/moves_tab.dart';
+import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/moves/presentation/sticky_section.dart';
 
 import '../../fixtures/catalog_fixture.dart';

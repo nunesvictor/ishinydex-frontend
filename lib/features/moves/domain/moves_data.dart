@@ -32,6 +32,31 @@ class MovesData {
   final Map<String, dynamic> _learnsets;
   final Map<String, dynamic> _machines;
 
+  /// Por grupo: golpe → Pokémon → como cada um o aprende (montado na
+  /// primeira busca do grupo, #369).
+  final _learnersByGroup = <String, Map<int, Map<int, List<MoveLearn>>>>{};
+
+  Map<int, Map<int, List<MoveLearn>>> _learners(String group) =>
+      _learnersByGroup[group] ??= () {
+        final result = <int, Map<int, List<MoveLearn>>>{};
+        for (final pokemon in _learnsets.keys) {
+          final id = int.parse(pokemon);
+          for (final learn in learnset(id, group)) {
+            ((result[learn.move.index] ??= {})[id] ??= []).add(learn);
+          }
+        }
+        return result;
+      }();
+
+  /// Os golpes que alguém aprende no grupo [group], na ordem do pacote.
+  List<MoveInfo> movesIn(String group) => [
+    for (final index in _learners(group).keys.toList()..sort()) moves[index],
+  ];
+
+  /// Quem aprende [move] no grupo [group]: Pokémon → como (nível, TM...).
+  Map<int, List<MoveLearn>> learnersOf(MoveInfo move, String group) =>
+      _learners(group)[move.index] ?? const {};
+
   /// Os grupos de versões em que o Pokémon [pokemonId] aprende golpes.
   List<String> groupsOf(int pokemonId) => switch (_learnsets['$pokemonId']) {
     final Map<String, dynamic> byGroup => [
