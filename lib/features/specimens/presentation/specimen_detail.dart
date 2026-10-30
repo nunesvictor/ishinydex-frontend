@@ -110,6 +110,9 @@ class _Details extends ConsumerWidget {
                       ? null
                       : '${form.displayName} · ${form.dexNumber}',
                   formId: form?.id,
+                  gameHint:
+                      specimen.location?.trainer.version ??
+                      specimen.originVersion,
                   tabsKey: ValueKey('tabs-${specimen.id}'),
                   highlightAbility: specimen.ability,
                   chips: [

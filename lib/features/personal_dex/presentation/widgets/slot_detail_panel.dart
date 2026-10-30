@@ -196,6 +196,7 @@ class SlotDetailPanel extends ConsumerWidget {
         // Uma aba por slot: trocar de slot volta para o resumo.
         tabsKey: ValueKey('tabs-${current.id}'),
         initialTab: initialTab,
+        gameHint: full?.location?.trainer.version ?? full?.originVersion,
         summaryLabel: specimen == null
             ? context.l10n.summaryForm
             : context.l10n.summarySpecimen,

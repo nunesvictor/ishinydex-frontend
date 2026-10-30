@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:ishinydex/features/moves/presentation/moves_tab.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/species_info.dart';
@@ -9,11 +10,11 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// As abas de [FormInfoTabs].
-enum FormInfoTab { summary, species }
+enum FormInfoTab { summary, species, moves }
 
 /// As abas dos detalhes (slot, espécime e ficha da forma): o resumo
-/// ("Espécime", ou "Forma" sem espécime) e os dados da espécie. Com abas, a
-/// altura é a da maior delas, e não a soma de tudo.
+/// ("Espécime", ou "Forma" sem espécime), os dados da espécie e os golpes
+/// (#36). Com abas, a altura é a da maior delas, e não a soma de tudo.
 ///
 /// O resumo junta o que era a aba Status, como na tela de resumo dos jogos:
 /// [header] (tipos, habilidades e chips), o cartão "Status base" com o
@@ -30,10 +31,15 @@ class FormInfoTabs extends ConsumerStatefulWidget {
     this.onOpenSlot,
     this.onOpenForm,
     this.initialTab = FormInfoTab.summary,
+    this.gameHint,
     super.key,
   });
 
   final int formId;
+
+  /// O jogo do espécime (o do save onde está ou o do OT), para a aba Golpes
+  /// abrir nele; `null` sem espécime.
+  final String? gameHint;
 
   /// "Forma" num slot faltante ou na ficha da forma (não há espécime).
   final String? summaryLabel;
@@ -79,6 +85,10 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
             value: FormInfoTab.species,
             label: Text(context.l10n.tabSpecies),
           ),
+          ButtonSegment(
+            value: FormInfoTab.moves,
+            label: Text(context.l10n.tabMoves),
+          ),
         ],
         selected: {_tab},
         onSelectionChanged: (selected) =>
@@ -105,6 +115,10 @@ class _FormInfoTabsState extends ConsumerState<FormInfoTabs> {
               ],
             ),
           ),
+        ),
+        FormInfoTab.moves => MovesTab(
+          formId: widget.formId,
+          gameHint: widget.gameHint,
         ),
       },
     ],

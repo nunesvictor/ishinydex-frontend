@@ -17,6 +17,8 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 class Catalog {
   Catalog._({
     required this.version,
+    required this.movesFile,
+    required this._groupVersions,
     required this.defaultDex,
     required this.options,
     required this.versions,
@@ -171,6 +173,8 @@ class Catalog {
 
     return Catalog._(
       version: json['version'] as String,
+      movesFile: json['movesFile'] as String?,
+      groupVersions: {for (final g in groups) g.name: g.versions},
       defaultDex: [for (final id in json['defaultDex'] as List) id as int],
       options: SpecimenOptions(
         language: choices('language'),
@@ -519,6 +523,42 @@ class Catalog {
 
   /// `catalog-AAAA.MM.DD`.
   final String version;
+
+  /// O arquivo dos golpes (`moves-AAAA.MM.DD.json`, backend#134), ao lado do
+  /// catálogo; `null` em catálogo antigo (sem a aba Golpes).
+  final String? movesFile;
+
+  /// As versões de cada grupo (`scarlet-violet` → `scarlet`, `violet`).
+  final Map<String, List<String>> _groupVersions;
+
+  /// As versões do grupo [group]; vazio se o catálogo não o tem.
+  List<String> versionsOfGroup(String group) =>
+      _groupVersions[group] ?? const [];
+
+  /// A ordem de lançamento do grupo [group] (0 se o catálogo não o tem).
+  int versionGroupOrder(String group) => _groupOrder[group] ?? 0;
+
+  /// A geração do grupo [group] (`generation-ix`); `null` se não o tem.
+  String? versionGroupGeneration(String group) => _groupGenerations[group];
+
+  /// O grupo da versão [version] (`scarlet` → `scarlet-violet`).
+  String? versionGroupOf(String version) => _groupOfVersion[version];
+
+  /// Os Pokémon (ids) dos golpes de uma forma, na ordem de preferência: o
+  /// dela e o padrão da espécie, para as formas sem golpes próprios na
+  /// PokéAPI (as cosméticas).
+  List<int> movesPokemonIds(int formId) {
+    final form = _forms[formId];
+    if (form == null) return const [];
+    final species = _speciesOf(form);
+    final fallback = species == null ? null : _defaultFormOf(species);
+    return [
+      ?form.pokemon,
+      if (fallback != null)
+        if (_forms[fallback]?.pokemon case final id? when id != form.pokemon)
+          id,
+    ];
+  }
 
   /// Formas de um dex padrão novo, na ordem do esquema.
   final List<int> defaultDex;

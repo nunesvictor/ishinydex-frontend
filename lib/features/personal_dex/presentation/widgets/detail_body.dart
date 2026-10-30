@@ -38,6 +38,7 @@ class DetailBody extends StatelessWidget {
     this.onOpenSlot,
     this.onOpenForm,
     this.initialTab = FormInfoTab.summary,
+    this.gameHint,
     super.key,
   });
 
@@ -74,6 +75,9 @@ class DetailBody extends StatelessWidget {
 
   /// Ver [FormInfoTabs.initialTab].
   final FormInfoTab initialTab;
+
+  /// Ver [FormInfoTabs.gameHint].
+  final String? gameHint;
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +163,7 @@ class DetailBody extends StatelessWidget {
             onOpenSlot: onOpenSlot,
             onOpenForm: onOpenForm,
             initialTab: initialTab,
+            gameHint: gameHint,
           ),
       ],
     );

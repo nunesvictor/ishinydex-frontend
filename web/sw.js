@@ -8,6 +8,10 @@
 // - Resto do próprio site (index.html, flutter_bootstrap.js, manifesto,
 //   ícones, catalog/catalog.json): rede primeiro, sempre conferida com o
 //   servidor (sem o cache HTTP), com o cache de reserva.
+// - Os golpes (catalog/moves-AAAA.MM.DD.json, #36): cache primeiro, num
+//   cache próprio que sobrevive às versões do app. O nome leva a versão do
+//   catálogo, então o conteúdo nunca muda: só um catálogo novo baixa de novo,
+//   e guardar o novo apaga o anterior.
 // - Sprites (raw do PokeAPI/sprites, com CORS): cache primeiro, num cache
 //   que sobrevive às versões do app.
 // - Fontes dos caracteres que a Roboto não tem (✓, ♂, ♀...), que o Flutter
@@ -20,6 +24,7 @@
 // principal), como no flutter_bootstrap.js.
 const VERSION = '__BUILD_VERSION__';
 const APP_CACHE = `ishinydex-app-${VERSION}`;
+const MOVES_CACHE = 'ishinydex-moves';
 const SPRITES_CACHE = 'ishinydex-sprites';
 const SPRITES_HOST = 'raw.githubusercontent.com';
 const FONTS_CACHE = 'ishinydex-fonts';
@@ -83,6 +88,11 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.origin !== self.location.origin) return;
 
+  if (/\/catalog\/moves-[^/]+\.json$/.test(url.pathname)) {
+    event.respondWith(movesFirst(request));
+    return;
+  }
+
   // canvaskit/ (o motor) só é do próprio site com o --no-web-resources-cdn
   // do build do Pages; sem ele, viria do www.gstatic.com, fora do cache, e o
   // app não abriria offline.
@@ -108,6 +118,25 @@ async function cacheFirst(name, request) {
   }
   const response = await fetch(request);
   if (response.ok) cache.put(request, response.clone());
+  return response;
+}
+
+async function movesFirst(request) {
+  const cache = await caches.open(MOVES_CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const response = await fetch(request);
+  if (response.ok) {
+    // O put só termina com o corpo inteiro: um download interrompido não
+    // fica no cache. Depois, sai o arquivo dos catálogos anteriores.
+    cache
+      .put(request, response.clone())
+      .then(() => cache.keys())
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k.url !== request.url).map((k) => cache.delete(k))),
+      )
+      .catch(() => undefined);
+  }
   return response;
 }
 

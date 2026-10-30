@@ -77,3 +77,8 @@ Os ícones dos 18 tipos no Pokémon HOME (64×64, círculo colorido com o símbo
 
 Usados por `TypeIcon` (`lib/core/widgets/type_chip.dart`) nos chips de tipo (ficha da forma, quadro "Tipos em batalha" e filtros, #230). Um tipo sem ícone (o Stellar) mostra só a cor.
 
+## Ícones de categoria dos golpes (`icons/move_*.png`)
+
+As categorias físico, especial e status no Pokémon HOME (coloridos, fundo transparente), baixadas da Bulbagarden Archives como `Physical_icon_HOME.png`, `Special_icon_HOME.png` e `Status_icon_HOME.png` (artigo [Damage category](https://bulbapedia.bulbagarden.net/wiki/Damage_category)), salvas como `move_physical.png`, `move_special.png` e `move_status.png`. Mesma ressalva de propriedade das marcas de origem.
+
+Usados por `MoveCategoryIcon` (`lib/features/moves/presentation/moves_tab.dart`), na aba Golpes (#36), que mostra o nome da categoria se o asset falhar.
