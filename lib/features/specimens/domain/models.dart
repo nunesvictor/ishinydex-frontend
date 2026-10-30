@@ -281,6 +281,10 @@ abstract class FormDetail with _$FormDetail {
     /// a espécie não evolui nem vem de outra.
     @Default(<List<FormRef>>[]) List<List<FormRef>> evolutionChain,
 
+    /// As ligações da [evolutionChain], com os métodos de cada uma (#368);
+    /// sem métodos em catálogo antigo.
+    @Default(<EvolutionEdge>[]) List<EvolutionEdge> evolutionEdges,
+
     /// Demais formas da espécie (Mega, Gigantamax, regionais).
     @Default(<FormRef>[]) List<FormRef> otherForms,
 
@@ -295,6 +299,128 @@ abstract class FormDetail with _$FormDetail {
 
   factory FormDetail.fromJson(Map<String, dynamic> json) =>
       _$FormDetailFromJson(json);
+}
+
+/// Uma ligação da linha evolutiva (#368): de uma forma para outra, com os
+/// métodos por jogo (backend#133). Nos casos bizarros, uma frase própria
+/// ([texts], por idioma) e o link "Veja mais" ([link]).
+@freezed
+abstract class EvolutionEdge with _$EvolutionEdge {
+  const factory EvolutionEdge({
+    required int fromId,
+    required int toId,
+    @Default(<EvolutionMethod>[]) List<EvolutionMethod> methods,
+    @Default(<String, String>{}) Map<String, String> texts,
+    String? link,
+  }) = _EvolutionEdge;
+
+  const EvolutionEdge._();
+
+  factory EvolutionEdge.fromJson(Map<String, dynamic> json) =>
+      _$EvolutionEdgeFromJson(json);
+
+  /// O método que a tela mostra (o padrão da PokéAPI); `null` sem métodos.
+  EvolutionMethod? get main =>
+      methods.where((m) => m.isDefault).firstOrNull ?? methods.firstOrNull;
+
+  /// Há mais a ver (o ⓘ): outros jogos ou o link.
+  bool get hasMore => methods.length > 1 || link != null;
+}
+
+/// Um método de evolução num grupo de versões, com o gatilho e as
+/// condições da PokéAPI. Itens, golpes, lugares e espécies já vêm com o
+/// nome em inglês; a frase sai na tela (`evolutionMethodText`).
+@freezed
+abstract class EvolutionMethod with _$EvolutionMethod {
+  const factory EvolutionMethod({
+    required String versionGroup,
+    required String trigger,
+
+    /// As versões do grupo (`scarlet`, `violet`), para o nome do jogo.
+    @Default(<String>[]) List<String> versions,
+    @Default(false) bool isDefault,
+    int? minLevel,
+    String? item,
+    String? itemSpriteUrl,
+    String? heldItem,
+    String? knownMove,
+    String? knownMoveType,
+    String? usedMove,
+    int? minMoveCount,
+    String? location,
+    bool? nearSpecialRock,
+
+    /// `day`, `night`, `dusk` ou `full-moon`.
+    String? timeOfDay,
+    int? minHappiness,
+    int? minAffection,
+    int? minBeauty,
+
+    /// `female` ou `male`.
+    String? gender,
+    String? region,
+
+    /// 1: Ataque maior que a Defesa; -1: menor; 0: iguais.
+    int? relativePhysicalStats,
+    @Default(<String>[]) List<String> allowedNatures,
+    bool? needsOverworldRain,
+    bool? needsMultiplayer,
+    bool? turnUpsideDown,
+    String? tradeSpecies,
+    String? partySpecies,
+    String? partyType,
+    int? minSteps,
+    int? minDamageTaken,
+
+    /// Chance em %, quando a evolução é sorteada (50 no Wurmple).
+    double? chance,
+  }) = _EvolutionMethod;
+
+  const EvolutionMethod._();
+
+  factory EvolutionMethod.fromJson(Map<String, dynamic> json) =>
+      _$EvolutionMethodFromJson(json);
+
+  /// Cabe numa seta da linha na horizontal: só o nível, só o item ou só a
+  /// troca.
+  bool get isShort => switch (trigger) {
+    'level-up' => minLevel != null && _onlyConditions({'minLevel'}),
+    'use-item' => _onlyConditions({'item'}),
+    'trade' => _onlyConditions(const {}),
+    _ => false,
+  };
+
+  bool _onlyConditions(Set<String> allowed) {
+    final present = {
+      if (minLevel != null) 'minLevel',
+      if (item != null) 'item',
+      if (heldItem != null) 'heldItem',
+      if (knownMove != null) 'knownMove',
+      if (knownMoveType != null) 'knownMoveType',
+      if (usedMove != null) 'usedMove',
+      if (minMoveCount != null) 'minMoveCount',
+      if (location != null) 'location',
+      if (nearSpecialRock ?? false) 'nearSpecialRock',
+      if (timeOfDay != null) 'timeOfDay',
+      if (minHappiness != null) 'minHappiness',
+      if (minAffection != null) 'minAffection',
+      if (minBeauty != null) 'minBeauty',
+      if (gender != null) 'gender',
+      if (region != null) 'region',
+      if (relativePhysicalStats != null) 'relativePhysicalStats',
+      if (allowedNatures.isNotEmpty) 'allowedNatures',
+      if (needsOverworldRain ?? false) 'needsOverworldRain',
+      if (needsMultiplayer ?? false) 'needsMultiplayer',
+      if (turnUpsideDown ?? false) 'turnUpsideDown',
+      if (tradeSpecies != null) 'tradeSpecies',
+      if (partySpecies != null) 'partySpecies',
+      if (partyType != null) 'partyType',
+      if (minSteps != null) 'minSteps',
+      if (minDamageTaken != null) 'minDamageTaken',
+      if (chance != null) 'chance',
+    };
+    return present.difference(allowed).isEmpty;
+  }
 }
 
 /// Um jogo do HOME e as pokédex dele em que uma espécie está.
