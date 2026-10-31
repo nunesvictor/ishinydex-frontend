@@ -9,6 +9,8 @@ import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/shiny_locks/shiny_lock_providers.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:ishinydex/features/teams/domain/models.dart';
+import 'package:ishinydex/features/teams/teams_providers.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -70,6 +72,12 @@ void main() {
       change: (r) => r['nickname'] = 'Remoto',
       shown: (c) async => (await c.read(specimenProvider(1).future)).nickname,
     ),
+    'teams': (
+      change: (r) => r['name'] = 'Remoto',
+      shown: (c) async => [
+        for (final t in await c.read(teamsProvider.future)) t.name,
+      ],
+    ),
     'slots': (
       change: (r) => r['specimen'] = null,
       shown: (c) async => [
@@ -90,6 +98,9 @@ void main() {
       final backend = FakeBackend.seeded();
       await backend.saveShinyHunt(
         const ShinyHunt(id: 0, form: 1, paused: true),
+      );
+      await backend.saveTeam(
+        const Team(id: 0, name: 'Local', versionGroup: 'scarlet-violet'),
       );
       final data = LocalData(
         store: LocalStore(InMemoryLocalDataStorage()),
@@ -114,6 +125,7 @@ void main() {
         formDetailProvider(25),
         specimenProvider(1),
         slotsProvider((dexId: 1, boxId: 1)),
+        teamsProvider,
       ]) {
         container.listen(provider, (_, _) {});
       }

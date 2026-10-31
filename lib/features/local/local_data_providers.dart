@@ -11,6 +11,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/shiny_locks/shiny_lock_providers.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:ishinydex/features/teams/teams_providers.dart';
 
 /// Dados do modo local (exportar/importar); `null` fora dele.
 final localDataProvider = Provider<LocalData?>((ref) => null);
@@ -144,6 +145,7 @@ class LocalDataActions {
       ..invalidate(trainersProvider)
       ..invalidate(savesProvider)
       ..invalidate(shinyHuntsProvider)
+      ..invalidate(teamsProvider)
       ..invalidate(shinyLocksProvider)
       // A ficha da forma traz o shiny lock (`isShinylocked`).
       ..invalidate(formDetailProvider)

@@ -43,6 +43,8 @@ class Catalog {
     required this._formEvolutions,
     required this._withoutEvolution,
     required this._evolutionEdges,
+    required this._heldItems,
+    required this._heldItemsByGroup,
   });
 
   /// Lê o JSON do pacote. Formato mais novo que [schemaVersion] →
@@ -73,6 +75,16 @@ class Catalog {
         ),
     ]..sort((a, b) => a.order.compareTo(b.order));
     final groupByName = {for (final g in groups) g.name: g};
+    // Os itens seguráveis (backend#138); catálogo antigo, sem a chave: nenhum.
+    final held = (json['heldItems'] as Map<String, dynamic>?) ?? const {};
+    final heldItems = [
+      for (final i in _objects(held['items'] ?? const <Object>[]))
+        HeldItem(
+          name: i['name'] as String,
+          label: i['label'] as String,
+          spriteUrl: sprite(i['sprite']),
+        ),
+    ];
     final versionList = [
       for (final v in _objects(json['versions']))
         (
@@ -222,11 +234,15 @@ class Catalog {
             types: [for (final t in f['types'] as List) t as String],
             sprite: sprite(f['sprite']) ?? '',
             shinySprite: sprite(f['shinySprite']) ?? '',
+            inBattleOnly:
+                (f['isBattleOnly'] as bool? ?? false) ||
+                (f['isMega'] as bool? ?? false),
           ),
       },
       pokemon: {
         for (final p in _objects(json['pokemon']))
           p['id'] as int: _Pokemon(
+            name: p['name'] as String,
             species: p['species'] as String?,
             isDefault: p['isDefault'] as bool,
             height: p['height'] as int,
@@ -368,6 +384,13 @@ class Catalog {
             link: e['link'] as String?,
           ),
       },
+      heldItems: heldItems,
+      heldItemsByGroup: {
+        for (final MapEntry(:key, :value)
+            in ((held['versionGroups'] as Map<String, dynamic>?) ?? const {})
+                .entries)
+          key: [for (final i in value as List) heldItems[i as int]],
+      },
     );
   }
 
@@ -482,6 +505,36 @@ class Catalog {
   /// As regras de odds (backend#113; vazio em catálogo antigo).
   final List<OddsRule> shinyOdds;
 
+  /// Os itens seguráveis (backend#138), em ordem de nome em inglês.
+  final List<HeldItem> _heldItems;
+  final Map<String, List<HeldItem>> _heldItemsByGroup;
+
+  /// Os itens que se seguram no grupo [group] (vazio sem item segurado, ou
+  /// em catálogo antigo).
+  List<HeldItem> heldItemsIn(String group) =>
+      _heldItemsByGroup[group] ?? const [];
+
+  /// O item [name], de qualquer jogo; `null` se o catálogo não o tem.
+  HeldItem? heldItem(String name) =>
+      _heldItems.where((i) => i.name == name).firstOrNull;
+
+  /// O nome do Pokémon da forma [formId] na PokéAPI e o da espécie
+  /// (`ogerpon-cornerstone-mask`, `ogerpon`), e se é o padrão dela: a
+  /// base do nome no Showdown (#231). `null` fora do catálogo.
+  ({String pokemon, String species, bool isDefault})? pokemonNames(
+    int formId,
+  ) => switch (_forms[formId]) {
+    final form? => switch (_pokemonOf(form)) {
+      final pokemon? => (
+        pokemon: pokemon.name,
+        species: pokemon.species ?? pokemon.name,
+        isDefault: pokemon.isDefault,
+      ),
+      null => null,
+    },
+    null => null,
+  };
+
   /// A regra de odds do [method] no jogo [version]; `null` sem regra.
   OddsRule? oddsRule(String? method, String? version) => shinyOdds
       .where((o) => o.method == method && o.versions.contains(version))
@@ -534,6 +587,9 @@ class Catalog {
   /// As versões do grupo [group]; vazio se o catálogo não o tem.
   List<String> versionsOfGroup(String group) =>
       _groupVersions[group] ?? const [];
+
+  /// Os grupos de versões do catálogo.
+  Iterable<String> get versionGroupNames => _groupOrder.keys;
 
   /// A ordem de lançamento do grupo [group] (0 se o catálogo não o tem).
   int versionGroupOrder(String group) => _groupOrder[group] ?? 0;
@@ -654,6 +710,9 @@ class Catalog {
   Iterable<int> get formIds => _forms.keys;
 
   bool hasForm(int formId) => _forms.containsKey(formId);
+
+  /// A forma [formId] é mega ou só de batalha (não entra num time).
+  bool isBattleForm(int formId) => _forms[formId]?.inBattleOnly ?? false;
 
   /// Sprite de um item (pokébola) pelo nome.
   String itemSprite(String item) => '$_spriteBase/items/$item.png';
@@ -1261,6 +1320,7 @@ class _Form {
     required this.types,
     required this.sprite,
     required this.shinySprite,
+    this.inBattleOnly = false,
   });
 
   final int id;
@@ -1268,6 +1328,9 @@ class _Form {
   final String formName;
   final int? pokemon;
   final bool isDefault;
+
+  /// Mega ou forma só de batalha: não entra num time (#231).
+  final bool inBattleOnly;
   final String versionGroup;
   final List<String> types;
   final String sprite;
@@ -1276,6 +1339,7 @@ class _Form {
 
 class _Pokemon {
   const _Pokemon({
+    required this.name,
     required this.species,
     required this.isDefault,
     required this.height,
@@ -1284,6 +1348,7 @@ class _Pokemon {
     required this.stats,
   });
 
+  final String name;
   final String? species;
   final bool isDefault;
   final int height;
@@ -1337,4 +1402,14 @@ class ShinyMethod {
   /// Unidades aceitas; a primeira é a padrão.
   final List<String> units;
   final Set<String> versions;
+}
+
+/// Um item que se segura em batalha (backend#138): o nome da PokéAPI, o
+/// nome em inglês e o sprite (`null` quando a PokéAPI não tem o item).
+class HeldItem {
+  const HeldItem({required this.name, required this.label, this.spriteUrl});
+
+  final String name;
+  final String label;
+  final String? spriteUrl;
 }

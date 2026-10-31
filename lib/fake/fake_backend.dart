@@ -14,6 +14,9 @@ import 'package:ishinydex/features/shiny_locks/domain/shiny_lock_repository.dart
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
 import 'package:ishinydex/features/specimens/domain/transfer_rules.dart';
+import 'package:ishinydex/features/teams/domain/models.dart';
+import 'package:ishinydex/features/teams/domain/team_repository.dart';
+import 'package:ishinydex/features/teams/domain/team_rules.dart';
 
 final fakeBackendProvider = Provider<FakeBackend>(
   (ref) => FakeBackend.seeded(latency: const Duration(milliseconds: 250)),
@@ -154,7 +157,8 @@ class FakeBackend
         PersonalDexRepository,
         SpecimenRepository,
         ShinyLockRepository,
-        ShinyHuntRepository {
+        ShinyHuntRepository,
+        TeamRepository {
   FakeBackend({
     this.latency = Duration.zero,
     this.catalog,
@@ -352,6 +356,7 @@ class FakeBackend
     'shinyLocks',
     'specimens',
     'slots',
+    'teams',
   ];
 
   /// Registros que citam formas fora do catálogo atual: não entram no app,
@@ -488,6 +493,31 @@ class FakeBackend
         },
       ...?_orphans['slots'],
     ],
+    'teams': [
+      for (final t in _teams.values)
+        {
+          'id': t.id,
+          'name': t.name,
+          'versionGroup': t.versionGroup,
+          'members': [
+            for (final m in t.members)
+              {
+                'form': m.form,
+                'specimen': ?m.specimen,
+                'level': m.level,
+                'ability': ?m.ability,
+                'nature': ?m.nature,
+                'item': ?m.item,
+                'tera': ?m.tera,
+                'moves': m.moves,
+                // Só os EVs que não são 0 e os IVs que não são 31.
+                if (m.evs.isNotEmpty) 'evs': m.evs,
+                if (m.ivs.isNotEmpty) 'ivs': m.ivs,
+              },
+          ],
+        },
+      ...?_orphans['teams'],
+    ],
   };
 
   /// Troca todos os dados do usuário pelos de [records] (importar, sync),
@@ -503,6 +533,7 @@ class FakeBackend
       _specimens,
       _shinyLocks,
       _hunts,
+      _teams,
       _orphans,
     ]) {
       map.clear();
@@ -680,6 +711,42 @@ class FakeBackend
         formId: form,
       )..specimenId = _specimens.containsKey(specimen) ? specimen : null;
     }
+    for (final t in of('teams')) {
+      final members = [
+        for (final m in t['members'] as List) m as Map<String, dynamic>,
+      ];
+      if (!members.every((m) => _forms.containsKey(m['form']))) {
+        (_orphans['teams'] ??= []).add(t);
+        continue;
+      }
+      Map<String, int> stats(Object? value) => {
+        for (final MapEntry(:key, :value)
+            in ((value as Map<String, dynamic>?) ?? const {}).entries)
+          key: value as int,
+      };
+      final id = t['id'] as int;
+      _teams[id] = Team(
+        id: id,
+        name: t['name'] as String,
+        versionGroup: t['versionGroup'] as String,
+        members: [
+          for (final m in members)
+            TeamMember(
+              form: m['form'] as int,
+              formRef: _formRef(_forms[m['form']]!),
+              specimen: m['specimen'] as int?,
+              level: m['level'] as int,
+              ability: m['ability'] as String?,
+              nature: m['nature'] as String?,
+              item: m['item'] as String?,
+              tera: m['tera'] as String?,
+              moves: [for (final move in m['moves'] as List) move as String],
+              evs: stats(m['evs']),
+              ivs: stats(m['ivs']),
+            ),
+        ],
+      );
+    }
   }
 
   final Duration latency;
@@ -737,6 +804,7 @@ class FakeBackend
   final _slots = <int, _SlotRecord>{};
   final _specimens = <int, Specimen>{};
   final _hunts = <int, ShinyHunt>{};
+  final _teams = <int, Team>{};
   final _trainers = <int, Trainer>{};
   final _saves = <int, Save>{};
 
@@ -3116,6 +3184,123 @@ class FakeBackend
   Future<void> deleteShinyHunt(int huntId) async {
     await _delay();
     if (_hunts.remove(huntId) == null) throw const NotFoundFailure();
+  }
+
+  // ---- TeamRepository ----
+
+  /// Os times; o espécime apagado deixa de estar ligado.
+  @override
+  Future<List<Team>> fetchTeams() async {
+    await _delay();
+    return [
+      for (final team in [
+        ..._teams.values,
+      ]..sort((a, b) => a.id.compareTo(b.id)))
+        team.copyWith(
+          members: [
+            for (final m in team.members)
+              if (_specimens.containsKey(m.specimen))
+                m
+              else
+                m.copyWith(specimen: null),
+          ],
+        ),
+    ];
+  }
+
+  /// Valida o jogo, o nome e cada membro: a forma, o espécime, o nível, a
+  /// habilidade, os golpes, os EVs e os IVs (#231).
+  @override
+  Future<Team> saveTeam(Team team) async {
+    await _delay();
+    if (team.id != 0 && !_teams.containsKey(team.id)) {
+      throw const NotFoundFailure();
+    }
+    final name = team.name.trim();
+    if (name.isEmpty) {
+      throw const ValidationFailure({
+        'name': [Problem.blank()],
+      });
+    }
+    final catalog = this.catalog;
+    if (catalog != null &&
+        !groupHasTeams(
+          team.versionGroup,
+          generation: catalog.versionGroupGeneration(team.versionGroup),
+        )) {
+      throw const ValidationFailure({
+        'versionGroup': [Problem.noTeamsInGame()],
+      });
+    }
+    if (team.members.length > Team.maxMembers) {
+      throw const ValidationFailure({
+        'members': [Problem.teamFull()],
+      });
+    }
+    final members = <TeamMember>[];
+    for (final m in team.members) {
+      final form = _forms[m.form];
+      Never invalid(String field, Problem problem) => throw ValidationFailure({
+        field: [problem],
+      });
+      if (form == null) invalid('form', const Problem.invalidForm());
+      if (m.specimen != null && !_specimens.containsKey(m.specimen)) {
+        invalid('specimen', const Problem.specimenNotFound());
+      }
+      if (m.level < 1 || m.level > 100) {
+        invalid('level', const Problem.invalidLevel());
+      }
+      if (m.ability case final ability?
+          when form.abilities.isNotEmpty &&
+              !form.abilities.any((a) => a.ability == ability)) {
+        invalid('ability', const Problem.invalidAbility());
+      }
+      if (m.moves.length > TeamMember.maxMoves ||
+          m.moves.toSet().length != m.moves.length) {
+        invalid('moves', const Problem.invalidMoves());
+      }
+      if (m.evs.values.any((v) => v < 0 || v > TeamMember.maxEv) ||
+          m.evTotal > TeamMember.maxEvTotal) {
+        invalid('evs', const Problem.invalidEvs());
+      }
+      if (m.ivs.values.any((v) => v < 0 || v > TeamMember.maxIv)) {
+        invalid('ivs', const Problem.invalidIvs());
+      }
+      members.add(
+        m.copyWith(
+          formRef: _formRef(form),
+          tera: teraGroups.contains(team.versionGroup) ? m.tera : null,
+          // Só o que foge do padrão: EV 0 e IV 31 ficam de fora.
+          evs: {
+            for (final MapEntry(:key, :value) in m.evs.entries)
+              if (value != 0) key: value,
+          },
+          ivs: {
+            for (final MapEntry(:key, :value) in m.ivs.entries)
+              if (value != TeamMember.maxIv) key: value,
+          },
+        ),
+      );
+    }
+    final id = team.id == 0 ? _newId(_teams.keys) : team.id;
+    final saved = team.copyWith(id: id, name: name, members: members);
+    _teams[id] = saved;
+    return saved;
+  }
+
+  @override
+  Future<void> deleteTeam(int teamId) async {
+    await _delay();
+    if (_teams.remove(teamId) == null) throw const NotFoundFailure();
+  }
+
+  @override
+  Future<List<Specimen>> fetchSpecimensOfForm(int formId) async {
+    await _delay();
+    return [
+      for (final specimen in _specimens.values)
+        if (specimen.form == formId) specimen,
+    ];
   }
 
   // ---- ShinyLockRepository ----

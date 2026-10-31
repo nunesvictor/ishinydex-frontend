@@ -26,6 +26,13 @@ Usamos a ideia de organização, não os dados: as formas saem do catálogo do a
 Diferente da planilha, o conjunto padrão inclui todas as formas, mesmo quando o
 shiny é igual (os núcleos do Minior, por exemplo).
 
+O team builder (aba Times) usa dados do
+[Pokémon Showdown](https://github.com/smogon/pokemon-showdown) (licença MIT):
+os itens seguráveis de cada jogo e os golpes do Legends: Z-A vêm dele, pelo
+catálogo do [backend](https://github.com/nunesvictor/ishinydex-backend), que
+anexa o aviso da licença (`THIRD_PARTY_NOTICES.md`) a cada release do catálogo.
+O time sai no formato de texto do Showdown, para importar lá.
+
 ## Início rápido
 
 Pré-requisitos: [Flutter](https://docs.flutter.dev/get-started/install) 3.47+ e um
