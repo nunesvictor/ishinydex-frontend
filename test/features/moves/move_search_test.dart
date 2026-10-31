@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/moves/domain/moves_data.dart';
@@ -54,10 +55,31 @@ Widget _opener({String? group, int? formId, String query = ''}) => Scaffold(
   ),
 );
 
-Future<void> _choose(WidgetTester tester, String chip, String option) async {
+/// Abre o menu do [chip], marca ou desmarca cada opção e fecha o menu.
+Future<void> _check(
+  WidgetTester tester,
+  String chip,
+  List<String> options,
+) async {
   await tester.tap(find.byKey(ValueKey(chip)));
   await tester.pumpAndSettle();
-  await tester.tap(find.text(option).last);
+  for (final option in options) {
+    await tester.tap(find.widgetWithText(CheckboxMenuButton, option));
+    await tester.pumpAndSettle();
+  }
+  // Tocar no chip de novo fecha o menu.
+  await tester.tap(find.byKey(ValueKey(chip)));
+  await tester.pumpAndSettle();
+}
+
+/// "Adicionar forma…" no menu de quem aprende, buscando por [name].
+Future<void> _addForm(WidgetTester tester, String name) async {
+  await tester.tap(find.byKey(const ValueKey('filter-learner')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('learner-add')));
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField).last, name);
+  await tester.testTextInput.receiveAction(TextInputAction.search);
   await tester.pumpAndSettle();
 }
 
@@ -125,7 +147,21 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Buscar golpes'), findsOneWidget);
-        expect(find.text('Scarlet / Violet'), findsOneWidget);
+        // O jogo pelos ícones das versões, com o nome no tooltip.
+        expect(find.byTooltip('Jogo: Scarlet / Violet'), findsOneWidget);
+        expect(
+          [
+            for (final icon in tester.widgetList<GameIcon>(
+              find.byType(GameIcon),
+            ))
+              icon.version,
+          ],
+          ['scarlet', 'violet'],
+        );
+        // Sem nada marcado, cada chip com o nome.
+        for (final name in ['Tipo', 'Categoria', 'Alvo', 'Quem aprende']) {
+          expect(find.text(name), findsOneWidget);
+        }
         expect(find.text('5 golpes'), findsOneWidget);
         expect(find.text('Tackle'), findsOneWidget);
       });
@@ -136,14 +172,18 @@ void main() {
       await tester.tap(find.text('Abrir'));
       await tester.pumpAndSettle();
 
-      expect(find.text('X / Y'), findsOneWidget);
+      expect(find.byTooltip('Jogo: X / Y'), findsOneWidget);
       expect(find.text('1 golpe · Bulbasaur aprende'), findsOneWidget);
-      // Com "quem aprende", como ele aprende.
+      expect(find.byTooltip('Quem aprende: Bulbasaur'), findsOneWidget);
+      // Com uma forma, como ela aprende, ao lado do tipo.
       expect(find.text('Nv. 1'), findsOneWidget);
       expect(find.text('50'), findsOneWidget);
 
-      // Tirar a forma: todos os do jogo com o texto.
-      await tester.tap(find.byTooltip('Tirar o filtro'));
+      // Desmarcar a forma no menu: todos os do jogo com o texto.
+      await tester.tap(find.byKey(const ValueKey('filter-learner')));
+      await tester.pumpAndSettle();
+      expect(find.text('Golpes que todas aprendem'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('learner-form-1')).first);
       await tester.pumpAndSettle();
       expect(find.text('1 golpe'), findsOneWidget);
       expect(find.text('Nv. 1'), findsNothing);
@@ -154,45 +194,55 @@ void main() {
       expect(find.text('2 golpes'), findsOneWidget);
     });
 
-    testWidgets('filtros: jogo, tipo, categoria e alvo', (tester) async {
+    testWidgets('uma forma fora do catálogo não filtra', (tester) async {
+      await _pump(tester, _opener(formId: 9999));
+      await tester.tap(find.text('Abrir'));
+      await tester.pumpAndSettle();
+      expect(find.text('5 golpes'), findsOneWidget);
+    });
+
+    testWidgets('tipo, categoria e alvo: vários valores, com OU', (
+      tester,
+    ) async {
       await _pump(tester, _opener());
       await tester.tap(find.text('Abrir'));
       await tester.pumpAndSettle();
 
-      await _choose(tester, 'filter-type', 'Grass');
+      // O menu fica aberto enquanto se marca.
+      await _check(tester, 'filter-type', ['Grass', 'Normal']);
+      expect(find.text('5 golpes'), findsOneWidget);
+      expect(find.byTooltip('Tipo: Grass ou Normal'), findsOneWidget);
+      await _check(tester, 'filter-type', ['Normal']);
       expect(find.text('4 golpes'), findsOneWidget);
-      await _choose(tester, 'filter-category', 'Físico');
-      expect(find.text('2 golpes'), findsOneWidget);
-      await _choose(tester, 'filter-target', 'Um Pokémon escolhido');
+      expect(find.byTooltip('Tipo: Grass'), findsOneWidget);
+      // Com algo marcado, a face mostra os ícones, não o nome.
+      expect(find.text('Tipo'), findsNothing);
+
+      await _check(tester, 'filter-category', ['Físico', 'Especial']);
+      expect(find.text('3 golpes'), findsOneWidget);
+      expect(find.byTooltip('Categoria: Físico ou Especial'), findsOneWidget);
+
+      // Os alvos, sem ícone: o nome do primeiro e "+N".
+      await _check(tester, 'filter-target', ['Um Pokémon escolhido']);
       expect(find.text('1 golpe'), findsOneWidget);
       expect(find.text('Seed Bomb'), findsOneWidget);
-      // Fechar a folha sem escolher não muda nada.
-      await tester.tap(find.byKey(const ValueKey('filter-type')));
-      await tester.pumpAndSettle();
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
-      expect(find.text('1 golpe'), findsOneWidget);
-
-      // Tirar cada filtro.
-      for (final chip in ['filter-type', 'filter-category', 'filter-target']) {
-        await tester.tap(
-          find.descendant(
-            of: find.byKey(ValueKey(chip)),
-            matching: find.byIcon(Icons.close),
-          ),
-        );
-        await tester.pumpAndSettle();
-      }
-      expect(find.text('5 golpes'), findsOneWidget);
-
-      // Outro jogo; fechar a lista sem escolher mantém.
-      await _choose(tester, 'filter-game', 'X / Y');
+      await _check(tester, 'filter-target', ['Um oponente ao acaso']);
       expect(find.text('2 golpes'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('filter-game')));
-      await tester.pumpAndSettle();
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
-      expect(find.text('X / Y'), findsOneWidget);
+      expect(find.text('Um Pokémon escolhido +1'), findsOneWidget);
+      expect(
+        find.byTooltip('Alvo: Um Pokémon escolhido ou Um oponente ao acaso'),
+        findsOneWidget,
+      );
+
+      // Desmarcar tudo volta ao começo.
+      await _check(tester, 'filter-type', ['Grass']);
+      await _check(tester, 'filter-category', ['Físico', 'Especial']);
+      await _check(tester, 'filter-target', [
+        'Um Pokémon escolhido',
+        'Um oponente ao acaso',
+      ]);
+      expect(find.text('5 golpes'), findsOneWidget);
+      expect(find.text('Alvo'), findsOneWidget);
 
       // Sem resultado.
       await tester.enterText(find.byType(TextField), 'zzz');
@@ -200,25 +250,81 @@ void main() {
       expect(find.text('Nenhum golpe com “zzz”'), findsOneWidget);
     });
 
-    testWidgets('quem aprende pelo seletor de formas', (tester) async {
+    testWidgets('o jogo: um só, e o nome quando não tem ícone', (tester) async {
       await _pump(tester, _opener());
       await tester.tap(find.text('Abrir'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('filter-learner')));
+      await tester.tap(find.byKey(const ValueKey('filter-game')));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).last, 'venusaur');
-      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.tap(find.text('X / Y'));
       await tester.pumpAndSettle();
+      expect(find.text('2 golpes'), findsOneWidget);
+      expect(find.byTooltip('Jogo: X / Y'), findsOneWidget);
+
+      // Fechar a lista sem escolher mantém.
+      await tester.tap(find.byKey(const ValueKey('filter-game')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Jogo: X / Y'), findsOneWidget);
+
+      // Um grupo fora do catálogo, sem as versões: o nome.
+      await tester.tap(find.byKey(const ValueKey('filter-game')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Champions'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('filter-game')),
+          matching: find.text('Champions'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('quem aprende: várias formas, com E', (tester) async {
+      await _pump(tester, _opener());
+      await tester.tap(find.text('Abrir'));
+      await tester.pumpAndSettle();
+
+      await _addForm(tester, 'venusaur');
       expect(find.text('1 golpe · Venusaur aprende'), findsOneWidget);
       expect(find.text('TM'), findsOneWidget);
 
-      // Fechar o seletor sem escolher mantém a forma.
+      // A segunda: só o que as duas aprendem, com o modo de cada uma.
+      await _addForm(tester, 'bulbasaur');
+      expect(
+        find.text('1 golpe · Venusaur e Bulbasaur aprendem'),
+        findsOneWidget,
+      );
+      expect(find.text('Vine Whip'), findsOneWidget);
+      expect(find.text('TM'), findsOneWidget);
+      expect(find.text('Nv. 3'), findsOneWidget);
+
+      // A mesma forma de novo não muda nada; fechar o seletor também não.
+      await _addForm(tester, 'bulbasaur');
+      expect(
+        find.text('1 golpe · Venusaur e Bulbasaur aprendem'),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const ValueKey('filter-learner')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('learner-add')));
       await tester.pumpAndSettle();
       Navigator.of(tester.element(find.byType(FormPicker))).pop();
       await tester.pumpAndSettle();
-      expect(find.text('1 golpe · Venusaur aprende'), findsOneWidget);
+      expect(
+        find.text('1 golpe · Venusaur e Bulbasaur aprendem'),
+        findsOneWidget,
+      );
+
+      // Desmarcar o Venusaur: o que o Bulbasaur aprende.
+      await tester.tap(find.byKey(const ValueKey('filter-learner')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('learner-form-3')).first);
+      await tester.pumpAndSettle();
+      expect(find.text('5 golpes · Bulbasaur aprende'), findsOneWidget);
     });
 
     testWidgets('forma sem golpes no jogo: nenhum resultado', (tester) async {
@@ -235,6 +341,16 @@ void main() {
       expect(find.text('Search moves'), findsOneWidget);
       expect(find.text('Who learns'), findsOneWidget);
       expect(find.text('5 moves'), findsOneWidget);
+      await _addForm(tester, 'venusaur');
+      await _addForm(tester, 'bulbasaur');
+      expect(
+        find.text('1 move · learned by Venusaur and Bulbasaur'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('filter-learner')));
+      await tester.pumpAndSettle();
+      expect(find.text('Moves all of them learn'), findsOneWidget);
+      expect(find.text('Add form…'), findsOneWidget);
     });
   });
 

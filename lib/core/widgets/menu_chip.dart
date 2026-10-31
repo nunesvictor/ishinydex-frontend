@@ -36,8 +36,11 @@ class MenuChip extends StatelessWidget {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Um rótulo longo (o alvo marcado, #373) encolhe com "…".
           if (icons.isEmpty)
-            Text(label)
+            Flexible(
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            )
           else
             ChipIcons(icons, semanticLabel: tooltip ?? label),
           const Icon(Icons.arrow_drop_down, size: 18),
