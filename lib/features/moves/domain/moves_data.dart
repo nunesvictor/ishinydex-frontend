@@ -154,8 +154,12 @@ class MoveInfo {
 
   /// Os valores no grupo [group]: os de [past] valem nos grupos anteriores
   /// ao de cada um ([orderOf] dá a ordem de lançamento); o mais próximo
-  /// depois de [group] vence, e `null` nele é "igual ao atual".
+  /// depois de [group] vence, e `null` nele é "igual ao atual". Nos grupos
+  /// de [groupsWithoutMoveValues], só o tipo.
   MoveStats statsIn(String group, int Function(String group) orderOf) {
+    if (groupsWithoutMoveValues.contains(group)) {
+      return (type: type, power: null, accuracy: null, pp: null);
+    }
     final order = orderOf(group);
     final later =
         [
@@ -200,7 +204,13 @@ class PastMoveValues {
 }
 
 /// Os valores de um golpe num jogo.
-typedef MoveStats = ({String type, int? power, int? accuracy, int pp});
+/// O PP, o poder e a precisão ficam `null` onde o catálogo não os tem.
+typedef MoveStats = ({String type, int? power, int? accuracy, int? pp});
+
+/// Os jogos em que o catálogo não tem o poder, a precisão nem o PP dos
+/// golpes: no Legends: Z-A (backend#142, golpes do Showdown), eles têm
+/// recarga em vez de PP, e o poder e a precisão são outros.
+const groupsWithoutMoveValues = {'legends-za'};
 
 /// Um golpe que a forma aprende num jogo: o modo (`level-up`, `machine`,
 /// `egg`, `tutor`...), o nível e, por TM, o item (`tm71`).

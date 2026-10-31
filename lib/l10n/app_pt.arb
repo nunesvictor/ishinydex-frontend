@@ -1005,5 +1005,9 @@
   "memberIvTitle": "IV · {stat}",
   "memberIvHint": "De 0 a 31",
   "memberLevelHint": "De 1 a 100",
-  "memberSelected": "Escolhido"
+  "memberSelected": "Escolhido",
+  "movesNoValues": "No Legends: Z-A, os golpes têm recarga em vez de PP. O poder e a precisão são outros e ainda não estão no catálogo.",
+  "teamNoExport": "O Showdown não tem o Legends: Z-A, então este time não exporta.",
+  "memberNoAbilities": "O Legends: Z-A não tem habilidades nem Terastalização.",
+  "memberLinkHintNoAbility": "Puxa a forma e a natureza do inventário"
 }

@@ -110,6 +110,7 @@ class MovePage extends StatelessWidget {
             stat('PP', stats.pp),
           ],
         ),
+        MovesNoValuesNote(group),
         if (move.target.isNotEmpty)
           labeled(l10n.moveTargetLabel, moveTargetLabel(l10n, move.target)),
         if (move.effect.isNotEmpty)

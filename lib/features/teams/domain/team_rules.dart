@@ -16,16 +16,21 @@ const teamStats = [
 /// Os grupos de versões com Tera (#231).
 const teraGroups = {'scarlet-violet'};
 
+/// Os jogos sem habilidade: o Legends: Z-A.
+const groupsWithoutAbilities = {'legends-za'};
+
+/// Os jogos que o Showdown não tem, e o time não exporta: o Legends: Z-A.
+const groupsWithoutExport = {'legends-za'};
+
 /// Os tipos Tera: os 18 e o Stellar.
 const List<String> teraTypes = [...pokemonTypes, 'stellar'];
 
 /// Os jogos que não têm time: sem item segurado, habilidade e natureza
-/// como hoje (a 1ª e a 2ª geração, o Let's Go e o Legends: Arceus), e o
-/// Legends: Z-A, que ainda não entrou.
+/// como hoje (a 1ª e a 2ª geração, o Let's Go e o Legends: Arceus). O DLC
+/// do Z-A fica com o jogo.
 const _groupsWithoutTeams = {
   'lets-go-pikachu-lets-go-eevee',
   'legends-arceus',
-  'legends-za',
   'mega-dimension',
 };
 

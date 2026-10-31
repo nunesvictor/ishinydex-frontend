@@ -30,6 +30,25 @@ Catalog teamCatalog() {
   return Catalog.fromJson({
     ...json,
     'pokemon': pokemon,
+    // O Legends: Z-A, sem habilidade, Tera nem exportação.
+    'versionGroups': [
+      ...json['versionGroups'] as List,
+      {
+        'name': 'legends-za',
+        'generation': 'generation-ix',
+        'order': 30,
+        'versions': ['legends-za'],
+        'originMark': null,
+      },
+    ],
+    'versions': [
+      ...json['versions'] as List,
+      {
+        'name': 'legends-za',
+        'versionGroup': 'legends-za',
+        'receivesFromHome': false,
+      },
+    ],
     'movesFile': 'moves-2026.10.03.json',
     'heldItems': {
       'items': [
@@ -43,6 +62,7 @@ Catalog teamCatalog() {
       'versionGroups': {
         'scarlet-violet': [0, 1],
         'x-y': [1],
+        'legends-za': [0],
       },
     },
   }, spriteBase: 'https://sprites/');
@@ -51,4 +71,24 @@ Catalog teamCatalog() {
 FakeBackend teamBackend([Catalog? catalog]) =>
     FakeBackend.fromCatalog(catalog ?? teamCatalog());
 
-MovesData teamMoves() => MovesData.fromJson(movesJson());
+/// Os golpes de teste, com o Bulbasaur (Tackle por nível e Seed Bomb por
+/// TM) e o Venusaur (Vine Whip por TM) no Legends: Z-A.
+MovesData teamMoves() {
+  final json = movesJson();
+  final learnsets = Map<String, dynamic>.of(
+    json['learnsets'] as Map<String, dynamic>,
+  );
+  learnsets['1'] = {
+    ...learnsets['1'] as Map<String, dynamic>,
+    '3': [3, 0, 1, 2, 1, 0],
+  };
+  learnsets['3'] = {
+    ...learnsets['3'] as Map<String, dynamic>,
+    '3': [4, 1, 0],
+  };
+  return MovesData.fromJson({
+    ...json,
+    'versionGroups': [...json['versionGroups'] as List, 'legends-za'],
+    'learnsets': learnsets,
+  });
+}

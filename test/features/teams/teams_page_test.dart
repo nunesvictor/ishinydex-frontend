@@ -174,7 +174,8 @@ void main() {
       'Regulamento G',
     );
     await tester.pumpAndSettle();
-    expect(find.text('Scarlet / Violet'), findsOneWidget);
+    // O jogo mais novo vem primeiro.
+    expect(find.text('Legends: Z-A'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('moves-game')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('X / Y').last);
@@ -564,5 +565,82 @@ IVs: 0 Spe
     await _tapKey(tester, 'member-nature');
     expect(find.text('Not chosen'), findsWidgets);
     expect(find.text('Neutral'), findsOneWidget);
+  });
+
+  testWidgets('no Legends: Z-A: sem habilidade, Tera e exportação', (
+    tester,
+  ) async {
+    final backend = teamBackend();
+    final specimen = await backend.create(
+      const SpecimenDraft(form: 1, nature: 'modest', ability: 'overgrow'),
+    );
+    final saved = await backend.saveTeam(
+      const Team(
+        id: 0,
+        name: 'Megas de Lumiose',
+        versionGroup: 'legends-za',
+        members: [
+          // A habilidade e o Tera de outro jogo saem ao gravar.
+          TeamMember(
+            form: 3,
+            ability: 'overgrow',
+            tera: 'fire',
+            moves: ['tackle'],
+          ),
+        ],
+      ),
+    );
+    expect(
+      (saved.members.single.ability, saved.members.single.tera),
+      (null, null),
+    );
+    await _pump(tester, backend: backend);
+    await _openTeams(tester);
+    expect(find.text('Legends: Z-A · 1 de 6 · Nível 50'), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('team-${saved.id}')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('team-export')), findsNothing);
+    expect(
+      find.text(
+        'O Showdown não tem o Legends: Z-A, então este time não exporta.',
+      ),
+      findsOneWidget,
+    );
+
+    // Adicionar não escolhe habilidade, mesmo com uma só.
+    await _tapKey(tester, 'team-add');
+    await _pickForm(tester, 'bulb');
+    expect(find.byKey(const ValueKey('member-ability')), findsNothing);
+    expect(find.byKey(const ValueKey('member-tera')), findsNothing);
+    expect(
+      find.text('O Legends: Z-A não tem habilidades nem Terastalização.'),
+      findsOneWidget,
+    );
+    await _reveal(tester, find.text(ptText.movesNoValues));
+    // Ligar puxa só a natureza.
+    await _tapKey(tester, 'member-link');
+    await tester.tap(find.byKey(ValueKey('link-${specimen.id}')));
+    await tester.pumpAndSettle();
+    var member = (await backend.fetchTeams()).single.members.last;
+    expect((member.nature, member.ability), ('modest', null));
+    await _tapKey(tester, 'member-unlink');
+    expect(
+      find.text('Puxa a forma e a natureza do inventário'),
+      findsOneWidget,
+    );
+    // Os golpes do Z-A, sem poder, precisão e PP.
+    await _tapKey(tester, 'member-move-0');
+    expect(
+      find.text('2 golpes que Bulbasaur aprende em Legends: Z-A'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('pick-seed-bomb')));
+    await tester.pumpAndSettle();
+    expect(find.text('—'), findsNWidgets(3));
+    // Trocar a forma não traz habilidade.
+    await _tapKey(tester, 'member-form');
+    await _pickForm(tester, 'venu');
+    member = (await backend.fetchTeams()).single.members.last;
+    expect((member.formRef?.name, member.ability), ('venusaur', null));
   });
 }

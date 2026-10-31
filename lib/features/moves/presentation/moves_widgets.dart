@@ -131,6 +131,36 @@ List<String> newestFirst(Iterable<String> groups, Catalog catalog) =>
           catalog.versionGroupOrder(b).compareTo(catalog.versionGroupOrder(a)),
     );
 
+/// O aviso dos jogos sem o poder, a precisão e o PP dos golpes no catálogo
+/// (o Legends: Z-A); nos outros, nada.
+class MovesNoValuesNote extends StatelessWidget {
+  const MovesNoValuesNote(this.group, {super.key});
+
+  final String group;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!groupsWithoutMoveValues.contains(group)) {
+      return const SizedBox.shrink();
+    }
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Icon(Icons.info_outline, size: 18, color: muted),
+        Expanded(
+          child: Text(
+            context.l10n.movesNoValues,
+            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// O nome de um jogo: as versões do grupo ("Scarlet / Violet"); nas DLCs e
 /// fora do catálogo, o nome do grupo ("The Teal Mask").
 String gameLabel(Catalog catalog, String group) =>
@@ -422,7 +452,7 @@ class MoveRow extends StatelessWidget {
             ),
             cell(_value(stats.power), number),
             cell(_value(stats.accuracy), number),
-            cell('${stats.pp}', number, width: 28),
+            cell(_value(stats.pp), number, width: 28),
           ];
     final row = Container(
       constraints: BoxConstraints(minHeight: move == null ? 0 : 56),

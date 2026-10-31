@@ -79,17 +79,18 @@ class _TeamPageState extends ConsumerState<TeamPage> {
           appBar: AppBar(
             title: Text(team.name),
             actions: [
-              IconButton(
-                key: const ValueKey('team-export'),
-                tooltip: l10n.teamExport,
-                icon: const Icon(Icons.ios_share),
-                onPressed: team.members.isEmpty
-                    ? null
-                    : () => showExportSheet(
-                        context,
-                        teamShowdownText(team, catalog, data),
-                      ),
-              ),
+              if (!groupsWithoutExport.contains(team.versionGroup))
+                IconButton(
+                  key: const ValueKey('team-export'),
+                  tooltip: l10n.teamExport,
+                  icon: const Icon(Icons.ios_share),
+                  onPressed: team.members.isEmpty
+                      ? null
+                      : () => showExportSheet(
+                          context,
+                          teamShowdownText(team, catalog, data),
+                        ),
+                ),
               _TeamMenu(team: team),
             ],
           ),
@@ -344,6 +345,14 @@ class _MemberList extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
+        if (groupsWithoutExport.contains(group))
+          Card.outlined(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: Text(l10n.teamNoExport, style: theme.textTheme.bodyMedium),
+            ),
+          ),
         if (team.members.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
@@ -389,7 +398,9 @@ class _MemberList extends ConsumerWidget {
                       TeamMember(
                         form: form.id,
                         formRef: form,
-                        ability: abilities.length == 1
+                        ability:
+                            abilities.length == 1 &&
+                                !groupsWithoutAbilities.contains(group)
                             ? abilities.single.ability
                             : null,
                       ),

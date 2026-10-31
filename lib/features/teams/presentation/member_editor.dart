@@ -62,6 +62,8 @@ class MemberEditor extends ConsumerWidget {
     final detail = catalog.formDetail(member.form);
     final learned = formLearnset(data, catalog, member.form, _group);
     final name = member.formRef?.displayName ?? detail.name;
+    final hasAbilities = !groupsWithoutAbilities.contains(_group);
+    final muted = theme.colorScheme.onSurfaceVariant;
     Future<void> save(TeamMember updated) => _save(context, ref, updated);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -91,7 +93,7 @@ class MemberEditor extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _SpecimenLink(member: member, onSave: save),
+        _SpecimenLink(member: member, pullsAbility: hasAbilities, onSave: save),
         const SizedBox(height: 8),
         _Field(
           key: const ValueKey('member-level'),
@@ -109,7 +111,8 @@ class MemberEditor extends ConsumerWidget {
             if (level != null) await save(member.copyWith(level: level));
           },
         ),
-        _abilityField(context, member, detail.abilities, save),
+        if (hasAbilities)
+          _abilityField(context, member, detail.abilities, save),
         _natureField(context, member, save),
         _Field(
           key: const ValueKey('member-item'),
@@ -142,10 +145,28 @@ class MemberEditor extends ConsumerWidget {
           },
         ),
         if (teraGroups.contains(_group)) _teraField(context, member, save),
+        if (!hasAbilities)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 8,
+              children: [
+                Icon(Icons.info_outline, size: 18, color: muted),
+                Expanded(
+                  child: Text(
+                    l10n.memberNoAbilities,
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(top: 16, bottom: 4),
           child: Text(l10n.memberMoves, style: theme.textTheme.titleSmall),
         ),
+        MovesNoValuesNote(_group),
         for (var slot = 0; slot < TeamMember.maxMoves; slot++)
           _moveSlot(context, member, learned, slot, name, save),
         _Stats(
@@ -207,7 +228,9 @@ class MemberEditor extends ConsumerWidget {
         form: form.id,
         formRef: form,
         specimen: null,
-        ability: abilities.any((a) => a.ability == member.ability)
+        ability: groupsWithoutAbilities.contains(_group)
+            ? null
+            : abilities.any((a) => a.ability == member.ability)
             ? member.ability
             : abilities.length == 1
             ? abilities.single.ability
@@ -559,9 +582,16 @@ Future<PickResult?> _showOptions(
 /// O espécime ligado ("Ligado a…", com o "Desligar"), ou o botão para
 /// ligar um, que puxa a natureza e a habilidade dele.
 class _SpecimenLink extends ConsumerWidget {
-  const _SpecimenLink({required this.member, required this.onSave});
+  const _SpecimenLink({
+    required this.member,
+    required this.pullsAbility,
+    required this.onSave,
+  });
 
   final TeamMember member;
+
+  /// Puxa também a habilidade (fora do Z-A, que não tem).
+  final bool pullsAbility;
   final Future<void> Function(TeamMember) onSave;
 
   @override
@@ -591,7 +621,9 @@ class _SpecimenLink extends ConsumerWidget {
         key: const ValueKey('member-link'),
         leading: Icon(Icons.link, color: muted),
         title: Text(l10n.memberLinkSpecimen),
-        subtitle: Text(l10n.memberLinkHint),
+        subtitle: Text(
+          pullsAbility ? l10n.memberLinkHint : l10n.memberLinkHintNoAbility,
+        ),
         onTap: () async {
           final specimens = await ref.read(
             formSpecimensProvider(member.form).future,
@@ -606,7 +638,7 @@ class _SpecimenLink extends ConsumerWidget {
             member.copyWith(
               specimen: picked.id,
               nature: picked.nature ?? member.nature,
-              ability: picked.ability ?? member.ability,
+              ability: pullsAbility ? picked.ability ?? member.ability : null,
             ),
           );
         },
