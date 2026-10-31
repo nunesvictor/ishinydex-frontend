@@ -48,6 +48,11 @@ class MovesData {
         return result;
       }();
 
+  late final Map<String, MoveInfo> _byName = {for (final m in moves) m.name: m};
+
+  /// O golpe de nome [name] na PokéAPI; `null` se o pacote não o tem.
+  MoveInfo? moveNamed(String name) => _byName[name];
+
   /// Os golpes que alguém aprende no grupo [group], na ordem do pacote.
   List<MoveInfo> movesIn(String group) => [
     for (final index in _learners(group).keys.toList()..sort()) moves[index],

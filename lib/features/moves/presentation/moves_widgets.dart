@@ -104,6 +104,26 @@ class _Progress extends StatelessWidget {
   }
 }
 
+/// O que a forma [formId] aprende no jogo [group], pelo primeiro Pokémon
+/// dela que tem golpes ali: golpe (o índice) → como.
+Map<int, List<MoveLearn>> formLearnset(
+  MovesData data,
+  Catalog catalog,
+  int formId,
+  String group,
+) {
+  final learned = <int, List<MoveLearn>>{};
+  for (final pokemon in catalog.movesPokemonIds(formId)) {
+    final learnset = data.learnset(pokemon, group);
+    if (learnset.isEmpty) continue;
+    for (final learn in learnset) {
+      (learned[learn.move.index] ??= []).add(learn);
+    }
+    break;
+  }
+  return learned;
+}
+
 /// Os grupos de versões, do mais novo ao mais antigo.
 List<String> newestFirst(Iterable<String> groups, Catalog catalog) =>
     groups.toList()..sort(

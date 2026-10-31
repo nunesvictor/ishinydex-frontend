@@ -63,6 +63,14 @@ sealed class Problem with _$Problem {
   const factory Problem.invalidChain() = InvalidChainProblem;
   const factory Problem.timerRunning() = TimerRunningProblem;
 
+  // Times (#231).
+  const factory Problem.teamFull() = TeamFullProblem;
+  const factory Problem.noTeamsInGame() = NoTeamsInGameProblem;
+  const factory Problem.invalidLevel() = InvalidLevelProblem;
+  const factory Problem.invalidEvs() = InvalidEvsProblem;
+  const factory Problem.invalidIvs() = InvalidIvsProblem;
+  const factory Problem.invalidMoves() = InvalidMovesProblem;
+
   // Treinadores e saves.
   const factory Problem.trainerNotFound() = TrainerNotFoundProblem;
   const factory Problem.trainerTaken() = TrainerTakenProblem;

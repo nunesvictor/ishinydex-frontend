@@ -16,6 +16,8 @@ import 'package:ishinydex/features/specimens/presentation/saves_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
+import 'package:ishinydex/features/teams/presentation/team_page.dart';
+import 'package:ishinydex/features/teams/presentation/teams_page.dart';
 
 abstract final class Routes {
   /// Entrada do app: redireciona para o último dex usado ([homeLocation]).
@@ -78,6 +80,14 @@ abstract final class Routes {
   ).toString();
 
   static String specimen(int id) => '$specimens/$id';
+
+  /// A aba Times (#231).
+  static const teams = '/teams';
+
+  static String team(int id) => '$teams/$id';
+
+  /// O membro [index] do time [id] (no compacto, numa tela própria).
+  static String teamMember(int id, int index) => '$teams/$id/members/$index';
 }
 
 /// Ao entrar no app ([Routes.home]), abre o último dex usado (ou o único);
@@ -177,6 +187,35 @@ final routerProvider = Provider<GoRouter>((ref) {
                           int.tryParse(state.pathParameters['specimenId']!) ??
                           0,
                     ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.teams,
+                builder: (context, state) => const TeamsPage(),
+                routes: [
+                  GoRoute(
+                    path: ':teamId',
+                    builder: (context, state) => TeamPage(
+                      teamId:
+                          int.tryParse(state.pathParameters['teamId']!) ?? 0,
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'members/:index',
+                        builder: (context, state) => MemberPage(
+                          teamId:
+                              int.tryParse(state.pathParameters['teamId']!) ??
+                              0,
+                          index:
+                              int.tryParse(state.pathParameters['index']!) ?? 0,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

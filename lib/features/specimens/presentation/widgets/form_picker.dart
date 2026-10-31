@@ -11,13 +11,17 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
 /// Busca uma forma pelo nome. Tela cheia no compacto, diálogo nos demais.
-/// Retorna a forma escolhida, ou `null` se o usuário fechar.
-Future<FormRef?> showFormPicker(BuildContext context) {
-  const picker = FormPicker();
+/// Retorna a forma escolhida, ou `null` se o usuário fechar. Com [allow],
+/// só as formas que ele aceita (as que existem num jogo, no team builder).
+Future<FormRef?> showFormPicker(
+  BuildContext context, {
+  bool Function(FormRef form)? allow,
+}) {
+  final picker = FormPicker(allow: allow);
   return showDialog<FormRef>(
     context: context,
     builder: (context) => WindowSize.of(context).isCompact
-        ? const Dialog.fullscreen(child: picker)
+        ? Dialog.fullscreen(child: picker)
         : Dialog(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
@@ -28,7 +32,9 @@ Future<FormRef?> showFormPicker(BuildContext context) {
 }
 
 class FormPicker extends ConsumerStatefulWidget {
-  const FormPicker({super.key});
+  const FormPicker({this.allow, super.key});
+
+  final bool Function(FormRef form)? allow;
 
   /// Menos que isso traria formas demais para ajudar.
   static const minSearchLength = 2;
@@ -66,7 +72,7 @@ class _FormPickerState extends ConsumerState<FormPicker> {
     if (search.length < FormPicker.minSearchLength) return;
     final List<FormRef> forms;
     try {
-      forms = await ref.read(formSearchProvider(search).future);
+      forms = _allowed(await ref.read(formSearchProvider(search).future));
     } on Exception {
       return;
     }
@@ -74,6 +80,14 @@ class _FormPickerState extends ConsumerState<FormPicker> {
     if (!mounted || _search != search || forms.isEmpty) return;
     Navigator.of(context).pop(forms.first);
   }
+
+  List<FormRef> _allowed(List<FormRef> forms) => switch (widget.allow) {
+    final allow? => [
+      for (final form in forms)
+        if (allow(form)) form,
+    ],
+    null => forms,
+  };
 
   @override
   Widget build(BuildContext context) => Column(
@@ -103,7 +117,7 @@ class _FormPickerState extends ConsumerState<FormPicker> {
     if (_search.length < FormPicker.minSearchLength) {
       return EmptyView(message: context.l10n.typeTwoLetters);
     }
-    return switch (ref.watch(formSearchProvider(_search))) {
+    return switch (ref.watch(formSearchProvider(_search)).whenData(_allowed)) {
       AsyncData(value: final forms) when forms.isEmpty => EmptyView(
         message: context.l10n.noFormFound,
       ),

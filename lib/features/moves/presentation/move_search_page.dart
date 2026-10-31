@@ -82,7 +82,7 @@ class _MoveSearchPageState extends State<MoveSearchPage> {
     ];
     // O que cada forma aprende no jogo: golpe → como.
     final learned = [
-      for (final form in forms) _learnedBy(data, catalog, form.id, group),
+      for (final form in forms) formLearnset(data, catalog, form.id, group),
     ];
     final query = foldForSearch(_search.text.trim());
     MoveStats stats(MoveInfo move) =>
@@ -335,26 +335,6 @@ class _MoveSearchPageState extends State<MoveSearchPage> {
         );
       },
     );
-  }
-
-  /// O que a forma aprende no jogo, pelo primeiro Pokémon dela que tem
-  /// golpes ali: golpe → como.
-  static Map<int, List<MoveLearn>> _learnedBy(
-    MovesData data,
-    Catalog catalog,
-    int formId,
-    String group,
-  ) {
-    final learned = <int, List<MoveLearn>>{};
-    for (final pokemon in catalog.movesPokemonIds(formId)) {
-      final learnset = data.learnset(pokemon, group);
-      if (learnset.isEmpty) continue;
-      for (final learn in learnset) {
-        (learned[learn.move.index] ??= []).add(learn);
-      }
-      break;
-    }
-    return learned;
   }
 
   /// Um filtro de vários valores (OU): um [MenuChip] com uma caixa por

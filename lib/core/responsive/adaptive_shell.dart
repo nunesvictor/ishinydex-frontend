@@ -33,6 +33,12 @@ final shellDestinations = [
     icon: Icons.inventory_2_outlined,
     selectedIcon: Icons.inventory_2,
   ),
+  // Times (#231): o team builder.
+  ShellDestination(
+    label: (l10n) => l10n.navTeams,
+    icon: Icons.groups_outlined,
+    selectedIcon: Icons.groups,
+  ),
   ShellDestination(
     label: (l10n) => l10n.settingsTitle,
     icon: Icons.settings_outlined,
@@ -41,7 +47,7 @@ final shellDestinations = [
 ];
 
 /// Índice de Ajustes em [shellDestinations].
-const settingsDestination = 3;
+const settingsDestination = 4;
 
 /// Casca de navegação: NavigationBar no compacto, NavigationRail nos demais.
 class AdaptiveShell extends StatelessWidget {
