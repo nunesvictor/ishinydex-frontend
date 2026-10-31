@@ -80,6 +80,19 @@ int maxEvFor(TeamMember member, String stat) {
   return left < TeamMember.maxEv ? left : TeamMember.maxEv;
 }
 
+/// O tipo do golpe [move] usado pela forma [form] (os nomes da PokéAPI):
+/// o Ivy Cudgel muda com a máscara da Ogerpon (Serebii e Showdown); os
+/// outros ficam com o [type] do jogo.
+String moveTypeFor(String move, String form, String type) =>
+    move == 'ivy-cudgel'
+    ? switch (form) {
+        'ogerpon-wellspring-mask' => 'water',
+        'ogerpon-hearthflame-mask' => 'fire',
+        'ogerpon-cornerstone-mask' => 'rock',
+        _ => type,
+      }
+    : type;
+
 /// O nome da forma no Showdown (#231), a partir dos nomes da PokéAPI: a
 /// espécie e, fora da forma padrão, a forma (`calyrex-shadow` →
 /// `Calyrex-Shadow`). O Showdown lê o nome sem espaço nem pontuação; a

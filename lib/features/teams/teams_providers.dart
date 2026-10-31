@@ -22,6 +22,12 @@ final FutureProviderFamily<List<Specimen>, int> formSpecimensProvider =
           ref.watch(teamRepositoryProvider).fetchSpecimensOfForm(formId),
     );
 
+/// As formas que têm espécime no inventário.
+final FutureProvider<Set<int>> ownedFormsProvider =
+    FutureProvider.autoDispose<Set<int>>(
+      (ref) => ref.watch(teamRepositoryProvider).fetchOwnedForms(),
+    );
+
 final teamActionsProvider = Provider<TeamActions>(TeamActions.new);
 
 /// O que se faz com um time; cada ação grava e recarrega a lista. Falhas

@@ -78,6 +78,21 @@ void main() {
     expect(member.iv('hp'), 31);
   });
 
+  test('o Ivy Cudgel muda com a máscara da Ogerpon', () {
+    for (final (form, type) in [
+      ('ogerpon-wellspring-mask', 'water'),
+      ('ogerpon-hearthflame-mask', 'fire'),
+      ('ogerpon-cornerstone-mask', 'rock'),
+      ('ogerpon', 'grass'),
+    ]) {
+      expect(moveTypeFor('ivy-cudgel', form, 'grass'), type);
+    }
+    expect(
+      moveTypeFor('tackle', 'ogerpon-wellspring-mask', 'normal'),
+      'normal',
+    );
+  });
+
   test('o time cheio tem 6', () {
     const team = Team(id: 1, name: 'A', versionGroup: 'scarlet-violet');
     expect(team.isFull, isFalse);

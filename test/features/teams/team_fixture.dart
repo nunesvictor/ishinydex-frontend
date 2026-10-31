@@ -6,8 +6,10 @@ import '../../fixtures/catalog_fixture.dart';
 import '../../fixtures/moves_fixture.dart';
 
 /// O catálogo de teste com o que o team builder usa (#231): os stats e as
-/// duas habilidades do Bulbasaur (a 2ª oculta), os itens seguráveis do
-/// Scarlet/Violet (o Leftovers sem sprite) e do X/Y, e o arquivo dos golpes.
+/// duas habilidades do Bulbasaur (a 2ª oculta), o Venusaur e mais cinco
+/// formas como Water/Ground,
+/// os itens seguráveis do Scarlet/Violet (o Leftovers sem sprite), do X/Y e
+/// do Z-A, e o arquivo dos golpes.
 Catalog teamCatalog() {
   final json = catalogJson();
   final pokemon = [
@@ -27,8 +29,20 @@ Catalog teamCatalog() {
       {'stat': 'special-defense', 'base': 65, 'effort': 0},
       {'stat': 'speed', 'base': 45, 'effort': 0},
     ];
+  // O Venusaur como Water/Ground: fecha o buraco de Fire de dois Bulbasaur
+  // e leva 4× de Grass (#374).
+  final forms = [
+    for (final f in json['forms'] as List)
+      Map<String, dynamic>.of(f as Map<String, dynamic>),
+  ];
+  // Mais cinco Water/Ground no Scarlet/Violet (o "mais 2" das formas
+  // sugeridas).
+  for (final f in forms) {
+    if (_waterGround.contains(f['id'])) f['types'] = ['water', 'ground'];
+  }
   return Catalog.fromJson({
     ...json,
+    'forms': forms,
     'pokemon': pokemon,
     // O Legends: Z-A, sem habilidade, Tera nem exportação.
     'versionGroups': [
@@ -68,11 +82,15 @@ Catalog teamCatalog() {
   }, spriteBase: 'https://sprites/');
 }
 
+/// O Venusaur e as formas que viram Water/Ground no team builder.
+const _waterGround = {2, 3, 133, 134, 172, 196};
+
 FakeBackend teamBackend([Catalog? catalog]) =>
     FakeBackend.fromCatalog(catalog ?? teamCatalog());
 
 /// Os golpes de teste, com o Bulbasaur (Tackle por nível e Seed Bomb por
-/// TM) e o Venusaur (Vine Whip por TM) no Legends: Z-A.
+/// TM) e o Venusaur (Vine Whip por TM) no Legends: Z-A, e as formas
+/// Water/Ground com o Vine Whip no Scarlet/Violet.
 MovesData teamMoves() {
   final json = movesJson();
   final learnsets = Map<String, dynamic>.of(
@@ -86,6 +104,11 @@ MovesData teamMoves() {
     ...learnsets['3'] as Map<String, dynamic>,
     '3': [4, 1, 0],
   };
+  for (final id in _waterGround.difference({3})) {
+    learnsets['$id'] = {
+      '1': [4, 1, 0],
+    };
+  }
   return MovesData.fromJson({
     ...json,
     'versionGroups': [...json['versionGroups'] as List, 'legends-za'],

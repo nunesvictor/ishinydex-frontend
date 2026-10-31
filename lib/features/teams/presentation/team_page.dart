@@ -18,6 +18,7 @@ import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.da
 import 'package:ishinydex/features/teams/domain/models.dart';
 import 'package:ishinydex/features/teams/domain/team_rules.dart';
 import 'package:ishinydex/features/teams/presentation/member_editor.dart';
+import 'package:ishinydex/features/teams/presentation/synergy_page.dart';
 import 'package:ishinydex/features/teams/presentation/team_pickers.dart';
 import 'package:ishinydex/features/teams/presentation/team_widgets.dart';
 import 'package:ishinydex/features/teams/teams_providers.dart';
@@ -345,6 +346,8 @@ class _MemberList extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 12),
+        if (team.members.isNotEmpty)
+          SynergyCard(team: team, catalog: catalog, data: data),
         if (groupsWithoutExport.contains(group))
           Card.outlined(
             margin: const EdgeInsets.only(bottom: 12),

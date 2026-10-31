@@ -112,8 +112,14 @@ const Map<String, _Row> _chart = {
 };
 
 /// O multiplicador de um golpe do tipo [attack] num Pokémon do tipo
-/// [defense] (um tipo só).
-double effectiveness(String attack, String defense) {
+/// [defense] (um tipo só). Sem [withFairy] (até a 5ª geração), o Steel
+/// também resistia a Ghost e Dark.
+double effectiveness(String attack, String defense, {bool withFairy = true}) {
+  if (!withFairy &&
+      defense == 'steel' &&
+      (attack == 'ghost' || attack == 'dark')) {
+    return 0.5;
+  }
   final row = _chart[attack];
   if (row == null) return 1;
   if (row.none.contains(defense)) return 0;

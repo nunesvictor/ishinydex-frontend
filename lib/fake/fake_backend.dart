@@ -3299,6 +3299,12 @@ class FakeBackend
   }
 
   @override
+  Future<Set<int>> fetchOwnedForms() async {
+    await _delay();
+    return {for (final specimen in _specimens.values) specimen.form};
+  }
+
+  @override
   Future<List<Specimen>> fetchSpecimensOfForm(int formId) async {
     await _delay();
     return [
