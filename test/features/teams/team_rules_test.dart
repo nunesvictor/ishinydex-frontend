@@ -100,7 +100,11 @@ void main() {
       groupHasTeams('the-teal-mask', generation: 'generation-ix'),
       isFalse,
     );
-    expect(groupHasTeams('legends-za', generation: 'generation-ix'), isFalse);
+    expect(groupHasTeams('legends-za', generation: 'generation-ix'), isTrue);
+    expect(
+      groupHasTeams('mega-dimension', generation: 'generation-ix'),
+      isFalse,
+    );
     expect(
       groupHasTeams('legends-arceus', generation: 'generation-viii'),
       isFalse,

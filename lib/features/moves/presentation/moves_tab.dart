@@ -86,6 +86,7 @@ class _MovesTabState extends ConsumerState<MovesTab> {
           selected: group,
           onSelected: (g) => setState(() => _group = g),
         ),
+        MovesNoValuesNote(group),
         Row(
           spacing: 8,
           children: [

@@ -277,6 +277,7 @@ class _MoveSearchPageState extends State<MoveSearchPage> {
           color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
+      if (groupsWithoutMoveValues.contains(group)) MovesNoValuesNote(group),
       if (results.isEmpty)
         MovesMessage(l10n.movesNoResults(_search.text.trim()))
       else

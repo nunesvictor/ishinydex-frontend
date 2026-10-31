@@ -3250,8 +3250,10 @@ class FakeBackend
       if (m.level < 1 || m.level > 100) {
         invalid('level', const Problem.invalidLevel());
       }
+      final hasAbilities = !groupsWithoutAbilities.contains(team.versionGroup);
       if (m.ability case final ability?
-          when form.abilities.isNotEmpty &&
+          when hasAbilities &&
+              form.abilities.isNotEmpty &&
               !form.abilities.any((a) => a.ability == ability)) {
         invalid('ability', const Problem.invalidAbility());
       }
@@ -3269,6 +3271,8 @@ class FakeBackend
       members.add(
         m.copyWith(
           formRef: _formRef(form),
+          // Sem habilidade e sem Tera onde o jogo não tem (o Z-A).
+          ability: hasAbilities ? m.ability : null,
           tera: teraGroups.contains(team.versionGroup) ? m.tera : null,
           // Só o que foge do padrão: EV 0 e IV 31 ficam de fora.
           evs: {
