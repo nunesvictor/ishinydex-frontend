@@ -7,8 +7,10 @@ import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/moves/moves_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/teams/domain/models.dart';
+import 'package:ishinydex/features/teams/domain/synergy.dart';
 import 'package:ishinydex/features/teams/domain/team_repository.dart';
 import 'package:ishinydex/features/teams/presentation/member_editor.dart';
+import 'package:ishinydex/features/teams/presentation/synergy_page.dart';
 import 'package:ishinydex/features/teams/teams_providers.dart';
 
 import '../../helpers/helpers.dart';
@@ -46,6 +48,9 @@ class _Failing implements TeamRepository {
 
   @override
   Future<List<Specimen>> fetchSpecimensOfForm(int formId) async => const [];
+
+  @override
+  Future<Set<int>> fetchOwnedForms() async => const {};
 }
 
 Future<FakeBackend> _pump(
@@ -74,23 +79,22 @@ Future<void> _openTeams(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// A última lista vertical (a do membro, a da sinergia).
+Finder get _list => find
+    .byWidgetPredicate(
+      (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+    )
+    .last;
+
 /// Rola a lista (a do membro, a última) até [finder] aparecer.
 Future<void> _reveal(WidgetTester tester, Finder finder) async {
   if (finder.evaluate().isEmpty) {
     // Do topo da lista para baixo.
-    await tester.fling(
-      find.byType(Scrollable).last,
-      const Offset(0, 5000),
-      5000,
-    );
+    await tester.fling(_list, const Offset(0, 5000), 5000);
     await tester.pumpAndSettle();
   }
   if (finder.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(
-      finder,
-      300,
-      scrollable: find.byType(Scrollable).last,
-    );
+    await tester.scrollUntilVisible(finder, 300, scrollable: _list);
   }
   await tester.ensureVisible(finder);
 }
@@ -642,5 +646,249 @@ IVs: 0 Spe
     await _pickForm(tester, 'venu');
     member = (await backend.fetchTeams()).single.members.last;
     expect((member.formRef?.name, member.ability), ('venusaur', null));
+  });
+
+  group('sinergia (#374)', () {
+    // Três Bulbasaur e o Venusaur (Water/Ground, 4× de Grass), com Trick
+    // Room: buracos com e sem quem resista, tipos repetidos, sem golpe de
+    // dano, só físicos e os lentos contando.
+    const crowded = Team(
+      id: 0,
+      name: 'Trick Room',
+      versionGroup: 'scarlet-violet',
+      members: [
+        TeamMember(form: 1, moves: ['tackle'], tera: 'water'),
+        TeamMember(form: 1, moves: ['leech-seed', 'trick-room']),
+        TeamMember(form: 1, moves: ['tackle'], tera: 'fire'),
+        TeamMember(form: 3, moves: ['vine-whip']),
+      ],
+    );
+    // Dois Bulbasaur: o Venusaur fecha o buraco de Fire numa vaga, e os dois
+    // aprendem golpes que cobrem mais tipos.
+    const pair = Team(
+      id: 0,
+      name: 'Dupla',
+      versionGroup: 'scarlet-violet',
+      members: [
+        TeamMember(form: 1, moves: ['tackle']),
+        TeamMember(form: 1, moves: ['leech-seed']),
+      ],
+    );
+
+    testWidgets('o cartão no time e a tela (celular)', (tester) async {
+      final backend = teamBackend();
+      await backend.create(const SpecimenDraft(form: 3));
+      final saved = await backend.saveTeam(pair);
+      await _pump(tester, backend: backend);
+      await _openTeams(tester);
+      await tester.tap(find.byKey(ValueKey('team-${saved.id}')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Sinergia '), findsOneWidget);
+      expect(find.textContaining('buracos'), findsOneWidget);
+
+      await _tapKey(tester, 'team-synergy');
+      expect(find.text('Sinergia'), findsOneWidget);
+      expect(find.text('Dupla'), findsOneWidget);
+      expect(find.text('O que tira pontos'), findsOneWidget);
+      expect(find.text('Buraco'), findsWidgets);
+      expect(find.text('Sem golpe de dano'), findsOneWidget);
+      expect(find.text('Nenhum membro rápido'), findsOneWidget);
+      expect(find.text('4 vagas'), findsOneWidget);
+
+      // Os golpes que o time já aprende levam ao membro.
+      await _reveal(tester, find.text('Golpes que o time já aprende'));
+      expect(find.text('Petal Dance · Bulbasaur'), findsOneWidget);
+      // A forma numa vaga, marcada como do inventário.
+      await _reveal(tester, find.text('Formas que fecham buracos'));
+      expect(find.text('numa vaga'), findsOneWidget);
+      expect(find.text('No inventário'), findsWidgets);
+      await _reveal(tester, find.text('Defesa por tipo'));
+      await _reveal(tester, find.byKey(const ValueKey('defense-fire')));
+      await _reveal(tester, find.text('Cobertura em super efetivo'));
+      await _reveal(tester, find.text('Velocidade no nível 50'));
+      expect(
+        find.text(
+          'A linha marca 150: daí para cima o membro conta como rápido.',
+        ),
+        findsOneWidget,
+      );
+      await _reveal(
+        tester,
+        find.byKey(const ValueKey('sug-move-1-petal-dance')),
+      );
+      await tester.tap(find.byKey(const ValueKey('sug-move-1-petal-dance')));
+      await tester.pumpAndSettle();
+      expect(find.text('Membro do time'), findsOneWidget);
+    });
+
+    testWidgets('todos os descontos, o Tera e o Trick Room (PC)', (
+      tester,
+    ) async {
+      final backend = teamBackend();
+      final saved = await backend.saveTeam(crowded);
+      await _pump(tester, size: expandedSize, backend: backend);
+      await _openTeams(tester);
+      _go(tester, '/teams/${saved.id}/synergy');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Leva 4×'), findsOneWidget);
+      expect(find.text('Tipo repetido'), findsWidgets);
+      expect(find.text('Resistem a tudo'), findsOneWidget);
+      expect(find.text('3 físicos · 0 especiais'), findsWidgets);
+      expect(find.text('Se um membro terastalizar'), findsOneWidget);
+      expect(find.textContaining('Bulbasaur · Tera Water'), findsOneWidget);
+      expect(
+        find.text(
+          'A linha marca 80: com Trick Room, daí para baixo o membro conta.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Nenhuma sugestão aumenta a nota.'), findsWidgets);
+
+      await tester.tap(find.byKey(const ValueKey('synergy-how')));
+      await tester.pumpAndSettle();
+      expect(find.text('Como a nota é feita'), findsWidgets);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('time que não existe e lista que não carrega', (tester) async {
+      await _pump(tester);
+      await _openTeams(tester);
+      _go(tester, '/teams/999/synergy');
+      await tester.pumpAndSettle();
+      expect(find.text(ptText.problemNotFound), findsOneWidget);
+    });
+
+    testWidgets('a lista que não carrega', (tester) async {
+      await _pump(tester, repository: _Failing(const [], failFetch: true));
+      await _openTeams(tester);
+      _go(tester, '/teams/1/synergy');
+      await tester.pumpAndSettle();
+      expect(find.text(ptText.problemTeamFull), findsOneWidget);
+    });
+
+    testWidgets('em inglês', (tester) async {
+      final backend = teamBackend();
+      final saved = await backend.saveTeam(pair);
+      await _pump(tester, backend: backend, language: AppLanguage.en);
+      await _openTeams(tester);
+      _go(tester, '/teams/${saved.id}/synergy');
+      await tester.pumpAndSettle();
+      expect(find.text('Synergy'), findsOneWidget);
+      expect(find.text('What lowers the score'), findsOneWidget);
+      expect(find.text('No fast member'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Trick Room com um lento, o Tera que abre buraco e o time cheio',
+      (tester) async {
+        final backend = teamBackend();
+        await backend.create(const SpecimenDraft(form: 133));
+        // O Espeon sem espécime: fica depois das do inventário.
+        for (final specimen in await backend.fetchSpecimensOfForm(196)) {
+          await backend.release(specimen.id);
+        }
+        final room = await backend.saveTeam(
+          const Team(
+            id: 0,
+            name: 'Um lento',
+            versionGroup: 'scarlet-violet',
+            members: [
+              // O Stellar não muda a defesa: 0.
+              TeamMember(
+                form: 1,
+                moves: ['tackle'],
+                evs: {'speed': 252},
+                tera: 'stellar',
+              ),
+              TeamMember(
+                form: 3,
+                moves: ['vine-whip', 'trick-room'],
+                tera: 'grass',
+              ),
+            ],
+          ),
+        );
+        final full = await backend.saveTeam(
+          Team(
+            id: 0,
+            name: 'Seis',
+            versionGroup: 'scarlet-violet',
+            members: List.filled(
+              6,
+              const TeamMember(form: 1, moves: ['tackle']),
+            ),
+          ),
+        );
+        await _pump(tester, size: expandedSize, backend: backend);
+        await _openTeams(tester);
+        _go(tester, '/teams/${room.id}/synergy');
+        await tester.pumpAndSettle();
+        expect(find.text('Só um membro lento'), findsOneWidget);
+        expect(find.textContaining('Tera Stellar'), findsOneWidget);
+        expect(find.textContaining('Abre Fire'), findsOneWidget);
+        expect(find.text('−8'), findsWidgets);
+
+        _go(tester, '/teams/${full.id}/synergy');
+        await tester.pumpAndSettle();
+        expect(find.text('no lugar de Bulbasaur'), findsOneWidget);
+        // As do inventário primeiro, e o resto em "mais".
+        expect(find.text('mais 2'), findsOneWidget);
+        final owned = await backend.fetchOwnedForms();
+        final ids = [2, 3, 133, 134, 172, 196]
+          ..sort((a, b) {
+            final owns = (owned.contains(b) ? 1 : 0).compareTo(
+              owned.contains(a) ? 1 : 0,
+            );
+            return owns != 0 ? owns : a.compareTo(b);
+          });
+        expect(
+          readingOrder(tester, [
+            for (final id in ids.take(4)) find.byKey(ValueKey('sug-form-$id')),
+          ]),
+          [0, 1, 2, 3],
+        );
+        expect(owned.contains(ids.first), isTrue);
+        expect(owned.contains(ids.last), isFalse);
+      },
+    );
+
+    testWidgets('sem nada que tire pontos', (tester) async {
+      SynergyMember member(
+        String name,
+        List<String> types,
+        List<String> moves,
+        String category,
+      ) => SynergyMember(
+        name: name,
+        types: types,
+        speed: 200,
+        moves: [
+          for (final type in moves)
+            (
+              name: type,
+              label: type,
+              type: type,
+              category: category,
+              power: 90,
+            ),
+        ],
+      );
+      final synergy = Synergy.of([
+        member('A', ['water'], ['fighting', 'ground'], 'physical'),
+        member('B', ['steel'], ['flying', 'ice'], 'physical'),
+        member('C', ['fairy'], ['fairy', 'fire'], 'special'),
+        member('D', ['dragon'], ['ghost', 'electric'], 'special'),
+        member('E', ['ground'], ['water', 'bug'], 'special'),
+        member('F', ['ghost'], ['poison', 'rock'], 'physical'),
+      ]);
+      await pumpWidgetApp(
+        tester,
+        Scaffold(body: SynergyIssues(synergy: synergy)),
+      );
+      expect(synergy.issues, isEmpty);
+      expect(find.text('Nada tira pontos.'), findsOneWidget);
+    });
   });
 }

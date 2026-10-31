@@ -16,6 +16,7 @@ import 'package:ishinydex/features/specimens/presentation/saves_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
+import 'package:ishinydex/features/teams/presentation/synergy_page.dart';
 import 'package:ishinydex/features/teams/presentation/team_page.dart';
 import 'package:ishinydex/features/teams/presentation/teams_page.dart';
 
@@ -85,6 +86,9 @@ abstract final class Routes {
   static const teams = '/teams';
 
   static String team(int id) => '$teams/$id';
+
+  /// A sinergia do time [id] (#374).
+  static String teamSynergy(int id) => '$teams/$id/synergy';
 
   /// O membro [index] do time [id] (no compacto, numa tela própria).
   static String teamMember(int id, int index) => '$teams/$id/members/$index';
@@ -205,6 +209,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                           int.tryParse(state.pathParameters['teamId']!) ?? 0,
                     ),
                     routes: [
+                      GoRoute(
+                        path: 'synergy',
+                        builder: (context, state) => SynergyPage(
+                          teamId:
+                              int.tryParse(state.pathParameters['teamId']!) ??
+                              0,
+                        ),
+                      ),
                       GoRoute(
                         path: 'members/:index',
                         builder: (context, state) => MemberPage(

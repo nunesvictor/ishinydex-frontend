@@ -711,6 +711,10 @@ class Catalog {
 
   bool hasForm(int formId) => _forms.containsKey(formId);
 
+  /// A forma [formId] é a padrão do Pokémon dela (sem as cosméticas, como
+  /// as asas do Vivillon).
+  bool isDefaultForm(int formId) => _forms[formId]?.isDefault ?? false;
+
   /// A forma [formId] é mega ou só de batalha (não entra num time).
   bool isBattleForm(int formId) => _forms[formId]?.inBattleOnly ?? false;
 

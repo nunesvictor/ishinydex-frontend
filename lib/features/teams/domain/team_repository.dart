@@ -12,4 +12,8 @@ abstract interface class TeamRepository {
 
   /// Os espécimes da forma [formId], para ligar a um membro.
   Future<List<Specimen>> fetchSpecimensOfForm(int formId);
+
+  /// As formas que têm espécime no inventário (a marca "No inventário" das
+  /// formas sugeridas pela sinergia, #374).
+  Future<Set<int>> fetchOwnedForms();
 }
