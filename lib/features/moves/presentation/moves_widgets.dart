@@ -317,6 +317,7 @@ class MoveRow extends StatelessWidget {
     this.how,
     this.showHow = false,
     this.detail,
+    this.footer,
     this.onTap,
     super.key,
   });
@@ -326,6 +327,7 @@ class MoveRow extends StatelessWidget {
       stats = null,
       how = null,
       detail = null,
+      footer = null,
       onTap = null;
 
   final MoveInfo? move;
@@ -337,6 +339,9 @@ class MoveRow extends StatelessWidget {
 
   /// Ao lado do tipo: o modo raro, ou como a forma aprende (na busca).
   final String? detail;
+
+  /// Embaixo do tipo: como cada forma aprende, na busca com várias (#373).
+  final Widget? footer;
   final VoidCallback? onTap;
 
   static String _value(int? value) => value?.toString() ?? '—';
@@ -390,6 +395,7 @@ class MoveRow extends StatelessWidget {
                           Text(detail, style: small),
                       ],
                     ),
+                    ?footer,
                   ],
                 ),
               ),
