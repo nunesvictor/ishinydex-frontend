@@ -107,3 +107,12 @@ tool/                 # scripts (verificação de cobertura)
 web/                  # index.html, service worker, bootstrap versionado
 .github/workflows/    # CI (testes, build web) e iOS (.ipa)
 ```
+
+## Licença
+
+O código deste repositório está sob a [licença MIT](LICENSE). Ela não cobre:
+- **Pokémon:** os nomes, as imagens e as marcas são da Nintendo, da Creatures, da GAME FREAK e da The Pokémon Company;
+- **os ícones e as marcas em `assets/`:** cada um tem a origem anotada em [`assets/README.md`](assets/README.md);
+- **as fontes Roboto:** seguem a licença delas, a [SIL Open Font License](assets/fonts/OFL.txt);
+- **os sprites:** vêm do repositório [PokeAPI/sprites](https://github.com/PokeAPI/sprites) e não ficam aqui;
+- **os dados do catálogo:** seguem as fontes deles, conforme o [backend](https://github.com/nunesvictor/ishinydex-backend).
