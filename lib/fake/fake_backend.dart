@@ -2203,9 +2203,10 @@ class FakeBackend
   @override
   Future<List<Specimen>> fetchAvailable(int formId) async {
     await _delay();
+    final slots = _SlotIndex(_slots.values);
     return [
       for (final specimen in _specimens.values)
-        if (specimen.form == formId && _slotHolding(specimen.id) == null)
+        if (specimen.form == formId && slots.holding(specimen.id) == null)
           specimen,
     ];
   }
@@ -2265,10 +2266,14 @@ class FakeBackend
     required int pageSize,
   }) async {
     await _delay();
+    // Um índice por consulta (#389): sem ele, cada espécime percorria todos
+    // os slots, também dentro da ordenação.
+    final slots = _SlotIndex(_slots.values);
     final matches = [
       for (final s in _specimens.values)
-        if (_matches(s, query)) s.copyWith(slot: _slotHolding(s.id)?.id),
-    ]..sort(_ordering(query.ordering));
+        if (_matches(s, query, slots))
+          s.copyWith(slot: slots.holding(s.id)?.id),
+    ]..sort(_ordering(query.ordering, slots));
     final start = (page - 1) * pageSize;
     if (page < 1 || (start >= matches.length && page > 1)) {
       throw const NotFoundFailure();
@@ -2284,10 +2289,11 @@ class FakeBackend
   @override
   Future<List<int>> fetchSpecimenIds(SpecimenQuery query) async {
     await _delay();
+    final slots = _SlotIndex(_slots.values);
     return [
       for (final s
-          in _specimens.values.where((s) => _matches(s, query)).toList()
-            ..sort(_ordering(query.ordering)))
+          in _specimens.values.where((s) => _matches(s, query, slots)).toList()
+            ..sort(_ordering(query.ordering, slots)))
         s.id,
     ];
   }
@@ -2908,7 +2914,7 @@ class FakeBackend
   bool _hasNumber(FormDetail form, int number) =>
       form.nationalNumber == number || form.pokeapiId == number;
 
-  bool _matches(Specimen s, SpecimenQuery query) {
+  bool _matches(Specimen s, SpecimenQuery query, _SlotIndex slots) {
     final search = query.search.trim().toLowerCase();
     final number = int.tryParse(search);
     final ability = slugSearch(query.ability.trim().toLowerCase());
@@ -2926,7 +2932,7 @@ class FakeBackend
                         slugSearch(search),
                       )
                 : _hasNumber(form, number))) &&
-        (available == null || (_slotHolding(s.id) == null) == available) &&
+        (available == null || (slots.holding(s.id) == null) == available) &&
         (query.ids.isEmpty || query.ids.contains(s.id)) &&
         (!query.shinyOnly || s.isShiny) &&
         (!query.alphaOnly || s.isAlpha) &&
@@ -2977,9 +2983,9 @@ class FakeBackend
 
   /// Mesmas ordens da API; o id faz as vezes do `created_at` e desempata, e
   /// o id da forma, do `form__order`.
-  Comparator<Specimen> _ordering(SpecimenOrdering ordering) =>
+  Comparator<Specimen> _ordering(SpecimenOrdering ordering, _SlotIndex slots) =>
       switch (ordering) {
-        SpecimenOrdering.box => _byKey(_boxKey),
+        SpecimenOrdering.box => _byKey(slots.boxKey),
         SpecimenOrdering.national => _byKey(
           (s) => _forms[s.form]!.nationalNumber,
         ),
@@ -3006,19 +3012,6 @@ class FakeBackend
     }
     return a.form != b.form ? a.form - b.form : a.id - b.id;
   };
-
-  /// Como `box_order` da API: o slot do espécime, se depositado; senão o 1º
-  /// slot (menor box) com a forma dele; `null` fora das boxes.
-  int? _boxKey(Specimen specimen) {
-    int key(_SlotRecord s) => s.box.position * 30 + s.row * 6 + s.col;
-    final own = _slotHolding(specimen.id);
-    if (own != null) return key(own);
-    final keys = [
-      for (final s in _slots.values)
-        if (s.formId == specimen.form) key(s),
-    ];
-    return keys.isEmpty ? null : keys.reduce((a, b) => a < b ? a : b);
-  }
 
   /// Pela data de captura; sem data sempre no fim, nas duas direções.
   static int _byCapture(Specimen a, Specimen b, {required bool descending}) {
@@ -3541,4 +3534,34 @@ Map<String, List<Map<String, dynamic>>> migrateGoRecords(
     s['ot'] = twinId;
   }
   return {...records, 'trainers': trainers, 'specimens': specimens};
+}
+
+/// Os slots indexados para uma consulta (#389): quem segura cada espécime
+/// e a primeira posição de cada forma nas boxes. Montado uma vez, deixa a
+/// busca proporcional ao número de espécimes, e não a espécimes × slots.
+class _SlotIndex {
+  _SlotIndex(Iterable<_SlotRecord> slots) {
+    for (final slot in slots) {
+      if (slot.specimenId case final id?) _holders[id] = slot;
+      if (slot.formId case final form?) {
+        final key = _key(slot);
+        final first = _firstOfForm[form];
+        if (first == null || key < first) _firstOfForm[form] = key;
+      }
+    }
+  }
+
+  final _holders = <int, _SlotRecord>{};
+  final _firstOfForm = <int, int>{};
+
+  static int _key(_SlotRecord s) => s.box.position * 30 + s.row * 6 + s.col;
+
+  _SlotRecord? holding(int specimenId) => _holders[specimenId];
+
+  /// Como `box_order` da API: o slot do espécime, se depositado; senão o 1º
+  /// slot (menor box) com a forma dele; `null` fora das boxes.
+  int? boxKey(Specimen specimen) => switch (_holders[specimen.id]) {
+    final own? => _key(own),
+    null => _firstOfForm[specimen.form],
+  };
 }
