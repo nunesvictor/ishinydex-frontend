@@ -124,6 +124,18 @@ Map<int, List<MoveLearn>> formLearnset(
   return learned;
 }
 
+/// Os jogos em que a aba Golpes e a busca não abrem sozinhas (#385): o
+/// Legends: Z-A, sem poder, precisão nem PP no catálogo, e o Pokémon
+/// Champions, em que todo golpe é por treino. Continuam na lista do jogo.
+const Set<String> _notByDefault = {...groupsWithoutMoveValues, 'champions'};
+
+/// O jogo em que a aba e a busca abrem, entre [groups] (do mais novo ao mais
+/// antigo): o mais novo fora de [_notByDefault]; só com esses, o mais novo.
+String defaultGroup(List<String> groups) => groups.firstWhere(
+  (group) => !_notByDefault.contains(group),
+  orElse: () => groups.first,
+);
+
 /// Os grupos de versões, do mais novo ao mais antigo.
 List<String> newestFirst(Iterable<String> groups, Catalog catalog) =>
     groups.toList()..sort(

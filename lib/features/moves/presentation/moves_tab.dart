@@ -12,7 +12,8 @@ import 'package:ishinydex/features/moves/presentation/sticky_section.dart';
 /// A aba Golpes da ficha (#36): o que a forma aprende no jogo escolhido.
 ///
 /// O jogo vem de [gameHint] (o save ou o OT do espécime) quando a forma tem
-/// golpes nele; senão, o mais recente em que tem. Uma lista só, com um
+/// golpes nele; senão, o mais recente em que tem, fora o Legends: Z-A e o
+/// Champions quando há outro ([defaultGroup], #385). Uma lista só, com um
 /// cabeçalho fixo por modo de aprender (como as boxes do Faltam), e o campo
 /// "Buscar golpe" filtra todas as seções. Ao lado dele, "Filtros" abre a
 /// busca completa com o jogo e a forma (#369); tocar num golpe abre o golpe.
@@ -61,7 +62,7 @@ class _MovesTabState extends ConsumerState<MovesTab> {
         ? _group!
         : groups.contains(hinted)
         ? hinted!
-        : groups.first;
+        : defaultGroup(groups);
     final generation = catalog.versionGroupGeneration(group);
     final query = foldForSearch(_search.text.trim());
     final found = [
