@@ -28,11 +28,11 @@ SynergyMove _synergyMove(
   String group,
   Catalog catalog,
 ) {
-  final stats = move.statsIn(group, catalog.versionGroupOrder);
+  final stats = memberMoveStats(move, form, group, catalog);
   return (
     name: move.name,
     label: move.label,
-    type: moveTypeFor(move.name, form, stats.type),
+    type: stats.type,
     category: move.category,
     power: stats.power,
   );
