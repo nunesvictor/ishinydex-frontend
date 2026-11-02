@@ -13,6 +13,7 @@ import 'package:ishinydex/core/widgets/shiny_charm_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/shiny_compare.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
@@ -403,10 +404,8 @@ class _HuntCardState extends ConsumerState<HuntCard> {
             Row(
               spacing: 12,
               children: [
-                PokemonSprite(
-                  url: hunt.formRef?.spriteFor(shiny: true),
-                  size: 48,
-                ),
+                // Tocar compara o shiny com o normal (#381).
+                ShinyCompareButton(form: hunt.formRef),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

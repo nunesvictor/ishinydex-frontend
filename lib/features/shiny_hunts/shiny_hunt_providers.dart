@@ -1,11 +1,17 @@
 import 'dart:math';
 
+import 'package:dio/dio.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/core/clock.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:ishinydex/features/shiny_hunts/data/sprite_source.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_odds.dart';
+import 'package:ishinydex/features/shiny_hunts/domain/sprite_diff.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 
@@ -150,3 +156,23 @@ class ShinyHuntActions {
 
   DateTime now() => _now;
 }
+
+/// O `Dio` dos sprites da comparação (#381).
+final spriteDioProvider = Provider<Dio>((ref) => Dio());
+
+/// Os pixels de um sprite, pela URL.
+final spritePixelsProvider =
+    Provider<Future<SpritePixels> Function(String url)>(
+      (ref) => SpriteSource(ref.watch(spriteDioProvider)).pixels,
+    );
+
+/// A diferença entre o sprite normal e o shiny da forma (#381).
+final FutureProviderFamily<SpriteDiff, FormRef> spriteDiffProvider =
+    FutureProvider.autoDispose.family<SpriteDiff, FormRef>((ref, form) async {
+      final load = ref.watch(spritePixelsProvider);
+      final (normal, shiny) = await (
+        load(form.spriteUrl),
+        load(form.shinySpriteUrl),
+      ).wait;
+      return SpriteDiff.of(normal, shiny);
+    });

@@ -1075,5 +1075,21 @@
   "synergyFastLine": "A linha marca 150: daí para cima o membro conta como rápido.",
   "synergySlowLine": "A linha marca 80: com Trick Room, daí para baixo o membro conta.",
   "synergyHow": "Como a nota é feita",
-  "synergyHowText": "Defesa (40): cada buraco tira 8, e cada membro que leva 4× tira 2. Ataque (30): até 24 pelos tipos que os golpes de dano acertam em 2×, mais 6 se nenhum tipo resiste a todos. Equilíbrio (30): físicos e especiais, velocidade (os lentos, com Trick Room) e variedade: cada tipo em 3 ou mais membros, membro sem golpe de dano e vaga tiram pontos."
+  "synergyHowText": "Defesa (40): cada buraco tira 8, e cada membro que leva 4× tira 2. Ataque (30): até 24 pelos tipos que os golpes de dano acertam em 2×, mais 6 se nenhum tipo resiste a todos. Equilíbrio (30): físicos e especiais, velocidade (os lentos, com Trick Room) e variedade: cada tipo em 3 ou mais membros, membro sem golpe de dano e vaga tiram pontos.",
+  "compareSubtitle": "Normal e shiny lado a lado",
+  "compareButton": "Comparar o shiny com o normal: {name}",
+  "compareModes": "Como comparar",
+  "compareModeHold": "Segurar e trocar",
+  "compareModeDiff": "Diferença",
+  "compareNormal": "Normal",
+  "compareShiny": "Shiny",
+  "compareHold": "Segure para ver o normal",
+  "compareRelease": "Solte para ver o shiny",
+  "compareFoot": "Imagens do Pokémon HOME. No jogo, o modelo, a luz e o ângulo mudam.",
+  "compareChanges": "Muda",
+  "compareSummaryFew": "Só {percent}% da imagem muda de forma visível: as partes em rosa. O resto muda um tom, quase imperceptível.",
+  "compareSummary": "{percent}% da imagem muda de forma visível: as partes em rosa.",
+  "compareColors": "Cores principais: normal → shiny",
+  "compareAlmostSame": "quase igual",
+  "compareFailed": "Não deu para baixar as imagens. Confira a internet e tente de novo."
 }

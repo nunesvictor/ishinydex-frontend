@@ -14,7 +14,6 @@ import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/menu_chip.dart';
-import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -26,6 +25,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.d
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/completed_hunts.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
+import 'package:ishinydex/features/shiny_hunts/presentation/shiny_compare.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
@@ -1338,10 +1338,8 @@ class HuntTile extends ConsumerWidget {
               child: Row(
                 spacing: 12,
                 children: [
-                  PokemonSprite(
-                    url: form?.spriteFor(shiny: true),
-                    size: wide ? 40 : 48,
-                  ),
+                  // Tocar compara o shiny com o normal (#381).
+                  ShinyCompareButton(form: form, size: wide ? 40 : 48),
                   if (wide) ...[
                     Expanded(child: title),
                     ?rule,
