@@ -9,6 +9,7 @@ import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/teams/presentation/team_widgets.dart';
 
 /// Tela cheia no compacto, diálogo nos demais (como o seletor de formas).
 Future<T?> _showPicker<T>(BuildContext context, Widget picker) => showDialog<T>(
@@ -34,6 +35,7 @@ Future<PickResult?> showMovePicker(
   required String title,
   required String countText,
   required Map<int, List<MoveLearn>> learned,
+  required String form,
   required Set<String> taken,
   required String group,
   required Catalog catalog,
@@ -44,6 +46,7 @@ Future<PickResult?> showMovePicker(
     title: title,
     countText: countText,
     learned: learned,
+    form: form,
     taken: taken,
     group: group,
     catalog: catalog,
@@ -56,6 +59,7 @@ class _MovePicker extends StatefulWidget {
     required this.title,
     required this.countText,
     required this.learned,
+    required this.form,
     required this.taken,
     required this.group,
     required this.catalog,
@@ -65,6 +69,9 @@ class _MovePicker extends StatefulWidget {
   final String title;
   final String countText;
   final Map<int, List<MoveLearn>> learned;
+
+  /// A forma (o nome da PokéAPI), para o tipo de golpes como o Ivy Cudgel.
+  final String form;
   final Set<String> taken;
   final String group;
   final Catalog catalog;
@@ -123,9 +130,11 @@ class _MovePickerState extends State<_MovePicker> {
             child: MoveRow(
               key: ValueKey('pick-${learns.first.move.name}'),
               move: learns.first.move,
-              stats: learns.first.move.statsIn(
+              stats: memberMoveStats(
+                learns.first.move,
+                widget.form,
                 widget.group,
-                widget.catalog.versionGroupOrder,
+                widget.catalog,
               ),
               detail: learnHow(l10n, learns, generation),
               onTap: () =>

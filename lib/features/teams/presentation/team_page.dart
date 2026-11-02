@@ -564,9 +564,12 @@ class _MemberCard extends StatelessWidget {
                               spacing: 6,
                               children: [
                                 TypeIcon(
-                                  move
-                                      .statsIn(group, catalog.versionGroupOrder)
-                                      .type,
+                                  memberMoveStats(
+                                    move,
+                                    detail.name,
+                                    group,
+                                    catalog,
+                                  ).type,
                                 ),
                                 Expanded(
                                   child: Text(

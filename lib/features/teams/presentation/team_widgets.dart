@@ -63,6 +63,24 @@ bool formInGame(MovesData data, Catalog catalog, int formId, String group) =>
         .movesPokemonIds(formId)
         .any((pokemon) => data.learnset(pokemon, group).isNotEmpty);
 
+/// Os valores do golpe [move] na forma [form] (o nome da PokéAPI), no jogo
+/// [group]: os do jogo, com o tipo que a forma dá ao golpe (o Ivy Cudgel
+/// segue a máscara da Ogerpon, #384).
+MoveStats memberMoveStats(
+  MoveInfo move,
+  String form,
+  String group,
+  Catalog catalog,
+) {
+  final stats = move.statsIn(group, catalog.versionGroupOrder);
+  return (
+    type: moveTypeFor(move.name, form, stats.type),
+    power: stats.power,
+    accuracy: stats.accuracy,
+    pp: stats.pp,
+  );
+}
+
 /// Os golpes do membro, na ordem dos slots (os que o pacote não tem ficam
 /// de fora).
 List<MoveInfo> memberMoves(TeamMember member, MovesData data) => [

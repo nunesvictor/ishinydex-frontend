@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/teams/domain/models.dart';
 import 'package:ishinydex/features/teams/domain/team_rules.dart';
@@ -90,6 +91,32 @@ void main() {
     expect(
       moveTypeFor('tackle', 'ogerpon-wellspring-mask', 'normal'),
       'normal',
+    );
+  });
+
+  test('no time, o Ivy Cudgel tem o tipo da máscara (#384)', () {
+    const ivy = MoveInfo(
+      index: 0,
+      name: 'ivy-cudgel',
+      label: 'Ivy Cudgel',
+      type: 'grass',
+      category: 'physical',
+      power: 100,
+      accuracy: 100,
+      pp: 10,
+    );
+    final catalog = teamCatalog();
+    final stats = memberMoveStats(
+      ivy,
+      'ogerpon-cornerstone-mask',
+      'scarlet-violet',
+      catalog,
+    );
+    expect(stats.type, 'rock');
+    expect((stats.power, stats.accuracy, stats.pp), (100, 100, 10));
+    expect(
+      memberMoveStats(ivy, 'ogerpon', 'scarlet-violet', catalog).type,
+      'grass',
     );
   });
 

@@ -398,6 +398,8 @@ class MemberEditor extends ConsumerWidget {
     final theme = Theme.of(context);
     final moves = memberMoves(member, data);
     if (slot > moves.length) return const SizedBox.shrink();
+    // O nome da forma na PokéAPI: o tipo do Ivy Cudgel segue a máscara.
+    final form = catalog.formDetail(member.form).name;
     final move = slot < moves.length ? moves[slot] : null;
     Future<void> pick() async {
       final picked = await showMovePicker(
@@ -409,6 +411,7 @@ class MemberEditor extends ConsumerWidget {
           gameLabel(catalog, _group),
         ),
         learned: learned,
+        form: form,
         taken: {
           for (final m in moves)
             if (m != move) m.name,
@@ -457,7 +460,7 @@ class MemberEditor extends ConsumerWidget {
           child: MoveRow(
             key: ValueKey('member-move-$slot'),
             move: move,
-            stats: move.statsIn(_group, catalog.versionGroupOrder),
+            stats: memberMoveStats(move, form, _group, catalog),
             detail: switch (learned[move.index]) {
               final learns? => learnHow(
                 l10n,
