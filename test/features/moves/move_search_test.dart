@@ -84,6 +84,16 @@ Future<void> _addForm(WidgetTester tester, String name) async {
 }
 
 void main() {
+  test('o jogo padrão: o mais novo, fora o Z-A e o Champions (#385)', () {
+    expect(
+      defaultGroup(['legends-za', 'champions', 'scarlet-violet', 'x-y']),
+      'scarlet-violet',
+    );
+    // Só com eles, o mais novo.
+    expect(defaultGroup(['legends-za', 'champions']), 'legends-za');
+    expect(defaultGroup(['champions']), 'champions');
+  });
+
   group('MovesData: quem aprende', () {
     test('os golpes do jogo e quem aprende cada um', () {
       expect(

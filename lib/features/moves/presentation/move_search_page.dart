@@ -73,7 +73,7 @@ class _MoveSearchPageState extends State<MoveSearchPage> {
       data.versionGroups.where((g) => data.movesIn(g).isNotEmpty),
       catalog,
     );
-    final group = groups.contains(_group) ? _group! : groups.first;
+    final group = groups.contains(_group) ? _group! : defaultGroup(groups);
     final generation = catalog.versionGroupGeneration(group);
     final available = data.movesIn(group);
     final forms = [
