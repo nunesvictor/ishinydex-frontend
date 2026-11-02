@@ -99,7 +99,14 @@ class LocalData {
     final next = merge
         ? mergeDataFiles(current, file)
         : replaceDataFile(current, file);
-    backend.replaceRecords(store.adopt(next));
+    try {
+      backend.replaceRecords(store.adopt(next));
+    } on Object {
+      // O backend voltou ao que era (#388); o store também, para a próxima
+      // gravação não comparar os dados de antes com o arquivo que falhou.
+      store.adopt(current);
+      rethrow;
+    }
     await store.save(backend.records, catalog: catalogVersion);
     if (notify) onChanged?.call();
   }

@@ -388,6 +388,7 @@ class FakeBackend
           // Só quando tem: o registro de quem não tem fica como antes.
           if (s.hasShinyCharm) 'shinyCharm': true,
         },
+      ...?_orphans['saves'],
     ],
     'dexes': [
       for (final d in _dexes.values)
@@ -522,8 +523,22 @@ class FakeBackend
 
   /// Troca todos os dados do usuário pelos de [records] (importar, sync),
   /// mantendo o catálogo e esta mesma instância (os providers continuam
-  /// apontando para ela).
+  /// apontando para ela). Tudo ou nada (#388): se a restauração falhar no
+  /// meio, os dados de antes voltam, e o erro sobe; sem isso, ficariam os
+  /// dados pela metade, que a próxima gravação salvaria.
   void replaceRecords(Map<String, List<Map<String, dynamic>>> records) {
+    final before = this.records;
+    _clear();
+    try {
+      _restore(records);
+    } on Object {
+      _clear();
+      _restore(before);
+      rethrow;
+    }
+  }
+
+  void _clear() {
     for (final map in [
       _trainers,
       _saves,
@@ -538,7 +553,6 @@ class FakeBackend
     ]) {
       map.clear();
     }
-    _restore(records);
   }
 
   void _restore(Map<String, List<Map<String, dynamic>>> saved) {
@@ -556,10 +570,17 @@ class FakeBackend
       );
     }
     for (final s in of('saves')) {
+      // O treinador apagado em outro aparelho (#388): o save fica guardado,
+      // fora do app, em vez de quebrar a restauração.
+      final trainer = _trainers[s['trainer'] as int];
+      if (trainer == null) {
+        (_orphans['saves'] ??= []).add(s);
+        continue;
+      }
       final id = s['id'] as int;
       _saves[id] = Save(
         id: id,
-        trainer: _trainers[s['trainer'] as int]!,
+        trainer: trainer,
         label: s['label'] as String,
         hasShinyCharm: s['shinyCharm'] as bool? ?? false,
       );
@@ -696,7 +717,10 @@ class FakeBackend
     }
     for (final s in of('slots')) {
       final form = s['form'] as int?;
-      if (form != null && !_forms.containsKey(form)) {
+      // Forma fora do catálogo, ou a box apagada em outro aparelho (#388):
+      // o slot fica guardado, fora do app.
+      final box = _boxes[s['box'] as int];
+      if ((form != null && !_forms.containsKey(form)) || box == null) {
         (_orphans['slots'] ??= []).add(s);
         continue;
       }
@@ -704,7 +728,7 @@ class FakeBackend
       final specimen = s['specimen'] as int?;
       _slots[id] = _SlotRecord(
         id: id,
-        box: _boxes[s['box'] as int]!,
+        box: box,
         row: s['row'] as int,
         col: s['col'] as int,
         dexId: s['dex'] as int?,
