@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,7 @@ void main() {
   late FakeDropbox dropbox;
   late _FakeBrowser browser;
   late SyncSessionStore sessions;
+  late InMemoryLocalDataStorage devices;
   late FakeBackend backend;
   late LocalData data;
 
@@ -49,6 +51,7 @@ void main() {
     dropbox = FakeDropbox();
     browser = _FakeBrowser();
     sessions = SyncSessionStore(InMemoryLocalDataStorage());
+    devices = InMemoryLocalDataStorage();
     backend = FakeBackend.seeded();
     data = LocalData(
       store: LocalStore(InMemoryLocalDataStorage()),
@@ -77,6 +80,7 @@ void main() {
         syncSessionStoreProvider.overrideWithValue(sessions),
         syncDioProvider.overrideWithValue(dropbox.dio()),
         browserProvider.overrideWithValue(browser),
+        deviceStorageProvider.overrideWithValue(devices),
       ],
     );
     // O start() roda numa microtask, depois do primeiro quadro.
@@ -512,6 +516,18 @@ void main() {
     expect((store.storage as PrefsLocalDataStorage).key, 'ishinydex.sync');
     expect(container.read(syncDioProvider).options.baseUrl, isEmpty);
     expect(container.read(browserProvider), isA<Browser>());
+    expect(
+      (container.read(deviceStorageProvider) as PrefsLocalDataStorage).key,
+      'ishinydex.device',
+    );
+  });
+
+  test('id do aparelho: criado uma vez e guardado (#393)', () async {
+    final storage = InMemoryLocalDataStorage();
+    final id = await deviceId(storage, random: Random(1));
+    expect(id, matches(RegExp(r'^[0-9a-f]{16}$')));
+    expect(await deviceId(storage), id);
+    expect(await deviceId(InMemoryLocalDataStorage()), hasLength(16));
   });
 
   test('o navegador de verdade só existe no navegador', () {

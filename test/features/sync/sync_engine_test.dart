@@ -24,6 +24,10 @@ class _Device implements SyncTarget {
   Future<void> apply(Map<String, dynamic> file, {required bool merge}) =>
       data.import(file, merge: merge);
 
+  @override
+  Future<void> markSynced(String device, DateTime at) =>
+      data.markSynced(device, at);
+
   Future<List<String>> trainers() async => [
     for (final t in await data.backend.fetchTrainers()) t.name,
   ];
@@ -44,10 +48,13 @@ void main() {
     ),
   );
 
-  SyncEngine engine(_Device device) => SyncEngine(
-    client: DropboxClient(dropbox.dio(), appKey: 'k', refreshToken: 'rt'),
-    target: device,
-  );
+  SyncEngine engine(_Device device, {String id = 'phone', DateTime? at}) =>
+      SyncEngine(
+        client: DropboxClient(dropbox.dio(), appKey: 'k', refreshToken: 'rt'),
+        target: device,
+        device: id,
+        now: at == null ? null : () => at,
+      );
 
   setUp(() => dropbox = FakeDropbox());
 
@@ -135,7 +142,12 @@ void main() {
     final other = device().currentFile();
     await phone.data.backend.createTrainer(name: 'Ash', trainerId: '1');
     final client = DropboxClient(dropbox.dio(), appKey: 'k', refreshToken: 'r');
-    final sync = SyncEngine(client: client, target: phone, maxAttempts: 2);
+    final sync = SyncEngine(
+      client: client,
+      target: phone,
+      device: 'phone',
+      maxAttempts: 2,
+    );
     var uploads = 0;
     void conflict() {
       uploads++;
@@ -193,5 +205,63 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  group('limpeza das exclusões (#393)', () {
+    Map<String, dynamic> deletedOn(Map<String, dynamic> file) =>
+        ((file['deleted'] as Map)['dexes'] as Map?)?.cast<String, dynamic>() ??
+        const {};
+
+    test('a marca só some depois de todos os aparelhos a receberem', () async {
+      final phone = device();
+      final pc = device();
+      final dex = await phone.data.backend.createDex(
+        name: 'Shiny',
+        isShinyDex: true,
+        forceNewBox: false,
+      );
+      final day = DateTime.utc(2026, 10);
+      await engine(phone, at: day).sync();
+      await engine(pc, id: 'pc', at: day).sync();
+      await phone.data.backend.deleteDex(dex.id);
+      await engine(phone, at: day.add(const Duration(days: 1))).sync();
+      final mark = '${dex.id}';
+      expect(deletedOn(dropbox.content!), contains(mark));
+      expect(
+        (dropbox.content!['arrived'] as Map)['dexes'],
+        containsPair(mark, '2026-10-02T00:00:00.000Z'),
+      );
+
+      // 40 dias depois: o PC não sincronizou desde antes da chegada.
+      final later = day.add(const Duration(days: 40));
+      await engine(phone, at: later).sync();
+      expect(deletedOn(dropbox.content!), contains(mark));
+
+      // O PC recebe a exclusão; no sync seguinte, a marca some.
+      await engine(pc, id: 'pc', at: later).sync();
+      expect(await pc.data.backend.fetchDexes(), isEmpty);
+      await engine(phone, at: later.add(const Duration(hours: 1))).sync();
+      await engine(
+        pc,
+        id: 'pc',
+        at: later.add(const Duration(hours: 2)),
+      ).sync();
+      expect(deletedOn(phone.currentFile()), isEmpty);
+      expect(deletedOn(pc.currentFile()), isEmpty);
+      expect(deletedOn(dropbox.content!), isEmpty);
+    });
+
+    test('sem mudança, avisa o Dropbox uma vez por dia', () async {
+      final phone = device();
+      final day = DateTime.utc(2026, 10);
+      expect((await engine(phone, at: day).sync()).pushed, true);
+      final hour = day.add(const Duration(hours: 1));
+      expect((await engine(phone, at: hour).sync()).pushed, false);
+      final next = day.add(const Duration(days: 1));
+      expect((await engine(phone, at: next).sync()).pushed, true);
+      expect(dropbox.content!['devices'], {
+        'phone': '2026-10-02T00:00:00.000Z',
+      });
+    });
   });
 }

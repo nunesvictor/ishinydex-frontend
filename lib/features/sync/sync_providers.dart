@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,24 @@ class Browser {
 }
 
 final browserProvider = Provider<Browser>((ref) => const Browser());
+
+/// Onde fica o id deste aparelho (#393): numa chave própria, para
+/// sobreviver ao "Desconectar".
+final deviceStorageProvider = Provider<LocalDataStorage>(
+  (ref) => const PrefsLocalDataStorage(key: 'ishinydex.device'),
+);
+
+/// O id deste aparelho, criado no primeiro sync: 16 caracteres aleatórios.
+Future<String> deviceId(LocalDataStorage storage, {Random? random}) async {
+  if (await storage.read() case final id?) return id;
+  final rng = random ?? Random.secure();
+  const digits = '0123456789abcdef';
+  final id = String.fromCharCodes([
+    for (var i = 0; i < 16; i++) digits.codeUnitAt(rng.nextInt(16)),
+  ]);
+  await storage.write(id);
+  return id;
+}
 
 final syncSessionStoreProvider = Provider<SyncSessionStore>(
   (ref) => SyncSessionStore(const PrefsLocalDataStorage(key: 'ishinydex.sync')),
@@ -262,6 +281,7 @@ class SyncController extends Notifier<SyncState> {
       final engine = SyncEngine(
         client: await _clientFor(),
         target: _LocalTarget(ref),
+        device: await deviceId(ref.read(deviceStorageProvider)),
       );
       var current = mode;
       var pulled = false;
@@ -333,4 +353,8 @@ class _LocalTarget implements SyncTarget {
   Future<void> apply(Map<String, dynamic> file, {required bool merge}) => _ref
       .read(localDataActionsProvider)
       .import(file, merge: merge, notify: false);
+
+  @override
+  Future<void> markSynced(String device, DateTime at) =>
+      _ref.read(localDataProvider)!.markSynced(device, at);
 }

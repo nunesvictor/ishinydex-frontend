@@ -74,6 +74,8 @@ Map<String, dynamic> mergeDataFiles(
   }
   return {
     ...incoming,
+    'devices': _latest(local, incoming),
+    'arrived': _arrived(local, incoming, deleted),
     'savedAt': [
       local['savedAt'] as String,
       incoming['savedAt'] as String,
@@ -84,6 +86,44 @@ Map<String, dynamic> mergeDataFiles(
 }
 
 String _at(Map<String, dynamic> record) => record['updatedAt'] as String;
+
+/// O último sync de cada aparelho nos dois arquivos (#393): o mais recente.
+Map<String, String> _latest(Map<String, dynamic> a, Map<String, dynamic> b) {
+  final out = <String, String>{};
+  for (final file in [a, b]) {
+    for (final MapEntry(key: device, value: at)
+        in ((file['devices'] as Map<String, dynamic>?) ?? const {})
+            .cast<String, String>()
+            .entries) {
+      final known = out[device];
+      if (known == null || at.compareTo(known) > 0) out[device] = at;
+    }
+  }
+  return out;
+}
+
+/// Quando cada exclusão chegou ao Dropbox nos dois arquivos (#393): a mais
+/// antiga, só das exclusões que ficaram ([deleted]).
+Map<String, Map<String, String>> _arrived(
+  Map<String, dynamic> a,
+  Map<String, dynamic> b,
+  Map<String, Map<String, String>> deleted,
+) {
+  final out = <String, Map<String, String>>{};
+  for (final file in [a, b]) {
+    for (final MapEntry(key: type, value: ids)
+        in ((file['arrived'] as Map<String, dynamic>?) ?? const {}).entries) {
+      for (final MapEntry(key: id, value: at)
+          in (ids as Map<String, dynamic>).cast<String, String>().entries) {
+        if (!(deleted[type]?.containsKey(id) ?? false)) continue;
+        final seen = out[type] ??= {};
+        final known = seen[id];
+        if (known == null || at.compareTo(known) < 0) seen[id] = at;
+      }
+    }
+  }
+  return out;
+}
 
 /// Substitui os dados do aparelho ([local]) por [incoming] (importar →
 /// Substituir): o resultado é o [incoming], com marca de exclusão para cada
@@ -113,5 +153,10 @@ Map<String, dynamic> replaceDataFile(
       (deleted[type] ??= {})[id] = now;
     }
   }
-  return {...incoming, 'deleted': deleted};
+  return {
+    ...incoming,
+    'deleted': deleted,
+    'devices': _latest(local, incoming),
+    'arrived': _arrived(incoming, const {}, deleted),
+  };
 }
