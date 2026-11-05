@@ -125,4 +125,61 @@ void main() {
       'trainers': {'5': _d3},
     });
   });
+
+  group('datas da limpeza das exclusões (#393)', () {
+    Map<String, dynamic> withDates(
+      Map<String, dynamic> file, {
+      Map<String, String> devices = const {},
+      Map<String, String> arrived = const {},
+    }) => {
+      ...file,
+      'devices': devices,
+      'arrived': {'specimens': arrived},
+    };
+
+    test('juntar: o sync mais novo de cada aparelho e a chegada mais antiga '
+        'de cada exclusão que ficou', () {
+      final merged = mergeDataFiles(
+        withDates(
+          _file(deleted: {'1': _d1, '2': _d1}),
+          devices: {'phone': _d2, 'pc': _d1},
+          arrived: {'1': _d2, '2': _d1},
+        ),
+        withDates(
+          _file(specimens: [_rec(2, 'voltou', _d3)], deleted: {'1': _d1}),
+          devices: {'pc': _d3},
+          arrived: {'1': _d1},
+        ),
+      );
+      expect(merged['devices'], {'phone': _d2, 'pc': _d3});
+      expect(merged['arrived'], {
+        'specimens': {'1': _d1},
+      });
+    });
+
+    test('juntar com um arquivo sem as datas (schema 6)', () {
+      final merged = mergeDataFiles(_file(), _file(deleted: {'1': _d1}));
+      expect(merged['devices'], isEmpty);
+      expect(merged['arrived'], isEmpty);
+    });
+
+    test('substituir: as chegadas do arquivo; os aparelhos dos dois', () {
+      final replaced = replaceDataFile(
+        withDates(
+          _file(specimens: [_rec(3, 'aqui', _d1)]),
+          devices: {'phone': _d2},
+          arrived: {'9': _d1},
+        ),
+        withDates(
+          _file(deleted: {'1': _d1}),
+          devices: {'pc': _d1},
+          arrived: {'1': _d2, '5': _d2},
+        ),
+      );
+      expect(replaced['devices'], {'phone': _d2, 'pc': _d1});
+      expect(replaced['arrived'], {
+        'specimens': {'1': _d2},
+      });
+    });
+  });
 }

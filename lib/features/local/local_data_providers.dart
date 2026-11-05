@@ -52,6 +52,13 @@ class LocalData {
     }
   }
 
+  /// O sync deste aparelho (#393): marca as datas e limpa as exclusões que
+  /// todos já receberam, e grava.
+  Future<void> markSynced(String device, DateTime at) async {
+    store.markSynced(device, at);
+    await store.save(backend.records, catalog: catalogVersion, force: true);
+  }
+
   /// O arquivo atual, com as datas em dia.
   Map<String, dynamic> currentFile() =>
       store.file(backend.records, catalog: catalogVersion);

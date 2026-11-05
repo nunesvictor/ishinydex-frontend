@@ -12,6 +12,10 @@ abstract interface class SyncTarget {
   /// Passa a usar [file], ou a junção dele com os dados do aparelho
   /// ([merge]: vale a mudança mais recente de cada registro).
   Future<void> apply(Map<String, dynamic> file, {required bool merge});
+
+  /// O aparelho [device] sincronizou em [at]: marca as datas e limpa as
+  /// exclusões que todos já receberam (#393).
+  Future<void> markSynced(String device, DateTime at);
 }
 
 /// Primeira conexão com dados nos dois lados: o que fazer com eles.
@@ -38,12 +42,18 @@ class SyncEngine {
   SyncEngine({
     required this.client,
     required this.target,
+    required this.device,
     this.maxAttempts = 3,
-  });
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
 
   final DropboxClient client;
   final SyncTarget target;
+
+  /// O id deste aparelho, para a limpeza das exclusões (#393).
+  final String device;
   final int maxAttempts;
+  final DateTime Function() _now;
 
   Future<SyncResult> sync({FirstSync mode = FirstSync.merge}) async {
     var current = mode;
@@ -62,8 +72,14 @@ class SyncEngine {
         // não muda nada neste aparelho, e isso não conta como recebido.
         if (!sameData(before, target.currentFile())) pulled = true;
       }
+      // Depois de juntar com o do Dropbox: as exclusões daqui chegam lá
+      // neste envio, e as que todos já receberam somem.
+      final now = _now();
+      await target.markSynced(device, now);
       final local = target.currentFile();
-      if (remoteFile != null && sameData(local, remoteFile)) {
+      if (remoteFile != null &&
+          sameData(local, remoteFile) &&
+          _seenRecently(remoteFile, now)) {
         return (pulled: pulled, pushed: false);
       }
       try {
@@ -80,6 +96,18 @@ class SyncEngine {
       }
     }
   }
+
+  /// O Dropbox sabe que este aparelho sincronizou há menos de [refreshEvery]:
+  /// sem isso, envia mesmo sem mudança, para os outros aparelhos não o
+  /// acharem parado e não segurarem as exclusões por ele (#393).
+  bool _seenRecently(Map<String, dynamic> remote, DateTime now) {
+    final at = (remote['devices'] as Map<String, dynamic>?)?[device] as String?;
+    return at != null &&
+        now.difference(DateTime.parse(at)) < SyncEngine.refreshEvery;
+  }
+
+  /// De quanto em quanto tempo o aparelho avisa o Dropbox que está ativo.
+  static const refreshEvery = Duration(days: 1);
 
   /// Os mesmos registros e exclusões, sem olhar a ordem (cada lado lista
   /// os registros numa ordem) nem `savedAt` e `catalog`.

@@ -256,4 +256,143 @@ void main() {
     await prefs.write('{"a":1}');
     expect(await prefs.read(), '{"a":1}');
   });
+
+  group('limpeza das exclusões (#393)', () {
+    // Um registro apagado em 3/10: a marca precisa chegar a todos os
+    // aparelhos antes de sumir.
+    Future<void> deleteOne() async {
+      await store.save(
+        records([
+          {'id': 1},
+          {'id': 2},
+        ]),
+        catalog: 'c',
+      );
+      await store.save(
+        records([
+          {'id': 1},
+        ]),
+        catalog: 'c',
+      );
+    }
+
+    Map<String, dynamic> marks() => store.deleted['specimens']!;
+
+    test('some quando todos sincronizaram depois da chegada', () async {
+      store.markSynced('pc', DateTime.utc(2026, 10));
+      await deleteOne();
+      // O celular sincroniza e leva a marca ao Dropbox em 3/10.
+      store.markSynced('phone', now);
+      expect(store.arrived, {
+        'specimens': {'2': '2026-10-03T12:00:00.000Z'},
+      });
+      // Dois meses depois, o PC ainda não sincronizou: a marca fica.
+      store.markSynced('phone', DateTime.utc(2026, 12, 3));
+      expect(marks(), contains('2'));
+      // O PC sincroniza: todos já a receberam e passou o piso de 30 dias.
+      store.markSynced('pc', DateTime.utc(2026, 12, 4));
+      expect(marks(), isEmpty);
+      expect(
+        store.file(
+          records([
+            {'id': 1},
+          ]),
+          catalog: 'c',
+        )['arrived'],
+        {'specimens': <String, String>{}},
+      );
+    });
+
+    test('fica pelo menos 30 dias depois de chegar', () async {
+      await deleteOne();
+      store
+        ..markSynced('phone', now)
+        ..markSynced('phone', DateTime.utc(2026, 10, 30));
+      expect(marks(), contains('2'));
+      store.markSynced('phone', DateTime.utc(2026, 11, 3));
+      expect(marks(), isEmpty);
+    });
+
+    test('aparelho parado há mais de 6 meses deixa de contar', () async {
+      await deleteOne();
+      store
+        ..markSynced('old', DateTime.utc(2026, 3))
+        ..markSynced('phone', now);
+      expect(store.synced.keys, ['phone']);
+      store.markSynced('phone', DateTime.utc(2026, 11, 3));
+      expect(marks(), isEmpty);
+    });
+
+    test('apagado de novo depois de voltar: chega de novo', () async {
+      await deleteOne();
+      store.markSynced('phone', now);
+      await store.save(
+        records([
+          {'id': 1},
+          {'id': 2},
+        ]),
+        catalog: 'c',
+      );
+      now = DateTime.utc(2026, 11, 20);
+      await store.save(
+        records([
+          {'id': 1},
+        ]),
+        catalog: 'c',
+      );
+      store.markSynced('phone', now);
+      expect(store.arrived['specimens'], {'2': '2026-11-20T00:00:00.000Z'});
+      expect(marks(), contains('2'));
+    });
+
+    test('sem Dropbox: some depois de 6 meses', () async {
+      await deleteOne();
+      now = DateTime.utc(2027, 3);
+      store.file(
+        records([
+          {'id': 1},
+        ]),
+        catalog: 'c',
+      );
+      expect(marks(), contains('2'));
+      now = DateTime.utc(2027, 4, 10);
+      store.file(
+        records([
+          {'id': 1},
+        ]),
+        catalog: 'c',
+      );
+      expect(marks(), isEmpty);
+    });
+
+    test('grava e lê as datas; o arquivo do schema 6 vem sem elas', () async {
+      await deleteOne();
+      store.markSynced('phone', now);
+      expect(
+        await store.save(
+          records([
+            {'id': 1},
+          ]),
+          catalog: 'c',
+          force: true,
+        ),
+        true,
+      );
+      expect(saved()['devices'], {'phone': '2026-10-03T12:00:00.000Z'});
+      final again = LocalStore(storage, now: () => now);
+      await again.load();
+      expect(again.synced, {'phone': '2026-10-03T12:00:00.000Z'});
+      expect(again.arrived, store.arrived);
+
+      final old = saved()
+        ..['schemaVersion'] = 6
+        ..remove('devices')
+        ..remove('arrived');
+      storage.data = jsonEncode(old);
+      final six = LocalStore(storage, now: () => now);
+      expect(await six.load(), isNotEmpty);
+      expect(six.synced, isEmpty);
+      expect(six.arrived, isEmpty);
+    });
+  });
 }

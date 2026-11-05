@@ -12,9 +12,10 @@ typedef Records = Map<String, List<Map<String, dynamic>>>;
 /// exportar/importar e do sync:
 ///
 /// ```json
-/// {"schemaVersion": 4, "kind": "ishinydex-data", "catalog": "...",
+/// {"schemaVersion": 7, "kind": "ishinydex-data", "catalog": "...",
 ///  "savedAt": "...", "records": {"specimens": [{..., "updatedAt": "..."}]},
-///  "deleted": {"specimens": {"123": "..."}}}
+///  "deleted": {"specimens": {"123": "..."}},
+///  "devices": {"<aparelho>": "..."}, "arrived": {"specimens": {"123": "..."}}}
 /// ```
 ///
 /// As datas nascem por comparação: a cada [save], cada registro é comparado
@@ -34,9 +35,12 @@ class LocalStore {
   /// receita do dex (de onde ele nasceu, #34), também pelo mesmo motivo. O 5
   /// trouxe a marca de origem escolhida do espécime (#360), pelo mesmo
   /// motivo. O 6 trouxe os times do team builder (#231): um app antigo
-  /// descartaria os `teams` ao regravar. Os anteriores são lidos; o "veio do GO" de antes do 5 passa
-  /// para o GO como jogo ao carregar (`migrateGoRecords`).
-  static const schemaVersion = 6;
+  /// descartaria os `teams` ao regravar. O 7 trouxe a limpeza das exclusões
+  /// (#393): um app antigo descartaria o `devices` e o `arrived` e, sem eles,
+  /// a limpeza apagaria marcas que ele ainda não recebeu. Os anteriores são
+  /// lidos; o "veio do GO" de antes do 5 passa para o GO como jogo ao
+  /// carregar (`migrateGoRecords`).
+  static const schemaVersion = 7;
   static const kind = 'ishinydex-data';
 
   final LocalDataStorage storage;
@@ -47,6 +51,20 @@ class LocalStore {
 
   /// Exclusões: tipo → id → data.
   final deleted = <String, Map<String, String>>{};
+
+  /// O último sync de cada aparelho (#393): id do aparelho → data.
+  final synced = <String, String>{};
+
+  /// Quando cada exclusão chegou ao Dropbox (#393): tipo → id → data.
+  final arrived = <String, Map<String, String>>{};
+
+  /// Um aparelho sem sync há mais que isso deixa de contar na limpeza das
+  /// exclusões; sem Dropbox, é a idade em que a exclusão some.
+  static const inactiveAfter = Duration(days: 183);
+
+  /// A exclusão fica pelo menos isso depois de chegar ao Dropbox: cobre o
+  /// aparelho que ainda não sincronizou com esta versão (fora de [synced]).
+  static const keepAtLeast = Duration(days: 30);
 
   /// Lê o arquivo salvo e devolve os registros (sem as datas) para
   /// restaurar o backend; vazio num aparelho novo. Formato mais novo que o
@@ -79,6 +97,17 @@ class LocalStore {
   Records adopt(Map<String, dynamic> file) {
     _stamps.clear();
     deleted.clear();
+    synced
+      ..clear()
+      ..addAll(
+        ((file['devices'] as Map<String, dynamic>?) ?? const {})
+            .cast<String, String>(),
+      );
+    arrived.clear();
+    for (final MapEntry(key: type, value: ids)
+        in ((file['arrived'] as Map<String, dynamic>?) ?? const {}).entries) {
+      arrived[type] = {...(ids as Map<String, dynamic>).cast<String, String>()};
+    }
     _lastRecords = null;
     final records = <String, List<Map<String, dynamic>>>{};
     for (final MapEntry(key: type, value: list)
@@ -145,10 +174,59 @@ class LocalStore {
     return byDate > 0 || (byDate == 0 && ida < idb);
   }
 
+  /// O sync do aparelho [device] em [at] (#393): marca a data dele, a data
+  /// em que as exclusões novas chegaram ao Dropbox (este sync as envia) e
+  /// apaga as que todos os aparelhos ativos já receberam: chegaram há mais
+  /// de [keepAtLeast] e antes do último sync de cada um. Quem não sincroniza
+  /// há mais de [inactiveAfter] deixa de contar.
+  void markSynced(String device, DateTime at) {
+    final now = _iso(at);
+    synced[device] = now;
+    for (final MapEntry(key: type, value: ids) in deleted.entries) {
+      final seen = arrived[type] ??= {};
+      for (final id in ids.keys) {
+        seen.putIfAbsent(id, () => now);
+      }
+    }
+    final active = _iso(at.subtract(inactiveAfter));
+    synced.removeWhere((_, date) => date.compareTo(active) < 0);
+    final floor = _iso(at.subtract(keepAtLeast));
+    final horizon = synced.values.fold(
+      floor,
+      (oldest, date) => date.compareTo(oldest) < 0 ? date : oldest,
+    );
+    for (final MapEntry(key: type, value: ids) in deleted.entries) {
+      final seen = arrived[type]!;
+      ids.removeWhere((id, _) => seen[id]!.compareTo(horizon) < 0);
+    }
+  }
+
+  static String _iso(DateTime date) => date.toUtc().toIso8601String();
+
+  /// Sem sync (#393): as exclusões com mais de [inactiveAfter] somem; só
+  /// servem para o "Importar → Juntar".
+  void _dropOldWithoutSync() {
+    if (synced.isNotEmpty) return;
+    final limit = _iso(_now().subtract(inactiveAfter));
+    for (final ids in deleted.values) {
+      ids.removeWhere((_, date) => date.compareTo(limit) < 0);
+    }
+  }
+
+  /// As datas de chegada só das exclusões que existem.
+  Map<String, Map<String, String>> get _arrivedNow => {
+    for (final MapEntry(key: type, value: ids) in arrived.entries)
+      type: {
+        for (final MapEntry(:key, :value) in ids.entries)
+          if (deleted[type]?.containsKey(key) ?? false) key: value,
+      },
+  };
+
   /// O arquivo com os [records] atuais, carimbando o que mudou desde o
   /// último [file] (ver a classe).
   Map<String, dynamic> file(Records records, {required String catalog}) {
     final now = _now().toUtc().toIso8601String();
+    _dropOldWithoutSync();
     final out = <String, List<Map<String, dynamic>>>{};
     for (final MapEntry(key: type, value: list) in records.entries) {
       final before = _stamps[type] ?? const {};
@@ -162,6 +240,7 @@ class LocalStore {
             final stamp = old != null && old.json == json ? old.updatedAt : now;
             after[id] = (json: json, updatedAt: stamp);
             deleted[type]?.remove('$id');
+            arrived[type]?.remove('$id');
             return {...record, 'updatedAt': stamp};
           }(),
       ];
@@ -177,6 +256,8 @@ class LocalStore {
       'savedAt': now,
       'records': out,
       'deleted': deleted,
+      'devices': {...synced},
+      'arrived': _arrivedNow,
     };
   }
 
@@ -185,9 +266,15 @@ class LocalStore {
 
   /// Grava o arquivo se algum registro mudou desde a última gravação.
   /// Devolve se gravou.
-  Future<bool> save(Records records, {required String catalog}) async {
+  /// Com [force], grava mesmo sem mudança nos registros (o sync mudou as
+  /// exclusões ou as datas dos aparelhos).
+  Future<bool> save(
+    Records records, {
+    required String catalog,
+    bool force = false,
+  }) async {
     final current = jsonEncode(records);
-    if (current == _lastRecords) return false;
+    if (current == _lastRecords && !force) return false;
     await storage.write(jsonEncode(file(records, catalog: catalog)));
     _lastRecords = current;
     return true;
