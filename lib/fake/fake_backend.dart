@@ -2221,6 +2221,7 @@ class FakeBackend
       });
     }
     _validateAbility(form, draft.ability);
+    _validateGender(form, draft.gender);
     final hunt = _validHunt(draft);
     final id = _newId(_specimens.keys);
     final specimen = Specimen(
@@ -2436,6 +2437,7 @@ class FakeBackend
       });
     }
     _validateAbility(_forms[specimen.form]!, draft.ability);
+    _validateGender(_forms[specimen.form]!, draft.gender);
     final hunt = _validHunt(draft);
     final edited = specimen.copyWith(
       nickname: draft.nickname,
@@ -3091,6 +3093,18 @@ class FakeBackend
         !form.abilities.any((a) => a.ability == ability)) {
       throw const ValidationFailure({
         'ability': [Problem.invalidAbility()],
+      });
+    }
+  }
+
+  /// O mesmo que a edição em lote recusa (#390): um Nidoran♂ fêmea, uma
+  /// Oinkologne fêmea macho.
+  void _validateGender(FormDetail form, String? gender) {
+    if (gender != null &&
+        gender.isNotEmpty &&
+        !allowedGenders(form, _genderRates).contains(gender)) {
+      throw const ValidationFailure({
+        'gender': [Problem.impossibleGender(1)],
       });
     }
   }
