@@ -127,6 +127,9 @@ class _SlotRecord {
   int? dexId;
   int? formId;
   int? specimenId;
+
+  /// Livre e sem nada: fica fora do arquivo de dados (#392).
+  bool get isEmpty => dexId == null && formId == null && specimenId == null;
 }
 
 /// Um slot do dex na busca do Faltam: a caçada, se passa nos filtros, e se
@@ -481,17 +484,20 @@ class FakeBackend
         },
       ...?_orphans['specimens'],
     ],
+    // Só as células ocupadas (#392): a ausência é a célula vazia, que o
+    // [_restore] recria.
     'slots': [
       for (final s in _slots.values)
-        {
-          'id': s.id,
-          'box': s.box.id,
-          'row': s.row,
-          'col': s.col,
-          'dex': s.dexId,
-          'form': s.formId,
-          'specimen': s.specimenId,
-        },
+        if (!s.isEmpty)
+          {
+            'id': s.id,
+            'box': s.box.id,
+            'row': s.row,
+            'col': s.col,
+            'dex': s.dexId,
+            'form': s.formId,
+            'specimen': s.specimenId,
+          },
       ...?_orphans['slots'],
     ],
     'teams': [
@@ -735,6 +741,7 @@ class FakeBackend
         formId: form,
       )..specimenId = _specimens.containsKey(specimen) ? specimen : null;
     }
+    _fillEmptyCells();
     for (final t in of('teams')) {
       final members = [
         for (final m in t['members'] as List) m as Map<String, dynamic>,
@@ -1119,6 +1126,34 @@ class FakeBackend
     );
     return id;
   }
+
+  /// As células que o arquivo não traz são vazias (#392): cada box volta a
+  /// ter as 30, com o id fixo de cada célula ([cellId]). Os slots ficam na
+  /// ordem das boxes e das células, como nasceram: criar um dex percorre as
+  /// células nessa ordem.
+  void _fillEmptyCells() {
+    final taken = {for (final s in _slots.values) (s.box.id, s.row, s.col)};
+    final all = [
+      ..._slots.values,
+      for (final box in _boxes.values)
+        for (var index = 0; index < 30; index++)
+          if (!taken.contains((box.id, index ~/ 6, index % 6)))
+            _SlotRecord(
+              id: cellId(box.id, index ~/ 6, index % 6),
+              box: box,
+              row: index ~/ 6,
+              col: index % 6,
+            ),
+    ]..sort(_slotOrder);
+    _slots
+      ..clear()
+      ..addAll({for (final s in all) s.id: s});
+  }
+
+  /// O id de uma célula vazia (#392): o mesmo em todo aparelho, para dois
+  /// aparelhos que ocupam a mesma célula gravarem o mesmo registro.
+  static int cellId(int box, int row, int col) =>
+      stableId('slot:$box:$row:$col');
 
   /// Cria uma box de 30 slots; posições sem forma ficam livres e, como no
   /// backend, não pertencem a nenhum dex.

@@ -130,6 +130,8 @@ class LocalStore {
       deleted[type] = {...(ids as Map<String, dynamic>).cast<String, String>()};
     }
     _dropDuplicateShinyLocks(records);
+    _dropEmptySlots(records);
+    _dropCellConflicts(records);
     return records;
   }
 
@@ -161,6 +163,48 @@ class LocalStore {
       (deleted['shinyLocks'] ??= {})['$id'] = now;
     }
     locks.retainWhere(keep.contains);
+  }
+
+  /// Os slots vazios (sem dex, forma ou espécime) saem do arquivo (#392): o
+  /// backend os recria. Os do arquivo do schema 6 somem sem exclusão, porque
+  /// a ausência já quer dizer vazio.
+  void _dropEmptySlots(Records records) {
+    final slots = records['slots'];
+    if (slots == null) return;
+    final stamps = _stamps['slots']!;
+    slots.removeWhere((slot) {
+      final empty =
+          slot['dex'] == null &&
+          slot['form'] == null &&
+          slot['specimen'] == null;
+      if (empty) stamps.remove(slot['id'] as int);
+      return empty;
+    });
+  }
+
+  /// Dois registros para a mesma célula (#392: dois aparelhos ocuparam a
+  /// célula com ids diferentes): fica o mudado por último (no empate, o de
+  /// menor id), e os outros viram exclusão; o espécime deles volta ao
+  /// inventário.
+  void _dropCellConflicts(Records records) {
+    final slots = records['slots'];
+    if (slots == null) return;
+    final stamps = _stamps['slots']!;
+    final best = <String, Map<String, dynamic>>{};
+    for (final slot in slots) {
+      final key = '${slot['box']}:${slot['row']}:${slot['col']}';
+      final kept = best[key];
+      if (kept == null || _ranksAbove(slot, kept, stamps)) best[key] = slot;
+    }
+    if (best.length == slots.length) return;
+    final now = _now().toUtc().toIso8601String();
+    final keep = best.values.toSet();
+    for (final slot in slots.where((s) => !keep.contains(s))) {
+      final id = slot['id'] as int;
+      stamps.remove(id);
+      (deleted['slots'] ??= {})['$id'] = now;
+    }
+    slots.retainWhere(keep.contains);
   }
 
   static bool _ranksAbove(
