@@ -531,127 +531,144 @@ class _HuntCardState extends ConsumerState<HuntCard> {
                     ? () => _run(() => _actions.breakChain(hunt))
                     : null,
               ),
-            if (hunt.paused)
-              Row(
-                spacing: 8,
-                children: [
-                  Expanded(child: Text(countText)),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                    onPressed: _delete,
-                    icon: const Icon(Icons.delete),
-                    label: Text(context.l10n.huntDeleteAction),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: () => _run(() => _actions.resume(hunt)),
-                    icon: const Icon(Icons.play_arrow),
-                    label: Text(context.l10n.huntResume),
-                  ),
-                ],
-              )
-            else if (hunt.timed)
-              Row(
-                spacing: 8,
-                children: [
-                  Expanded(
-                    // Tocar no tempo corrige o acumulado; com o relógio
-                    // rodando, não (ele andaria enquanto você digita).
-                    child: InkWell(
-                      key: const ValueKey('hunt-time'),
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: enabled && !hunt.running ? _typeTime : null,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+            // As ações no pé do cartão: lado a lado, os cards da fileira têm
+            // a altura do mais alto, e as ações ficam alinhadas (#397).
+            Expanded(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: hunt.paused
+                    ? Row(
                         spacing: 8,
                         children: [
-                          // O ponto vermelho: o relógio está contando.
-                          if (hunt.running)
-                            Container(
-                              key: const ValueKey('hunt-recording'),
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.error,
-                                shape: BoxShape.circle,
+                          Expanded(child: Text(countText)),
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              foregroundColor: theme.colorScheme.error,
+                            ),
+                            onPressed: _delete,
+                            icon: const Icon(Icons.delete),
+                            label: Text(context.l10n.huntDeleteAction),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: () => _run(() => _actions.resume(hunt)),
+                            icon: const Icon(Icons.play_arrow),
+                            label: Text(context.l10n.huntResume),
+                          ),
+                        ],
+                      )
+                    : hunt.timed
+                    ? Row(
+                        spacing: 8,
+                        children: [
+                          Expanded(
+                            // Tocar no tempo corrige o acumulado; com o relógio
+                            // rodando, não (ele andaria enquanto você digita).
+                            child: InkWell(
+                              key: const ValueKey('hunt-time'),
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: enabled && !hunt.running
+                                  ? _typeTime
+                                  : null,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                spacing: 8,
+                                children: [
+                                  // O ponto vermelho: o relógio está contando.
+                                  if (hunt.running)
+                                    Container(
+                                      key: const ValueKey('hunt-recording'),
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.error,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  Flexible(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        countText,
+                                        key: const ValueKey('hunt-timer'),
+                                        style: theme.textTheme.headlineMedium,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                countText,
-                                key: const ValueKey('hunt-timer'),
-                                style: theme.textTheme.headlineMedium,
+                          ),
+                          SizedBox(
+                            width: 112,
+                            height: 64,
+                            // Parar em vermelho-claro, como um "gravando"; no tonal
+                            // índigo, não parecia um botão de parar.
+                            child: hunt.running
+                                ? FilledButton.icon(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor:
+                                          theme.colorScheme.errorContainer,
+                                      foregroundColor:
+                                          theme.colorScheme.onErrorContainer,
+                                    ),
+                                    onPressed: () =>
+                                        _run(() => _actions.toggleTimer(hunt)),
+                                    icon: const Icon(Icons.stop),
+                                    label: Text(context.l10n.timerStop),
+                                  )
+                                : FilledButton.icon(
+                                    onPressed: enabled
+                                        ? () => _run(
+                                            () => _actions.toggleTimer(hunt),
+                                          )
+                                        : null,
+                                    icon: const Icon(Icons.play_arrow),
+                                    label: Text(context.l10n.timerStart),
+                                  ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        spacing: 8,
+                        children: [
+                          _repeating(
+                            -1,
+                            enabled: enabled,
+                            // O tooltip abriria no segurar e tomaria o gesto: no
+                            // toque, só o mouse o mostra.
+                            child: Tooltip(
+                              message: context.l10n.huntMinusOne,
+                              triggerMode: TooltipTriggerMode.manual,
+                              child: IconButton.outlined(
+                                onPressed: enabled
+                                    ? () => _run(() => _add(-1))
+                                    : null,
+                                icon: const Icon(Icons.remove),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: _countField(theme, countText, enabled),
+                          ),
+                          SizedBox(
+                            width: 112,
+                            height: 64,
+                            child: _repeating(
+                              1,
+                              enabled: enabled,
+                              child: FilledButton.icon(
+                                onPressed: enabled
+                                    ? () => _run(() => _add(1))
+                                    : null,
+                                icon: const Icon(Icons.add),
+                                label: const Text('1'),
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 112,
-                    height: 64,
-                    // Parar em vermelho-claro, como um "gravando"; no tonal
-                    // índigo, não parecia um botão de parar.
-                    child: hunt.running
-                        ? FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: theme.colorScheme.errorContainer,
-                              foregroundColor:
-                                  theme.colorScheme.onErrorContainer,
-                            ),
-                            onPressed: () =>
-                                _run(() => _actions.toggleTimer(hunt)),
-                            icon: const Icon(Icons.stop),
-                            label: Text(context.l10n.timerStop),
-                          )
-                        : FilledButton.icon(
-                            onPressed: enabled
-                                ? () => _run(() => _actions.toggleTimer(hunt))
-                                : null,
-                            icon: const Icon(Icons.play_arrow),
-                            label: Text(context.l10n.timerStart),
-                          ),
-                  ),
-                ],
-              )
-            else
-              Row(
-                spacing: 8,
-                children: [
-                  _repeating(
-                    -1,
-                    enabled: enabled,
-                    // O tooltip abriria no segurar e tomaria o gesto: no
-                    // toque, só o mouse o mostra.
-                    child: Tooltip(
-                      message: context.l10n.huntMinusOne,
-                      triggerMode: TooltipTriggerMode.manual,
-                      child: IconButton.outlined(
-                        onPressed: enabled ? () => _run(() => _add(-1)) : null,
-                        icon: const Icon(Icons.remove),
-                      ),
-                    ),
-                  ),
-                  Expanded(child: _countField(theme, countText, enabled)),
-                  SizedBox(
-                    width: 112,
-                    height: 64,
-                    child: _repeating(
-                      1,
-                      enabled: enabled,
-                      child: FilledButton.icon(
-                        onPressed: enabled ? () => _run(() => _add(1)) : null,
-                        icon: const Icon(Icons.add),
-                        label: const Text('1'),
-                      ),
-                    ),
-                  ),
-                ],
               ),
+            ),
           ],
         ),
       ),
