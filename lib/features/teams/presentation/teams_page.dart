@@ -23,7 +23,7 @@ class TeamsPage extends ConsumerWidget {
     final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.navTeams)),
-      body: MovesGate(
+      body: MovesGate.page(
         builder: (data, catalog) => switch (ref.watch(teamsProvider)) {
           AsyncData(value: final teams) when teams.isEmpty => _Empty(
             onCreate: () => createTeam(context, ref, catalog),

@@ -62,7 +62,7 @@ class _TeamPageState extends ConsumerState<TeamPage> {
   Widget _page(Team team) {
     final l10n = context.l10n;
     final compact = WindowSize.of(context).isCompact;
-    return MovesGate(
+    return MovesGate.page(
       builder: (data, catalog) {
         final selected = team.members.isEmpty
             ? null
@@ -139,7 +139,7 @@ class MemberPage extends ConsumerWidget {
       body: switch (ref.watch(teamsProvider)) {
         AsyncData() when team == null || index >= team.members.length =>
           EmptyView(message: l10n.problemNotFound),
-        AsyncData() => MovesGate(
+        AsyncData() => MovesGate.page(
           builder: (data, catalog) => MemberEditor(
             team: team!,
             index: index,

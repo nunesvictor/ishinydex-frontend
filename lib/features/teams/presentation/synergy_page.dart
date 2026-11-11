@@ -260,7 +260,7 @@ class SynergyPage extends ConsumerWidget {
         AsyncData() when team == null => EmptyView(
           message: l10n.problemNotFound,
         ),
-        AsyncData() => MovesGate(
+        AsyncData() => MovesGate.page(
           builder: (data, catalog) => _SynergyBody(
             team: team!,
             catalog: catalog,

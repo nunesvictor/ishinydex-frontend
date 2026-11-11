@@ -15,29 +15,43 @@ import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filte
 /// os MB; preparando; sem internet ou com erro, com o "Tentar novamente";
 /// ou sem o arquivo. Pronto, o [builder] recebe os golpes e o catálogo.
 class MovesGate extends ConsumerWidget {
-  const MovesGate({required this.builder, super.key});
+  const MovesGate({required this.builder, super.key})
+    : padding = EdgeInsets.zero;
+
+  /// Tela inteira (o corpo de uma página, sem margem própria).
+  const MovesGate.page({required this.builder, super.key})
+    : padding = const EdgeInsets.symmetric(horizontal: 16);
 
   final Widget Function(MovesData data, Catalog catalog) builder;
+
+  /// A margem dos avisos (baixando, sem golpes, falhou); a tela pronta
+  /// cuida da própria.
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    Widget notice(Widget child) => Padding(padding: padding, child: child);
     return switch (ref.watch(movesProvider)) {
-      MovesUnavailable() => MovesMessage(l10n.movesUnavailable),
-      MovesDownloading(:final received, :final total) => _Progress(
-        title: l10n.movesDownloading,
-        value: total == null ? null : received / total,
-        detail: _megabytes(context, received, total),
+      MovesUnavailable() => notice(MovesMessage(l10n.movesUnavailable)),
+      MovesDownloading(:final received, :final total) => notice(
+        _Progress(
+          title: l10n.movesDownloading,
+          value: total == null ? null : received / total,
+          detail: _megabytes(context, received, total),
+        ),
       ),
-      MovesPreparing() => _Progress(title: l10n.movesPreparing),
-      MovesFailed(:final offline) => Column(
-        children: [
-          MovesMessage(offline ? l10n.movesOffline : l10n.movesFailed),
-          TextButton(
-            onPressed: () => ref.read(movesProvider.notifier).retry(),
-            child: Text(l10n.tryAgain),
-          ),
-        ],
+      MovesPreparing() => notice(_Progress(title: l10n.movesPreparing)),
+      MovesFailed(:final offline) => notice(
+        Column(
+          children: [
+            MovesMessage(offline ? l10n.movesOffline : l10n.movesFailed),
+            TextButton(
+              onPressed: () => ref.read(movesProvider.notifier).retry(),
+              child: Text(l10n.tryAgain),
+            ),
+          ],
+        ),
       ),
       MovesReady(:final data) => builder(
         data,

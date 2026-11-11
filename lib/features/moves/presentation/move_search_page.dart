@@ -61,7 +61,7 @@ class _MoveSearchPageState extends State<MoveSearchPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(context.l10n.moveSearchTitle)),
-    body: MovesGate(
+    body: MovesGate.page(
       builder: (data, catalog) => _results(context, data, catalog),
     ),
   );
