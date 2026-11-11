@@ -81,11 +81,12 @@ void main() {
     Widget child, {
     ShinyHuntRepository? hunts,
     Locale locale = portuguese,
+    Size size = const Size(420, 2400),
   }) => pumpWidgetApp(
     tester,
     child,
     locale: locale,
-    size: const Size(420, 2400),
+    size: size,
     hunts: hunts ?? backend,
     overrides: [
       // A folha do card (#243) abre depois do "Encontrei!": sem a captura
@@ -304,6 +305,34 @@ void main() {
       counter.id,
       running.id,
     ]);
+  });
+
+  testWidgets('lado a lado: as ações na mesma altura (#397)', (tester) async {
+    // O primeiro tem o jogo, o método e o painel das odds; o segundo, não.
+    final full = await add(
+      ShinyHunt(
+        id: 0,
+        form: 1,
+        save: saveId,
+        method: 'random',
+        count: 10,
+        startedAt: DateTime(2026, 9),
+      ),
+    );
+    final bare = await add(const ShinyHunt(id: 0, form: 2));
+    await pump(
+      tester,
+      const Scaffold(body: HuntCards(paused: false)),
+      size: expandedSize,
+    );
+    await tester.pumpAndSettle();
+
+    Rect plus(int id) =>
+        tester.getRect(inCard(id, find.widgetWithText(FilledButton, '1')));
+    Rect card(int id) => tester.getRect(find.byKey(ValueKey('hunt-card-$id')));
+    expect(card(full.id).top, card(bare.id).top);
+    expect(card(full.id).left, lessThan(card(bare.id).left));
+    expect(plus(full.id).bottom, plus(bare.id).bottom);
   });
 
   testWidgets('linha da caçada em andamento: jogo, método e contagem', (
