@@ -253,6 +253,24 @@ void main() {
     });
   });
 
+  testWidgets('na tela inteira, os avisos ganham margem (#391)', (
+    tester,
+  ) async {
+    await pumpWidgetApp(
+      tester,
+      Scaffold(body: MovesGate.page(builder: (_, _) => const SizedBox())),
+      overrides: [
+        fakeBackendProvider.overrideWithValue(
+          FakeBackend.fromCatalog(_catalog),
+        ),
+        movesProvider.overrideWith(() => _Fixed(const MovesPreparing())),
+      ],
+    );
+    final bar = tester.getRect(find.byType(LinearProgressIndicator));
+    expect(bar.left, 16);
+    expect(bar.right, compactSize.width - 16);
+  });
+
   testWidgets('o ícone da categoria: a imagem, e o nome se ela falhar', (
     tester,
   ) async {

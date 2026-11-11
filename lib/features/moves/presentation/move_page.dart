@@ -29,7 +29,7 @@ class MovePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(move.label)),
-    body: MovesGate(
+    body: MovesGate.page(
       builder: (data, catalog) => ListView(
         padding: const EdgeInsets.all(16),
         children: [_body(context, data, catalog)],
