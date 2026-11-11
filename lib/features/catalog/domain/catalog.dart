@@ -769,7 +769,7 @@ class Catalog {
       ],
       abilities: pokemon?.abilities ?? const [],
       stats: pokemon?.stats ?? const [],
-      genderRate: species?.genderRate,
+      genderRate: genderRate(formId),
       captureRate: species?.captureRate,
       hatchCounter: species?.hatchCounter,
       height: pokemon?.height,
@@ -1231,8 +1231,17 @@ class Catalog {
     return _evolutions[species?.name]?.isNotEmpty ?? false;
   }
 
-  /// `gender_rate` da espécie da forma.
-  int? genderRate(int formId) => _speciesOf(_forms[formId]!)?.genderRate;
+  /// `gender_rate` da forma: o da espécie, menos nas formas de um gênero só
+  /// (`-male`/`-female`, como a Oinkologne fêmea, que a PokéAPI dá como "só
+  /// macho" pela espécie): 0 é só macho e 8, só fêmea (#390).
+  int? genderRate(int formId) {
+    final form = _forms[formId]!;
+    final rate = _speciesOf(form)?.genderRate;
+    if (rate == null) return null;
+    if (form.name.endsWith('-female')) return 8;
+    if (form.name.endsWith('-male')) return 0;
+    return rate;
+  }
 
   /// Geração da espécie da forma (`generation-i`...).
   String? generation(int formId) => _speciesOf(_forms[formId]!)?.generation;
