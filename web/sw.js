@@ -3,8 +3,8 @@
 // cache offline; este guarda cada arquivo na primeira vez que é usado, sem
 // lista fixa de arquivos.
 //
-// - Versionados (v/<hash>/, canvaskit/): cache primeiro. Nunca mudam: um
-//   build novo tem outro hash.
+// - Versionados (v/<hash>/, inclusive o motor em v/<hash>/canvaskit/):
+//   cache primeiro. Nunca mudam: um build novo tem outro hash.
 // - Resto do próprio site (index.html, flutter_bootstrap.js, manifesto,
 //   ícones, catalog/catalog.json): rede primeiro, sempre conferida com o
 //   servidor (sem o cache HTTP), com o cache de reserva.
@@ -93,10 +93,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // canvaskit/ (o motor) só é do próprio site com o --no-web-resources-cdn
-  // do build do Pages; sem ele, viria do www.gstatic.com, fora do cache, e o
-  // app não abriria offline.
-  if (/\/(v\/[0-9a-f]+|canvaskit)\//.test(url.pathname)) {
+  // O motor (canvaskit/) também fica em v/<hash>/ (#404). Fora dela, o
+  // endereço não muda entre versões, então não pode ser cache primeiro: o
+  // motor antigo seria servido junto com o app novo.
+  if (/\/v\/[0-9a-f]+\//.test(url.pathname)) {
     event.respondWith(cacheFirst(APP_CACHE, request));
   } else {
     event.respondWith(networkFirst(APP_CACHE, request));

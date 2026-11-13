@@ -21,6 +21,11 @@ if (buildVersion.startsWith('__')) {
     config: {
       entrypointBaseUrl: base,
       assetBase: base,
+      // O motor (canvaskit/, skwasm) também vem de v/<hash>/ (#404): fora
+      // dele, o endereço era o mesmo em toda versão, e o service worker da
+      // versão anterior devolvia o motor antigo do cache. Com o Flutter
+      // novo, o main.dart.wasm não casava com ele e o app parava no splash.
+      canvasKitBaseUrl: `${base}canvaskit/`,
       // WebAssembly também no Safari (26.2+, inclusive no iPhone) desde o
       // Flutter 3.50 (#402); o padrão só liga no Chrome/Edge (blink). Em
       // navegador sem suporte, o carregador usa o build em JavaScript.

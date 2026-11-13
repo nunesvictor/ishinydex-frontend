@@ -66,8 +66,12 @@ No Pages (`https://nunesvictor.github.io/ishinydex/`), com HTTPS, o
 navegador libera o **service worker**. O nosso ([web/sw.js](../web/sw.js))
 guarda cada arquivo do app na primeira vez que ele é usado, sem lista fixa:
 
-- versionados (`v/<hash>/`, `canvaskit/`): **cache primeiro**, porque nunca
-  mudam (um build novo tem outro hash);
+- versionados (`v/<hash>/`, inclusive o motor do Flutter em
+  `v/<hash>/canvaskit/`): **cache primeiro**, porque nunca mudam (um build
+  novo tem outro hash). O motor já ficou fora dessa pasta, em `canvaskit/`,
+  com o mesmo endereço em toda versão: na troca do Flutter 3.47 → 3.50, o
+  worker da versão anterior devolveu o motor antigo do cache, e o app novo
+  parou no splash (#404);
 - o resto do site (`index.html`, `flutter_bootstrap.js`, manifesto,
   `catalog/catalog.json`): **rede primeiro**, com o cache de reserva, então
   uma versão nova chega assim que há internet;
