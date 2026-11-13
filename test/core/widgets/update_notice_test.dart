@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/web/browser_stub.dart' as stub;
 import 'package:ishinydex/core/widgets/update_notice.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _FakeUpdates implements AppUpdates {
   VoidCallback? ready;
@@ -25,7 +25,7 @@ void main() {
       ProviderScope(
         overrides: [appUpdatesProvider.overrideWithValue(updates)],
         child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: Locale('pt'),
           home: Scaffold(body: UpdateNotice(child: Text('app'))),

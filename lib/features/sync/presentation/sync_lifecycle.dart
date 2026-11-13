@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Liga o sync à vida do app: ao abrir (que também conclui um login que
 /// voltou do Dropbox) e ao voltar para o app depois de usar outro (no

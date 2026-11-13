@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -20,6 +19,7 @@ import 'package:ishinydex/features/specimens/presentation/hunt_share_sheet.dart'
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/game_picker.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A aba Concluídas (#297): os espécimes com registro de caçada, dos
 /// capturados mais recentes aos mais antigos (sem data, no fim).

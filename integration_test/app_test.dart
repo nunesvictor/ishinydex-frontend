@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -8,6 +7,7 @@ import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fluxo completo no navegador, na demonstração:
 /// abrir dex → selecionar slot faltante → depositar.

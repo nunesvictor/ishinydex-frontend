@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/utils/pokemon_types.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O ícone do tipo no Pokémon HOME (`assets/type_icons/`, #230). Um tipo
 /// sem ícone (o Stellar) vira um círculo na cor dele.

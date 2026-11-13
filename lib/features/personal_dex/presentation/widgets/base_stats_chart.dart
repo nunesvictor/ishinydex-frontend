@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Status base num hexágono, como nos jogos: HP no topo e, no sentido
 /// horário, Ataque, Defesa, Velocidade, Def. Esp. e Atq. Esp. Embaixo, o

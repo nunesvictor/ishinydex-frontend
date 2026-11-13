@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/moves/moves_providers.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart'
     show generationNumber;
+import 'package:material_ui/material_ui.dart';
 
 /// Os golpes prontos ou o estado do download (#36): baixando, com a barra e
 /// os MB; preparando; sem internet ou com erro, com o "Tentar novamente";

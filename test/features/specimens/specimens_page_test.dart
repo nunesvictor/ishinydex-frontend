@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dar
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/bulk_edit_sheet.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/api_fixtures.dart';

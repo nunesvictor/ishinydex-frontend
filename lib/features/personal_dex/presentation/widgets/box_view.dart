@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/box_grid.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Margem em volta da grade.
 const boxViewPadding = 8.0;

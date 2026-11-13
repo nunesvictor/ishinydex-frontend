@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
@@ -8,6 +7,7 @@ import 'package:ishinydex/features/moves/presentation/move_page.dart';
 import 'package:ishinydex/features/moves/presentation/move_search_page.dart';
 import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/moves/presentation/sticky_section.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A aba Golpes da ficha (#36): o que a forma aprende no jogo escolhido.
 ///

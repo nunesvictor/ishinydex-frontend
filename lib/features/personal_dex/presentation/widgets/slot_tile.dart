@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Posição da box sem forma deste dex: só o fundo, sem conteúdo nem toque.
 class EmptySlotTile extends StatelessWidget {

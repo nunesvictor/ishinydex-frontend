@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   const box = BoxRef(id: 1, name: 'HOME 1', position: 0);

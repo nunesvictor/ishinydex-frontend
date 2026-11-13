@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -8,6 +7,7 @@ import 'package:ishinydex/features/shiny_locks/domain/models.dart';
 import 'package:ishinydex/features/shiny_locks/presentation/shiny_locks_page.dart';
 import 'package:ishinydex/features/shiny_locks/shiny_lock_providers.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/api_fixtures.dart';

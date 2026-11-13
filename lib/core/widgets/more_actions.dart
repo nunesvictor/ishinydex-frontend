@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Uma ação do menu "Mais ações" ([DetailActionBar]).
 class MoreAction {

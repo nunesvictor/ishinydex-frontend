@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/app.dart';
@@ -11,6 +10,7 @@ import 'package:ishinydex/core/theme/app_theme_mode.dart';
 import 'package:ishinydex/core/web/offline_warmup.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/catalog/presentation/boot_failure_app.dart';
+import 'package:material_ui/material_ui.dart';
 
 Future<void> main() async {
   // O shared_preferences (dados do modo local) usa canais da plataforma,

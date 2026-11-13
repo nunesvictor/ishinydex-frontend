@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Ícone do Pokémon HOME para uma característica do espécime (shiny, alfa,
 /// veio do GO), no lugar do emoji. Se o asset falhar, volta ao emoji.

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/core/theme/app_theme_mode.dart';
 import 'package:ishinydex/features/settings/presentation/settings_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 

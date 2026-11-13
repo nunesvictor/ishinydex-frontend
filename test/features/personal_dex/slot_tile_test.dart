@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../fixtures/api_fixtures.dart';
 import '../../helpers/helpers.dart';

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
@@ -6,6 +5,7 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_card.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_section.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 

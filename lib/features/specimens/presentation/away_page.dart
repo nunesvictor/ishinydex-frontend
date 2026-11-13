@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -13,6 +12,7 @@ import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_no
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Espécimes fora do HOME, agrupados por save. Dentro de cada save, quem
 /// saiu há mais tempo vem primeiro: é a lista que evita esquecer um Pokémon

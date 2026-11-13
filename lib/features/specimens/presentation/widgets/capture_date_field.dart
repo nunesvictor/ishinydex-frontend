@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/l10n/problem.dart';
 import 'package:ishinydex/features/settings/settings_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Data de captura digitável (PC), no formato escolhido nos Ajustes, com um
 /// botão que abre o calendário.

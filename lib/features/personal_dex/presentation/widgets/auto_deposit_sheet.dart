@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -6,6 +5,7 @@ import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Menu ⋮ do dex → Depositar automaticamente: espécimes do inventário que
 /// estão sem slot vão para os slots vazios do [dex] (a regra é do backend,

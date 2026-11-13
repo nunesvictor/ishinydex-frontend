@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/search_field.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Uma seção da folha Jogo: os jogos de onde escolher e os já marcados.
 class GamePickerSection {

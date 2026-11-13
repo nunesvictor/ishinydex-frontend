@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/pokemon_types.dart';
@@ -12,6 +11,7 @@ import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/moves/presentation/move_page.dart';
 import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Abre a busca de golpes (#369), por cima de tudo. Pela aba Golpes, já com
 /// o jogo ([group]), a forma ([formId]) e o texto ([query]); pelo menu do

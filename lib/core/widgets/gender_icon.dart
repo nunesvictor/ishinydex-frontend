@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O símbolo de gênero (#349): o ícone do Material, que vem com o app, no
 /// lugar do emoji ♂️/♀️ (a fonte de emoji é baixada, e cada sistema a

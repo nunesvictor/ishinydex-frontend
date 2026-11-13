@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/features/catalog/presentation/boot_failure_app.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('formato mais novo: mostra o motivo e tenta de novo', (

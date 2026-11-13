@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/features/moves/moves_providers.dart';
 import 'package:ishinydex/features/moves/presentation/moves_tab.dart';
 import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/moves/presentation/sticky_section.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../fixtures/catalog_fixture.dart';
 import '../../fixtures/moves_fixture.dart';

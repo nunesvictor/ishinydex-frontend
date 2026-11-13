@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_details.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O corpo comum do detalhe do slot e do detalhe do espécime (inventário),
 /// compacto como o resumo do HOME (#207): o cabeçalho em linha (sprite; o

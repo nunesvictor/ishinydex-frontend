@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/clock.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_card.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 

@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/features/shiny_hunts/data/sprite_source.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/sprite_diff.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/shiny_compare.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 

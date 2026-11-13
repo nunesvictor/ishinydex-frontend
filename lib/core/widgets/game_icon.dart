@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Ícone do jogo no Pokémon HOME para uma versão (`scarlet`, `legends-za`...),
 /// de `assets/game_icons/`. [muted] deixa em cinza: nas caçadas, um jogo em

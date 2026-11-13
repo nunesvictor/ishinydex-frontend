@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Campo de busca do app: uma pílula preenchida, com a lupa à esquerda e o
 /// "x" de limpar quando há texto. Os demais campos (formulários) seguem o

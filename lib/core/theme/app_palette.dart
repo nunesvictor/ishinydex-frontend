@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// As cores de um tema do app, no claro e no escuro (#162).
 ///

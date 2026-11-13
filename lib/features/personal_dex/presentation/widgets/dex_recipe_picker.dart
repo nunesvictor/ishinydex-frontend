@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -9,6 +8,7 @@ import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A planilha de onde vêm os atalhos (#34), nos créditos.
 const austinJohnSheetUrl =

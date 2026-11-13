@@ -35,7 +35,7 @@ O time sai no formato de texto do Showdown, para importar lá.
 
 ## Início rápido
 
-Pré-requisitos: [Flutter](https://docs.flutter.dev/get-started/install) 3.47+ e um
+Pré-requisitos: [Flutter](https://docs.flutter.dev/get-started/install) 3.50+ e um
 navegador Chromium (Chrome, Brave, Edge).
 
 ```bash

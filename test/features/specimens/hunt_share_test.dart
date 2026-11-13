@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -13,6 +12,7 @@ import 'package:ishinydex/features/specimens/presentation/hunt_share_sheet.dart'
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_card.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../fixtures/api_fixtures.dart';
 import '../../helpers/helpers.dart';

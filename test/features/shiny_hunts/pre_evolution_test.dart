@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -16,6 +15,7 @@ import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_ca
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_section.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 

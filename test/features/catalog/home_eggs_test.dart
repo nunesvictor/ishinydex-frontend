@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/species_info.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../fixtures/api_fixtures.dart';
 import '../../fixtures/catalog_fixture.dart';

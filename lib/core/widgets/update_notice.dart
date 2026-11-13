@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/web/browser.dart' as browser;
+import 'package:material_ui/material_ui.dart';
 
 /// Versões novas do app com ele aberto (#228): avisa quando a nova está
 /// pronta e recarrega a página. No navegador, vem do `index.html` e do

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Chip de filtro que abre um menu (▾) com as opções de um grupo, como
 /// "Situação" ou "Motivos". Um grupo inteiro ocupa um chip só, então a

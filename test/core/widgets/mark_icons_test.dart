@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 Future<void> pumpIcon(WidgetTester tester, Widget icon) => tester.pumpWidget(
   MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('pt'),
     home: IconTheme(

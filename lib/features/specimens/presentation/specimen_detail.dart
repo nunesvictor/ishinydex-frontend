@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -21,6 +20,7 @@ import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dar
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_extras.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_headline.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detalhe do specimen em tela própria (layout compacto).
 class SpecimenDetailPage extends StatelessWidget {

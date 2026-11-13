@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/theme/app_palette.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Barra de progresso com o texto "registrados/total (xx%)" e, se houver,
 /// "· N fora" (registrados que estão num save, fora do HOME).

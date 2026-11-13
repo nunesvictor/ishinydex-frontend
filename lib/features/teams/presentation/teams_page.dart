@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -13,6 +12,7 @@ import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/teams/domain/models.dart';
 import 'package:ishinydex/features/teams/presentation/team_widgets.dart';
 import 'package:ishinydex/features/teams/teams_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A aba Times (#231): os times, cada um preso a um jogo, e o "Novo time".
 class TeamsPage extends ConsumerWidget {

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A etiqueta do corte do HOME (#222), a mesma no save, no espécime, na
 /// caçada e na aba Faltam. Antes do corte, ⏳ "HOME 26/02"; depois, o elo

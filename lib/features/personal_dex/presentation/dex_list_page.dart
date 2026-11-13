@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/new_dex_page.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lista de PersonalDex com o progresso de cada um.
 class DexListPage extends ConsumerWidget {

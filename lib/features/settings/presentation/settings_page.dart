@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/config/env.dart';
@@ -8,6 +7,7 @@ import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/theme/app_theme_mode.dart';
 import 'package:ishinydex/features/local/presentation/local_data_tiles.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});

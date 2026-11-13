@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
 import 'package:ishinydex/core/widgets/gender_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Uma linha no estilo do HOME: pokébola, nome (ou apelido) e os selos:
 /// gênero (ícone do app, #349), shiny, alfa e GO. Substitui os chips de Shiny, Alfa e

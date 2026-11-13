@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Um exemplo de cada [Problem] (o `switch` do `problem_text.dart` garante
 /// que todos têm texto; aqui, que nenhum sai vazio ou com `{` sobrando).
@@ -124,7 +124,7 @@ void main() {
     await tester.pumpWidget(
       Localizations(
         locale: const Locale('en'),
-        delegates: AppLocalizations.localizationsDelegates,
+        delegates: appLocalizationsDelegates,
         child: Builder(
           builder: (c) {
             context = c;

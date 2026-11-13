@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/core/widgets/shiny_charm_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -22,7 +22,7 @@ void main() {
     // Nos testes, a rede falha: fica o ícone de reserva.
     expect(find.byIcon(Icons.auto_awesome), findsOne);
     expect(find.bySemanticsLabel('Shiny Charm'), findsWidgets);
-    expect(find.byTooltip('Shiny Charm'), findsOne);
+    expect(byTooltip('Shiny Charm'), findsOne);
   });
 
   for (final size in [compactSize, expandedSize]) {

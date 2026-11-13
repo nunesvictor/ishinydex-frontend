@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/teams/domain/models.dart';
 import 'package:ishinydex/features/teams/domain/team_rules.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Os ícones das versões do jogo, um sobre o outro, como no mock.
 class TeamGameIcons extends StatelessWidget {
