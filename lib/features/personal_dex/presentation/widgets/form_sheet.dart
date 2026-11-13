@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/pokemon_types.dart';
@@ -6,6 +5,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A ficha de uma forma, só leitura, num bottom sheet: aberta pela aba
 /// Espécie fora de um dex (no inventário não há slot para onde ir). Tocar em

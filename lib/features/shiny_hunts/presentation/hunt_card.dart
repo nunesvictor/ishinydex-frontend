@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -23,6 +22,7 @@ import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 void _notify(BuildContext context, String message) =>
     ScaffoldMessenger.of(context)

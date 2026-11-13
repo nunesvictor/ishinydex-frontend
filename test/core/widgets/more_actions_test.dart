@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/more_actions.dart';
-import 'package:ishinydex/l10n/app_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   // O pior caso real (#298): visitando o Champions, com duas ações
@@ -47,7 +47,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('pt', 'BR'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: textScaler),

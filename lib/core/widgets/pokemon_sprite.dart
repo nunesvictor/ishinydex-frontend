@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Sprite remoto com fallback quando a imagem não existe ou falha.
 class PokemonSprite extends StatelessWidget {

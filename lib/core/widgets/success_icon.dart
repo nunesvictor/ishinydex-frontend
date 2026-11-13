@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/theme/app_palette.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Ícone na cor de "concluído" do tema ([AppColors.success]): depositado,
 /// registrado, box completa.

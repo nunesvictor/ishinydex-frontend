@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/features/shiny_hunts/presentation/hunt_card.dart';
 import 'package:ishinydex/features/shiny_hunts/presentation/start_hunt_sheet.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Escolhe a forma e abre a folha "Começar caçada".
 Future<void> startHuntFromPicker(BuildContext context) async {

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 

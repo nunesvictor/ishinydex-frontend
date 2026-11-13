@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A face de um chip de filtro com valores marcados (#219): só os ícones,
 /// sobrepostos, até [max], e "+N". O nome completo fica no tooltip do chip

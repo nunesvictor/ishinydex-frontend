@@ -82,6 +82,9 @@ O essencial da API:
   haver mais animações pendentes.
 - `find.text`, `find.byType`, `find.byKey`, `find.byTooltip`,
   `find.widgetWithText(TextButton, 'Sair')`: localizam widgets.
+  Para tooltip com `excludeFromSemantics`, use o `byTooltip` de
+  `test/helpers/helpers.dart`: o `find.byTooltip` do Flutter 3.50.0 ainda
+  procura o `Tooltip` do Material antigo e não acha o do `material_ui` (#402).
 - `tester.tap`, `tester.enterText`, `tester.fling` (arrastar/swipe),
   `tester.scrollUntilVisible`: interações.
 - `expect(finder, findsOneWidget / findsNothing / findsNWidgets(n))`: verificações.

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
@@ -13,6 +12,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_menu.da
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_update.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/catalog_fixture.dart';

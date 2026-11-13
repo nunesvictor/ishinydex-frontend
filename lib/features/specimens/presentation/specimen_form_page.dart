@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -19,6 +18,7 @@ import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_section.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Cadastro de um specimen da forma [form], ou edição do specimen
 /// [specimenId] quando informado. Retorna o [Specimen] criado/editado.

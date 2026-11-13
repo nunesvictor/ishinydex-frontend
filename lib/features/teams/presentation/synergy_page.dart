@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -16,6 +15,7 @@ import 'package:ishinydex/features/teams/domain/synergy.dart';
 import 'package:ishinydex/features/teams/domain/team_rules.dart';
 import 'package:ishinydex/features/teams/presentation/team_widgets.dart';
 import 'package:ishinydex/features/teams/teams_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// As regras da geração do jogo: sem o Fairy até a 5ª.
 SynergyRules _rulesFor(Catalog catalog, String group) => SynergyRules(

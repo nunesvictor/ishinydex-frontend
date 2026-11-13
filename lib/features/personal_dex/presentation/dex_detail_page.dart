@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -29,6 +28,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/deposit_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Boxes de um PersonalDex.
 ///

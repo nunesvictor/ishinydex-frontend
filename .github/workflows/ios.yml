@@ -12,7 +12,7 @@ on:
         required: true
 
 env:
-  FLUTTER_VERSION: 3.47.2
+  FLUTTER_VERSION: 3.50.0
 
 jobs:
   build-ipa:

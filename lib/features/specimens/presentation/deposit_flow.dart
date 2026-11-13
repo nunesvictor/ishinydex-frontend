@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -13,6 +12,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Abre o seletor de specimen para [slot]: bottom sheet no compacto,
 /// diálogo nos demais. Retorna `true` se algo foi depositado.

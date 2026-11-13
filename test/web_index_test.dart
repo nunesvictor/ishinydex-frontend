@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 String _hex(Color c) =>
     '#${c.toARGB32().toRadixString(16).substring(2).toUpperCase()}';

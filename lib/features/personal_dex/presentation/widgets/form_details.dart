@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/type_chip.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tipos, habilidades e selos (shiny-lock, só distribuição) da forma
 /// [formId], carregados de `GET /forms/{id}/`.

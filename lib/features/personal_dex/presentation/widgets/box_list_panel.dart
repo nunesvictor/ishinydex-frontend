@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/widgets/success_icon.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lista lateral de boxes (layout expandido).
 class BoxListPanel extends StatelessWidget {

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_recipe_picker.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Endereço do código, mostrado (selecionável) em "Sobre".
 const projectUrl = 'https://github.com/nunesvictor/ishinydex';

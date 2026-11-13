@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -13,6 +12,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/evolution_l
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Aba "Espécie": linha evolutiva, outras formas, os jogos do HOME em cuja
 /// pokédex ela está e uma grade com gênero, captura, ciclos de ovo, estreia,

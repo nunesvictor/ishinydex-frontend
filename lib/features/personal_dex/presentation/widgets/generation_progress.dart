@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
@@ -6,6 +5,7 @@ import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/progress_badge.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/dex_labels.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Progresso do dex [dexId] por geração. Tela cheia no compacto, diálogo
 /// nos demais. Retorna o id da primeira box da geração tocada, ou `null`.

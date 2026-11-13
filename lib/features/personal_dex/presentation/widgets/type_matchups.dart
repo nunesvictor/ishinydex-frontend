@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/type_chart.dart';
 import 'package:ishinydex/core/widgets/type_chip.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// "Tipos em batalha" (#230): pelos tipos da forma, o que acerta forte (ou
 /// fraco) quando ela é atacada, e contra o que os golpes do próprio tipo

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/features/local/local_data_providers.dart';
 import 'package:ishinydex/features/sync/domain/sync_engine.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// "há 2 min", "hoje às 09:12", "03/10 às 21:40" (no formato do idioma).
 String describeLastSync(AppLocalizations l10n, DateTime last, DateTime now) {

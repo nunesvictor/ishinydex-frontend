@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 const boxRows = 5;
 const boxCols = 6;

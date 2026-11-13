@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +8,7 @@ import 'package:ishinydex/core/router/app_router.dart';
 import 'package:ishinydex/features/local/local_data_providers.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Ajustes → "Seus dados" (modo local): exportar e importar o arquivo de
 /// dados. Fora do modo local, não aparece.

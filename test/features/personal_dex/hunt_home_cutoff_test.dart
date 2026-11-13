@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/clock.dart';
@@ -9,6 +8,7 @@ import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/hunt_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';

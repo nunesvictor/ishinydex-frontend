@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Razão de contraste do WCAG entre duas cores (1 a 21). Texto normal pede
 /// 4,5; ícones e elementos grandes, 3.

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_swipe.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -78,7 +78,7 @@ Future<_HarnessState> _pump(
     MaterialApp(
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       home: MediaQuery(
         data: MediaQueryData(disableAnimations: reduceMotion),
         child: Scaffold(
@@ -335,7 +335,7 @@ void main() {
           MaterialApp(
             locale: portuguese,
             supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             home: Scaffold(
               body: BoxPreview(boxName: 'HOME 2', forward: forward),
             ),

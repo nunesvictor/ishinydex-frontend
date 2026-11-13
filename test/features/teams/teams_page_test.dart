@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +11,7 @@ import 'package:ishinydex/features/teams/domain/team_repository.dart';
 import 'package:ishinydex/features/teams/presentation/member_editor.dart';
 import 'package:ishinydex/features/teams/presentation/synergy_page.dart';
 import 'package:ishinydex/features/teams/teams_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 import 'team_fixture.dart';

@@ -18,6 +18,16 @@ if (buildVersion.startsWith('__')) {
 } else {
   const base = `v/${buildVersion}/`;
   _flutter.loader.load({
-    config: { entrypointBaseUrl: base, assetBase: base },
+    config: {
+      entrypointBaseUrl: base,
+      assetBase: base,
+      // WebAssembly também no Safari (26.2+, inclusive no iPhone) desde o
+      // Flutter 3.50 (#402); o padrão só liga no Chrome/Edge (blink). Em
+      // navegador sem suporte, o carregador usa o build em JavaScript.
+      wasmAllowList: { blink: true, webkit: true },
+      // O GitHub Pages não manda os headers COOP/COEP, então o Wasm roda numa
+      // thread só; sem isto, o console avisa a cada abertura.
+      suppressMultithreadingWarning: true,
+    },
   });
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/clock.dart';
@@ -12,6 +11,7 @@ import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_notice.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../fixtures/catalog_fixture.dart';
@@ -178,14 +178,14 @@ void main() {
         expect(find.text('Só envia para o HOME'), findsOne);
         expect(find.byKey(const ValueKey('home-tag')), findsOne);
         expect(find.text('HOME 26/02'), findsOne);
-        expect(find.byTooltip('Chega ao HOME até 26/02/2027'), findsOne);
+        expect(byTooltip('Chega ao HOME até 26/02/2027'), findsOne);
         await tester.tap(find.text('Ver o espécime'));
         await tester.pumpAndSettle();
         expect(find.text('Fora do HOME'), findsOne);
         // Na lista, o aviso sem o botão.
         expect(find.text('1 espécime em X'), findsOne);
         expect(find.text('Ver o espécime'), findsNothing);
-        expect(find.byTooltip('Trazer de volta ao HOME'), findsWidgets);
+        expect(byTooltip('Trazer de volta ao HOME'), findsWidgets);
       });
     }
 
@@ -229,13 +229,13 @@ void main() {
       expect(find.text('Sem caminho para o HOME'), findsOne);
       expect(find.byKey(const ValueKey('home-cutoff-notice')), findsNothing);
       expect(find.text('Só envia para o HOME'), findsNothing);
-      expect(find.byTooltip('Não chega mais ao HOME'), findsOne);
+      expect(byTooltip('Não chega mais ao HOME'), findsOne);
 
       await go(tester, Routes.away);
-      expect(find.byTooltip('X não envia mais para o HOME'), findsOne);
+      expect(byTooltip('X não envia mais para o HOME'), findsOne);
 
       await go(tester, Routes.specimen(specimen));
-      expect(find.byTooltip('Não chega mais ao HOME'), findsOne);
+      expect(byTooltip('Não chega mais ao HOME'), findsOne);
       await tapMoreAction(tester, 'Trazer de volta ao HOME');
       expect(find.text('X não envia mais para o HOME'), findsOne);
     });
@@ -255,7 +255,7 @@ void main() {
         ],
       );
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Não chega mais ao HOME'), findsOne);
+      expect(byTooltip('Não chega mais ao HOME'), findsOne);
       expect(find.widgetWithText(FilledButton, '1'), findsOne);
     });
   });

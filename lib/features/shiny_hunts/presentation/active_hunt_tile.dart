@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_tile.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// "Caçada em andamento" no painel do slot (#183): jogo, método e contagem
 /// da caçada ativa da forma [formId], com o selo da grade. Tocar leva às

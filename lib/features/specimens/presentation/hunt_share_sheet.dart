@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -9,6 +8,7 @@ import 'package:ishinydex/core/web/share_outcome.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O que o card mostra do [specimen], com o método no idioma da tela e o
 /// OT; `null` se ele não tiver o que compartilhar (ver [HuntShareData.of]).

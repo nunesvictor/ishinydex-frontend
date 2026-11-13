@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/theme/app_palette.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tema Material 3 compartilhado por web e iOS, montado a partir de uma
 /// [AppPalette] (por padrão, a Clássico).

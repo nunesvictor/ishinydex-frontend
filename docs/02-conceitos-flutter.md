@@ -424,6 +424,13 @@ em nenhuma tela.
 - **Material** é a biblioteca de componentes do Google (usada no app todo).
 - **Cupertino** é a biblioteca com visual de iOS.
 
+Desde o Flutter 3.50 (#402), as duas saíram do SDK e viraram pacotes do
+pub.dev: **`material_ui`** e **`cupertino_ui`**. O código importa
+`package:material_ui/material_ui.dart` (o antigo `package:flutter/material.dart`
+ficou deprecated); a troca foi feita pelo `dart fix --code=migrate_design_widgets`.
+Os widgets e nomes são os mesmos; o que muda é a versão andar separada do
+Flutter.
+
 Para ter a **mesma aparência na web e no iPhone**, a base é Material 3 com o
 tema de [`app_theme.dart`](../lib/core/theme/app_theme.dart). Onde a
 experiência iOS é claramente melhor, usamos variantes **adaptativas**, que
@@ -685,6 +692,7 @@ A interface fala **inglês** (padrão) e **português do Brasil** (ishinydex-fro
   "@settingsVersion": {"placeholders": {"version": {"type": "String"}}}
   ```
 - **`gen-l10n`**: com `generate: true` no `pubspec.yaml` e o `l10n.yaml`, cada `flutter pub get` (e `run`, `build`, `test`) gera a classe `AppLocalizations` em `lib/l10n/app_localizations*.dart`. Como os `*.g.dart`, o código gerado fica fora do git e da cobertura. Texto com parâmetro vira método: `l10n.settingsVersion('2.11.0')`.
+- **Os delegates** (quem carrega os textos de cada idioma): o `MaterialApp` recebe o `appLocalizationsDelegates` de `core/l10n/l10n.dart`, com os textos do app e os prontos do Material (botões dos diálogos, datas), do `material_ui`. Não use o `AppLocalizations.localizationsDelegates` gerado: no Flutter 3.50.0 ele ainda traz os do `flutter_localizations`, que o `material_ui` não enxerga, e o app em pt-BR quebra (#402).
 - **Na tela**: `context.l10n.settingsTitle` (atalho de `core/l10n/l10n.dart`). Ler o `context.l10n` faz o widget depender do idioma: trocar em Ajustes reconstrói a tela sozinho.
 
 Qual idioma vale (`core/l10n/app_language.dart`):

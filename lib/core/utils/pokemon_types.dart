@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/utils/format.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Cores tradicionais de cada tipo.
 const _typeColors = {

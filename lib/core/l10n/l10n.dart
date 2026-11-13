@@ -2,10 +2,21 @@ import 'package:flutter/widgets.dart';
 import 'package:ishinydex/core/l10n/problem_text.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/l10n/app_localizations.dart';
+import 'package:material_ui/material_ui.dart' show GlobalMaterialLocalizations;
 
 export 'package:ishinydex/core/l10n/core_labels.dart';
 export 'package:ishinydex/core/l10n/problem_text.dart';
 export 'package:ishinydex/l10n/app_localizations.dart';
+
+/// Os delegates de tradução do app: os textos do app e os do Material,
+/// Cupertino e widgets do `material_ui` (#402). O
+/// `appLocalizationsDelegates` gerado pelo gen-l10n ainda traz
+/// os do `flutter_localizations`, que o `material_ui` não lê: os textos
+/// prontos do Material (botões dos diálogos, datas) ficariam sem pt-BR.
+const appLocalizationsDelegates = <LocalizationsDelegate<Object?>>[
+  AppLocalizations.delegate,
+  ...GlobalMaterialLocalizations.delegates,
+];
 
 /// Atalhos de tradução (ishinydex-frontend#178).
 extension L10nContext on BuildContext {

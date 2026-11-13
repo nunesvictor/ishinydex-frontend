@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -6,6 +5,7 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/specimen_repository.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/helpers.dart';

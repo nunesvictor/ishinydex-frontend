@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -9,6 +8,7 @@ import 'package:ishinydex/features/moves/presentation/move_search_page.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_update.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum _DexMenuAction { update, progress, autoDeposit, moves, edit, delete }
 

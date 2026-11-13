@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_sheet.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Abre o golpe [move] no jogo [group] (#369), por cima de tudo: a aba
 /// Golpes pode estar numa folha ou no painel do slot.

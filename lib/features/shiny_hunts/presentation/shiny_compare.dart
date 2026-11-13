@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/sprite_diff.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compara o shiny com o normal da [form] (#381): uma folha no compacto e
 /// um diálogo nos demais.

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -35,6 +34,7 @@ import 'package:ishinydex/features/specimens/presentation/widgets/game_picker.da
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/specimen_filters.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Aba Caçadas (#246): o que ainda falta em shiny num shiny dex, e as
 /// caçadas em andamento e pausadas, que não dependem de dex.

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/moves/presentation/moves_tab.dart';
@@ -8,6 +7,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/species_inf
 import 'package:ishinydex/features/personal_dex/presentation/widgets/type_matchups.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// As abas de [FormInfoTabs].
 enum FormInfoTab { summary, species, moves }

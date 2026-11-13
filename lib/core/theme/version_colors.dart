@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A cor de cada versão (#203): vermelho no Scarlet, roxo no Violet, azul no
 /// Sword... É a cor de marca do jogo, da qual saem o fundo e o texto de cada

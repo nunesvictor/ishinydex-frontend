@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/config/env.dart';
@@ -15,6 +14,7 @@ import 'package:ishinydex/features/local/presentation/local_data_tiles.dart';
 import 'package:ishinydex/features/sync/data/sync_session.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';

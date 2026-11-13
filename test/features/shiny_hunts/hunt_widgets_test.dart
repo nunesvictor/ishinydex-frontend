@@ -1,5 +1,4 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -11,6 +10,7 @@ import 'package:ishinydex/features/shiny_hunts/presentation/active_hunt_tile.dar
 import 'package:ishinydex/features/shiny_hunts/presentation/hunt_lists.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
 

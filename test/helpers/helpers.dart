@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +12,7 @@ import 'package:ishinydex/features/personal_dex/data/last_dex_storage.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Os idiomas, para `locale:`/`language:` nos testes em inglês.
 export 'package:ishinydex/core/l10n/app_language.dart'
@@ -89,7 +89,7 @@ Future<void> pumpWidgetApp(
         theme: ThemeData(platform: platform),
         locale: locale,
         supportedLocales: supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         home: child,
       ),
     ),
@@ -158,4 +158,19 @@ Future<void> tapMoreAction(WidgetTester tester, String label) async {
 Finder huntsTab(String label, String count) => find.ancestor(
   of: find.text(count),
   matching: find.ancestor(of: find.text(label), matching: find.byType(Tab)),
+);
+
+/// O `find.byTooltip` que enxerga o `Tooltip` do `material_ui` (#402).
+///
+/// O do `flutter_test` (Flutter 3.50.0) ainda compara com o `Tooltip` do
+/// `package:flutter/material.dart`; com `excludeFromSemantics`, o tooltip não
+/// passa a mensagem para o `RawTooltip`, e o finder não acha nada. Mesma
+/// regra do original: o `Tooltip` só conta quando o `RawTooltip` não tem a
+/// mensagem.
+Finder byTooltip(String message) => find.byWidgetPredicate(
+  (widget) => switch (widget) {
+    Tooltip(excludeFromSemantics: true) => widget.message == message,
+    RawTooltip() => widget.semanticsTooltip == message,
+    _ => false,
+  },
 );

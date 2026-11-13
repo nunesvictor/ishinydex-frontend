@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -9,6 +8,7 @@ import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/hunt_share_sheet.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O registro da caçada no detalhe do espécime (#163): "Soft reset · 4.213
 /// resets · 3 meses", as datas de início e de captura, o botão do post e,

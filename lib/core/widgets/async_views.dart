@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
+import 'package:material_ui/material_ui.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});

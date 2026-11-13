@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Os slots por onde o painel navega, na ordem da grade (linha a linha).
 ///

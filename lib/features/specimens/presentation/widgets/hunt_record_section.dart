@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Seção recolhível "Registro da caçada" do formulário do espécime (#163):
 /// método, contagem com a unidade, início e link do post. Só aparece com

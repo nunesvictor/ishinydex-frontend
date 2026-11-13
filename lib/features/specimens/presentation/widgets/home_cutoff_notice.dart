@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/clock.dart';
@@ -8,6 +7,7 @@ import 'package:ishinydex/core/widgets/chip_icons.dart';
 import 'package:ishinydex/features/specimens/domain/home_cutoff.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Guarda o dia em que o aviso forte foi dispensado ("Entendi"): ele só

@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O app não abriu (modo local sem catálogo, dados de uma versão mais nova
 /// do app...): explica e deixa tentar de novo, em vez de uma tela branca.
@@ -30,7 +30,7 @@ class BootFailureApp extends StatelessWidget {
     locale: language.locale,
     supportedLocales: supportedLocales,
     localeListResolutionCallback: (device, _) => resolveLocale(device),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     home: Builder(
       builder: (context) => Scaffold(
         body: Center(

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -6,6 +5,7 @@ import 'package:ishinydex/features/catalog/catalog_providers.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_recipe_picker.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A mudança do padrão que ainda vale para o dex (#308): `null` sem
 /// mudança, ou quando o usuário escolheu "Não atualizar" para ela.

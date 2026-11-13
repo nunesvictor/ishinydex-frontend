@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O deslizar entre slots no painel (#256): o conteúdo acompanha o dedo e,
 /// ao soltar, completa a troca ou volta com uma mola, como as fotos do

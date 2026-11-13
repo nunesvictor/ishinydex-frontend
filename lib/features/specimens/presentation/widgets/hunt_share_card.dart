@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/core/widgets/game_icon.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// As cores do card: fundo escuro sempre, mesmo com o app no tema claro (o
 /// sprite shiny e o dourado se destacam, e a imagem sai igual para todo

@@ -4,6 +4,9 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    # Gerado pelo gen-l10n; no Flutter 3.50.0 ele ainda usa os delegates
+    # deprecated do flutter_localizations (#402).
+    - lib/l10n/app_localizations*.dart
     - build/**
     - ios/**
     - web/**

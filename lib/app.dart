@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/app_language.dart';
@@ -8,6 +7,7 @@ import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/core/theme/app_theme_mode.dart';
 import 'package:ishinydex/core/widgets/update_notice.dart';
 import 'package:ishinydex/features/sync/presentation/sync_lifecycle.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Desliga o retry automático do Riverpod 3: as telas têm botão
 /// "Tentar novamente" e os erros de validação não devem ser repetidos.
@@ -29,7 +29,7 @@ class IShinyDexApp extends ConsumerWidget {
     locale: ref.watch(appLanguageProvider).locale,
     supportedLocales: supportedLocales,
     localeListResolutionCallback: (device, _) => resolveLocale(device),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     routerConfig: ref.watch(routerProvider),
     // Na web, o `Title` grava o `<meta name="theme-color">`, que o iPhone usa
     // na barra de status (relógio, bateria). O do MaterialApp usa sempre o

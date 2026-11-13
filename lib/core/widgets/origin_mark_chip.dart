@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Ícone da marca de origem na cor dos ícones ao redor (no chip, a do
 /// chip).

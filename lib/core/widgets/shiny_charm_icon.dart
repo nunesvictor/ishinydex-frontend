@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:ishinydex/core/config/env.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// O Shiny Charm de um save (#317): o sprite do item no PokéAPI, como as
 /// Pokébolas. Sem internet e sem o sprite guardado, um brilho do Material

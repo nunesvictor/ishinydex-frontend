@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -18,6 +17,7 @@ import 'package:ishinydex/features/teams/domain/team_rules.dart';
 import 'package:ishinydex/features/teams/presentation/team_pickers.dart';
 import 'package:ishinydex/features/teams/presentation/team_widgets.dart';
 import 'package:ishinydex/features/teams/teams_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Um membro do time (#231), numa tela própria: a forma, o espécime ligado,
 /// o nível, a habilidade, a natureza, o item, o Tera, os golpes e os EVs,

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
@@ -7,6 +6,7 @@ import 'package:ishinydex/core/widgets/async_views.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Duração e curva das animações da busca (campo, AppBar e botões).
 const searchAnimationDuration = Duration(milliseconds: 300);

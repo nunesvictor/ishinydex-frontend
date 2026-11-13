@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/network/paginated.dart';
@@ -14,6 +13,7 @@ import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/form_picker.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/api_fixtures.dart';
@@ -82,10 +82,10 @@ void main() {
       expect(find.text('Original trainer'), findsOneWidget);
       expect(find.text('Capture date'), findsOneWidget);
       expect(find.text('Notes'), findsOneWidget);
-      expect(find.byTooltip('Language: En'), findsOneWidget);
-      expect(find.byTooltip('Origin mark: Pokémon GO'), findsOneWidget);
+      expect(byTooltip('Language: En'), findsOneWidget);
+      expect(byTooltip('Origin mark: Pokémon GO'), findsOneWidget);
       expect(find.text('Edit specimen'), findsOneWidget);
-      await tester.tap(find.byTooltip('More actions'));
+      await tester.tap(byTooltip('More actions'));
       await tester.pumpAndSettle();
       expect(find.text('Release'), findsOneWidget);
       expect(find.text('Deletes the record (asks for confirmation)'), findsOne);
@@ -143,7 +143,7 @@ void main() {
         // O idioma é uma etiqueta no cabeçalho, com a sigla do HOME e o
         // nome completo no toque (#207).
         expect(find.text('ENG'), findsOneWidget);
-        expect(find.byTooltip('Idioma: En'), findsOneWidget);
+        expect(byTooltip('Idioma: En'), findsOneWidget);
         expect(find.text('Idioma'), findsNothing);
         expect(find.text('Ash (123456) · Scarlet'), findsOneWidget);
         // Data com ano (o formato "médio" do Material em pt-BR omite o ano).
@@ -164,7 +164,7 @@ void main() {
         );
         // Marca de origem: GO tem prioridade (o backend manda "go").
         expect(find.text('GO'), findsOneWidget);
-        expect(find.byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);
+        expect(byTooltip('Marca de origem: Pokémon GO'), findsOneWidget);
       });
     }
 
@@ -321,7 +321,7 @@ void main() {
       await pumpDetail(tester);
       expect(find.text('Visitando o Champions'), findsOne);
       expect(find.text('No HOME, visitando o Champions'), findsOne);
-      await tester.tap(find.byTooltip('Mais ações'));
+      await tester.tap(byTooltip('Mais ações'));
       await tester.pumpAndSettle();
       expect(find.text('Voltou do Champions'), findsOne);
       expect(find.text('Não dá enquanto visita o Champions'), findsOne);

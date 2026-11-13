@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ishinydex/core/responsive/adaptive_shell.dart';
@@ -19,6 +18,7 @@ import 'package:ishinydex/features/sync/presentation/sync_page.dart';
 import 'package:ishinydex/features/teams/presentation/synergy_page.dart';
 import 'package:ishinydex/features/teams/presentation/team_page.dart';
 import 'package:ishinydex/features/teams/presentation/teams_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 abstract final class Routes {
   /// Entrada do app: redireciona para o último dex usado ([homeLocation]).

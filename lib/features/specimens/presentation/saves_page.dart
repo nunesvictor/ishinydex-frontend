@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -14,6 +13,7 @@ import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_no
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Ajustes → Meus saves: os jogos para onde o usuário envia Pokémon do HOME.
 ///

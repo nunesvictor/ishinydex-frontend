@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/theme/app_theme.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/base_stats_chart.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/contrast.dart';
 import '../../helpers/helpers.dart';
@@ -17,7 +17,7 @@ void main() {
           theme: theme,
           locale: portuguese,
           supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           home: const Center(
             child: BaseStatsChart(stats: [FormStat(stat: 'hp', baseStat: 45)]),
           ),

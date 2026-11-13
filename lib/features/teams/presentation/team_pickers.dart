@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/responsive/breakpoints.dart';
@@ -10,6 +9,7 @@ import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/teams/presentation/team_widgets.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tela cheia no compacto, diálogo nos demais (como o seletor de formas).
 Future<T?> _showPicker<T>(BuildContext context, Widget picker) => showDialog<T>(
