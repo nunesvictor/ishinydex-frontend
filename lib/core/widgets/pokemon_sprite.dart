@@ -1,5 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 
+/// A imagem de um sprite remoto, a mesma que o [PokemonSprite] desenha.
+///
+/// O `imageCache` do Flutter guarda cada imagem pela chave do provider (URL,
+/// escala e estratégia na web), então quem pré-carrega um sprite (ex.:
+/// `NeighborBoxPrecache`) precisa usar exatamente este provider para o
+/// [PokemonSprite] encontrá-lo já decodificado.
+ImageProvider spriteImage(String url) =>
+    NetworkImage(url, webHtmlElementStrategy: WebHtmlElementStrategy.fallback);
+
 /// Sprite remoto com fallback quando a imagem não existe ou falha.
 class PokemonSprite extends StatelessWidget {
   const PokemonSprite({
@@ -26,13 +35,12 @@ class PokemonSprite extends StatelessWidget {
       dimension: size,
       child: src == null
           ? placeholder
-          : Image.network(
-              src,
+          : Image(
+              image: spriteImage(src),
               width: size,
               height: size,
               fit: BoxFit.contain,
               semanticLabel: semanticLabel,
-              webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
               errorBuilder: (_, _, _) => placeholder,
             ),
     );

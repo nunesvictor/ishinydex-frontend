@@ -22,6 +22,7 @@ import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_switche
 import 'package:ishinydex/features/personal_dex/presentation/widgets/dex_update.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/form_info_tabs.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/generation_progress.dart';
+import 'package:ishinydex/features/personal_dex/presentation/widgets/neighbor_box_precache.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_detail_panel.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_navigation.dart';
 import 'package:ishinydex/features/personal_dex/presentation/widgets/slot_search.dart';
@@ -488,6 +489,16 @@ class _DexDetailPageState extends ConsumerState<DexDetailPage> {
   Widget _buildLayout(BuildContext context, List<BoxSummary> boxes) {
     _applyInitialBox(boxes);
     final index = _boxIndex.clamp(0, boxes.length - 1);
+    // Os sprites das boxes vizinhas já ficam prontos para a troca de box.
+    return NeighborBoxPrecache(
+      dexId: _dexId,
+      boxes: boxes,
+      index: index,
+      child: _buildBoxes(context, boxes, index),
+    );
+  }
+
+  Widget _buildBoxes(BuildContext context, List<BoxSummary> boxes, int index) {
     final box = boxes[index];
     final size = WindowSize.of(context);
     final openSheet = _openInitialSheet;

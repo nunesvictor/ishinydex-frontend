@@ -41,6 +41,10 @@ class _FlakyRepository implements PersonalDexRepository {
   int boxFailures = 0;
   int slotFailures = 0;
 
+  /// Boxes cujos slots sempre falham (ex.: a vizinha, que a página já pede
+  /// para pré-carregar os sprites).
+  Set<int> failingBoxes = {};
+
   /// Quando definido, substitui as gerações do fake.
   List<GenerationProgress>? generations;
 
@@ -90,7 +94,9 @@ class _FlakyRepository implements PersonalDexRepository {
     required int dexId,
     required int boxId,
   }) async {
-    if (slotFailures-- > 0) throw const NotFoundFailure();
+    if (slotFailures-- > 0 || failingBoxes.contains(boxId)) {
+      throw const NotFoundFailure();
+    }
     return await inner.fetchSlots(dexId: dexId, boxId: boxId);
   }
 
@@ -1591,6 +1597,11 @@ void main() {
       tester,
     ) async {
       final repository = _FlakyRepository(FakeBackend.seeded());
+      final boxes = await tester.runAsync(
+        () => FakeBackend.seeded().fetchBoxes(1),
+      );
+      // A box 2 já falha ao ser pré-carregada (é vizinha da 1).
+      repository.failingBoxes = {boxes![1].id};
       await pumpFullApp(
         tester,
         overrides: [
@@ -1600,7 +1611,6 @@ void main() {
       await openShinyDex(tester);
       await tester.tap(slot(30));
       await tester.pumpAndSettle();
-      repository.slotFailures = 1;
       await tester.tap(find.byTooltip('Próximo slot'));
       await tester.pumpAndSettle();
       expect(find.text('Não encontrado.'), findsOneWidget);
