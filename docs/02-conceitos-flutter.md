@@ -595,9 +595,22 @@ tela, um `Semantics` com `excludeSemantics` troca o texto visível por
 
 ### Imagens do próprio app: assets
 
-Sprites de Pokémon e pokébolas vêm do backend (`Image.network`, dentro do
+Sprites de Pokémon e pokébolas vêm da rede (um `NetworkImage`, dentro do
 `PokemonSprite`). Já os ícones das **marcas de origem** vão junto com o app:
 são **assets**.
+
+**Pré-carregamento (#406).** Antes de aparecer, toda imagem passa por duas
+etapas: baixar e **decodificar** (transformar o PNG em pixels que a GPU
+desenha). O resultado fica no `imageCache` do Flutter, indexado pelo
+`ImageProvider`: URL, escala e, na web, a estratégia. Com o `precacheImage`,
+essas etapas rodam antes de a imagem estar na tela. O
+`NeighborBoxPrecache` (PersonalDex) faz isso com os sprites e as balls das
+boxes vizinhas da aberta: ao trocar de box, elas já estão prontas. Ele usa o
+`spriteImage(url)`, o mesmo provider do `PokemonSprite`. Com outro provider,
+a chave seria outra, e o cache não seria aproveitado. No Safari com
+WebAssembly, decodificar disputa a única thread com o desenho da tela. Por
+isso o pré-carregamento só começa depois do quadro da box aberta e segue em
+lotes de 4.
 
 1. Os arquivos ficam numa pasta do projeto (`assets/origin_marks/`).
 2. O `pubspec.yaml` declara a pasta em `flutter: assets:`. Só o que está
