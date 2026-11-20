@@ -389,8 +389,11 @@ void main() {
     await pumpForm(tester);
     await tester.pumpAndSettle();
 
-    // Cancelar não muda nada.
-    await tester.tap(find.byTooltip('Novo treinador'));
+    // Pela folha do OT (#409), "Novo treinador…" no fim; cancelar não muda
+    // nada.
+    await tester.tap(find.byKey(const ValueKey('field-ot')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Novo treinador…'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();

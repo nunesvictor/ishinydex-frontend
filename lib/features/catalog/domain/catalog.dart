@@ -192,7 +192,7 @@ class Catalog {
         language: choices('language'),
         gender: choices('gender'),
         nature: choices('nature'),
-        pokeball: choices('pokeball'),
+        pokeball: _withHisuiTag(choices('pokeball')),
         type: choices('type'),
         generation: choices('generation'),
         originMark: choices('origin_mark'),
@@ -1425,4 +1425,27 @@ class HeldItem {
   final String name;
   final String label;
   final String? spriteUrl;
+}
+
+/// As pokébolas de Hisui (Legends: Arceus) com o mesmo nome das de hoje
+/// (Poké, Great, Ultra e Heavy Ball; valores `la…`) ganham "· Hisui" no
+/// rótulo (#409): antes, só o sprite as diferenciava.
+List<Choice> _withHisuiTag(List<Choice> balls) {
+  final counts = <String, int>{};
+  for (final b in balls) {
+    counts[b.label] = (counts[b.label] ?? 0) + 1;
+  }
+  return [
+    for (final b in balls)
+      if (b.value.startsWith('la') && counts[b.label]! > 1)
+        b.copyWith(
+          label: '${b.label} · Hisui',
+          labels: {
+            for (final MapEntry(:key, :value) in b.labels.entries)
+              key: '$value · Hisui',
+          },
+        )
+      else
+        b,
+  ];
 }

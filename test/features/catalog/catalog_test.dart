@@ -396,6 +396,25 @@ void main() {
     expect(catalog.generation(172), 'generation-ii');
   });
 
+  test('pokébolas de Hisui com o mesmo nome ganham "· Hisui" (#409)', () {
+    final json = jsonDecode(jsonEncode(catalogJson())) as Map<String, dynamic>;
+    (json['choices'] as Map<String, dynamic>)['pokeball'] = [
+      {'value': 'poke-ball', 'label': 'Poké Ball'},
+      {
+        'value': 'lapoke-ball',
+        'label': 'Poké Ball',
+        'labels': {'en': 'Poké Ball', 'pt-BR': 'Poké Ball'},
+      },
+      {'value': 'lafeather-ball', 'label': 'Feather Ball'},
+    ];
+    final balls = Catalog.fromJson(json, spriteBase: _base).options.pokeball;
+    expect(
+      [for (final b in balls) b.label],
+      ['Poké Ball', 'Poké Ball · Hisui', 'Feather Ball'],
+    );
+    expect(balls[1].labels['en'], 'Poké Ball · Hisui');
+  });
+
   test('opções e versões em ordem de lançamento, com saves e marcas', () {
     final options = catalog.options;
     expect(options.pokeball.single.spriteUrl, '$_base/items/poke-ball.png');

@@ -51,7 +51,7 @@ void main() {
       await tester.enterText(field('ID do treinador'), '1996');
       await tester.tap(find.byKey(const ValueKey('field-version')));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(MenuItemButton, 'Red'));
+      await tester.tap(find.byKey(const ValueKey('choice-red')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Salvar'));
       await tester.pumpAndSettle();

@@ -294,6 +294,12 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                         Choice(value: '${t.id}', label: t.label),
                     ],
                     onChanged: (v) => _setOt(v == null ? null : int.parse(v)),
+                    // Na folha do celular, sempre no fim da lista (#409).
+                    action: (
+                      label: '${context.l10n.newTrainer}…',
+                      icon: Icons.person_add_alt_1,
+                      onPressed: _newTrainer,
+                    ),
                   ),
                 ),
                 Padding(
@@ -704,6 +710,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     required String? value,
     required List<Choice> choices,
     required ValueChanged<String?> onChanged,
+    ChoiceAction? action,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: ChoiceSelect(
@@ -712,6 +719,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       value: value,
       choices: choices,
       errorText: context.fieldError(_validation, field),
+      action: action,
       onChanged: (v) => setState(() => onChanged(v)),
     ),
   );
