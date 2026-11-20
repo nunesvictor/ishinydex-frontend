@@ -548,6 +548,10 @@ abstract class Save with _$Save {
     /// O save tem o Shiny Charm (#220): soma nas odds das caçadas deste
     /// save em que o Charm vale.
     @Default(false) bool hasShinyCharm,
+
+    /// O idioma do cartucho (#411; um valor de [SpecimenOptions.language]):
+    /// os espécimes novos deste save já vêm com ele. Opcional.
+    String? language,
   }) = _Save;
 
   const Save._();

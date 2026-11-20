@@ -9,6 +9,7 @@ import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/location_flow.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_cutoff_notice.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/home_tag.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/new_trainer_dialog.dart';
@@ -250,10 +251,11 @@ Future<void> _add(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _edit(BuildContext context, WidgetRef ref, Save save) async {
-  final edited = await showDialog<({String label, bool hasShinyCharm})>(
-    context: context,
-    builder: (context) => _EditSaveDialog(save: save),
-  );
+  final edited =
+      await showDialog<({String label, bool hasShinyCharm, String? language})>(
+        context: context,
+        builder: (context) => _EditSaveDialog(save: save),
+      );
   if (edited == null || !context.mounted) return;
   try {
     await ref
@@ -262,6 +264,7 @@ Future<void> _edit(BuildContext context, WidgetRef ref, Save save) async {
           save.id,
           label: edited.label.trim(),
           hasShinyCharm: edited.hasShinyCharm,
+          language: SetTo(edited.language),
         );
     ref.invalidate(savesProvider);
     // Os espécimes fora do HOME mostram o apelido do save.
@@ -288,22 +291,24 @@ Future<void> _delete(BuildContext context, WidgetRef ref, Save save) async {
   }
 }
 
-/// Edição do save: o apelido e, nos jogos que têm, o Shiny Charm (#220).
+/// Edição do save: o apelido, o idioma (#411) e, nos jogos que têm, o
+/// Shiny Charm (#220).
 /// Tela cheia no celular, diálogo no resto. O controller vive no `State`:
 /// ele só é descartado quando o diálogo sai da árvore, depois da animação
 /// de fechamento (descartar logo após o `pop` quebraria o campo visível).
-class _EditSaveDialog extends StatefulWidget {
+class _EditSaveDialog extends ConsumerStatefulWidget {
   const _EditSaveDialog({required this.save});
 
   final Save save;
 
   @override
-  State<_EditSaveDialog> createState() => _EditSaveDialogState();
+  ConsumerState<_EditSaveDialog> createState() => _EditSaveDialogState();
 }
 
-class _EditSaveDialogState extends State<_EditSaveDialog> {
+class _EditSaveDialogState extends ConsumerState<_EditSaveDialog> {
   late final _controller = TextEditingController(text: widget.save.label);
   late bool _charm = widget.save.hasShinyCharm;
+  late String? _language = widget.save.language;
 
   @override
   void dispose() {
@@ -311,9 +316,9 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
     super.dispose();
   }
 
-  void _submit() =>
-      Navigator.of(context)
-          .pop((label: _controller.text, hasShinyCharm: _charm));
+  void _submit() => Navigator.of(
+    context,
+  ).pop((label: _controller.text, hasShinyCharm: _charm, language: _language));
 
   @override
   Widget build(BuildContext context) {
@@ -334,6 +339,15 @@ class _EditSaveDialogState extends State<_EditSaveDialog> {
           helperText: context.l10n.saveNicknameHelper,
         ),
         onSubmitted: (_) => _submit(),
+      ),
+      ChoiceSelect(
+        key: const ValueKey('save-language'),
+        label: context.l10n.saveLanguage,
+        helperText: context.l10n.saveLanguageHelper,
+        value: _language,
+        // Sem as opções (ainda carregando), só o "—".
+        choices: ref.watch(specimenOptionsProvider).value?.language ?? const [],
+        onChanged: (value) => setState(() => _language = value),
       ),
       if (save.canHaveShinyCharm)
         SwitchListTile(

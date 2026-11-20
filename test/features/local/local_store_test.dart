@@ -395,4 +395,36 @@ void main() {
       expect(six.arrived, isEmpty);
     });
   });
+
+  test(
+    'arquivo do 7 (sem o idioma do save) abre e regrava no 8 (#411)',
+    () async {
+      storage.data = jsonEncode({
+        'kind': LocalStore.kind,
+        'schemaVersion': 7,
+        'catalog': 'c',
+        'savedAt': '2026-10-01T00:00:00.000Z',
+        'records': {
+          'saves': [
+            {
+              'id': 1,
+              'trainer': 1,
+              'label': '',
+              'updatedAt': '2026-10-01T00:00:00.000Z',
+            },
+          ],
+        },
+        'deleted': <String, dynamic>{},
+      });
+      final records = await store.load();
+      expect(records['saves']!.single, isNot(contains('language')));
+      await store.save({
+        'saves': [
+          {'id': 1, 'trainer': 1, 'label': '', 'language': 'en'},
+        ],
+      }, catalog: 'c');
+      expect(saved()['schemaVersion'], 8);
+      expect((savedRecords('saves').single as Map)['language'], 'en');
+    },
+  );
 }

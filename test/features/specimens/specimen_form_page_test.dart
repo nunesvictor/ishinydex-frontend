@@ -635,6 +635,139 @@ void main() {
     });
   });
 
+  group('idioma do save (#411)', () {
+    const bd = Trainer(
+      id: 20,
+      name: 'Victoria Nunes',
+      trainerId: '654321',
+      version: 'brilliant-diamond',
+    );
+    const sc = Trainer(
+      id: 21,
+      name: 'Victor',
+      trainerId: '1',
+      version: 'scarlet',
+    );
+    const ash = Trainer(id: 12, name: 'Ash', trainerId: '123456');
+
+    setUp(() {
+      when(repository.fetchTrainers)
+          .thenAnswer((_) async => const [ash, bd, sc]);
+      when(repository.fetchSaves).thenAnswer(
+        (_) async => const [
+          Save(id: 1, trainer: bd, label: 'Switch Lite', language: 'en'),
+          Save(id: 2, trainer: sc),
+        ],
+      );
+      when(repository.fetchOptions).thenAnswer(
+        (_) async => SpecimenOptions.fromJson({
+          ...optionsJson,
+          'language': [
+            {'value': 'en', 'label': 'Inglês'},
+            {'value': 'ja', 'label': 'Japonês'},
+          ],
+        }),
+      );
+      when(() => repository.create(any()))
+          .thenAnswer((_) async => const Specimen(id: 1, form: 1));
+    });
+
+    String? language(WidgetTester tester) => tester
+        .widget<ChoiceSelect>(find.byKey(const ValueKey('field-language')))
+        .value;
+
+    testWidgets('o OT traz o idioma; trocar só lembra; não sobrescreve', (
+      tester,
+    ) async {
+      await pumpForm(tester);
+      await tester.pumpAndSettle();
+      // OT e idioma colados, antes da pokébola.
+      final top = tester.getTopLeft;
+      expect(
+        top(find.byKey(const ValueKey('field-ot'))).dy,
+        lessThan(top(find.byKey(const ValueKey('field-language'))).dy),
+      );
+      expect(
+        top(find.byKey(const ValueKey('field-language'))).dy,
+        lessThan(top(find.byKey(const ValueKey('field-pokeball'))).dy),
+      );
+
+      await choose(tester, 'ot', 'Victoria Nunes (654321) · Brilliant Diamond');
+      expect(language(tester), 'en');
+      expect(
+        find.text('Do save Brilliant Diamond · Switch Lite.'),
+        findsOneWidget,
+      );
+
+      await choose(tester, 'language', 'Japonês');
+      expect(
+        find.text('Diferente do save (Inglês): ok para troca ou evento.'),
+        findsOneWidget,
+      );
+
+      // Save sem idioma: ensina onde configurar; o Japonês fica.
+      await choose(tester, 'ot', 'Victor (1) · Scarlet');
+      expect(language(tester), 'ja');
+      expect(
+        find.text(
+          'O save Scarlet · Victor (1) ainda não tem idioma; '
+          'defina em Ajustes › Meus saves.',
+        ),
+        findsOneWidget,
+      );
+
+      // OT sem save: nada embaixo. Idioma limpo: o OT não preenche nada.
+      await choose(tester, 'ot', 'Ash (123456)');
+      expect(find.textContaining('save'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('field-language')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(MenuItemButton, '—'));
+      await tester.pumpAndSettle();
+      await choose(tester, 'ot', 'Victor (1) · Scarlet');
+      expect(language(tester), isNull);
+      expect(find.textContaining('ainda não tem idioma'), findsOneWidget);
+      await choose(tester, 'ot', 'Victoria Nunes (654321) · Brilliant Diamond');
+      expect(language(tester), 'en');
+
+      await tester.drag(find.byType(ListView), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salvar e depositar'));
+      await tester.pumpAndSettle();
+      final draft =
+          verify(() => repository.create(captureAny())).captured.single
+              as SpecimenDraft;
+      expect(draft.language, 'en');
+      expect(draft.ot, 20);
+    });
+
+    testWidgets('a caçada do save traz o idioma', (tester) async {
+      final hunts = FakeBackend.seeded();
+      await hunts.saveShinyHunt(
+        ShinyHunt(
+          id: 0,
+          form: 1,
+          save: 1,
+          count: 30,
+          startedAt: DateTime(2026, 9),
+        ),
+      );
+      await pumpForm(tester, hunts: hunts);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sim'));
+      await tester.pumpAndSettle();
+      expect(language(tester), 'en');
+
+      // Com um idioma já escolhido, a caçada não o troca.
+      await tester.pumpWidget(const SizedBox());
+      await pumpForm(tester, hunts: hunts);
+      await tester.pumpAndSettle();
+      await choose(tester, 'language', 'Japonês');
+      await tester.tap(find.text('Sim'));
+      await tester.pumpAndSettle();
+      expect(language(tester), 'ja');
+    });
+  });
+
   group('edição', () {
     final existing = Specimen.fromJson({
       ...specimenJson,
