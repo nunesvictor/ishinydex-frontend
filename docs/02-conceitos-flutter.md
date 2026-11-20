@@ -527,6 +527,19 @@ o mesmo `inputDecorationTheme`, então tem a cara dos selects ao lado. Um
 valor antigo impossível continua aparecendo no select, com o erro já ao
 abrir, para a pessoa ver o que estava salvo antes de trocar.
 
+**Texto colorido dentro de um `TextField`** (#410): o campo do `DropdownMenu`
+é um `TextField`, que só guarda uma `String`. Para pintar o "↑ Def. Esp." de
+vermelho e o "↓ Atq. Esp." de azul, o `ChoiceSelect` passa um
+`TextEditingController` próprio que sobrescreve `buildTextSpan`: o texto
+continua o mesmo (e a busca do PC filtra por ele, por isso acha a natureza
+pelo atributo), mas é desenhado em pedaços com estilos diferentes. Nos itens
+do menu, o `labelWidget` do `DropdownMenuEntry` troca o texto por um `Row`
+com o nome e as duas colunas de largura fixa.
+
+No PC, um `FocusNode` seleciona o texto todo ao focar o campo, para digitar
+substituir o "—". Ele só é passado no PC: com um `focusNode`, o
+`DropdownMenu` ignora o `requestFocusOnTap` e o celular abriria o teclado.
+
 ### Teclado no iPhone e animações implícitas
 
 **Foco e teclado no Safari do iOS.** O Safari só abre o teclado quando o foco
