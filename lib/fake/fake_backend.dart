@@ -3468,18 +3468,9 @@ class FakeBackend
       : _originMarkByVersionGroup[versionGroups[version]];
 }
 
-/// Gêneros possíveis para a forma (mesma regra do backend,
-/// `home.services.allowed_genders`).
-Set<String> allowedGenders(FormDetail form, Map<int, int> genderRates) {
-  if (form.name.endsWith('-female')) return {'female'};
-  if (form.name.endsWith('-male')) return {'male'};
-  return switch (genderRates[form.id] ?? 4) {
-    -1 => {'genderless'},
-    0 => {'male'},
-    8 => {'female'},
-    _ => {'male', 'female'},
-  };
-}
+/// Gêneros possíveis para a forma: [gendersFor] com o `gender_rate` guardado.
+Set<String> allowedGenders(FormDetail form, Map<int, int> genderRates) =>
+    gendersFor(form.name, genderRates[form.id]);
 
 /// Marca de origem por grupo de versão (espelho de `home/origin_marks.py`).
 const _originMarkByVersionGroup = {

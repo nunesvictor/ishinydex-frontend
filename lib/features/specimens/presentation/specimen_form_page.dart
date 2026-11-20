@@ -5,6 +5,7 @@ import 'package:ishinydex/core/responsive/breakpoints.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
 import 'package:ishinydex/core/widgets/async_views.dart';
+import 'package:ishinydex/core/widgets/gender_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
@@ -13,6 +14,7 @@ import 'package:ishinydex/features/settings/settings_providers.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/shiny_hunt_providers.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
+import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/capture_date_field.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_record_section.dart';
@@ -127,7 +129,10 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
   late final _observation = TextEditingController(
     text: widget.initial?.observation,
   );
-  late SpecimenDraft _draft = switch ((widget.initial, widget.fromHunt)) {
+  late SpecimenDraft _draft = _withOnlyGender(switch ((
+    widget.initial,
+    widget.fromHunt,
+  )) {
     (final Specimen specimen, _) => SpecimenDraft.fromSpecimen(specimen),
     (null, final ShinyHunt hunt) => _fromHunt(
       SpecimenDraft(
@@ -140,7 +145,17 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       form: widget.form.id,
       isShiny: widget.initialShiny,
     ),
-  };
+  });
+
+  /// Forma de um gênero só (#408): o campo já vem com ele, travado.
+  SpecimenDraft _withOnlyGender(SpecimenDraft draft) {
+    final allowed = widget.form.allowedGenders;
+    final gender = draft.gender;
+    if (allowed.length != 1 || (gender != null && gender.isNotEmpty)) {
+      return draft;
+    }
+    return draft.copyWith(gender: allowed.single);
+  }
 
   /// A caçada que este cadastro encerra (apagada ao salvar).
   late int? _finishing = widget.fromHunt?.id;
@@ -243,13 +258,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               ],
               onChanged: (v) => _draft = _draft.copyWith(ability: v),
             ),
-            _dropdown(
-              label: context.l10n.factGender,
-              field: 'gender',
-              value: _draft.gender,
-              choices: options.gender,
-              onChanged: (v) => _draft = _draft.copyWith(gender: v),
-            ),
+            _gender(),
             _dropdown(
               label: context.l10n.fieldNature,
               field: 'nature',
@@ -600,6 +609,91 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// O gênero (#408): só os possíveis da forma, com ♂/♀. Com um só, o
+  /// campo fica travado nele, com o porquê embaixo. Um valor impossível
+  /// (salvo antes da validação) aparece com o erro já ao abrir e, havendo
+  /// um só possível, o botão para trocar.
+  Widget _gender() {
+    final l10n = context.l10n;
+    final allowed = widget.form.allowedGenders;
+    final value = _draft.gender;
+    final impossible =
+        value != null && value.isNotEmpty && !allowed.contains(value);
+    final species = prettifyName(widget.form.speciesName);
+    final rule = switch (allowed.length == 1 ? allowed.single : null) {
+      'female' => l10n.genderAlwaysFemale(species),
+      'male' => l10n.genderAlwaysMale(species),
+      'genderless' => l10n.genderNone(species),
+      _ => l10n.genderEither(species),
+    };
+    final choices = widget.options.gender;
+    Widget? icon(String gender) => switch (GenderIcon.of(gender)) {
+      final icon? => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: icon,
+      ),
+      null => null,
+    };
+    if (allowed.length == 1 && !impossible) {
+      final only = allowed.single;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: InputDecorator(
+          key: const ValueKey('field-gender'),
+          decoration: InputDecoration(
+            labelText: l10n.factGender,
+            prefixIcon: icon(only),
+            suffixIcon: const Icon(Icons.lock_outline),
+            helperText: rule,
+            helperMaxLines: 2,
+            errorText: context.fieldError(_validation, 'gender'),
+          ),
+          // O mesmo texto (e a mesma altura) dos selects ao lado.
+          child: Text(
+            l10n.choiceOf(choices, only) ?? only,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChoiceSelect(
+            key: const ValueKey('field-gender'),
+            label: l10n.factGender,
+            value: value,
+            choices: [
+              for (final c in choices)
+                if (allowed.contains(c.value) || c.value == value) c,
+            ],
+            leadingOf: (c) => icon(c.value),
+            errorText: impossible
+                ? '$rule ${l10n.genderFromBefore}'
+                : context.fieldError(_validation, 'gender'),
+            onChanged: (v) =>
+                setState(() => _draft = _draft.copyWith(gender: v)),
+          ),
+          if (impossible && allowed.length == 1)
+            TextButton.icon(
+              key: const ValueKey('gender-fix'),
+              icon: const Icon(Icons.auto_fix_high),
+              label: Text(
+                l10n.genderSwitchTo(
+                  l10n.choiceOf(choices, allowed.single) ?? allowed.single,
+                ),
+              ),
+              onPressed: () => setState(
+                () => _draft = _draft.copyWith(gender: allowed.single),
+              ),
+            ),
+        ],
       ),
     );
   }

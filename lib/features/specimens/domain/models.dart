@@ -299,6 +299,15 @@ abstract class FormDetail with _$FormDetail {
 
   factory FormDetail.fromJson(Map<String, dynamic> json) =>
       _$FormDetailFromJson(json);
+
+  /// Os gêneros possíveis da forma (#408): a regra de [gendersFor].
+  Set<String> get allowedGenders => gendersFor(name, genderRate);
+
+  /// O nome da espécie: o [name] sem o sufixo da forma
+  /// (`alcremie-rainbow-swirl-strawberry-sweet` → `alcremie`).
+  String get speciesName => formName.isNotEmpty && name.endsWith('-$formName')
+      ? name.substring(0, name.length - formName.length - 1)
+      : name;
 }
 
 /// Uma ligação da linha evolutiva (#368): de uma forma para outra, com os
@@ -941,4 +950,19 @@ class GenderConflictFailure extends ValidationFailure {
       });
 
   final List<GenderConflict> conflicts;
+}
+
+/// Gêneros possíveis de uma forma (mesma regra do backend,
+/// `home.services.allowed_genders`): as formas `-female`/`-male` têm um só;
+/// as demais seguem o `gender_rate` da espécie (-1 sem gênero, 0 só macho,
+/// 8 só fêmea; sem o dado, macho ou fêmea).
+Set<String> gendersFor(String formName, int? genderRate) {
+  if (formName.endsWith('-female')) return {'female'};
+  if (formName.endsWith('-male')) return {'male'};
+  return switch (genderRate ?? 4) {
+    -1 => {'genderless'},
+    0 => {'male'},
+    8 => {'female'},
+    _ => {'male', 'female'},
+  };
 }
