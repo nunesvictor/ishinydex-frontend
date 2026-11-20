@@ -77,7 +77,14 @@ abstract interface class SpecimenRepository {
 
   /// Muda o apelido e/ou o Shiny Charm do save; o Charm só em jogo que o
   /// tem ([Save.canHaveShinyCharm]), senão falha (`ValidationFailure`).
-  Future<Save> updateSave(int saveId, {String? label, bool? hasShinyCharm});
+  /// Edita o save; o [language] fica como está com [Keep], e `SetTo(null)`
+  /// o apaga (#411).
+  Future<Save> updateSave(
+    int saveId, {
+    String? label,
+    bool? hasShinyCharm,
+    FieldEdit<String> language = const Keep(),
+  });
 
   /// Apaga o save; com espécimes nele, falha (`ValidationFailure`).
   Future<void> deleteSave(int saveId);

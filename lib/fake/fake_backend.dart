@@ -390,6 +390,7 @@ class FakeBackend
           'label': s.label,
           // Só quando tem: o registro de quem não tem fica como antes.
           if (s.hasShinyCharm) 'shinyCharm': true,
+          'language': ?s.language,
         },
       ...?_orphans['saves'],
     ],
@@ -589,6 +590,7 @@ class FakeBackend
         trainer: trainer,
         label: s['label'] as String,
         hasShinyCharm: s['shinyCharm'] as bool? ?? false,
+        language: s['language'] as String?,
       );
     }
     for (final d in of('dexes')) {
@@ -2684,6 +2686,7 @@ class FakeBackend
     int saveId, {
     String? label,
     bool? hasShinyCharm,
+    FieldEdit<String> language = const Keep(),
   }) async {
     await _delay();
     final save = _saves[saveId];
@@ -2696,6 +2699,10 @@ class FakeBackend
     final updated = save.copyWith(
       label: label ?? save.label,
       hasShinyCharm: hasShinyCharm ?? save.hasShinyCharm,
+      language: switch (language) {
+        Keep() => save.language,
+        SetTo(:final value) => value,
+      },
     );
     _saves[saveId] = updated;
     // Os espécimes guardam uma cópia do save (como a resposta da API).

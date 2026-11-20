@@ -59,6 +59,8 @@ const _save = Save(
 final AppLocalizations _pt = lookupAppLocalizations(const Locale('pt'));
 
 void main() {
+  setUpAll(() => registerFallbackValue(const Keep<String>()));
+
   test('Save: jogo, título e há quanto tempo', () {
     expect(_save.game, 'Scarlet');
     expect(_save.title, 'Scarlet · Switch');
@@ -423,10 +425,21 @@ void main() {
         find.textContaining('não vale em estáticos, Pokémon Tera e reides'),
         findsOneWidget,
       );
-      await tester.enterText(find.byType(TextField), ' OLED ');
+      await tester.enterText(find.byType(TextField).first, ' OLED ');
       await _tap(tester, find.text('Tenho o Shiny Charm'));
+      // O idioma do save (#411), com a ajuda embaixo.
+      expect(
+        find.text('Novos espécimes deste save já vêm com este idioma.'),
+        findsOneWidget,
+      );
+      await _tap(tester, find.byKey(const ValueKey('save-language')));
+      await _tap(tester, find.text('Inglês').last);
       await _tap(tester, find.text('Salvar'));
       expect(find.text('OLED · Ash (123456)'), findsOneWidget);
+      expect(
+        (await backend.fetchSaves()).firstWhere((s) => s.id == 1).language,
+        'en',
+      );
       expect(
         (await backend.fetchSaves()).firstWhere((s) => s.id == 1).hasShinyCharm,
         isTrue,
@@ -437,7 +450,7 @@ void main() {
         tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
         isTrue,
       );
-      await tester.enterText(find.byType(TextField), 'Lite');
+      await tester.enterText(find.byType(TextField).first, 'Lite');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
       expect(find.text('Lite · Ash (123456)'), findsOneWidget);
@@ -478,6 +491,7 @@ void main() {
           any(),
           label: any(named: 'label'),
           hasShinyCharm: any(named: 'hasShinyCharm'),
+          language: any(named: 'language'),
         ),
       ).thenThrow(const DataFailure(Problem.invalidData()));
       await pumpWidgetApp(

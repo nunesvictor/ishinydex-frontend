@@ -12,7 +12,7 @@ typedef Records = Map<String, List<Map<String, dynamic>>>;
 /// exportar/importar e do sync:
 ///
 /// ```json
-/// {"schemaVersion": 7, "kind": "ishinydex-data", "catalog": "...",
+/// {"schemaVersion": 8, "kind": "ishinydex-data", "catalog": "...",
 ///  "savedAt": "...", "records": {"specimens": [{..., "updatedAt": "..."}]},
 ///  "deleted": {"specimens": {"123": "..."}},
 ///  "devices": {"<aparelho>": "..."}, "arrived": {"specimens": {"123": "..."}}}
@@ -37,10 +37,11 @@ class LocalStore {
   /// motivo. O 6 trouxe os times do team builder (#231): um app antigo
   /// descartaria os `teams` ao regravar. O 7 trouxe a limpeza das exclusões
   /// (#393): um app antigo descartaria o `devices` e o `arrived` e, sem eles,
-  /// a limpeza apagaria marcas que ele ainda não recebeu. Os anteriores são
+  /// a limpeza apagaria marcas que ele ainda não recebeu. O 8 trouxe o
+  /// idioma do save (#411), pelo mesmo motivo do 2. Os anteriores são
   /// lidos; o "veio do GO" de antes do 5 passa para o GO como jogo ao
   /// carregar (`migrateGoRecords`).
-  static const schemaVersion = 7;
+  static const schemaVersion = 8;
   static const kind = 'ishinydex-data';
 
   final LocalDataStorage storage;

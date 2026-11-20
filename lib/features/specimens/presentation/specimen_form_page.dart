@@ -177,9 +177,14 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       ),
       null => hunt.toRecord(ref.read(shinyHuntActionsProvider).now()),
     };
+    final language = draft.language;
     return draft.copyWith(
       isShiny: true,
       ot: draft.ot ?? save?.trainer.id,
+      // O idioma do save da caçada, se ainda não foi escolhido (#411).
+      language: language == null || language.isEmpty
+          ? save?.language
+          : language,
       // Caçado como a pré-evolução (#315): o registro guarda qual.
       hunt: record.copyWith(
         huntedForm: hunt.form == widget.form.id ? null : hunt.form,
@@ -266,20 +271,6 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
               choices: options.nature,
               onChanged: (v) => _draft = _draft.copyWith(nature: v),
             ),
-            _dropdown(
-              label: context.l10n.language,
-              field: 'language',
-              value: _draft.language,
-              choices: options.language,
-              onChanged: (v) => _draft = _draft.copyWith(language: v),
-            ),
-            _dropdown(
-              label: context.l10n.filterPokeball,
-              field: 'pokeball',
-              value: _draft.pokeball,
-              choices: options.pokeball,
-              onChanged: (v) => _draft = _draft.copyWith(pokeball: v),
-            ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 8,
@@ -311,6 +302,22 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
                   ),
                 ),
               ],
+            ),
+            // OT e idioma colados (#411): escolher o OT traz o idioma do save.
+            _dropdown(
+              label: context.l10n.language,
+              field: 'language',
+              value: _draft.language,
+              choices: options.language,
+              helperText: _languageHint(),
+              onChanged: (v) => _draft = _draft.copyWith(language: v),
+            ),
+            _dropdown(
+              label: context.l10n.filterPokeball,
+              field: 'pokeball',
+              value: _draft.pokeball,
+              choices: options.pokeball,
+              onChanged: (v) => _draft = _draft.copyWith(pokeball: v),
             ),
             ?_originMark(),
             ?_originWarning(),
@@ -401,13 +408,46 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     );
   }
 
+  /// Os saves do treinador [ot] (um OT pode ter mais de um save do mesmo
+  /// jogo).
+  List<Save> _savesOf(int? ot) => [
+    for (final s in ref.watch(savesProvider).value ?? const <Save>[])
+      if (s.trainer.id == ot) s,
+  ];
+
+  /// O save do OT que dá o idioma: o primeiro com idioma.
+  Save? _saveOf(int? ot) =>
+      _savesOf(ot).where((s) => s.language != null).firstOrNull;
+
+  /// De onde veio o idioma (#411): do save do OT; diferente do save (vale,
+  /// é só um lembrete); ou o save ainda sem idioma. OT sem save: nada.
+  String? _languageHint() {
+    final l10n = context.l10n;
+    final saves = _savesOf(_draft.ot);
+    if (saves.isEmpty) return null;
+    final save = _saveOf(_draft.ot);
+    if (save == null) return l10n.saveWithoutLanguage(saves.first.title);
+    final language = _draft.language;
+    if (language == null || language.isEmpty) return null;
+    if (language == save.language) return l10n.languageFromSave(save.title);
+    return l10n.languageDiffersFromSave(
+      l10n.choiceOf(widget.options.language, save.language)!,
+    );
+  }
+
   /// Troca o OT e só mantém a marca escolhida que ainda vale: com OT sem
   /// jogo, qualquer uma; com OT do Let's Go, o GO Park; senão, a do jogo.
   void _setOt(int? ot) {
     final version = _versionOf(ot);
     final choice = _draft.markChoice;
+    final language = _draft.language;
     _draft = _draft.copyWith(
       ot: ot,
+      // O idioma do save do OT, só com o idioma vazio (#411): um idioma já
+      // escolhido nunca é trocado.
+      language: language == null || language.isEmpty
+          ? _saveOf(ot)?.language
+          : language,
       markChoice: switch (version) {
         null => choice,
         final v when letsGoVersions.contains(v) =>
@@ -711,6 +751,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
     required List<Choice> choices,
     required ValueChanged<String?> onChanged,
     ChoiceAction? action,
+    String? helperText,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: ChoiceSelect(
@@ -720,6 +761,7 @@ class _SpecimenFormState extends ConsumerState<SpecimenForm> {
       choices: choices,
       errorText: context.fieldError(_validation, field),
       action: action,
+      helperText: helperText,
       onChanged: (v) => setState(() => onChanged(v)),
     ),
   );

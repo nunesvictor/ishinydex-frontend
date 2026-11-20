@@ -33,6 +33,7 @@ class ChoiceSelect extends StatefulWidget {
     required this.value,
     required this.onChanged,
     this.errorText,
+    this.helperText,
     this.trailingOf,
     this.leadingOf,
     this.action,
@@ -48,6 +49,9 @@ class ChoiceSelect extends StatefulWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
   final String? errorText;
+
+  /// A linha de ajuda embaixo do campo (de onde veio o idioma, #411).
+  final String? helperText;
 
   /// Um ícone à direita de cada opção, como o Shiny Charm do save (#317).
   final Widget? Function(Choice choice)? trailingOf;
@@ -130,6 +134,8 @@ class _ChoiceSelectState extends State<ChoiceSelect> {
           labelText: widget.label,
           errorText: widget.errorText,
           errorMaxLines: 3,
+          helperText: widget.helperText,
+          helperMaxLines: 3,
           prefixIcon: leading,
           suffixIcon: const Icon(Icons.arrow_drop_down),
         ),
@@ -143,9 +149,10 @@ class _ChoiceSelectState extends State<ChoiceSelect> {
       initialSelection: selected?.value ?? _none,
       label: Text(widget.label),
       errorText: widget.errorText,
-      // O erro pode explicar o porquê em duas linhas (#408), sem cortar.
+      helperText: widget.helperText,
+      // O erro e a ajuda podem ter duas linhas (#408, #411), sem cortar.
       inputDecorationTheme: Theme.of(context).inputDecorationTheme
-          .copyWith(errorMaxLines: 3),
+          .copyWith(errorMaxLines: 3, helperMaxLines: 3),
       expandedInsets: EdgeInsets.zero,
       menuHeight: 320,
       requestFocusOnTap: desktop,
