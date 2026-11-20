@@ -321,4 +321,206 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MenuItemButton), findsOneWidget);
   });
+
+  group('folha com busca no celular (#409)', () {
+    // 12 pokébolas: passa do limite e abre a folha.
+    final balls = [
+      ..._balls,
+      for (var i = 0; i < 10; i++)
+        Choice(
+          value: 'ball-$i',
+          label: 'Ball $i',
+          spriteUrl: 'http://x/$i.png',
+        ),
+    ];
+
+    Future<List<String?>> pumpSheet(
+      WidgetTester tester, {
+      List<Choice>? choices,
+      String? value,
+      ChoiceAction? action,
+      Widget? Function(Choice)? trailingOf,
+      Widget? Function(Choice)? leadingOf,
+      TargetPlatform platform = TargetPlatform.iOS,
+    }) async {
+      final changes = <String?>[];
+      await pumpWidgetApp(
+        tester,
+        Scaffold(
+          body: ChoiceSelect(
+            label: 'Pokébola',
+            choices: choices ?? balls,
+            value: value,
+            action: action,
+            trailingOf: trailingOf,
+            leadingOf: leadingOf,
+            onChanged: changes.add,
+          ),
+        ),
+        platform: platform,
+      );
+      return changes;
+    }
+
+    final sheet = find.byKey(const ValueKey('choice-search'));
+
+    Future<void> openSheet(WidgetTester tester) async {
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('abre sem teclado, com ✓ na escolhida; tocar escolhe', (
+      tester,
+    ) async {
+      final changes = await pumpSheet(tester, value: 'dream-ball');
+      expect(field(tester).controller!.text, 'Dream Ball');
+      await openSheet(tester);
+      expect(sheet, findsOneWidget);
+      expect(tester.testTextInput.isVisible, isFalse);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('choice-dream-ball')),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(PokemonSprite), findsWidgets);
+
+      await tester.tap(find.byKey(const ValueKey('choice-ball-3')));
+      await tester.pumpAndSettle();
+      expect(changes, ['ball-3']);
+      expect(sheet, findsNothing);
+    });
+
+    testWidgets('busca sem acento, destaque, nada encontrado e limpar', (
+      tester,
+    ) async {
+      final changes = await pumpSheet(tester);
+      await openSheet(tester);
+      await tester.enterText(sheet, 'poke');
+      await tester.pumpAndSettle();
+      // O "—" some ao buscar; só a Poké Ball, com "Poké" em destaque.
+      expect(find.byKey(const ValueKey('choice-')), findsNothing);
+      final title = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('choice-poke-ball')),
+          matching: find.byType(Text),
+        ),
+      );
+      final spans = (title.textSpan! as TextSpan).children!.cast<TextSpan>();
+      expect(spans[1].text, 'Poké');
+      expect(spans[1].style!.fontWeight, FontWeight.w700);
+
+      await tester.enterText(sheet, 'xyz');
+      await tester.pumpAndSettle();
+      expect(find.text('Nada encontrado.'), findsOneWidget);
+      await tester.tap(find.byTooltip('Limpar busca'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('choice-')), findsOneWidget);
+
+      // Enter com uma opção só escolhe; com várias, não faz nada.
+      await tester.enterText(sheet, 'ball');
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(changes, isEmpty);
+      await tester.enterText(sheet, 'dream');
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(changes, ['dream-ball']);
+    });
+
+    testWidgets('"—" limpa; fechar não muda nada', (tester) async {
+      final changes = await pumpSheet(tester, value: 'poke-ball');
+      await openSheet(tester);
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(changes, isEmpty);
+      await openSheet(tester);
+      await tester.tap(find.byKey(const ValueKey('choice-')));
+      await tester.pumpAndSettle();
+      expect(changes, [null]);
+    });
+
+    testWidgets('o teclado encolhe a folha', (tester) async {
+      await pumpSheet(tester);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 600);
+      addTearDown(tester.view.resetViewInsets);
+      await openSheet(tester);
+      expect(sheet, findsOneWidget);
+    });
+
+    testWidgets('naturezas: "Sobe" e "Desce" ao buscar o atributo', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        choices: [
+          ..._effects,
+          for (var i = 0; i < 8; i++)
+            Choice(
+              value: 'n$i',
+              label: 'N$i',
+              increased: 'defense',
+              decreased: 'hp',
+            ),
+        ],
+        value: 'careful',
+      );
+      expect(field(tester).controller!.text, 'Careful ↑ Def. Esp. ↓ Atq. Esp.');
+      await openSheet(tester);
+      expect(find.text('Buscar por nome ou atributo'), findsOneWidget);
+      await tester.enterText(sheet, 'velo');
+      await tester.pumpAndSettle();
+      expect(find.text('SOBE VELOCIDADE'), findsOneWidget);
+      expect(find.text('DESCE VELOCIDADE'), findsOneWidget);
+      final top = tester.getTopLeft;
+      expect(
+        top(find.byKey(const ValueKey('choice-jolly'))).dy,
+        lessThan(top(find.text('DESCE VELOCIDADE')).dy),
+      );
+      expect(
+        top(find.text('DESCE VELOCIDADE')).dy,
+        lessThan(top(find.byKey(const ValueKey('choice-brave'))).dy),
+      );
+      // Pelo nome: sem cabeçalho.
+      await tester.enterText(sheet, 'jol');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('VELOCIDADE'), findsNothing);
+    });
+
+    testWidgets('a ação fica no fim, mesmo filtrando, e fecha a folha', (
+      tester,
+    ) async {
+      var pressed = 0;
+      await pumpSheet(
+        tester,
+        choices: _natures,
+        action: (
+          label: 'Novo treinador…',
+          icon: Icons.person_add_alt_1,
+          onPressed: () => pressed++,
+        ),
+        leadingOf: (c) => c.value == 'modest' ? const Icon(Icons.star) : null,
+        trailingOf: (c) => const Icon(Icons.auto_awesome),
+      );
+      await openSheet(tester);
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome), findsNWidgets(2));
+      await tester.enterText(sheet, 'xyz');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('choice-action')));
+      await tester.pumpAndSettle();
+      expect(pressed, 1);
+      expect(sheet, findsNothing);
+    });
+
+    testWidgets('no PC continua o menu', (tester) async {
+      await pumpSheet(tester, platform: TargetPlatform.linux);
+      await openSheet(tester);
+      expect(sheet, findsNothing);
+      expect(find.byType(MenuItemButton), findsWidgets);
+    });
+  });
 }

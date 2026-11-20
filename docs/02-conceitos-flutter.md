@@ -540,6 +540,24 @@ No PC, um `FocusNode` seleciona o texto todo ao focar o campo, para digitar
 substituir o "—". Ele só é passado no PC: com um `focusNode`, o
 `DropdownMenu` ignora o `requestFocusOnTap` e o celular abriria o teclado.
 
+**Listas longas no celular: uma folha com busca** (#409). O menu do
+`DropdownMenu` no celular é só toque (o teclado cobriria a lista), o que
+obrigava a rolar 36 pokébolas. Acima de `ChoiceSelect.sheetThreshold` opções,
+o campo vira um `TextField(readOnly: true, canRequestFocus: false)` com o
+mesmo visual e, no toque, abre um `showModalBottomSheet` com a busca no topo:
+
+- `isScrollControlled: true` deixa a folha passar da metade da tela; a altura
+  é calculada com `MediaQuery` (tela − topo − alça − teclado), e o
+  `viewInsets.bottom` (a altura do teclado) vira padding: quando o teclado
+  sobe, a lista encolhe acima dele;
+- a busca **não** tem `autofocus`: no iPhone o teclado só abre com o toque no
+  próprio campo (ver abaixo), e sem teclado dá para rolar vendo os sprites;
+- a folha devolve o valor com `Navigator.pop(valor)`, e o `await` do
+  `showModalBottomSheet` o recebe (`null` = fechou sem escolher);
+- o trecho buscado aparece em destaque com `Text.rich`; como o
+  `foldForSearch` troca um caractere por um, o índice achado no texto sem
+  acento vale no original.
+
 ### Teclado no iPhone e animações implícitas
 
 **Foco e teclado no Safari do iOS.** O Safari só abre o teclado quando o foco

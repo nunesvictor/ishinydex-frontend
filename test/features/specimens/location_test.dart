@@ -362,7 +362,7 @@ void main() {
       await tester.enterText(field('Nome'), name);
       await tester.enterText(field('ID do treinador'), id);
       await _tap(tester, find.byKey(const ValueKey('field-version')));
-      await _tap(tester, find.widgetWithText(MenuItemButton, version));
+      await _tap(tester, find.widgetWithText(ListTile, version));
       await _tap(tester, find.text('Salvar'));
     }
 
