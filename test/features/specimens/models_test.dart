@@ -364,4 +364,20 @@ void main() {
       ],
     );
   });
+
+  test('gendersFor e speciesName (#408)', () {
+    expect(gendersFor('oinkologne-female', 0), {'female'});
+    expect(gendersFor('meowstic-male', 4), {'male'});
+    expect(gendersFor('bulbasaur', null), {'male', 'female'});
+    const detail = FormDetail(
+      id: 1,
+      name: 'tauros',
+      pokeapiId: 128,
+      spriteUrl: '',
+      shinySpriteUrl: '',
+      formName: 'paldea',
+    );
+    // Sem o sufixo da forma no nome: o nome inteiro.
+    expect(detail.speciesName, 'tauros');
+  });
 }

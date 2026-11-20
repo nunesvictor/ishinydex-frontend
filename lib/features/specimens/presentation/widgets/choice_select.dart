@@ -55,6 +55,9 @@ class ChoiceSelect extends StatelessWidget {
       initialSelection: selected?.value ?? _none,
       label: Text(label),
       errorText: errorText,
+      // O erro pode explicar o porquê em duas linhas (#408), sem cortar.
+      inputDecorationTheme: Theme.of(context).inputDecorationTheme
+          .copyWith(errorMaxLines: 3),
       expandedInsets: EdgeInsets.zero,
       menuHeight: 320,
       requestFocusOnTap: desktop,

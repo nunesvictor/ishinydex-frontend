@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
+import 'package:ishinydex/core/widgets/gender_icon.dart';
 import 'package:ishinydex/core/widgets/mark_icons.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
@@ -10,6 +11,7 @@ import 'package:ishinydex/features/shiny_hunts/domain/models.dart';
 import 'package:ishinydex/features/shiny_hunts/domain/shiny_hunt_repository.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_form_page.dart';
+import 'package:ishinydex/features/specimens/presentation/widgets/choice_select.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -469,6 +471,165 @@ void main() {
     await pumpForm(tester);
     await tester.pumpAndSettle();
     expect(find.text('Tentar novamente'), findsOneWidget);
+  });
+
+  group('gênero da forma (#408)', () {
+    void withForm(Map<String, dynamic> json) {
+      when(() => repository.fetchForm(1)).thenAnswer(
+        (_) async => FormDetail.fromJson({...formDetailJson, ...json}),
+      );
+      when(repository.fetchOptions).thenAnswer(
+        (_) async => SpecimenOptions.fromJson({
+          ...optionsJson,
+          'gender': [
+            {'value': 'male', 'label': 'Macho'},
+            {'value': 'female', 'label': 'Fêmea'},
+            {'value': 'genderless', 'label': 'Sem gênero'},
+          ],
+        }),
+      );
+    }
+
+    const alcremie = {
+      'name': 'alcremie-rainbow-swirl-strawberry-sweet',
+      'form_name': 'rainbow-swirl-strawberry-sweet',
+      'gender_rate': 8,
+    };
+    const magnemite = {'name': 'magnemite', 'gender_rate': -1};
+
+    testWidgets('macho ou fêmea: só os dois, com ♂/♀', (tester) async {
+      withForm(const {'gender_rate': 4});
+      await pumpForm(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('field-gender')));
+      await tester.pumpAndSettle();
+      expect(find.text('Macho'), findsWidgets);
+      expect(find.text('Fêmea'), findsWidgets);
+      expect(find.text('Sem gênero'), findsNothing);
+      expect(find.byType(GenderIcon), findsNWidgets(2));
+    });
+
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('um gênero só: já vem travado nele e é salvo '
+          '(${size.width.toInt()}px)', (tester) async {
+        withForm(alcremie);
+        when(() => repository.create(any()))
+            .thenAnswer((_) async => const Specimen(id: 1, form: 1));
+        await pumpForm(tester, size: size);
+        await tester.pumpAndSettle();
+        final field = find.byKey(const ValueKey('field-gender'));
+        expect(field, findsOneWidget);
+        expect(
+          find.descendant(of: field, matching: find.text('Fêmea')),
+          findsOneWidget,
+        );
+        expect(find.text('Alcremie é sempre fêmea.'), findsOneWidget);
+        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(find.byType(ChoiceSelect).evaluate(), isNot(contains(field)));
+
+        await tester.drag(find.byType(ListView), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Salvar e depositar'));
+        await tester.pumpAndSettle();
+        final draft =
+            verify(() => repository.create(captureAny())).captured.single
+                as SpecimenDraft;
+        expect(draft.gender, 'female');
+      });
+    }
+
+    testWidgets('sem gênero: travado, sem ícone', (tester) async {
+      withForm(magnemite);
+      await pumpForm(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('Sem gênero'), findsOneWidget);
+      expect(find.text('Magnemite não tem gênero.'), findsOneWidget);
+      expect(find.byType(GenderIcon), findsNothing);
+    });
+
+    group('valor antigo impossível', () {
+      testWidgets('um só possível: erro já ao abrir e o botão de trocar', (
+        tester,
+      ) async {
+        withForm(magnemite);
+        when(() => repository.fetchSpecimen(1)).thenAnswer(
+          (_) async => Specimen.fromJson({...specimenJson, 'gender': 'male'}),
+        );
+        when(() => repository.update(1, any()))
+            .thenAnswer((_) async => const Specimen(id: 1, form: 1));
+        await pumpForm(tester, specimenId: 1);
+        await tester.pumpAndSettle();
+        expect(
+          find.text(
+            'Magnemite não tem gênero. Este valor veio de antes da validação.',
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Trocar para Sem gênero'));
+        await tester.pumpAndSettle();
+        expect(find.text('Magnemite não tem gênero.'), findsOneWidget);
+        expect(find.byKey(const ValueKey('gender-fix')), findsNothing);
+
+        await tester.drag(find.byType(ListView), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Salvar'));
+        await tester.pumpAndSettle();
+        final draft =
+            verify(() => repository.update(1, captureAny())).captured.single
+                as SpecimenDraft;
+        expect(draft.gender, 'genderless');
+      });
+
+      testWidgets('dois possíveis: só o erro, e o select troca', (
+        tester,
+      ) async {
+        withForm(const {'gender_rate': 4});
+        when(() => repository.fetchSpecimen(1)).thenAnswer(
+          (_) async =>
+              Specimen.fromJson({...specimenJson, 'gender': 'genderless'}),
+        );
+        await pumpForm(tester, specimenId: 1);
+        await tester.pumpAndSettle();
+        expect(
+          find.text(
+            'Bulbasaur é macho ou fêmea. '
+            'Este valor veio de antes da validação.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('gender-fix')), findsNothing);
+        await choose(tester, 'gender', 'Fêmea');
+        expect(find.textContaining('antes da validação'), findsNothing);
+      });
+    });
+
+    testWidgets('em inglês e com o macho travado', (tester) async {
+      withForm(const {'name': 'tauros', 'gender_rate': 0});
+      await pumpForm(tester, locale: english);
+      await tester.pumpAndSettle();
+      expect(find.text('Tauros is always male.'), findsOneWidget);
+    });
+
+    testWidgets('erro de validação no campo travado', (tester) async {
+      withForm(alcremie);
+      when(() => repository.create(any())).thenThrow(
+        const ValidationFailure({
+          'gender': [Problem.impossibleGender(1)],
+        }),
+      );
+      await pumpForm(tester);
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salvar e depositar'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView), const Offset(0, 3000));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Este gênero não é possível para 1 espécime.'),
+        findsWidgets,
+      );
+    });
   });
 
   group('edição', () {

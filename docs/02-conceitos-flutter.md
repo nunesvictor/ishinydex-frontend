@@ -517,6 +517,16 @@ que permite:
 No mobile, `requestFocusOnTap: false` deixa o campo só para toque: o teclado
 virtual não abre e não cobre a lista.
 
+**Opções que dependem do resto do formulário** (#408): o gênero mostra só os
+possíveis da forma (`FormDetail.allowedGenders`, a mesma regra que o salvar
+confere). Quando sobra um só, não faz sentido abrir uma lista de uma opção:
+o campo vira um `InputDecorator` (a "moldura" de um `TextField`, com rótulo,
+ícones e `helperText`) com um `Text` dentro, travado no valor, e a linha de
+ajuda explica o porquê ("Alcremie é sempre fêmea."). O `InputDecorator` usa
+o mesmo `inputDecorationTheme`, então tem a cara dos selects ao lado. Um
+valor antigo impossível continua aparecendo no select, com o erro já ao
+abrir, para a pessoa ver o que estava salvo antes de trocar.
+
 ### Teclado no iPhone e animações implícitas
 
 **Foco e teclado no Safari do iOS.** O Safari só abre o teclado quando o foco
