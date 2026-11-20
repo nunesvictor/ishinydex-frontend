@@ -986,6 +986,7 @@
   "memberNature": "Natureza",
   "memberNatureEffect": "+{up}, −{down}",
   "memberNatureNeutral": "Neutra",
+  "natureNeutralTag": "(neutra)",
   "memberItem": "Item",
   "memberNoItem": "Sem item",
   "memberTera": "Tera",

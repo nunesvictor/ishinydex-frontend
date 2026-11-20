@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/widgets/chip_icons.dart';
+import 'package:ishinydex/core/widgets/nature_colors.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_labels.dart';
 import 'package:material_ui/material_ui.dart';
@@ -34,14 +35,10 @@ class BaseStatsChart extends StatelessWidget {
 
   /// Cores dos jogos para os stats da natureza, mais claras no tema escuro.
   static Color increasedColor(Brightness brightness) =>
-      brightness == Brightness.dark
-      ? const Color(0xFFEF9A9A)
-      : const Color(0xFFC62828);
+      NatureColors.increased(brightness);
 
   static Color decreasedColor(Brightness brightness) =>
-      brightness == Brightness.dark
-      ? const Color(0xFF90CAF9)
-      : const Color(0xFF1565C0);
+      NatureColors.decreased(brightness);
 
   /// A largura do hexágono compacto.
   static const _compactWidth = 190.0;
