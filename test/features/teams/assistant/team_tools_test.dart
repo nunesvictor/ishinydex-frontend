@@ -56,7 +56,7 @@ void main() {
   });
 
   test('sugerir_golpes devolve uma lista', () {
-    expect(tools().run('sugerir_golpes', {})['sugestoes'], isA<List>());
+    expect(tools().run('sugerir_golpes', {})['sugestoes'], isA<List<Object?>>());
   });
 
   test('simular_troca calcula a diferença e confere os nomes', () {
