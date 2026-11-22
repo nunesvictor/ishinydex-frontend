@@ -15,6 +15,7 @@ import 'package:ishinydex/features/specimens/presentation/saves_page.dart';
 import 'package:ishinydex/features/specimens/presentation/specimen_detail.dart';
 import 'package:ishinydex/features/specimens/presentation/specimens_page.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
+import 'package:ishinydex/features/teams/assistant/assistant_page.dart';
 import 'package:ishinydex/features/teams/presentation/synergy_page.dart';
 import 'package:ishinydex/features/teams/presentation/team_page.dart';
 import 'package:ishinydex/features/teams/presentation/teams_page.dart';
@@ -89,6 +90,9 @@ abstract final class Routes {
 
   /// A sinergia do time [id] (#374).
   static String teamSynergy(int id) => '$teams/$id/synergy';
+
+  /// O assistente do time [id] (spike #418, só com AI_SPIKE).
+  static String teamAssistant(int id) => '$teams/$id/assistant';
 
   /// O membro [index] do time [id] (no compacto, numa tela própria).
   static String teamMember(int id, int index) => '$teams/$id/members/$index';
@@ -217,6 +221,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                               0,
                         ),
                       ),
+                      if (aiSpike)
+                        GoRoute(
+                          path: 'assistant',
+                          builder: (context, state) => AssistantPage(
+                            teamId:
+                                int.tryParse(state.pathParameters['teamId']!) ??
+                                0,
+                          ),
+                        ),
                       GoRoute(
                         path: 'members/:index',
                         builder: (context, state) => MemberPage(

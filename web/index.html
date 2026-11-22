@@ -146,6 +146,19 @@
       }
     })();
   </script>
+  <!-- Spike #418 (IA no aparelho): os auxiliares de armazenamento do
+       flutter_edge_ai (MIT) e o motor @litert-lm/core (WebGPU). Só a tela do
+       assistente usa; o resto do app não espera por eles. -->
+  <script src="cache_api.js"></script>
+  <script src="opfs_helper.js"></script>
+  <script type="module">
+    window.litertLmReady = (async () => {
+      const m = await import('https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.0/+esm');
+      window.Engine = m.Engine;
+      window.EmbeddingEngine = m.EmbeddingEngine;
+      return m.Engine;
+    })();
+  </script>
 </head>
 <body>
   <div id="splash" aria-hidden="true">

@@ -10,6 +10,8 @@ import 'package:ishinydex/core/widgets/type_chip.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/moves/domain/moves_data.dart';
 import 'package:ishinydex/features/moves/presentation/moves_widgets.dart';
+import 'package:ishinydex/features/teams/assistant/assistant_page.dart'
+    show aiSpike;
 import 'package:ishinydex/features/teams/domain/models.dart';
 import 'package:ishinydex/features/teams/domain/synergy.dart';
 import 'package:ishinydex/features/teams/domain/team_rules.dart';
@@ -22,7 +24,7 @@ SynergyRules _rulesFor(Catalog catalog, String group) => SynergyRules(
   withFairy: (generationRank(catalog.versionGroupGeneration(group)) ?? 9) >= 6,
 );
 
-SynergyMove _synergyMove(
+SynergyMove synergyMove(
   MoveInfo move,
   String form,
   String group,
@@ -60,7 +62,7 @@ List<SynergyMember> synergyMembers(Team team, Catalog catalog, MovesData data) {
           moves: [
             for (final move in moves)
               if (move.category != 'status')
-                _synergyMove(move, detail.name, group, catalog),
+                synergyMove(move, detail.name, group, catalog),
           ],
           speed: statValue(
             'speed',
@@ -236,6 +238,12 @@ class SynergyPage extends ConsumerWidget {
           ],
         ),
         actions: [
+          if (aiSpike)
+            IconButton(
+              tooltip: 'Assistente (teste)',
+              icon: const Icon(Icons.auto_awesome_outlined),
+              onPressed: () => context.go(Routes.teamAssistant(teamId)),
+            ),
           IconButton(
             key: const ValueKey('synergy-how'),
             tooltip: l10n.synergyHow,
@@ -673,7 +681,7 @@ class _MoveSuggestions extends StatelessWidget {
           group,
         ).values)
           if (learns.first.move.category != 'status')
-            _synergyMove(learns.first.move, form, group, catalog),
+            synergyMove(learns.first.move, form, group, catalog),
       ];
     });
     return _Section(
