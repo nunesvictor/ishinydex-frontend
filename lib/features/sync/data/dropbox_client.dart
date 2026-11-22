@@ -69,11 +69,15 @@ class DropboxClient {
 
   /// URL do login. [redirectUri] é a página do app (sem endereço fixo); o
   /// `token_access_type=offline` pede o refresh token, que não expira.
+  ///
+  /// Sem [redirectUri] (o app nativo, que não tem página para onde voltar),
+  /// o Dropbox mostra o código na tela para a pessoa copiar e colar no app
+  /// (#420); aí o [state] também não vai, porque nada volta para conferir.
   static Uri authorizeUrl({
     required String appKey,
-    required String redirectUri,
     required String challenge,
-    required String state,
+    String? redirectUri,
+    String? state,
   }) => Uri.parse(authorizeEndpoint).replace(
     queryParameters: {
       'client_id': appKey,
@@ -81,25 +85,26 @@ class DropboxClient {
       'code_challenge': challenge,
       'code_challenge_method': 'S256',
       'token_access_type': 'offline',
-      'redirect_uri': redirectUri,
-      'state': state,
+      'redirect_uri': ?redirectUri,
+      'state': ?state,
     },
   );
 
-  /// Troca o código da volta do login pelo refresh token.
+  /// Troca o código do login pelo refresh token. O [redirectUri] tem de ser
+  /// o mesmo do [authorizeUrl] (nenhum, no código colado).
   static Future<String> exchangeCode(
     Dio dio, {
     required String appKey,
     required String code,
     required String verifier,
-    required String redirectUri,
+    String? redirectUri,
   }) async {
     final body = await _tokenRequest(dio, {
       'code': code,
       'grant_type': 'authorization_code',
       'code_verifier': verifier,
       'client_id': appKey,
-      'redirect_uri': redirectUri,
+      'redirect_uri': ?redirectUri,
     });
     return body['refresh_token'] as String;
   }

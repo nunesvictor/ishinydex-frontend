@@ -71,19 +71,22 @@ class SyncSessionStore {
 /// O verificador fica no armazenamento do aparelho porque o app inteiro
 /// recarrega na volta. No iPhone e no iPad, o login volta para o app da
 /// Tela de Início, que tem o mesmo armazenamento (ishinydex#53).
+///
+/// Sem [redirectUri] (o app nativo, #420), o Dropbox mostra o código na
+/// tela; a pessoa cola no app, e [finishWithCode] faz a troca.
 class DropboxLogin {
   DropboxLogin({
     required this.dio,
     required this.store,
     required this.appKey,
-    required this.redirectUri,
+    this.redirectUri,
     this.random,
   });
 
   final Dio dio;
   final SyncSessionStore store;
   final String appKey;
-  final String redirectUri;
+  final String? redirectUri;
   final Random? random;
 
   Future<Uri> begin() async {
@@ -103,7 +106,7 @@ class DropboxLogin {
       appKey: appKey,
       redirectUri: redirectUri,
       challenge: pkce.challenge,
-      state: state,
+      state: redirectUri == null ? null : state,
     );
   }
 
@@ -141,5 +144,25 @@ class DropboxLogin {
     );
     await store.write(SyncSession(refreshToken: refreshToken));
     return true;
+  }
+
+  /// Conclui o login com o [code] que a pessoa colou. Sem login começado
+  /// neste aparelho → [DropboxAuthException]. Código errado: o Dropbox
+  /// recusa, e o verificador fica, para tentar de novo com o certo.
+  Future<void> finishWithCode(String code) async {
+    final verifier = (await store.read()).verifier;
+    if (verifier == null) {
+      throw const DropboxAuthException(
+        'login not started on this device',
+        problem: Problem.dropboxLoginElsewhere(),
+      );
+    }
+    final refreshToken = await DropboxClient.exchangeCode(
+      dio,
+      appKey: appKey,
+      code: code.trim(),
+      verifier: verifier,
+    );
+    await store.write(SyncSession(refreshToken: refreshToken));
   }
 }

@@ -51,6 +51,31 @@ void main() {
     });
   });
 
+  test('URL de login sem retorno (app nativo): o Dropbox mostra o código', () {
+    final url = DropboxClient.authorizeUrl(
+      appKey: 'chave',
+      challenge: 'desafio',
+    );
+    expect(url.queryParameters, {
+      'client_id': 'chave',
+      'response_type': 'code',
+      'code_challenge': 'desafio',
+      'code_challenge_method': 'S256',
+      'token_access_type': 'offline',
+    });
+  });
+
+  test('código colado: a troca vai sem redirect_uri', () async {
+    final token = await DropboxClient.exchangeCode(
+      dropbox.dio(),
+      appKey: 'chave',
+      code: 'bom',
+      verifier: 'v',
+    );
+    expect(token, 'rt-v');
+    expect(dropbox.requests.last.data, isNot(contains('redirect_uri')));
+  });
+
   test(
     'troca o código pelo refresh token; código ruim é erro de login',
     () async {
