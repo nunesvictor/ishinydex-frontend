@@ -25,12 +25,19 @@ LiteRtLmVariant get _variant => kIsWeb
     ? LiteRtLmModels.gemma4E2bIt.web
     : LiteRtLmModels.gemma4E2bIt.generic;
 
-const _system =
+/// As instruções e o time já analisado: um modelo pequeno nem sempre chama
+/// a ferramenta para descobrir o time (no primeiro teste, pediu ao usuário
+/// a lista), então a análise vai junto desde o começo. As ferramentas ficam
+/// para as ações: sugerir e simular trocas, sugerir golpes.
+String _system(TeamTools tools) =>
     'Você é o assistente de times do iShinyDex, um app de Pokémon shiny. '
     'Responda sempre em português do Brasil, curto e direto. '
-    'Nunca invente números, tipos, golpes ou notas: use as ferramentas e '
-    'explique o que elas devolverem. Antes de recomendar uma troca, '
-    'confira com simular_troca. Prefira Pokémon que o usuário já tem.';
+    'O time do usuário, já analisado pelo app, está abaixo em JSON; use '
+    'esses dados e não peça a lista ao usuário. Nunca invente números, '
+    'tipos, golpes ou notas. Para sugerir trocas, chame sugerir_formas e '
+    'confira com simular_troca; para golpes, chame sugerir_golpes. Prefira '
+    'Pokémon que o usuário já tem.\n\n'
+    'Time: ${jsonEncode(tools.analyze())}';
 
 const _examples = [
   'Como está meu time?',
@@ -178,7 +185,7 @@ class _AssistantBodyState extends State<_AssistantBody> {
             ),
         ],
         supportsFunctionCalls: true,
-        systemInstruction: _system,
+        systemInstruction: _system(_tools),
         maxOutputTokens: 512,
       );
       _metric('Carregar: ${_seconds(load)}');
@@ -221,9 +228,11 @@ class _AssistantBodyState extends State<_AssistantBody> {
       await for (final chunk in chat.generateChatResponseWithTools(
         maxToolTurns: 4,
         onToolCall: (call) {
+          debugPrint('[spike-ia] ferramenta: ${call.name} ${call.args}');
           final tool = _ToolTurn(call.name, call.args);
           setState(() => _turns.insert(_turns.length - 1, tool));
           final result = _tools.run(call.name, call.args);
+          debugPrint('[spike-ia] resultado: ${jsonEncode(result)}');
           setState(() => tool.result = result);
           return result;
         },
@@ -236,6 +245,7 @@ class _AssistantBodyState extends State<_AssistantBody> {
         }
       }
       final total = turn.elapsed;
+      debugPrint('[spike-ia] resposta: ${reply.text}');
       _metric(
         'Resposta: 1º token em ${_seconds(null, first)}, '
         'total ${_seconds(null, total)}, '
@@ -318,7 +328,7 @@ class _AssistantBodyState extends State<_AssistantBody> {
             children: [for (final t in _turns) _TurnView(t)],
           ),
         ),
-        if (ready && _turns.isEmpty)
+        if (ready && !_busy)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
