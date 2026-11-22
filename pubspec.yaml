@@ -27,6 +27,7 @@ dependencies:
   # Material e Cupertino fora do SDK desde o Flutter 3.50 (#402).
   material_ui: ^1.5.0
   cupertino_ui: ^1.1.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

@@ -15,6 +15,7 @@ import 'package:ishinydex/features/sync/data/sync_session.dart';
 import 'package:ishinydex/features/sync/presentation/sync_page.dart';
 import 'package:ishinydex/features/sync/sync_providers.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../fixtures/catalog_fixture.dart';
 import '../../helpers/helpers.dart';
@@ -29,11 +30,15 @@ const _pulled = 'Atualizado com as mudanças de outro aparelho.';
 class _FakeBrowser implements Browser {
   @override
   Uri page = Uri.parse(_page);
+  @override
+  bool inPage = true;
+  @override
+  UrlLauncher get launch => throw UnimplementedError();
   final opened = <Uri>[];
   final replaced = <Uri>[];
 
   @override
-  void open(Uri url) => opened.add(url);
+  Future<void> open(Uri url) async => opened.add(url);
 
   @override
   void replace(Uri url) => replaced.add(url);
@@ -265,6 +270,121 @@ void main() {
     await pumpApp(tester);
     expect(find.text('Conectar ao Dropbox'), findsOneWidget);
     expect(find.text('refresh token is invalid or revoked'), findsOneWidget);
+  });
+
+  group('app nativo: login colando o código (#420)', () {
+    setUp(() => browser.inPage = false);
+
+    Future<void> openLogin(WidgetTester tester) async {
+      await pumpApp(tester);
+      await openSync(tester);
+      await tester.tap(find.text('Conectar ao Dropbox'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> paste(WidgetTester tester, String code) async {
+      await tester.enterText(find.byType(TextField), code);
+      await tester.pump();
+      await tester.tap(find.text('Concluir'));
+      await tester.pumpAndSettle();
+    }
+
+    for (final size in [compactSize, expandedSize]) {
+      testWidgets('abre o Dropbox sem retorno e pede o código ($size)', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(size);
+        await openLogin(tester);
+        final url = browser.opened.single;
+        expect(url.host, 'www.dropbox.com');
+        expect(url.queryParameters, isNot(contains('redirect_uri')));
+        expect(url.queryParameters, isNot(contains('state')));
+        expect(find.text('Cole o código do Dropbox'), findsOneWidget);
+        final finish = find.widgetWithText(FilledButton, 'Concluir');
+        expect(tester.widget<FilledButton>(finish).onPressed, isNull);
+      });
+    }
+
+    testWidgets('código certo: conecta e envia os dados daqui', (tester) async {
+      await openLogin(tester);
+      await paste(tester, '  bom ');
+      expect(find.text('Cole o código do Dropbox'), findsNothing);
+      expect(find.textContaining('Dropbox de'), findsOneWidget);
+      expect((await sessions.read()).refreshToken, startsWith('rt-'));
+      expect(dropbox.content, isNotNull);
+    });
+
+    testWidgets('Enter no campo também conclui; vazio, não', (tester) async {
+      await openLogin(tester);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text('Cole o código do Dropbox'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'bom');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect((await sessions.read()).connected, isTrue);
+    });
+
+    testWidgets('código errado: mostra o motivo e deixa tentar de novo', (
+      tester,
+    ) async {
+      await openLogin(tester);
+      await paste(tester, 'velho');
+      expect(find.text('refresh token is invalid or revoked'), findsOneWidget);
+      expect(find.text('Cole o código do Dropbox'), findsOneWidget);
+      await paste(tester, 'bom');
+      expect((await sessions.read()).connected, isTrue);
+    });
+
+    testWidgets('o app reabre no meio do login: volta a pedir o código', (
+      tester,
+    ) async {
+      await DropboxLogin(
+        dio: dropbox.dio(),
+        store: sessions,
+        appKey: 'chave',
+      ).begin();
+      await pumpApp(tester);
+      await openSync(tester);
+      expect(find.text('Cole o código do Dropbox'), findsOneWidget);
+    });
+
+    testWidgets('abrir de novo e cancelar', (tester) async {
+      await openLogin(tester);
+      await tester.tap(find.text('Abrir o Dropbox de novo'));
+      await tester.pumpAndSettle();
+      expect(browser.opened, hasLength(2));
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Conectar ao Dropbox'), findsOneWidget);
+      expect((await sessions.read()).verifier, isNull);
+    });
+
+    testWidgets('sem o login começado neste aparelho: avisa', (tester) async {
+      await openLogin(tester);
+      await sessions.write(const SyncSession());
+      await paste(tester, 'bom');
+      expect(find.text('Cole o código do Dropbox'), findsOneWidget);
+      expect(
+        find.text(
+          'O login no Dropbox não foi iniciado neste aparelho. Tente de novo.',
+        ),
+        findsOneWidget,
+      );
+      expect((await sessions.read()).connected, isFalse);
+    });
+
+    testWidgets('em inglês', (tester) async {
+      await pumpApp(tester, language: AppLanguage.en);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sync'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Connect to Dropbox'));
+      await tester.pumpAndSettle();
+      expect(find.text('Paste the Dropbox code'), findsOneWidget);
+      expect(find.text('Open Dropbox again'), findsOneWidget);
+    });
   });
 
   testWidgets('sem internet na volta do login: avisa', (tester) async {
@@ -530,10 +650,23 @@ void main() {
     expect(await deviceId(InMemoryLocalDataStorage()), hasLength(16));
   });
 
-  test('o navegador de verdade só existe no navegador', () {
-    const real = Browser();
+  test('o navegador de verdade só existe no navegador', () async {
+    const real = Browser(inPage: true);
     expect(real.page, Uri.base);
-    expect(() => real.open(Uri.parse(_page)), throwsUnsupportedError);
+    await expectLater(real.open(Uri.parse(_page)), throwsUnsupportedError);
     expect(() => real.replace(Uri.parse(_page)), throwsUnsupportedError);
+    expect(const Browser().inPage, isFalse);
+  });
+
+  test('no app nativo, abre a URL no navegador do sistema (#420)', () async {
+    final launched = <(Uri, LaunchMode)>[];
+    final native = Browser(
+      launch: (url, {mode = LaunchMode.platformDefault}) async {
+        launched.add((url, mode));
+        return true;
+      },
+    );
+    await native.open(Uri.parse(_page));
+    expect(launched.single, (Uri.parse(_page), LaunchMode.externalApplication));
   });
 }

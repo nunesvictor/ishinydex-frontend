@@ -78,6 +78,8 @@ class _SyncPageState extends ConsumerState<SyncPage> {
           ],
           if (state.connected)
             _Connected(state: state)
+          else if (state.awaitingCode)
+            const _PasteCode()
           else
             const _Disconnected(),
         ],
@@ -183,6 +185,100 @@ class _Disconnected extends ConsumerWidget {
         const SizedBox(height: 12),
         Text(context.l10n.syncTurnOffAnytime, style: theme.textTheme.bodySmall),
       ],
+    );
+  }
+}
+
+/// App nativo (#420): o login do Dropbox abriu no navegador, que mostra um
+/// código no fim; a pessoa copia e cola aqui.
+class _PasteCode extends ConsumerStatefulWidget {
+  const _PasteCode();
+
+  @override
+  ConsumerState<_PasteCode> createState() => _PasteCodeState();
+}
+
+class _PasteCodeState extends ConsumerState<_PasteCode> {
+  final _code = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _finish() async {
+    if (_code.text.trim().isEmpty) return;
+    setState(() => _sending = true);
+    await ref.read(syncControllerProvider.notifier).pasteCode(_code.text);
+    if (mounted) setState(() => _sending = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final controller = ref.read(syncControllerProvider.notifier);
+    return Card.outlined(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.key_outlined),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    context.l10n.dropboxPasteCode,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(context.l10n.dropboxPasteCodeHelp),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _code,
+              enabled: !_sending,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                labelText: context.l10n.dropboxCode,
+                border: const OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => unawaited(_finish()),
+            ),
+            const SizedBox(height: 12),
+            ListenableBuilder(
+              listenable: _code,
+              builder: (context, _) => FilledButton(
+                onPressed: _sending || _code.text.trim().isEmpty
+                    ? null
+                    : _finish,
+                child: Text(context.l10n.dropboxFinishLogin),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: _sending ? null : controller.connect,
+                  child: Text(context.l10n.dropboxOpenAgain),
+                ),
+                TextButton(
+                  onPressed: _sending ? null : controller.cancelCode,
+                  child: Text(context.l10n.cancel),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

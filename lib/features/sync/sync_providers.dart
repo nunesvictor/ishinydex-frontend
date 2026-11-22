@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/config/env.dart';
 import 'package:ishinydex/core/network/app_failure.dart';
@@ -12,14 +13,29 @@ import 'package:ishinydex/features/local/local_data_providers.dart';
 import 'package:ishinydex/features/sync/data/dropbox_client.dart';
 import 'package:ishinydex/features/sync/data/sync_session.dart';
 import 'package:ishinydex/features/sync/domain/sync_engine.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Abre uma URL fora do app (o `launchUrl` do `url_launcher`).
+typedef UrlLauncher = Future<bool> Function(Uri url, {LaunchMode mode});
 
 /// A página do app no navegador: o endereço atual, sair para outro (login
 /// do Dropbox) e trocar o da barra sem recarregar. Nos testes, um falso.
+///
+/// No app nativo ([inPage] falso) não há página: [open] abre a URL no
+/// navegador do sistema, e o login do Dropbox não volta sozinho (#420).
 class Browser {
-  const Browser();
+  const Browser({this.inPage = kIsWeb, this.launch = launchUrl});
+
+  final bool inPage;
+  final UrlLauncher launch;
 
   Uri get page => Uri.base;
-  void open(Uri url) => browser.openUrl(url.toString());
+
+  Future<void> open(Uri url) async {
+    if (inPage) return browser.openUrl(url.toString());
+    await launch(url, mode: LaunchMode.externalApplication);
+  }
+
   void replace(Uri url) => browser.replaceUrl(url.toString());
 }
 
@@ -77,6 +93,7 @@ class SyncState {
     this.connected = false,
     this.firstSync,
     this.pulls = 0,
+    this.awaitingCode = false,
   });
 
   final SyncPhase phase;
@@ -93,6 +110,10 @@ class SyncState {
   /// aumento é um aviso).
   final int pulls;
 
+  /// App nativo: o login do Dropbox foi aberto no navegador e espera o
+  /// código que a pessoa cola ([SyncController.pasteCode]).
+  final bool awaitingCode;
+
   SyncState copyWith({
     SyncPhase? phase,
     String? account,
@@ -108,6 +129,7 @@ class SyncState {
     connected: connected,
     firstSync: firstSync,
     pulls: pulls ?? this.pulls,
+    awaitingCode: awaitingCode,
   );
 }
 
@@ -148,11 +170,12 @@ class SyncController extends Notifier<SyncState> {
     );
   }
 
+  /// No app nativo, sem volta: o Dropbox mostra o código para colar.
   DropboxLogin _login() => DropboxLogin(
     dio: ref.read(syncDioProvider),
     store: _store,
     appKey: _env.dropboxAppKey!,
-    redirectUri: redirectUri.toString(),
+    redirectUri: _browser.inPage ? redirectUri.toString() : null,
   );
 
   /// Na abertura do app: conclui um login que voltou do Dropbox e
@@ -164,24 +187,36 @@ class SyncController extends Notifier<SyncState> {
       connecting = await _login().finish(_browser.page);
     } on Exception catch (error) {
       _browser.replace(redirectUri);
-      state = SyncState(
-        phase: SyncPhase.error,
-        // Do login, o problema já diz o que houve (recusado, outro aparelho);
-        // se o Dropbox recusou o código, vale o motivo dele.
-        error: switch (error) {
-          DropboxAuthException(:final problem?) => problem,
-          DropboxAuthException(:final message) => Problem.dropboxLoginRefused(
-            message,
-          ),
-          _ => _problem(error),
-        },
-      );
+      state = SyncState(phase: SyncPhase.error, error: _loginProblem(error));
       ref.read(routerProvider).go(Routes.sync);
       return;
     }
     if (connecting) _browser.replace(redirectUri);
+    await _resume(connecting: connecting);
+  }
+
+  /// Do login, o problema já diz o que houve (recusado, outro aparelho); se
+  /// o Dropbox recusou o código, vale o motivo dele.
+  static Problem _loginProblem(Exception error) => switch (error) {
+    DropboxAuthException(:final problem?) => problem,
+    DropboxAuthException(:final message) => Problem.dropboxLoginRefused(
+      message,
+    ),
+    _ => _problem(error),
+  };
+
+  /// Com a sessão gravada: liga o sync e sincroniza (na primeira conexão,
+  /// [_firstSync]). Sem sessão, nada; no app nativo com um login aberto, a
+  /// tela volta a pedir o código (o iOS pode ter fechado o app enquanto a
+  /// pessoa estava no Dropbox).
+  Future<void> _resume({required bool connecting}) async {
     final session = await _store.read();
-    if (!session.connected) return;
+    if (!session.connected) {
+      if (!_browser.inPage && session.verifier != null) {
+        state = const SyncState(awaitingCode: true);
+      }
+      return;
+    }
     ref.read(localDataProvider)!.onChanged = _onLocalChange;
     state = SyncState(
       phase: SyncPhase.idle,
@@ -198,7 +233,34 @@ class SyncController extends Notifier<SyncState> {
   }
 
   /// Sai para o login do Dropbox (o app recarrega na volta: ver [start]).
-  Future<void> connect() async => _browser.open(await _login().begin());
+  /// No app nativo, o login abre no navegador e a tela espera o código.
+  Future<void> connect() async {
+    final url = await _login().begin();
+    if (!_browser.inPage) state = const SyncState(awaitingCode: true);
+    await _browser.open(url);
+  }
+
+  /// App nativo: conclui o login com o código que a pessoa colou. Código
+  /// recusado → o motivo na tela, ainda esperando o código.
+  Future<void> pasteCode(String code) async {
+    try {
+      await _login().finishWithCode(code);
+    } on Exception catch (error) {
+      state = SyncState(
+        phase: SyncPhase.error,
+        error: _loginProblem(error),
+        awaitingCode: true,
+      );
+      return;
+    }
+    await _resume(connecting: true);
+  }
+
+  /// Desiste do login que esperava o código.
+  Future<void> cancelCode() async {
+    await _store.write(const SyncSession());
+    state = const SyncState();
+  }
 
   /// Esquece a conexão; os dados continuam no aparelho e no Dropbox.
   Future<void> disconnect() async {
