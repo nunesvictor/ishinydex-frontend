@@ -1,15 +1,21 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/personal_dex/personal_dex_providers.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Quantos sprites são decodificados de uma vez. Com o WebAssembly numa
+/// Quantos sprites são pedidos de uma vez no PWA. Com o WebAssembly numa
 /// thread só (Safari, sem os headers COOP/COEP no Pages), decodificar disputa
 /// a thread com o desenho da tela: lotes pequenos não travam a rolagem.
 const precacheBatchSize = 4;
+
+/// Quantos de uma vez no app nativo (#432). Lá a decodificação sai da thread
+/// da tela, e quem limita é a rede: em lotes de 4, os ~30 sprites de uma box
+/// esperavam uns 8 downloads em fila.
+const nativePrecacheBatchSize = 12;
 
 /// Baixa e decodifica um sprite para o `imageCache`. Erros (sprite que não
 /// existe, sem internet) são ignorados: o [PokemonSprite] mostra o fallback.
@@ -36,7 +42,7 @@ Set<String> boxSpriteUrls(List<Slot> slots) => {
 ///
 /// A box aberta vem primeiro: os slots das vizinhas só são pedidos depois que
 /// os dela chegaram, e as imagens só depois do quadro em que ela aparece, em
-/// lotes de [precacheBatchSize]. Trocar de box cancela o que faltava e
+/// lotes de [batchSize]. Trocar de box cancela o que faltava e
 /// começa pelas novas vizinhas. Não desenha nada além do [child].
 class NeighborBoxPrecache extends ConsumerStatefulWidget {
   const NeighborBoxPrecache({
@@ -45,6 +51,7 @@ class NeighborBoxPrecache extends ConsumerStatefulWidget {
     required this.index,
     required this.child,
     this.precache = precacheSprite,
+    this.batchSize = kIsWeb ? precacheBatchSize : nativePrecacheBatchSize,
     super.key,
   });
 
@@ -55,6 +62,9 @@ class NeighborBoxPrecache extends ConsumerStatefulWidget {
 
   /// Trocável nos testes, onde não há rede.
   final SpritePrecache precache;
+
+  /// Quantos sprites são pedidos de uma vez (ver [precacheBatchSize]).
+  final int batchSize;
 
   @override
   ConsumerState<NeighborBoxPrecache> createState() =>
@@ -97,13 +107,10 @@ class _NeighborBoxPrecacheState extends ConsumerState<NeighborBoxPrecache> {
   }
 
   Future<void> _run(List<String> queue) async {
-    for (var start = 0; start < queue.length; start += precacheBatchSize) {
+    final size = widget.batchSize;
+    for (var start = 0; start < queue.length; start += size) {
       if (!mounted || !identical(queue, _queue)) return;
-      final batch = queue
-          .skip(start)
-          .take(precacheBatchSize)
-          .where(_requested.add)
-          .toList();
+      final batch = queue.skip(start).take(size).where(_requested.add).toList();
       await Future.wait([
         for (final url in batch) widget.precache(context, url),
       ]);

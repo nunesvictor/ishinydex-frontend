@@ -652,7 +652,9 @@ abertura, e sem internet não mostraria nada. Por isso o `remoteImage`
 - **Nativo:** o `DiskCachedImage`, um `ImageProvider` nosso. Ele lê os bytes
   do disco (pasta de cache do app, `path_provider`) e só baixa o que falta,
   gravando num `.part` e renomeando. Assim, um app fechado no meio da
-  gravação nunca deixa meia imagem no lugar. Os bytes que não forem imagem
+  gravação nunca deixa meia imagem no lugar. Os downloads usam um `HttpClient`
+  só, que reaproveita as conexões (#432): com um cliente por imagem, cada
+  sprite pagava a conexão e o TLS inteiros. Os bytes que não forem imagem
   saem do disco. Não há expiração: o endereço de um sprite não muda de
   conteúdo.
 
@@ -674,7 +676,8 @@ boxes vizinhas da aberta: ao trocar de box, elas já estão prontas. Ele usa o
 a chave seria outra, e o cache não seria aproveitado. No Safari com
 WebAssembly, decodificar disputa a única thread com o desenho da tela. Por
 isso o pré-carregamento só começa depois do quadro da box aberta e segue em
-lotes de 4.
+lotes de 4. No app nativo, a decodificação sai da thread da tela e quem
+limita é a rede, então os lotes são de 12 (#432).
 
 1. Os arquivos ficam numa pasta do projeto (`assets/origin_marks/`).
 2. O `pubspec.yaml` declara a pasta em `flutter: assets:`. Só o que está

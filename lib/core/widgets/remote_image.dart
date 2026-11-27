@@ -93,18 +93,21 @@ class RemoteImageCache {
   }
 }
 
+/// Um `HttpClient` para todos os downloads, como o do `NetworkImage`: ele
+/// reaproveita as conexões (keep-alive). Com um cliente por imagem, cada
+/// sprite pagava a conexão e o TLS inteiros, de 0,1 a 0,3 s no celular
+/// (#432).
+final HttpClient _client = HttpClient();
+
 /// Baixa com o `HttpClient` do Dart (só no nativo; a web usa o navegador).
 Future<Uint8List> downloadBytes(Uri url) async {
-  final client = HttpClient();
-  try {
-    final response = await (await client.getUrl(url)).close();
-    if (response.statusCode != HttpStatus.ok) {
-      throw HttpException('HTTP ${response.statusCode}', uri: url);
-    }
-    return await consolidateHttpClientResponseBytes(response);
-  } finally {
-    client.close();
+  final response = await (await _client.getUrl(url)).close();
+  if (response.statusCode != HttpStatus.ok) {
+    // Lê o corpo até o fim, para a conexão voltar livre para o próximo.
+    await response.drain<void>();
+    throw HttpException('HTTP ${response.statusCode}', uri: url);
   }
+  return await consolidateHttpClientResponseBytes(response);
 }
 
 /// Imagem da internet guardada em disco pelo [RemoteImageCache], para o app
