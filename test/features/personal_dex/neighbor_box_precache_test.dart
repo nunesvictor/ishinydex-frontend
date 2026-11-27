@@ -51,6 +51,7 @@ void main() {
         boxes: boxes,
         index: index,
         precache: recorder.call,
+        batchSize: precacheBatchSize,
         child: const Text('box'),
       ),
       overrides: [personalDexRepositoryProvider.overrideWithValue(backend)],
@@ -135,6 +136,18 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await recorder.finishBatch(tester);
     expect(recorder.urls, hasLength(precacheBatchSize));
+  });
+
+  test('no app nativo, lotes maiores: quem limita é a rede (#432)', () {
+    final precache = NeighborBoxPrecache(
+      dexId: 1,
+      boxes: boxes,
+      index: 0,
+      child: const SizedBox(),
+    );
+    // Os testes rodam na VM, como o app nativo.
+    expect(precache.batchSize, nativePrecacheBatchSize);
+    expect(nativePrecacheBatchSize, greaterThan(precacheBatchSize));
   });
 
   testWidgets('precacheSprite ignora o sprite que não carrega', (tester) async {

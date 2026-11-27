@@ -8,10 +8,13 @@ import 'package:ishinydex/core/widgets/remote_image.dart';
 /// que responde 400 a tudo.
 void main() {
   late HttpServer server;
+  late Set<int> connections;
 
   setUp(() async {
+    connections = {};
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0)
       ..listen((request) async {
+        connections.add(request.connectionInfo!.remotePort);
         final response = request.response;
         if (request.uri.path == '/25.png') {
           response.add([1, 2, 3]);
@@ -37,4 +40,17 @@ void main() {
       ),
     );
   });
+
+  test(
+    'a mesma conexão para vários downloads, mesmo após um 404 (#432)',
+    () async {
+      await downloadBytes(url('/25.png'));
+      await expectLater(
+        downloadBytes(url('/nao-existe.png')),
+        throwsA(isA<HttpException>()),
+      );
+      await downloadBytes(url('/25.png'));
+      expect(connections, hasLength(1));
+    },
+  );
 }
