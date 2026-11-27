@@ -34,6 +34,7 @@ Future<List<Override>> catalogOverrides(
   Dio dio, {
   Duration latency = const Duration(milliseconds: 250),
   LocalDataStorage? storage,
+  CatalogCache? catalogCache,
 }) async {
   final url = env.catalogUrl;
   if (env.localData) {
@@ -43,6 +44,9 @@ Future<List<Override>> catalogOverrides(
       dio,
       url,
       storage ?? const PrefsLocalDataStorage(),
+      // No PWA, o service worker guarda o catálogo; no nativo, o arquivo
+      // (#427).
+      catalogCache: catalogCache ?? (kIsWeb ? null : FileCatalogCache()),
     );
   }
   if (url == null) return const [];
@@ -72,8 +76,14 @@ Future<List<Override>> localOverrides(
   String url,
   LocalDataStorage storage, {
   Duration saveDelay = const Duration(milliseconds: 500),
+  CatalogCache? catalogCache,
 }) async {
-  final load = await loadCatalog(dio, url: url, spriteBase: env.spritesBaseUrl);
+  final load = await loadCatalog(
+    dio,
+    url: url,
+    spriteBase: env.spritesBaseUrl,
+    cache: catalogCache,
+  );
   final store = LocalStore(storage);
   final backend = FakeBackend.local(load.catalog, records: await store.load());
   final data = LocalData(

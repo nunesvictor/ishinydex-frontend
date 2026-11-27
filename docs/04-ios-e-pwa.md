@@ -74,7 +74,10 @@ guarda cada arquivo do app na primeira vez que ele é usado, sem lista fixa:
   parou no splash (#404);
 - o resto do site (`index.html`, `flutter_bootstrap.js`, manifesto,
   `catalog/catalog.json`): **rede primeiro**, com o cache de reserva, então
-  uma versão nova chega assim que há internet;
+  uma versão nova chega assim que há internet. O app nativo, sem service
+  worker, faz o mesmo com o catálogo pelo `FileCatalogCache` (#427): espera a
+  rede por até 4 s, abre com o último catálogo guardado e guarda o novo
+  quando ele chega;
 - sprites: cache primeiro, num cache próprio que sobrevive às versões (no
   app nativo, que não tem service worker, o `DiskCachedImage` faz o mesmo
   papel: #425);
