@@ -126,10 +126,13 @@ class _HuntShareSheetState extends ConsumerState<HuntShareSheet> {
   Future<void> _share(Uint8List png, String name) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
+    // No iPad, a folha do iOS é um balão que precisa de um ponto de origem.
+    final box = context.findRenderObject()! as RenderBox;
     final outcome = await ref.read(fileSharerProvider)(
       png,
       name: 'ishinydex-${name.toLowerCase()}.png',
       type: 'image/png',
+      origin: box.localToGlobal(Offset.zero) & box.size,
     );
     if (!outcome.silent) {
       final message = switch (outcome) {

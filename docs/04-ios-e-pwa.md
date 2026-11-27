@@ -220,6 +220,24 @@ Com um Mac e Xcode, dá para rodar direto no iPhone conectado:
 
 A mesma regra de 7 dias vale para Apple ID gratuito.
 
+### O que o app nativo faz diferente
+
+O código é o mesmo do PWA. Onde o PWA conta com o navegador, o nativo usa o
+sistema. As funções do navegador ficam em `lib/core/web/browser_web.dart` e,
+fora dele, lançam `UnsupportedError`. Por isso, cada uso delas escolhe o
+caminho pela plataforma (`kIsWeb`):
+
+| | PWA (navegador) | App nativo |
+| --- | --- | --- |
+| Sprites e balls | service worker | `DiskCachedImage`, na pasta de cache (#425) |
+| Catálogo | service worker (rede primeiro) | `FileCatalogCache`, na pasta de suporte (#427) |
+| Links externos | aba nova | navegador do sistema, pelo `url_launcher` (#429) |
+| Compartilhar o card | Web Share | folha do iOS, pelo `share_plus` (#428); no iPad, com a origem do balão |
+| Login do Dropbox | volta para a página | colar o código (#420) |
+
+As escolhas de links e compartilhamento ficam em
+[external_actions.dart](../lib/core/platform/external_actions.dart).
+
 ## Ícone do app
 
 O ícone (identidade C · Clássico, #162: brilho vermelho de 4 pontas e um
