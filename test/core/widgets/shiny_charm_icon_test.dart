@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/router/app_router.dart';
+import 'package:ishinydex/core/widgets/remote_image.dart';
 import 'package:ishinydex/core/widgets/shiny_charm_icon.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:material_ui/material_ui.dart';
@@ -15,7 +16,7 @@ void main() {
     await tester.pumpAndSettle();
     final image = tester.widget<Image>(find.byType(Image));
     expect(
-      (image.image as NetworkImage).url,
+      (image.image as DiskCachedImage).url,
       endsWith('/items/shiny-charm.png'),
     );
     expect(image.filterQuality, FilterQuality.none);

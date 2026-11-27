@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/config/env.dart';
+import 'package:ishinydex/core/widgets/remote_image.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// O Shiny Charm de um save (#317): o sprite do item no PokéAPI, como as
@@ -28,15 +29,14 @@ class ShinyCharmIcon extends ConsumerWidget {
       excludeFromSemantics: true,
       child: SizedBox.square(
         dimension: size,
-        child: Image.network(
-          '$base/items/shiny-charm.png',
+        child: Image(
+          image: remoteImage('$base/items/shiny-charm.png'),
           width: size,
           height: size,
           fit: BoxFit.contain,
           // Pixel art: sem suavizar ao ampliar.
           filterQuality: FilterQuality.none,
           semanticLabel: label,
-          webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
           errorBuilder: (_, _, _) => fallback,
         ),
       ),
