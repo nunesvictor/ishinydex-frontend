@@ -665,6 +665,18 @@ endereço são iguais, o `imageCache` os trata como uma imagem só, igual ao
 `NetworkImage`. Nos testes, o `test/flutter_test_config.dart` troca o cache
 por um sem disco e sem rede, e toda imagem cai no fallback.
 
+**Falhas não ficam guardadas (#434).** O `imageCache` guarda a carga de cada
+chave, inclusive a que deu erro: todo `Image` com o mesmo provider recebe o
+mesmo erro, até o app fechar. O `NetworkImage` evita isso tirando a chave do
+cache quando falha (`imageCache.evict`), e o `DiskCachedImage` faz o mesmo.
+Sem internet, o sprite mostra a Pokébola; com a rede de volta, a próxima vez
+que a box aparece, ele baixa de novo. Para uma conexão travada não deixar o
+sprite carregando para sempre, o download tem prazo: 10 s para conectar e
+20 s no total. Enquanto carrega, o `PokemonSprite` mostra a mesma Pokébola do
+erro (o `frameBuilder` do `Image` recebe `frame == null` até o primeiro
+quadro). Um sprite que já está na memória chega no primeiro quadro, sem
+piscar.
+
 **Pré-carregamento (#406).** Antes de aparecer, toda imagem passa por duas
 etapas: baixar e **decodificar** (transformar o PNG em pixels que a GPU
 desenha). O resultado fica no `imageCache` do Flutter, indexado pelo

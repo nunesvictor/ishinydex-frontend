@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -93,19 +94,42 @@ class RemoteImageCache {
   }
 }
 
+/// Quanto esperar para conectar ao servidor de um sprite (#434).
+const downloadConnectTimeout = Duration(seconds: 10);
+
+/// Quanto esperar por um download inteiro (#434). Uma conexão que trava (ex.:
+/// logo depois que a rede volta) vira erro, e o sprite cai na Pokébola em vez
+/// de ficar carregando para sempre.
+const downloadTimeout = Duration(seconds: 20);
+
 /// Um `HttpClient` para todos os downloads, como o do `NetworkImage`: ele
 /// reaproveita as conexões (keep-alive). Com um cliente por imagem, cada
 /// sprite pagava a conexão e o TLS inteiros, de 0,1 a 0,3 s no celular
 /// (#432).
-final HttpClient _client = HttpClient();
+final HttpClient _client = HttpClient()
+  ..connectionTimeout = downloadConnectTimeout;
 
 /// Baixa com o `HttpClient` do Dart (só no nativo; a web usa o navegador).
-Future<Uint8List> downloadBytes(Uri url) async {
-  final response = await (await _client.getUrl(url)).close();
+Future<Uint8List> downloadBytes(
+  Uri url, {
+  Duration timeout = downloadTimeout,
+}) async {
+  final request = await _client.getUrl(url);
+  try {
+    return await _receive(request).timeout(timeout);
+  } on TimeoutException {
+    // Fecha a conexão travada, para ela não voltar ao keep-alive.
+    request.abort();
+    rethrow;
+  }
+}
+
+Future<Uint8List> _receive(HttpClientRequest request) async {
+  final response = await request.close();
   if (response.statusCode != HttpStatus.ok) {
     // Lê o corpo até o fim, para a conexão voltar livre para o próximo.
     await response.drain<void>();
-    throw HttpException('HTTP ${response.statusCode}', uri: url);
+    throw HttpException('HTTP ${response.statusCode}', uri: request.uri);
   }
   return await consolidateHttpClientResponseBytes(response);
 }
@@ -142,12 +166,20 @@ class DiskCachedImage extends ImageProvider<DiskCachedImage> {
 
   Future<ui.Codec> _load(ImageDecoderCallback decode) async {
     final store = cache ?? RemoteImageCache.instance;
-    final bytes = await store.bytes(url);
     try {
-      return await decode(await ui.ImmutableBuffer.fromUint8List(bytes));
+      final bytes = await store.bytes(url);
+      try {
+        return await decode(await ui.ImmutableBuffer.fromUint8List(bytes));
+      } on Object {
+        // O que veio não é uma imagem: não guarda, para tentar de novo depois.
+        await store.evict(url);
+        rethrow;
+      }
     } on Object {
-      // O que veio não é uma imagem: não guarda, para tentar de novo depois.
-      await store.evict(url);
+      // Tira a falha da memória, como o `NetworkImage` faz: sem isso, o
+      // `imageCache` guarda o erro, e o sprite só volta fechando o app
+      // (#434). Assim, a próxima vez que ele aparecer, baixa de novo.
+      scheduleMicrotask(() => PaintingBinding.instance.imageCache.evict(this));
       rethrow;
     }
   }

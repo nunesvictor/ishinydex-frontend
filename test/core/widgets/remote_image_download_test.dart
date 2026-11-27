@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,9 @@ void main() {
       ..listen((request) async {
         connections.add(request.connectionInfo!.remotePort);
         final response = request.response;
+        if (request.uri.path == '/lento.png') {
+          return; // nunca responde: uma conexão travada
+        }
         if (request.uri.path == '/25.png') {
           response.add([1, 2, 3]);
         } else {
@@ -53,4 +57,15 @@ void main() {
       expect(connections, hasLength(1));
     },
   );
+
+  test('download travado vira erro e não prende os próximos (#434)', () async {
+    await expectLater(
+      downloadBytes(
+        url('/lento.png'),
+        timeout: const Duration(milliseconds: 100),
+      ),
+      throwsA(isA<TimeoutException>()),
+    );
+    expect(await downloadBytes(url('/25.png')), [1, 2, 3]);
+  });
 }
