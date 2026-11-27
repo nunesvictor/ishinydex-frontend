@@ -29,7 +29,10 @@ class PokemonSprite extends StatelessWidget {
     final placeholder = Icon(
       Icons.catching_pokemon,
       size: size * 0.6,
-      color: Theme.of(context).colorScheme.outlineVariant,
+      // `outline`, e não `outlineVariant`: este é quase igual ao fundo da
+      // casa registrada (`surfaceContainerHighest`), e a Pokébola sumia
+      // (#436).
+      color: Theme.of(context).colorScheme.outline,
       semanticLabel: semanticLabel,
     );
     final src = url;
