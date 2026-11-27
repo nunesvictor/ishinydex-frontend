@@ -256,5 +256,28 @@ void main() {
       final file = await tester.runAsync(() => store.fileFor('$_url?ruim'));
       expect(file!.existsSync(), isFalse);
     });
+
+    testWidgets('download que falhou sai da memória e tenta de novo (#434)', (
+      tester,
+    ) async {
+      var online = false;
+      final store = cache(
+        download: (url) async {
+          if (!online) throw const SocketException('sem rede');
+          downloads.add(url);
+          return _png;
+        },
+      );
+      final image = DiskCachedImage('$_url?offline', cache: store);
+      expect(await resolve(tester, image), isA<SocketException>());
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      expect(PaintingBinding.instance.imageCache.containsKey(image), isFalse);
+
+      online = true;
+      final value = await resolve(tester, image);
+      expect(value, isA<ImageInfo>());
+      (value as ImageInfo).dispose();
+      expect(downloads, [Uri.parse('$_url?offline')]);
+    });
   });
 }

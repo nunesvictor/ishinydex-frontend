@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishinydex/core/utils/origin_mark.dart';
@@ -6,6 +10,7 @@ import 'package:ishinydex/core/widgets/confirm_dialog.dart';
 import 'package:ishinydex/core/widgets/origin_mark_chip.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/core/widgets/progress_badge.dart';
+import 'package:ishinydex/core/widgets/remote_image.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/helpers.dart';
@@ -23,6 +28,24 @@ void main() {
         const PokemonSprite(url: 'http://x/1.png', semanticLabel: 'bulba'),
       );
       await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.catching_pokemon), findsOneWidget);
+    });
+
+    testWidgets('enquanto carrega, mostra o placeholder (#434)', (
+      tester,
+    ) async {
+      final previous = RemoteImageCache.instance;
+      addTearDown(() => RemoteImageCache.instance = previous);
+      final pending = Completer<Uint8List>();
+      RemoteImageCache.instance = RemoteImageCache(
+        directory: () async => throw const FileSystemException('sem disco'),
+        download: (_) => pending.future,
+      );
+      await pumpWidgetApp(
+        tester,
+        const PokemonSprite(url: 'http://x/carregando.png'),
+      );
+      await tester.pump();
       expect(find.byIcon(Icons.catching_pokemon), findsOneWidget);
     });
   });

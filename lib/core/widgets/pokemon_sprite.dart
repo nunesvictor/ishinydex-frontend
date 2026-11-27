@@ -10,7 +10,8 @@ import 'package:material_ui/material_ui.dart';
 /// ([remoteImage], #425).
 ImageProvider spriteImage(String url) => remoteImage(url);
 
-/// Sprite remoto com fallback quando a imagem não existe ou falha.
+/// Sprite remoto com a Pokébola no lugar enquanto carrega, ou quando a
+/// imagem não existe ou falha.
 class PokemonSprite extends StatelessWidget {
   const PokemonSprite({
     required this.url,
@@ -42,6 +43,11 @@ class PokemonSprite extends StatelessWidget {
               height: size,
               fit: BoxFit.contain,
               semanticLabel: semanticLabel,
+              // A Pokébola também enquanto carrega (#434): o quadrado não
+              // fica vazio. Sprite já na memória chega no primeiro quadro,
+              // sem piscar.
+              frameBuilder: (_, child, frame, _) =>
+                  frame == null ? placeholder : child,
               errorBuilder: (_, _, _) => placeholder,
             ),
     );
