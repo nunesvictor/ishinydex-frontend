@@ -6,8 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:ishinydex/core/clock.dart';
 import 'package:ishinydex/core/network/paginated.dart';
-import 'package:ishinydex/core/web/browser.dart' as browser;
-import 'package:ishinydex/core/web/share_outcome.dart';
+import 'package:ishinydex/core/platform/external_actions.dart';
 import 'package:ishinydex/fake/fake_backend.dart';
 import 'package:ishinydex/features/catalog/domain/catalog.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
@@ -147,9 +146,10 @@ final formRefOfProvider = Provider<FormRef? Function(int formId)>(
   (ref) => ref.watch(fakeBackendProvider).formRefOf,
 );
 
-/// Abre um link externo (o post da caçada) numa aba nova.
+/// Abre um link externo (o post da caçada): aba nova no PWA, o navegador
+/// do sistema no nativo (#429).
 final openLinkProvider = Provider<void Function(String url)>(
-  (ref) => browser.openInNewTab,
+  (ref) => linkOpener(),
 );
 
 /// Se o Pokémon (a forma ou uma pré-evolução) está na pokédex do jogo do OT
@@ -232,15 +232,9 @@ List<Specimen> sortForDeposit(
     return a.id.compareTo(b.id);
   });
 
-/// Compartilha um arquivo pela folha do sistema (Web Share, #243); os
-/// testes trocam.
-typedef FileSharer = Future<ShareOutcome> Function(
-  Uint8List bytes, {
-  required String name,
-  required String type,
-});
-
-final fileSharerProvider = Provider<FileSharer>((ref) => browser.shareFile);
+/// Compartilha um arquivo pela folha do sistema: o Web Share no PWA
+/// (#243), a folha do iOS no nativo (#428); os testes trocam.
+final fileSharerProvider = Provider<FileSharer>((ref) => fileSharer());
 
 /// Transforma o que está desenhado em [boundary] num PNG, em [pixelRatio]
 /// pixels por ponto (#243); os testes trocam.

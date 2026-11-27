@@ -66,10 +66,8 @@ void main() {
       overrides: [fakeBackendProvider.overrideWithValue(FakeBackend())],
     );
     expect(empty.read(shinyMethodsProvider)('scarlet'), isEmpty);
-    expect(
-      () => empty.read(openLinkProvider)('https://x'),
-      throwsUnsupportedError,
-    );
+    // Na VM, o app nativo: abre pelo url_launcher, sem lançar erro (#429).
+    expect(empty.read(openLinkProvider), isA<void Function(String)>());
   });
 
   test('guarda, valida e volta pelos registros', () async {

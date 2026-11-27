@@ -38,13 +38,16 @@ final _png = Uint8List.fromList([137, 80, 78, 71]);
 class _Sharer {
   ShareOutcome outcome = ShareOutcome.shared;
   final calls = <(Uint8List, String, String)>[];
+  Rect? origin;
 
   Future<ShareOutcome> call(
     Uint8List bytes, {
     required String name,
     required String type,
+    Rect? origin,
   }) async {
     calls.add((bytes, name, type));
+    this.origin = origin;
     return outcome;
   }
 }
@@ -413,6 +416,9 @@ void main() {
         'ishinydex-bulbasaur.png',
         'image/png',
       ));
+      // A origem da folha no iPad: a área da folha do card (#428).
+      expect(sharer.origin, isNotNull);
+      expect(sharer.origin!.isEmpty, isFalse);
       expect(find.byType(HuntShareSheet), findsNothing);
     });
 
