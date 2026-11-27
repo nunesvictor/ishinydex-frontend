@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -17,11 +18,18 @@ class _MemoryCache implements CatalogCache {
 
   String? json;
 
+  /// Completa na primeira gravação: o teste espera por ela em vez de um
+  /// tempo fixo, que falhava na CI lenta.
+  final written = Completer<void>();
+
   @override
   Future<String?> read() async => json;
 
   @override
-  Future<void> write(String json) async => this.json = json;
+  Future<void> write(String json) async {
+    this.json = json;
+    if (!written.isCompleted) written.complete();
+  }
 }
 
 /// A versão do catálogo guardado.
@@ -125,7 +133,7 @@ void main() {
         expect(opened.catalog.version, 'guardado');
         expect(_version(cache.json), 'guardado');
 
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await cache.written.future.timeout(const Duration(seconds: 10));
         expect(_version(cache.json), 'novo');
       },
     );

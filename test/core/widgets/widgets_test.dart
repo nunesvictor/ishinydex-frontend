@@ -48,6 +48,16 @@ void main() {
       await tester.pump();
       expect(find.byIcon(Icons.catching_pokemon), findsOneWidget);
     });
+
+    testWidgets(
+      'placeholder na cor outline, visível na casa registrada (#436)',
+      (tester) async {
+        await pumpWidgetApp(tester, const PokemonSprite(url: null));
+        final context = tester.element(find.byType(PokemonSprite));
+        final icon = tester.widget<Icon>(find.byIcon(Icons.catching_pokemon));
+        expect(icon.color, Theme.of(context).colorScheme.outline);
+      },
+    );
   });
 
   group('marca de origem', () {
