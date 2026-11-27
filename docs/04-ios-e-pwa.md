@@ -75,7 +75,9 @@ guarda cada arquivo do app na primeira vez que ele é usado, sem lista fixa:
 - o resto do site (`index.html`, `flutter_bootstrap.js`, manifesto,
   `catalog/catalog.json`): **rede primeiro**, com o cache de reserva, então
   uma versão nova chega assim que há internet;
-- sprites: cache primeiro, num cache próprio que sobrevive às versões;
+- sprites: cache primeiro, num cache próprio que sobrevive às versões (no
+  app nativo, que não tem service worker, o `DiskCachedImage` faz o mesmo
+  papel: #425);
 - fontes do `fonts.gstatic.com`: idem, noutro cache (#337). O Flutter as
   baixa quando um texto usa um caractere que a Roboto não tem; sem elas,
   offline, o caractere vira um quadrado vazio. Por isso o gênero, o ✓ da

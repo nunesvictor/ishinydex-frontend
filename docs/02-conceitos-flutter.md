@@ -636,9 +636,32 @@ tela, um `Semantics` com `excludeSemantics` troca o texto visível por
 
 ### Imagens do próprio app: assets
 
-Sprites de Pokémon e pokébolas vêm da rede (um `NetworkImage`, dentro do
+Sprites de Pokémon e pokébolas vêm da rede (o `remoteImage(url)`, dentro do
 `PokemonSprite`). Já os ícones das **marcas de origem** vão junto com o app:
 são **assets**.
+
+**Imagens da rede guardadas em disco (#425).** O `imageCache` do Flutter
+fica **na memória**: quando o iOS fecha o app em segundo plano, ele se perde.
+No PWA, isso não pesa, porque o service worker guarda cada imagem em disco.
+No app nativo, sem esse cuidado, a box baixaria os sprites de novo a cada
+abertura, e sem internet não mostraria nada. Por isso o `remoteImage`
+([remote_image.dart](../lib/core/widgets/remote_image.dart)) escolhe o
+`ImageProvider` pela plataforma:
+
+- **Web (`kIsWeb`):** o `NetworkImage` de sempre.
+- **Nativo:** o `DiskCachedImage`, um `ImageProvider` nosso. Ele lê os bytes
+  do disco (pasta de cache do app, `path_provider`) e só baixa o que falta,
+  gravando num `.part` e renomeando. Assim, um app fechado no meio da
+  gravação nunca deixa meia imagem no lugar. Os bytes que não forem imagem
+  saem do disco. Não há expiração: o endereço de um sprite não muda de
+  conteúdo.
+
+Um `ImageProvider` define duas coisas: a **chave** (`obtainKey`, que aqui é
+o próprio provider, com `==` pela URL) e **como carregar** (`loadImage`,
+que devolve os bytes decodificados). Como dois `DiskCachedImage` do mesmo
+endereço são iguais, o `imageCache` os trata como uma imagem só, igual ao
+`NetworkImage`. Nos testes, o `test/flutter_test_config.dart` troca o cache
+por um sem disco e sem rede, e toda imagem cai no fallback.
 
 **Pré-carregamento (#406).** Antes de aparecer, toda imagem passa por duas
 etapas: baixar e **decodificar** (transformar o PNG em pixels que a GPU

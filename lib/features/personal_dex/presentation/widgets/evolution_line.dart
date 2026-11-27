@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/utils/format.dart';
 import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
+import 'package:ishinydex/core/widgets/remote_image.dart';
 import 'package:ishinydex/features/personal_dex/domain/models.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -215,8 +216,8 @@ class _EvolutionRow extends StatelessWidget {
                                 children: [
                                   if (method?.itemSpriteUrl case final url?
                                       when edge.texts.isEmpty)
-                                    Image.network(
-                                      url,
+                                    Image(
+                                      image: remoteImage(url),
                                       width: 20,
                                       height: 20,
                                       filterQuality: FilterQuality.none,

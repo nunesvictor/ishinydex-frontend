@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ishinydex/core/l10n/l10n.dart';
 import 'package:ishinydex/core/web/share_outcome.dart';
+import 'package:ishinydex/core/widgets/pokemon_sprite.dart';
 import 'package:ishinydex/features/specimens/domain/models.dart';
 import 'package:ishinydex/features/specimens/presentation/widgets/hunt_share_card.dart';
 import 'package:ishinydex/features/specimens/specimen_providers.dart';
@@ -96,10 +97,7 @@ class _HuntShareSheetState extends ConsumerState<HuntShareSheet> {
       // O sprite precisa ter chegado, senão sai o ícone de reserva.
       if (spriteUrl != null) {
         await precacheImage(
-          NetworkImage(
-            spriteUrl,
-            webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-          ),
+          spriteImage(spriteUrl),
           context,
           onError: (_, _) {},
         );
